@@ -123,8 +123,66 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
+
+  [class*="rounded"] {
+    border-radius: var(--radius) !important;
+  }
+
   body {
     @apply bg-background text-foreground;
-    }
+  }
+}
+
+@layer components {
+  .lp-section {
+    @apply relative border-t border-slate-200 bg-white;
+  }
+
+  .lp-section::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.45), transparent);
+  }
+
+  .lp-reveal-section {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .lp-reveal-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .lp-card {
+    @apply transition duration-500 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-900/8;
+  }
+
+  .lp-button {
+    @apply transition duration-500 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/15 active:translate-y-0;
+  }
+
+  .lp-link {
+    @apply transition duration-300 ease-out hover:text-slate-900;
+  }
+
+  .lp-icon-chip {
+    @apply transition duration-500 ease-out hover:-translate-y-0.5 hover:scale-105;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal-section {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

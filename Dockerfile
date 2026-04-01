@@ -6,6 +6,8 @@ RUN apk add --no-cache nginx postgresql-dev \
 COPY . /var/www/html
 WORKDIR /var/www/html
 
+RUN docker-php-ext-install pcntl
+
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader
 

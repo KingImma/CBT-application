@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('exam_timetables', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('term_id')->constrained('terms')->restrictOnDelete();
             $table->string('title');
             $table->text('description')->nullable();

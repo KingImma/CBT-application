@@ -28,7 +28,7 @@ class CreateTenantsTable extends Migration
             $table->string('state', 50)->nullable();
             $table->string('phone', 20)->nullable();
             $table->string('email')->nullable();
-            $table->foreignId('plan_id')->constrained('subscription_plans');
+            $table->foreignUuid('plan_id')->nullable()->constrained('subscription_plans');
             $table->enum('subscription_status',array_column(StatusType::cases(), 'value'));
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamp('subscription_ends_at')->nullable();

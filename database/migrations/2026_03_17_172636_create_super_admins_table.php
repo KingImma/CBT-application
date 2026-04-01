@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('super_admins', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->string('email');
+            $table->string('password', 255);
             $table->boolean('is_active');
             $table->timestamp('last_login_at')->nullable();
             $table->timestamps();

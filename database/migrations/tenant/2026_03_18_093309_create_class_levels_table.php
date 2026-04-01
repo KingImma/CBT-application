@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('class_levels', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->string('name',20);
             $table->string('slug', 20);
             $table->integer('order');

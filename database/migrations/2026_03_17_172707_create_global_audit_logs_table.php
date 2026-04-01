@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('global_audit_logs', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->string('actor_type', 50);
             $table->uuid('actor_id')->nullable();
             $table->string('action', 100);

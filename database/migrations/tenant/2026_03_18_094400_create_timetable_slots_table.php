@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('timetable_slots', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('timetable_id')->constrained('exam_timetables')->cascadeOnDelete();
             $table->foreignUuid('exam_id')->nullable()->constrained('exams')->nullOnDelete();
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();

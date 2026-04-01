@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('questions', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->foreignUuid('topic_id')->nullable()->constrained('topics')->nullOnDelete();
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();

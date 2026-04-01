@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('exam_attendance', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('exam_id')->constrained('exams')->restrictOnDelete();
             $table->foreignUuid('student_id')->constrained('users')->restrictOnDelete();
             $table->enum('status', array_column(ExamAttendanceStatus::cases(), 'value'));

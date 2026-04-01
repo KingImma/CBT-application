@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('question_options', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('question_id')->constrained('questions')->cascadeOnDelete();
             $table->string('label', 10)->nullable();
             $table->text('content');

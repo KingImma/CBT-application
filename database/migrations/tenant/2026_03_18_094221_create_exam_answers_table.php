@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('exam_answers', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('attempt_id')->constrained('exam_attempts')->cascadeOnDelete();
             $table->foreignUuid('question_id')->constrained('questions')->restrictOnDelete();
             $table->jsonb('selected_optons_ids')->nullable(); // UUID[]

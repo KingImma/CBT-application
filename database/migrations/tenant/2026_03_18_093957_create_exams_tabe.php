@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('exams_tabe', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->string('title');
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('fill_blank_answers', function (Blueprint $table) {
-            $table->id()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('question_id')->constrained('questions')->cascadeOnDelete();
             $table->string('answer_text');
             $table->boolean('is_primary');

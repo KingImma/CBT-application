@@ -1,0 +1,11 @@
+<?php
+
+namespace App\Enums;
+
+enum ExamAttemptStatus: string
+{
+    case In_progress = 'in_progress';
+    case Submitted   = 'submitted';
+    case Graded      = 'graded';
+    case Timed_out   = 'timed_out';
+}

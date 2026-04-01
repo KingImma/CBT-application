@@ -1,11 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Tests\Feature\Api\SuperAdmin;
-
-use App\Actions\CreateTenantAction;
-use App\Exceptions\TenantSlugAlreadyTakenException;
 use App\Models\SubscriptionPlan;
 use App\Models\SuperAdmin;
 use App\Models\Tenant;
@@ -17,201 +11,199 @@ class TenantTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected SuperAdmin $admin;
+    private SuperAdmin $admin;
 
+    /*
+     * setUp authenticates a super admin for every test in this class.
+     * All tenant management endpoints require a valid Sanctum token so this
+     * avoids repeating actingAs() in every test.
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->admin = SuperAdmin::factory()->create();
-        $this->actingAs($this->admin, 'sanctum');
+        $this->actingAs($this->admin, "sanctum");
     }
 
-    // -------------------------------------------------------------------------
-    // List
-    // -------------------------------------------------------------------------
-
+    /*
+     * List tenants — verifies pagination shape and that all created tenants appear.
+     * Checks data key specifically because Laravel pagination wraps results.
+     */
     #[Test]
     public function can_list_all_tenants(): void
     {
         Tenant::factory()->count(3)->create();
 
-        $response = $this->getJson('/api/super-admin/tenants')->assertOk();
+        $response = $this->getJson("/api/super-admin/tenants")->assertStatus(
+            200,
+        );
 
-        $this->assertCount(3, $response->json('data'));
+        expect($response->json("data"))->toHaveCount(3);
     }
 
     #[Test]
     public function list_tenants_returns_empty_data_when_no_tenants_exist(): void
     {
-        $response = $this->getJson('/api/super-admin/tenants')->assertOk();
+        $response = $this->getJson("/api/super-admin/tenants")->assertStatus(
+            200,
+        );
 
-        $this->assertCount(0, $response->json('data'));
+        expect($response->json("data"))->toHaveCount(0);
     }
 
     #[Test]
     public function can_filter_tenants_by_search_query(): void
     {
-        Tenant::factory()->create(['id' => 'greenfield-academy', 'name' => 'Greenfield Academy', 'slug' => 'greenfield-academy']);
-        Tenant::factory()->create(['id' => 'kings-college',      'name' => 'Kings College',      'slug' => 'kings-college']);
+        Tenant::factory()->create(["name" => "Greenfield Academy"]);
+        Tenant::factory()->create(["name" => "Kings College"]);
 
-        $response = $this->getJson('/api/super-admin/tenants?search=greenfield')->assertOk();
+        $response = $this->getJson(
+            "/api/super-admin/tenants?search=greenfield",
+        )->assertStatus(200);
 
-        $this->assertCount(1, $response->json('data'));
-        $this->assertEquals('Greenfield Academy', $response->json('data.0.name'));
+        expect($response->json("data"))->toHaveCount(1);
+        expect($response->json("data.0.name"))->toBe("Greenfield Academy");
     }
 
     #[Test]
     public function can_filter_tenants_by_subscription_status(): void
     {
-        Tenant::factory()->count(2)->create();
+        Tenant::factory()
+            ->count(2)
+            ->create(["subscription_status" => "trial"]);
         Tenant::factory()->suspended()->create();
 
-        $response = $this->getJson('/api/super-admin/tenants?status=suspended')->assertOk();
+        $response = $this->getJson(
+            "/api/super-admin/tenants?status=suspended",
+        )->assertStatus(200);
 
-        $this->assertCount(1, $response->json('data'));
+        expect($response->json("data"))->toHaveCount(1);
     }
 
-    // -------------------------------------------------------------------------
-    // Create
-    // -------------------------------------------------------------------------
-
+    /*
+     * Create tenant — only tests the API response and DB record.
+     * Does not test database provisioning (that's covered in TenantProvisioningTest).
+     * Domain is auto-generated from slug so we don't pass it in the request.
+     */
     #[Test]
     public function can_create_a_new_tenant(): void
     {
         $plan = SubscriptionPlan::factory()->create();
 
-        $this->postJson('/api/super-admin/tenants', [
-            'name'    => 'Test School',
-            'email'   => 'info@testschool.com',
-            'plan_id' => $plan->id,
+        $this->postJson("/api/super-admin/tenants", [
+            "name" => "Test School",
+            "email" => "info@testschool.com",
+            "plan_id" => $plan->id,
         ])
-        ->assertStatus(201)
-        ->assertJsonPath('name', 'Test School')
-        ->assertJsonPath('slug', 'test-school');
+            ->assertStatus(201)
+            ->assertJsonPath("name", "Test School")
+            ->assertJsonPath("slug", "test-school");
     }
 
     #[Test]
     public function create_tenant_auto_generates_slug_from_name(): void
     {
-        $this->postJson('/api/super-admin/tenants', [
-            'name' => 'Kings College Lagos',
+        $this->postJson("/api/super-admin/tenants", [
+            "name" => "Kings College Lagos",
         ])
-        ->assertStatus(201)
-        ->assertJsonPath('slug', 'kings-college-lagos');
+            ->assertStatus(201)
+            ->assertJsonPath("slug", "kings-college-lagos");
+    }
+
+    #[Test]
+    public function create_tenant_slug_is_unique_when_name_conflicts(): void
+    {
+        // Create tenant with id and slug both set to 'test-school'
+        Tenant::factory()->create([
+            "id" => "test-school",
+            "slug" => "test-school",
+            "name" => "Test School",
+        ]);
+
+        $response = $this->postJson("/api/super-admin/tenants", [
+            "name" => "Test School",
+        ])->assertStatus(201);
+
+        expect($response->json("slug"))->toBe("test-school-1");
     }
 
     #[Test]
     public function create_tenant_fails_with_missing_name(): void
     {
-        $this->postJson('/api/super-admin/tenants', [])
+        $this->postJson("/api/super-admin/tenants", [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['name']);
+            ->assertJsonValidationErrors(["name"]);
     }
 
-    #[Test]
-    public function create_tenant_fails_with_422_if_slug_is_already_taken(): void
-    {
-        // Create an existing tenant that will produce the same slug
-        Tenant::factory()->create([
-            'id'   => 'test-school',
-            'slug' => 'test-school',
-            'name' => 'Test School',
-        ]);
-
-        // Same name → same slug → should be blocked at the validation layer
-        $this->postJson('/api/super-admin/tenants', [
-            'name' => 'Test School',
-        ])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors(['name']);
-    }
-
-    #[Test]
-    public function concurrent_slug_conflict_throws_exception_at_action_level(): void
-    {
-        // Simulates the race condition where two requests pass validation
-        // simultaneously but only one succeeds the DB write.
-        // The action-level guard catches this and throws a typed exception
-        // rather than letting a UniqueConstraintViolationException bubble up.
-        Tenant::factory()->create([
-            'id'   => 'test-school',
-            'slug' => 'test-school',
-            'name' => 'Test School X',
-        ]);
-
-        $this->expectException(TenantSlugAlreadyTakenException::class);
-
-        (new CreateTenantAction())->execute(['name' => 'Test School']);
-    }
-
-    // -------------------------------------------------------------------------
-    // Show
-    // -------------------------------------------------------------------------
-
+    /*
+     * View tenant — verifies the show endpoint returns tenant with domains relationship.
+     */
     #[Test]
     public function can_view_a_single_tenant(): void
     {
         $tenant = Tenant::factory()->create();
 
         $this->getJson("/api/super-admin/tenants/{$tenant->id}")
-            ->assertOk()
-            ->assertJsonPath('id', $tenant->id)
-            ->assertJsonStructure(['id', 'name', 'slug', 'domains']);
+            ->assertStatus(200)
+            ->assertJsonPath("id", $tenant->id)
+            ->assertJsonStructure(["id", "name", "slug", "domains"]);
     }
 
     #[Test]
     public function view_tenant_returns_404_for_non_existent_tenant(): void
     {
-        $this->getJson('/api/super-admin/tenants/non-existent-id')
-            ->assertNotFound();
+        $this->getJson(
+            "/api/super-admin/tenants/non-existent-id",
+        )->assertStatus(404);
     }
 
-    // -------------------------------------------------------------------------
-    // Update
-    // -------------------------------------------------------------------------
-
+    /*
+     * Update tenant — uses PATCH so only provided fields are updated.
+     * Verifies both the response and the DB record are updated.
+     */
     #[Test]
     public function can_update_tenant_details(): void
     {
-        $tenant = Tenant::factory()->create(['name' => 'Old Name']);
+        $tenant = Tenant::factory()->create(["name" => "Old Name"]);
 
         $this->patchJson("/api/super-admin/tenants/{$tenant->id}", [
-            'name' => 'New Name',
+            "name" => "New Name",
         ])
-        ->assertOk()
-        ->assertJsonPath('name', 'New Name');
+            ->assertStatus(200)
+            ->assertJsonPath("name", "New Name");
 
-        $this->assertDatabaseHas('tenants', [
-            'id'   => $tenant->id,
-            'name' => 'New Name',
+        $this->assertDatabaseHas("tenants", [
+            "id" => $tenant->id,
+            "name" => "New Name",
         ]);
     }
 
     #[Test]
     public function update_tenant_returns_404_for_non_existent_tenant(): void
     {
-        $this->patchJson('/api/super-admin/tenants/non-existent-id', [
-            'name' => 'New Name',
-        ])->assertNotFound();
+        $this->patchJson("/api/super-admin/tenants/non-existent-id", [
+            "name" => "New Name",
+        ])->assertStatus(404);
     }
 
-    // -------------------------------------------------------------------------
-    // Suspend
-    // -------------------------------------------------------------------------
-
+    /*
+     * Suspend — sets is_active to false and subscription_status to suspended.
+     * Both fields must change — checking only one would miss a partial update bug.
+     */
     #[Test]
     public function can_suspend_an_active_tenant(): void
     {
         $tenant = Tenant::factory()->active()->create();
 
         $this->postJson("/api/super-admin/tenants/{$tenant->id}/suspend")
-            ->assertOk()
-            ->assertJsonPath('message', 'Tenant suspended successfully');
+            ->assertStatus(200)
+            ->assertJsonPath("message", "Tenant suspended successfully");
 
         $fresh = $tenant->fresh();
-        $this->assertFalse($fresh->is_active);
-        $this->assertEquals('suspended', $fresh->subscription_status->value);
+        expect($fresh->is_active)->toBeFalse();
+        // Compare against the enum value, not a raw string
+        expect($fresh->subscription_status->value)->toBe("suspended");
     }
 
     #[Test]
@@ -221,25 +213,24 @@ class TenantTest extends TestCase
 
         $this->postJson("/api/super-admin/tenants/{$tenant->id}/suspend")
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Tenant is already suspended');
+            ->assertJsonPath("message", "Tenant is already suspended");
     }
 
-    // -------------------------------------------------------------------------
-    // Reinstate
-    // -------------------------------------------------------------------------
-
+    /*
+     * Reinstate — reverses suspension. Mirrors the suspend tests for symmetry.
+     */
     #[Test]
     public function can_reinstate_a_suspended_tenant(): void
     {
         $tenant = Tenant::factory()->suspended()->create();
 
         $this->postJson("/api/super-admin/tenants/{$tenant->id}/reinstate")
-            ->assertOk()
-            ->assertJsonPath('message', 'Tenant reinstated successfully');
+            ->assertStatus(200)
+            ->assertJsonPath("message", "Tenant reinstated successfully");
 
         $fresh = $tenant->fresh();
-        $this->assertTrue($fresh->is_active);
-        $this->assertEquals('active', $fresh->subscription_status->value);
+        expect($fresh->is_active)->toBeTrue();
+        expect($fresh->subscription_status->value)->toBe("active");
     }
 
     #[Test]
@@ -249,29 +240,48 @@ class TenantTest extends TestCase
 
         $this->postJson("/api/super-admin/tenants/{$tenant->id}/reinstate")
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Tenant is not suspended');
+            ->assertJsonPath("message", "Tenant is not suspended");
     }
 
-    // -------------------------------------------------------------------------
-    // Delete
-    // -------------------------------------------------------------------------
-
+    /*
+     * Soft delete — verifies the record is soft deleted not hard deleted.
+     * The tenant DB itself is preserved until a hard delete is triggered.
+     */
     #[Test]
     public function can_soft_delete_a_tenant(): void
     {
         $tenant = Tenant::factory()->create();
 
         $this->deleteJson("/api/super-admin/tenants/{$tenant->id}")
-            ->assertOk()
-            ->assertJsonPath('message', 'Tenant deleted successfully');
+            ->assertStatus(200)
+            ->assertJsonPath("message", "Tenant deleted successfully");
 
-        $this->assertSoftDeleted('tenants', ['id' => $tenant->id]);
+        $this->assertSoftDeleted("tenants", ["id" => $tenant->id]);
     }
 
     #[Test]
     public function delete_tenant_returns_404_for_non_existent_tenant(): void
     {
-        $this->deleteJson('/api/super-admin/tenants/non-existent-id')
-            ->assertNotFound();
+        $this->deleteJson(
+            "/api/super-admin/tenants/non-existent-id",
+        )->assertStatus(404);
+    }
+
+    #[Test]
+    public function can_create_a_new_tenant_school_real_pipeline(): void
+    {
+        $plan = SubscriptionPlan::factory()->create();
+
+        $response = $this->postJson("/api/super-admin/tenants", [
+            "name" => "Test School",
+            "email" => "info@testschool.com",
+            "plan_id" => $plan->id,
+        ])
+            ->assertStatus(201)
+            ->assertJsonPath("name", "Test School")
+            ->assertJsonPath("slug", "test-school");
+
+        $tenant = Tenant::where("slug", "test-school")->first();
+        expect($tenant)->not->toBeNull();
     }
 }

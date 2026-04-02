@@ -30,5 +30,4 @@ class SuperAdmin extends Authenticatable
             'last_login_at'  => 'datetime'
         ];
     }
-
 }

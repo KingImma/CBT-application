@@ -18,6 +18,7 @@ return [
     'central_domains' => [
         '127.0.0.1',
         'localhost',
+        'cbt-application-ufyd.onrender.com'
     ],
 
     /**
@@ -50,7 +51,7 @@ return [
          * Tenant database names are created like this:
          * prefix + tenant_id + suffix.
          */
-        'prefix' => 'tenant',
+        'prefix' => '',
         'suffix' => '',
 
         /**

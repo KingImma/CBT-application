@@ -18,13 +18,13 @@ class CreateTenantAction
      * @param array<int,mixed> $data
      * @return Tenant
      */
-    public function execute(array $data): Tenant
-    {
+     public function execute(array $data): Tenant
+     {
         $slug = Str::slug($data['name']);
-        
+    
         $this->ensureSlugIsAvailable($slug);
-        
-        return DB::transaction(function () use ($data, $slug) {
+    
+        $tenant = DB::transaction(function () use ($data, $slug) {
             $tenant = Tenant::create([
                 'name'                => $data['name'],
                 'slug'                => $slug,
@@ -32,21 +32,23 @@ class CreateTenantAction
                 'email'               => $data['email'] ?? null,
                 'phone'               => $data['phone'] ?? null,
                 'address'             => $data['address'] ?? null,
-                'city'                => $data['city']    ?? null,
-                'state'               => $data['state']   ?? null,
+                'city'                => $data['city'] ?? null,
+                'state'               => $data['state'] ?? null,
                 'plan_id'             => $data['plan_id'] ?? null,
                 'subscription_status' => StatusType::Trial->value,
                 'trial_ends_at'       => now()->addDays(self::TRIAL_DAYS),
-                'is_active'           => true,    
+                'is_active'           => true,
             ]);
-            
+    
             $tenant->domains()->create([
                 'domain' => $slug . '.' . config('app.central_domain', 'localhost'),
             ]);
-            
+    
             return $tenant;
         });
-    }
+    
+        return $tenant;
+     }
     
     private function ensureSlugIsAvailable(string $slug): void
     {

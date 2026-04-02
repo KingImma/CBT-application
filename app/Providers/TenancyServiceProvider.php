@@ -31,7 +31,6 @@ class TenancyServiceProvider extends ServiceProvider
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
                 })
-                ->shouldBeQueued(false)   
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],

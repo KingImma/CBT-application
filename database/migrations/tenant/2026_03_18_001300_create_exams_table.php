@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('exams_tabe', function (Blueprint $table) {
+        Schema::create('exams_table', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('title');
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();

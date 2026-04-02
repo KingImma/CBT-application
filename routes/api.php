@@ -3,14 +3,15 @@
 use App\Http\Controllers\Api\SuperAdmin\AuthController;
 use App\Http\Controllers\Api\SuperAdmin\TenantController;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Redis;
 
 // Health check
 Route::get('/health', function () {
     try {
-        \Illuminate\Support\Facades\Redis::connection()->ping();
-        return response()->json(['redis' => 'connected']);
+        $redis = Redis::connection();
+        $response = $redis->command('ping');
+        return response()->json(['redis' => $response]);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
     }

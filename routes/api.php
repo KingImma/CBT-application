@@ -7,19 +7,14 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 // Health check
-Route::get("/health", function () {
-    return response()->json([
-        "cache" => Cache::store("redis")->set("health_check", true, 10)
-            ? "connected"
-            : "failed",
-        "queue" => config("queue.default"),
-        "horizon" => app(
-            \Laravel\Horizon\Contracts\MasterSupervisorRepository::class,
-        )->all()
-            ? "running"
-            : "not running",
-    ]);
-})->middleware(["auth:super_admin"]);
+Route::get('/health', function () {
+    try {
+        \Illuminate\Support\Facades\Redis::connection()->ping();
+        return response()->json(['redis' => 'connected']);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
 
 // Super Admin auth — public
 Route::prefix("super-admin")->group(function () {

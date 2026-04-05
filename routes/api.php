@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Redis;
 // Health check
 Route::get('/health', function () {
     try {
-        $result = Redis::connection()->ping();
-        
+        Redis::connection()->command('ping');
+
         return response()->json([
             'redis'  => 'connected',
             'driver' => config('database.redis.client'),

@@ -20,19 +20,21 @@ return new class extends Migration
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();
             $table->foreignUuid('created_by')->constrained('users')->restrictOnDelete();
             $table->enum('type', array_column(QuestionType::cases(), 'value'));
-            $table->enum('difficulty', array_column(DifficultyType::cases(), 'values'));
+            $table->enum('difficulty', array_column(DifficultyType::cases(), 'value')); 
             $table->text('content');
             $table->text('explanation')->nullable();
             $table->decimal('default_marks', 5, 2);
-            $table->integer('time_estimate_secons')->nullable();
+            $table->integer('time_estimate_seconds')->nullable(); 
             $table->string('image_url', 500)->nullable();
             $table->jsonb('metadata')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->integer('usage_count');
+            $table->integer('usage_count')->default(0); 
+            
             $table->timestamps();
             $table->softDeletes();
             
-            $table->index(['difficulty', 'type', 'is_active']);
+            $table->index(['subject_id', 'class_level_id', 'difficulty']);
+            $table->index(['type', 'is_active']);
         });
     }
 

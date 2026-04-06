@@ -30,7 +30,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->integer('usage_count');
             $table->timestamps();
-            $table->softDeletes;
+            $table->softDeletes();
             
             $table->index(['difficulty', 'type', 'is_active']);
         });

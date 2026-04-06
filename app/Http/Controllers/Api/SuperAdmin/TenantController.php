@@ -53,7 +53,10 @@ class TenantController extends Controller
             ], 409);
         }
         
-        return (new TenantResource($tenant))->response()->setStatusCode(201);
+        return (new TenantResource($tenant))
+            ->additional(['message' => 'School registered successfully.'])
+            ->response()
+            ->setStatusCode(201);
     }
     
     public function show(string $id): JsonResponse

@@ -10,7 +10,6 @@ use App\Models\Tenant;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
-use App\Http\Resources\TenantResource;
 
 class CreateTenantAction
 {
@@ -22,7 +21,7 @@ class CreateTenantAction
      * @param array<string, mixed> $data
      * @throws TenantSlugAlreadyTakenException
      */
-    public function execute(array $data): TenantResource
+    public function execute(array $data): Tenant
     {
         $raw = Str::slug($data['name']);
         $slug = Str::slug(mb_strtolower(\Normalizer::normalize($raw, \Normalizer::FORM_KC)));
@@ -72,10 +71,7 @@ class CreateTenantAction
             
             $tenant->load('domains');
 
-            return response()->json([
-                'message' => 'School registered successfully.',
-                'data' => new TenantResource($tenant)
-            ], 201);
+            return $tenant;
         } finally {
             $lock->release();
         }

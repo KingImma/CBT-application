@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Enforces subscription plan limits per tenant.
+ * Applied to tenant-side routes that create students, teachers, and exams.
+ *
+ * Think of this as a bouncer at the door — it checks capacity
+ * before the request ever reaches the controller.
+ */
+class EnforceTenantPlanLimits
+{
+    /**
+     * @param Closure(): void $next
+     */
+    public function handle(Request $request, Closure $next, string $resource): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant || ! $tenant->plan_id) {
+            return $next($request);
+        }
+
+        $plan = DB::connection('central')
+            ->table('subscription_plans')
+            ->where('id', $tenant->plan_id)
+            ->first();
+
+        if (! $plan) {
+            return $next($request);
+        }
+
+        $limit   = null;
+        $current = 0;
+
+        match ($resource) {
+            'students' => [
+                $limit   = $plan->max_students,
+                $current = DB::table('student_profiles')->count(),
+            ],
+            'teachers' => [
+                $limit   = $plan->max_teachers,
+                $current = DB::table('teacher_profiles')->count(),
+            ],
+            'exams' => [
+                $limit   = $plan->max_exams_per_term,
+                $current = DB::table('exams')
+                    ->where('term_id', $request->route('term_id'))
+                    ->count(),
+            ],
+            default => null,
+        };
+
+        if ($limit !== null && $current >= $limit) {
+            return response()->json([
+                'message' => "Your {$plan->name} plan allows a maximum of {$limit} {$resource}. Please upgrade to add more.",
+                'limit'   => $limit,
+                'current' => $current,
+            ], 403);
+        }
+
+        return $next($request);
+    }
+}

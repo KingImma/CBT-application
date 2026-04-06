@@ -59,9 +59,17 @@ class CreateTenantAction
                 throw $e;
             }
 
+            $centralDomain = config('app.central_domain')
+                ?? collect(config('tenancy.central_domains', []))
+                    ->reject(fn($d) => in_array($d, ['127.0.0.1', 'localhost']))
+                    ->first()
+                ?? 'localhost';
+            
             $tenant->domains()->create([
-                'domain' => $slug . '.' . config('app.central_domain', 'localhost'),
+                'domain' => $slug . '.' . $centralDomain,
             ]);
+            
+            $tenant->load('domains');
 
             return $tenant;
         } finally {

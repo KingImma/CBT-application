@@ -1,0 +1,90 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class SubscriptionPlanSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $plans = [
+            [
+                'id'                  => Str::uuid()->toString(),
+                'name'                => 'Basic',
+                'slug'                => 'basic',
+                'description'         => 'Perfect for small schools getting started.',
+                'max_students'        => 100,
+                'max_teachers'        => 10,
+                'max_exams_per_term'  => 5,
+                'price_monthly'       => 0,
+                'price_yearly'        => 0,
+                'features'            => json_encode([
+                    'cbt_exams'        => true,
+                    'result_analytics' => false,
+                    'custom_branding'  => false,
+                    'api_access'       => false,
+                    'priority_support' => false,
+                ]),
+                'is_active'           => true,
+                'created_at'          => now(),
+                'updated_at'          => now(),
+            ],
+            [
+                'id'                  => Str::uuid()->toString(),
+                'name'                => 'Standard',
+                'slug'                => 'standard',
+                'description'         => 'For growing schools that need more capacity.',
+                'max_students'        => 500,
+                'max_teachers'        => 30,
+                'max_exams_per_term'  => 20,
+                'price_monthly'       => 15000,   // in kobo (₦15,000)
+                'price_yearly'        => 150000,  // ₦150,000
+                'features'            => json_encode([
+                    'cbt_exams'        => true,
+                    'result_analytics' => true,
+                    'custom_branding'  => false,
+                    'api_access'       => false,
+                    'priority_support' => false,
+                ]),
+                'is_active'           => true,
+                'created_at'          => now(),
+                'updated_at'          => now(),
+            ],
+            [
+                'id'                  => Str::uuid()->toString(),
+                'name'                => 'Premium',
+                'slug'                => 'premium',
+                'description'         => 'Full access for large schools and institutions.',
+                'max_students'        => 2000,
+                'max_teachers'        => 100,
+                'max_exams_per_term'  => 999,
+                'price_monthly'       => 35000,   // ₦35,000
+                'price_yearly'        => 350000,  // ₦350,000
+                'features'            => json_encode([
+                    'cbt_exams'        => true,
+                    'result_analytics' => true,
+                    'custom_branding'  => true,
+                    'api_access'       => true,
+                    'priority_support' => true,
+                ]),
+                'is_active'           => true,
+                'created_at'          => now(),
+                'updated_at'          => now(),
+            ],
+        ];
+
+        foreach ($plans as $plan) {
+            DB::table('subscription_plans')->updateOrInsert(
+                ['slug' => $plan['slug']],
+                $plan
+            );
+        }
+
+        $this->command?->info('Subscription plans seeded successfully.');
+    }
+}

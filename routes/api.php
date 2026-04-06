@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\SuperAdmin\AuthController;
 use App\Http\Controllers\Api\SuperAdmin\TenantController;
+use App\Http\Controllers\Api\SuperAdmin\SubscriptionPlanController;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Redis;
@@ -22,6 +23,17 @@ Route::get('/health', function () {
         return response()->json(['error' => $e->getMessage()], 500);
     }
 });
+
+Route::get('/debug-domain', function () {
+    return response()->json([
+        'env_value' => env('CENTRAL_DOMAIN'),
+        'app_config' => config('app.central_domain'),
+        'tenancy_config' => config('tenancy.central_domains'),
+    ]);
+});
+
+Route::get('/plans', [SubscriptionPlanController::class, 'index']);
+Route::get('/plans/{id}', [SubscriptionPlanController::class, 'show']);
 
 // Super Admin auth — public
 Route::prefix("super-admin")->group(function () {

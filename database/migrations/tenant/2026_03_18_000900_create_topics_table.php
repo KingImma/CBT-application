@@ -16,9 +16,11 @@ return new class extends Migration
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();
             $table->string('name');
-            $table->foreignUuid('parent_id')->nullable()->constrained('topics')->nullOnDelete();
+            $table->uuid('parent_id')->nullable();
             $table->integer('order')->nullable();
             $table->timestamps();
+            
+            $table->foreign('parent_id')->references('id')->on('topics')->nullOnDelete();
         });
     }
 

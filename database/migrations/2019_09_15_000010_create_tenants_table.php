@@ -20,7 +20,6 @@ class CreateTenantsTable extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug', 63)->unique();
-            $table->string('domain')->nullable();
             $table->string('database', 63)->unique();
             $table->string('logo', 500)->nullable();
             $table->text('address')->nullable();

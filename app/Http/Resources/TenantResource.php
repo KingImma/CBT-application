@@ -19,7 +19,7 @@ class TenantResource extends JsonResource
             'id'   => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
-            'domains' => $this->domain,
+            'domains' => $this->whenLoaded('domains'),
             'contact' => [
                 'email' => $this->email,
                 'phone' => $this->phone

@@ -71,7 +71,10 @@ class CreateTenantAction
             
             $tenant->load('domains');
 
-            return $tenant;
+            return response()->json([
+                'message' => 'School registered successfully.',
+                'data' => new TenantResource($tenant)
+            ], 201);
         } finally {
             $lock->release();
         }

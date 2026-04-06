@@ -24,7 +24,7 @@ class CreateTenantAction
     public function execute(array $data): Tenant
     {
         $raw = Str::slug($data['name']);
-        $slug = Str::slug(mb_strtolower(normalizer_normalize($raw, Normalizer::FORM_KC)));
+        $slug = Str::slug(mb_strtolower(\Normalizer::normalize($raw, \Normalizer::FORM_KC)));
         $slug = Str::limit($slug, self::MAX_IDENTIFIER_LENGTH);
         
         $dbName = self::DB_PREFIX . str_replace('-', '_', $slug);

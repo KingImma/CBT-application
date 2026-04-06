@@ -19,7 +19,9 @@ class TenantResource extends JsonResource
             'id'   => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
-            'domains' => $this->whenLoaded('domains'),
+            'domains' => $this->whenLoaded('domains', function () {
+                return $this->domains->pluck('domain');
+            }),
             'contact' => [
                 'email' => $this->email,
                 'phone' => $this->phone

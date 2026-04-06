@@ -6,6 +6,7 @@ namespace App\Actions;
 
 use App\Enums\StatusType;
 use App\Exceptions\TenantSlugAlreadyTakenException;
+use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
@@ -35,22 +36,24 @@ class CreateTenantAction
             throw new TenantSlugAlreadyTakenException($slug);
         }
 
-        try {
-            // Create tenant — UUID PK stays handled by stancl/app/model
+        try { 
+            $subscriptionDetails = $this->resolveSubscriptionDetails($data['plan_id'] ?? null);
+            
             try {
                 $tenant = Tenant::create([
-                    'name'                => $data['name'],
-                    'slug'                => $slug,
-                    'database'            => $dbName,
-                    'email'               => $data['email']   ?? null,
-                    'phone'               => $data['phone']   ?? null,
-                    'address'             => $data['address'] ?? null,
-                    'city'                => $data['city']    ?? null,
-                    'state'               => $data['state']   ?? null,
-                    'plan_id'             => $data['plan_id'] ?? null,
-                    'subscription_status' => StatusType::Trial->value,
-                    'trial_ends_at'       => now()->addDays(self::TRIAL_DAYS),
-                    'is_active'           => true,
+                    'name'                 => $data['name'],
+                    'slug'                 => $slug,
+                    'database'             => $dbName,
+                    'email'                => $data['email']   ?? null,
+                    'phone'                => $data['phone']   ?? null,
+                    'address'              => $data['address'] ?? null,
+                    'city'                 => $data['city']    ?? null,
+                    'state'                => $data['state']   ?? null,
+                    'plan_id'              => $data['plan_id'] ?? null,
+                    'subscription_status'  => $subscriptionDetails['subscription_status'],
+                    'trial_ends_at'        => $subscriptionDetails['trial_ends_at'],
+                    'subscription_ends_at' => $subscriptionDetails['subscription_ends_at'],
+                    'is_active'            => true,
                 ]);
             } catch (QueryException $e) {
                 if ($this->isUniqueConstraintViolation($e)) {
@@ -76,13 +79,6 @@ class CreateTenantAction
             $lock->release();
         }
     }
-
-    // private function ensureSlugIsAvailable(string $slug): void
-    // {
-    //     if (Tenant::where('slug', $slug)->exists()) {
-    //         throw new TenantSlugAlreadyTakenException($slug);
-    //     }
-    // }
     
     private function isUniqueConstraintViolation(QueryException $e): bool
     {
@@ -90,5 +86,31 @@ class CreateTenantAction
         $code = $e->getCode();
         return in_array($code, ['23505', '23000', '1062'], true);
     }
-}
+    
+    /**
+     * Resolve the subscription status and dates based on provided plan.
+     *
+     * @param string|null $planId
+     * @return array {subscription_status: string, trial_ends_at: \Illuminate\Support\Carbon|null, subscription_ends_at: \Illuminate\Support\Carbon|null}
+     */
+     private function resolveSubscriptionDetails(?string $planId): array
+         {
+             if (empty($planId)) {
+                 return [
+                     'subscription_status' => StatusType::Trial->value,
+                     'trial_ends_at' => now()->addDays(self::TRIAL_DAYS),
+                     'subscription_ends_at' => null,
+                 ];
+             }
 
+             $plan = SubscriptionPlan::query()->find($planId);
+             $isAnnual = $plan && $plan->interval === 'yearly';
+
+             return [
+                 'subscription_status' => StatusType::Active->value,
+                 'trial_ends_at' => null,
+                 'subscription_ends_at' => $isAnnual ? now()->addYears(1) : now()->addMonth(),
+             ];
+         }
+
+}

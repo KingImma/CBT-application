@@ -5,6 +5,9 @@ echo "==> Clearing old caches..."
 php artisan config:clear
 php artisan cache:clear
 
+echo "==> Discovering packages..."
+php artisan package:discover --ansi
+
 echo "==> Caching config..."
 php artisan config:cache
 

@@ -42,7 +42,7 @@ RUN composer install \
 COPY --chown=www-data:www-data . .
 
 # Generate the optimised autoloader now that all source files are available
-RUN composer dump-autoload --optimize --no-dev
+RUN composer dump-autoload --optimize --no-dev --no-scripts
 
 # Ensure storage and bootstrap cache directories are writable by the web process
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \

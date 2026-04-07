@@ -21,60 +21,74 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email'    => ['required', 'email'],
-            'password' => ['required', 'string'],
+            "email" => ["required", "email"],
+            "password" => ["required", "string"],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where("email", $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                "email" => ["The provided credentials are incorrect."],
             ]);
         }
 
-        if (! $user->is_active) {
-            return response()->json([
-                'message' => 'Your account has been deactivated. Contact your school admin.',
-            ], 403);
+        if (!$user->is_active) {
+            return response()->json(
+                [
+                    "message" =>
+                        "Your account has been deactivated. Contact your school admin.",
+                ],
+                403,
+            );
         }
 
         // Delete previous tokens for this device — single session per user
-        $user->tokens()->where('name', 'tenant-token')->delete();
+        $user->tokens()->where("name", "tenant-token")->delete();
 
-        $token = $user->createToken('tenant-token', ['*'], now()->addHours(12))->plainTextToken;
+        $role = $user->getRoleNames()->first(); // school_admin | teacher | student
+
+        // Students get a shorter window — long enough for a full exam session
+        // but not an open-ended credential. Admins and teachers get a full day.
+        $expiresAt = match ($role) {
+            "student" => now()->addHours(4),
+            default => now()->addHours(8), // school_admin, teacher
+        };
+
+        $token = $user->createToken("tenant-token", ["*"], $expiresAt)
+            ->plainTextToken;
 
         return response()->json([
-            'token'      => $token,
-            'token_type' => 'Bearer',
-            'expires_in' => 43200, // 12 hours in seconds
-            'user'       => [
-                'id'    => $user->id,
-                'name'  => $user->first_name . ' ' . $user->last_name,
-                'email' => $user->email,
-                'role'  => $user->getRoleNames()->first(), // school_admin | teacher | student
+            "token" => $token,
+            "token_type" => "Bearer",
+            "expires_in" => (int) now()->diffInSeconds($expiresAt),
+            "user" => [
+                "id" => $user->id,
+                "name" => $user->first_name . " " . $user->last_name,
+                "email" => $user->email,
+                "role" => $role,
             ],
         ]);
     }
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user('tenant')->currentAccessToken()->delete();
+        $request->user("tenant")->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out successfully.']);
+        return response()->json(["message" => "Logged out successfully."]);
     }
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user('tenant');
+        $user = $request->user("tenant");
 
         return response()->json([
-            'id'          => $user->id,
-            'first_name'  => $user->first_name,
-            'last_name'   => $user->last_name,
-            'email'       => $user->email,
-            'role'        => $user->getRoleNames()->first(),
-            'permissions' => $user->getAllPermissions()->pluck('name'),
+            "id" => $user->id,
+            "first_name" => $user->first_name,
+            "last_name" => $user->last_name,
+            "email" => $user->email,
+            "role" => $user->getRoleNames()->first(),
+            "permissions" => $user->getAllPermissions()->pluck("name"),
         ]);
     }
 }

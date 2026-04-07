@@ -52,7 +52,7 @@ return [
     |
     */
 
-    "expiration" => null,
+    "expiration" => 480, // 8 hours in minutes — global ceiling; individual tokens may expire sooner
 
     /*
     |--------------------------------------------------------------------------

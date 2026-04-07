@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.10.1",
         "lorisleiva/laravel-actions": "^2.10",
         "predis/predis": "^3.4",
+        "spatie/laravel-permission": "^7.3",
         "stancl/tenancy": "^3.10"
     },
     "require-dev": {

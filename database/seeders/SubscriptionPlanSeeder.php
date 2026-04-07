@@ -20,8 +20,8 @@ class SubscriptionPlanSeeder extends Seeder
                 'max_students'        => 100,
                 'max_teachers'        => 10,
                 'max_exams_per_term'  => 5,
-                'price_monthly'       => 0,
-                'price_yearly'        => 0,
+                'price_monthly'       => 5000,
+                'price_yearly'        => 50000,
                 'features'            => json_encode([
                     'cbt_exams'        => true,
                     'result_analytics' => false,

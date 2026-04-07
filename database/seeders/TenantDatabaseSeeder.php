@@ -7,6 +7,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -15,6 +18,79 @@ class TenantDatabaseSeeder extends Seeder
         $now = now();
         $currentYear = now()->year;
         $sessionName = $currentYear . '/' . ($currentYear + 1);
+
+        // Reset cached roles and permissions
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Define all permissions
+        $permissions = [
+            // Academic management
+            'manage_academic_sessions',
+            'manage_terms',
+            'manage_class_levels',
+            'manage_class_arms',
+            'manage_subjects',
+            'manage_grading_scales',
+            'manage_school_settings',
+
+            // User management
+            'manage_teachers',
+            'manage_students',
+
+            // Exam management
+            'create_exams',
+            'edit_exams',
+            'publish_exams',
+            'view_exams',
+
+            // Results
+            'view_results',
+            'publish_results',
+            'compute_results',
+
+            // Questions
+            'manage_questions',
+
+            // Attendance
+            'manage_attendance',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'tenant']);
+        }
+
+        // school_admin — full access
+        $adminRole = Role::firstOrCreate([
+            'name'       => 'school_admin',
+            'guard_name' => 'tenant',
+        ]);
+        $adminRole->syncPermissions($permissions);
+
+        // teacher — exam and student-facing access
+        $teacherRole = Role::firstOrCreate([
+            'name'       => 'teacher',
+            'guard_name' => 'tenant',
+        ]);
+        $teacherRole->syncPermissions([
+            'create_exams',
+            'edit_exams',
+            'view_exams',
+            'manage_questions',
+            'view_results',
+            'manage_attendance',
+        ]);
+
+        // student — read-only on their own data
+        $studentRole = Role::firstOrCreate([
+            'name'       => 'student',
+            'guard_name' => 'tenant',
+        ]);
+        $studentRole->syncPermissions([
+            'view_exams',
+            'view_results',
+        ]);
+
+        // --- Domain data seeding ---
 
         // 1. Class levels
         DB::table('class_levels')->insert([

@@ -1,0 +1,136 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api\Tenant;
+
+use App\Http\Controllers\Controller;
+use App\Models\Tenant\Subject;
+use App\Models\Tenant\ClassLevel;
+use App\Models\Tenant\TeacherProfile;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class SubjectController extends Controller
+{
+    public function index(): JsonResponse
+    {
+        $subjects = Subject::with(['classLevels', 'teacherAssignments.teacher.user'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($subjects);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'             => ['required', 'string', 'max:100'],
+            'code'             => ['nullable', 'string', 'max:20', 'unique:subjects,code'],
+            'description'      => ['nullable', 'string'],
+            'class_level_ids'  => ['nullable', 'array'],
+            'class_level_ids.*'=> ['uuid', 'exists:class_levels,id'],
+        ]);
+
+        $subject = Subject::create([
+            'name'        => $validated['name'],
+            'code'        => $validated['code'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'is_active'   => true,
+        ]);
+
+        if (! empty($validated['class_level_ids'])) {
+            $subject->classLevels()->sync($validated['class_level_ids']);
+        }
+
+        return response()->json($subject->load('classLevels'), 201);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        $subject = Subject::with([
+            'classLevels',
+            'teacherAssignments.teacher.user',
+        ])->findOrFail($id);
+
+        return response()->json($subject);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $subject = Subject::findOrFail($id);
+
+        $validated = $request->validate([
+            'name'             => ['sometimes', 'string', 'max:100'],
+            'code'             => ['sometimes', 'nullable', 'string', 'max:20', 'unique:subjects,code,' . $id],
+            'description'      => ['sometimes', 'nullable', 'string'],
+            'is_active'        => ['sometimes', 'boolean'],
+            'class_level_ids'  => ['sometimes', 'array'],
+            'class_level_ids.*'=> ['uuid', 'exists:class_levels,id'],
+        ]);
+
+        $subject->update(collect($validated)->except('class_level_ids')->toArray());
+
+        if (isset($validated['class_level_ids'])) {
+            $subject->classLevels()->sync($validated['class_level_ids']);
+        }
+
+        return response()->json($subject->fresh(['classLevels']));
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $subject = Subject::findOrFail($id);
+        $subject->update(['is_active' => false]); // soft disable, not hard delete
+
+        return response()->json(['message' => 'Subject deactivated.']);
+    }
+
+    /**
+     * Assign a teacher to a subject within a class level.
+     */
+    public function assignTeacher(Request $request, string $id): JsonResponse
+    {
+        $subject = Subject::findOrFail($id);
+
+        $validated = $request->validate([
+            'teacher_profile_id' => ['required', 'uuid', 'exists:teacher_profiles,id'],
+            'class_level_id'     => ['required', 'uuid', 'exists:class_levels,id'],
+        ]);
+
+        // Prevent duplicate assignment
+        $exists = \App\Models\Tenant\TeacherSubjectAssignment::where([
+            'subject_id'         => $subject->id,
+            'teacher_profile_id' => $validated['teacher_profile_id'],
+            'class_level_id'     => $validated['class_level_id'],
+        ])->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'This teacher is already assigned to this subject for this class level.',
+            ], 422);
+        }
+
+        $assignment = \App\Models\Tenant\TeacherSubjectAssignment::create([
+            'subject_id'         => $subject->id,
+            'teacher_profile_id' => $validated['teacher_profile_id'],
+            'class_level_id'     => $validated['class_level_id'],
+        ]);
+
+        return response()->json($assignment->load(['teacher.user', 'classLevel']), 201);
+    }
+
+    /**
+     * Remove a teacher from a subject assignment.
+     */
+    public function removeTeacher(string $id, string $assignmentId): JsonResponse
+    {
+        $assignment = \App\Models\Tenant\TeacherSubjectAssignment::where('subject_id', $id)
+            ->findOrFail($assignmentId);
+
+        $assignment->delete();
+
+        return response()->json(['message' => 'Teacher assignment removed.']);
+    }
+}

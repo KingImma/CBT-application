@@ -1,52 +1,57 @@
+# Stage 1: composer install (uses official composer image with PHP)
+FROM composer:2 AS vendor
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+
+# Install vendor dependencies in /app/vendor
+ENV COMPOSER_MEMORY_LIMIT=-1
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+# Stage 2: final runtime image
 FROM php:8.2-fpm-alpine
 
-# System dependencies
+# system deps and php extensions build deps
 RUN apk add --no-cache \
-    nginx \
-    postgresql-dev \
+    bash \
+    ca-certificates \
     zip \
     unzip \
+    zlib-dev \
     libzip-dev \
-    oniguruma-dev \
     libxml2-dev \
-    curl-dev \
-    && docker-php-ext-install \
-        pdo \
-        pdo_pgsql \
-        pcntl \
-        zip \
-        mbstring \
-        opcache \
-        bcmath \
-        xml
+    oniguruma-dev \
+    openssl-dev \
+    && apk add --no-cache --virtual .build-deps \
+    build-base autoconf gcc musl-dev \
+    && docker-php-ext-install pdo pdo_pgsql pcntl zip mbstring opcache bcmath xml \
+    && apk del .build-deps
 
-# Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Copy composer binary (optional — composer already used in build stage)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files first for layer caching
-COPY composer.json composer.lock ./
-
-# FIX 1: Add --ignore-platform-reqs to stop the exit code 2 crash
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader --ignore-platform-reqs
-
-# FIX 2: Copy the rest of the app and transfer ownership to www-data immediately
+# Copy application files and set ownership
 COPY --chown=www-data:www-data . .
 
-# Finish autoloader now that all files are present
-RUN composer dump-autoload --optimize --no-dev
+# Copy vendor from composer stage
+COPY --from=vendor /app/vendor /var/www/html/vendor
+COPY --from=vendor /app/composer.lock /var/www/html/composer.lock
+COPY --from=vendor /app/composer.json /var/www/html/composer.json
 
-# FIX 3: Ensure storage and cache are explicitly writable
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Ensure permissions
+RUN chown -R www-data:www-data /var/www/html && \
+    mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache && \
+    chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Nginx config
+# Nginx config (if you plan to run nginx here; recommended: separate container)
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 10000
 
-# Entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

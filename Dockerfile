@@ -1,57 +1,59 @@
-# Stage 1: composer install (uses official composer image with PHP)
-FROM composer:2 AS vendor
-
-WORKDIR /app
-
-COPY composer.json composer.lock ./
-
-# Install vendor dependencies in /app/vendor
-ENV COMPOSER_MEMORY_LIMIT=-1
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
-
-# Stage 2: final runtime image
 FROM php:8.2-fpm-alpine
 
-# system deps and php extensions build deps
+# System dependencies
 RUN apk add --no-cache \
-    bash \
-    ca-certificates \
+    nginx \
+    postgresql-dev \
     zip \
     unzip \
-    zlib-dev \
     libzip-dev \
-    libxml2-dev \
     oniguruma-dev \
-    openssl-dev \
-    && apk add --no-cache --virtual .build-deps \
-    build-base autoconf gcc musl-dev \
-    && docker-php-ext-install pdo pdo_pgsql pcntl zip mbstring opcache bcmath xml \
-    && apk del .build-deps
+    libxml2-dev \
+    curl-dev \
+    && docker-php-ext-install \
+    pdo \
+    pdo_pgsql \
+    pcntl \
+    posix \
+    zip \
+    mbstring \
+    opcache \
+    bcmath \
+    xml
 
-# Copy composer binary (optional — composer already used in build stage)
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy application files and set ownership
+# Copy composer files first for layer caching
+COPY composer.json composer.lock ./
+
+# Install dependencies without generating the autoloader yet (app files are not
+# present at this layer, so classmap optimisation would be incomplete).
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --no-scripts \
+    --no-autoloader
+
+# Copy the rest of the application and set correct ownership in one layer
 COPY --chown=www-data:www-data . .
 
-# Copy vendor from composer stage
-COPY --from=vendor /app/vendor /var/www/html/vendor
-COPY --from=vendor /app/composer.lock /var/www/html/composer.lock
-COPY --from=vendor /app/composer.json /var/www/html/composer.json
+# Generate the optimised autoloader now that all source files are available
+RUN composer dump-autoload --optimize --no-dev
 
-# Ensure permissions
-RUN chown -R www-data:www-data /var/www/html && \
-    mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache && \
-    chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
-    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Ensure storage and bootstrap cache directories are writable by the web process
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Nginx config (if you plan to run nginx here; recommended: separate container)
+# Nginx config
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 10000
 
+# Entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

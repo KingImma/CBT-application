@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Stancl\Tenancy\Tenancy;
 
 class InitializeTenancyByHeader
@@ -22,9 +23,10 @@ class InitializeTenancyByHeader
             ], 400);
         }
 
-        $tenant = \App\Models\Tenant::where('id', $tenantSlug)
-            ->orWhere('slug', $tenantSlug)
-            ->first();
+        // Safely determine if we should search by UUID or Slug
+        $tenant = Str::isUuid($tenantSlug)
+            ? \App\Models\Tenant::find($tenantSlug)
+            : \App\Models\Tenant::where('slug', $tenantSlug)->first();
 
         if (! $tenant) {
             return response()->json([

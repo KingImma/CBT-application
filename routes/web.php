@@ -6,22 +6,19 @@ use Illuminate\Support\Facades\Artisan;
 Route::get('/up', fn () => response()->json(['message' => 'ok']));
 
 Route::get('/trigger-tenant-seed', function () {
-    // Simple security check
     if (request('secret') !== 'super-secret-key-123') {
         abort(403, 'Unauthorized');
     }
 
     try {
-        // Run the seeder for all existing tenants
-        Artisan::call('tenants:seed', [
-            '--class' => 'TenantDatabaseSeeder',
-            '--force' => true,
+        Artisan::call('tenants:migrate-fresh', [
+            '--seed' => true,
+            '--force' => true
         ]);
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'Tenants seeded successfully.',
-            // This returns the actual terminal text you would normally see
+            'message' => 'Tenant databases rebuilt and seeded successfully.',
             'output'  => Artisan::output(), 
         ]);
     } catch (\Exception $e) {

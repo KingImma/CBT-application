@@ -100,6 +100,7 @@ class TenantDatabaseSeeder extends Seeder
                 "last_name" => "Admin",
                 "email" => "admin@school.com",
                 "password" => Hash::make("Admin@1234"),
+                "role" => "school_admin",
                 "is_active" => true,
             ],
         );

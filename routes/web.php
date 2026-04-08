@@ -13,14 +13,14 @@ Route::get('/trigger-tenant-seed', function () {
     try {
         // 1. Wipe and re-migrate the tenant databases
         Artisan::call('tenants:migrate-fresh', [
-            '--force' => true
+            '--no-interaction' => true,
         ]);
         $migrationOutput = Artisan::output();
 
         // 2. Run the seeder separately
         Artisan::call('tenants:seed', [
-            '--class' => 'TenantDatabaseSeeder',
-            '--force' => true
+            '--class'           => 'TenantDatabaseSeeder',
+            '--no-interaction'  => true,
         ]);
         $seederOutput = Artisan::output();
 
@@ -28,7 +28,7 @@ Route::get('/trigger-tenant-seed', function () {
             'status'           => 'success',
             'message'          => 'Tenant databases rebuilt and seeded successfully.',
             'migration_output' => $migrationOutput,
-            'seeder_output'    => $seederOutput, 
+            'seeder_output'    => $seederOutput,
         ]);
     } catch (\Exception $e) {
         return response()->json([

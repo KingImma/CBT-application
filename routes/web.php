@@ -14,7 +14,8 @@ Route::get('/trigger-tenant-seed', function () {
     try {
         // Run the seeder for all existing tenants
         Artisan::call('tenants:seed', [
-            '--class' => 'TenantDatabaseSeeder'
+            '--class' => 'TenantDatabaseSeeder',
+            '--force' => true,
         ]);
 
         return response()->json([

@@ -121,6 +121,7 @@ class TenantDatabaseSeeder extends Seeder
                 [
                     "id" => Str::uuid()->toString(),
                     "name" => $name,
+                    "slug"       => Str::slug($name),
                     "is_active" => true,
                     "created_at" => now(),
                     "updated_at" => now(),
@@ -198,33 +199,35 @@ class TenantDatabaseSeeder extends Seeder
 
         // ── Seed school settings ──────────────────────────────────────────────
         $settings = [
-            "ca_weight" => "40",
-            "exam_weight" => "60",
-            "allow_result_viewing" => "false",
-            "school_name" => tenant("name") ?? "School",
-            "terms_per_session" => "3",
-            "result_approval_required" => "true",
+            ["key" => "ca_weight",                "value" => "40",                          "type" => "integer"],
+            ["key" => "exam_weight",              "value" => "60",                          "type" => "integer"],
+            ["key" => "allow_result_viewing",     "value" => "false",                       "type" => "boolean"],
+            ["key" => "school_name",              "value" => tenant("name") ?? "School",    "type" => "string"],
+            ["key" => "terms_per_session",        "value" => "3",                           "type" => "integer"],
+            ["key" => "result_approval_required", "value" => "true",                        "type" => "boolean"],
         ];
 
-        foreach ($settings as $key => $value) {
-            \Illuminate\Support\Facades\DB::table(
-                "school_settings",
-            )->updateOrInsert(
-                ["key" => $key],
+        foreach ($settings as $setting) {
+            \Illuminate\Support\Facades\DB::table("school_settings")->updateOrInsert(
+                ["key" => $setting["key"]],
                 [
-                    "id" => Str::uuid()->toString(),
-                    "key" => $key,
-                    "value" => $value,
+                    "id"         => Str::uuid()->toString(),
+                    "key"        => $setting["key"],
+                    "value"      => $setting["value"],
+                    "type"       => $setting["type"], 
                     "created_at" => now(),
                     "updated_at" => now(),
-                ],
+                ]
             );
         }
 
         // ── Provision school admin from onboarding data ───────────────────────
         // Admin credentials were stored in tenant settings during CreateTenantAction.
         // We read them here, create the user, then clear them for security.
-        $onboardingAdmin = tenant("settings")["onboarding_admin"] ?? null;
+        $rawSettings = tenant("settings");
+        $parsedSettings = is_string($rawSettings) ? json_decode($rawSettings, true) : $rawSettings;
+
+        $onboardingAdmin = $parsedSettings["onboarding_admin"] ?? null;
 
         if ($onboardingAdmin) {
             $admin = User::firstOrCreate(

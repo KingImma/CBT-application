@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\Tenant\AuthController;
 use App\Http\Controllers\Api\Tenant\AcademicSessionController;
 use App\Http\Controllers\Api\Tenant\TermController;
+use App\Http\Controllers\Api\Tenant\PasswordController;
+use App\Http\Controllers\Api\Tenant\StudentImportController;
 use App\Http\Controllers\Api\Tenant\ClassArmController;
 use App\Http\Controllers\Api\Tenant\SubjectController;
 use App\Http\Controllers\Api\Tenant\GradingScaleController;
@@ -16,13 +18,20 @@ Route::prefix('api')->middleware([InitializeTenancyByHeader::class])->group(func
     // ── Public tenant routes (no auth needed) ────────────────────────────────
     Route::prefix('auth')->group(function () {
         Route::post('/login',  [AuthController::class, 'login']);
+        Route::post('/forgot-password',[PasswordController::class, 'forgotPassword']);
+        Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
     });
+    
+    // CSV template — no auth needed so admin can share link freely
+    Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate']);
+
 
     // ── Authenticated tenant routes ───────────────────────────────────────────
     Route::middleware([EnsureTenantAuthenticated::class])->group(function () {
 
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me',     [AuthController::class, 'me']);
+        Route::post('/auth/change-password', [PasswordController::class, 'change']);
 
         // Academic sessions
         Route::prefix('academic-sessions')->group(function () {
@@ -67,6 +76,29 @@ Route::prefix('api')->middleware([InitializeTenancyByHeader::class])->group(func
             Route::delete('/{id}',                          [SubjectController::class, 'destroy']);
             Route::post('/{id}/assign-teacher',             [SubjectController::class, 'assignTeacher']);
             Route::delete('/{id}/assignments/{assignmentId}', [SubjectController::class, 'removeTeacher']);
+        });
+        
+        // Teachers
+        Route::prefix('teachers')->group(function () {
+            Route::get('/',                 [TeacherController::class, 'index']);
+            Route::post('/',                [TeacherController::class, 'store']);
+            Route::get('/{id}',             [TeacherController::class, 'show']);
+            Route::patch('/{id}',           [TeacherController::class, 'update']);
+            Route::post('/{id}/toggle-active', [TeacherController::class, 'toggleActive']);
+            Route::post('/{id}/reset-password',[TeacherController::class, 'resetPassword']);
+        });
+
+        // Students
+        Route::prefix('students')->group(function () {
+            Route::get('/',                    [StudentController::class, 'index']);
+            Route::post('/',                   [StudentController::class, 'store']);
+            Route::get('/export',              [StudentController::class, 'exportCsv']);
+            Route::post('/bulk-reset-passwords',[StudentController::class, 'bulkResetPasswords']);
+            Route::post('/import',             [StudentImportController::class, 'import']);
+            Route::get('/{id}',                [StudentController::class, 'show']);
+            Route::patch('/{id}',              [StudentController::class, 'update']);
+            Route::post('/{id}/toggle-active', [StudentController::class, 'toggleActive']);
+            Route::post('/{id}/reassign-class',[StudentController::class, 'reassignClass']);
         });
 
         // Grading scales

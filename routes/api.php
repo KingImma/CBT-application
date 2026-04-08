@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\SuperAdmin\AuthController;
+use App\Http\Controllers\Api\SuperAdmin\AnalyticsController;
 use App\Http\Controllers\Api\SuperAdmin\TenantController;
 use App\Http\Controllers\Api\SuperAdmin\SubscriptionPlanController;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
@@ -32,6 +33,7 @@ Route::get('/debug-domain', function () {
     ]);
 });
 
+// Sybscription routes
 Route::get('/plans', [SubscriptionPlanController::class, 'index']);
 Route::get('/plans/{id}', [SubscriptionPlanController::class, 'show']);
 
@@ -46,6 +48,17 @@ Route::prefix("super-admin")
     ->group(function () {
         Route::post("logout", [AuthController::class, "logout"]);
         Route::get("me", [AuthController::class, "me"]);
+        
+        // Platform analytics
+        Route::get('/analytics/overview', [AnalyticsController::class, 'overview']);
+        Route::get('/analytics/usage',    [AnalyticsController::class, 'usage']);
+        Route::get('/audit-logs',         [AnalyticsController::class, 'auditLogs']);
+        
+        // Subscription plans CRUD
+        Route::get('/plans',        [SubscriptionPlanController::class, 'index']);
+        Route::post('/plans',       [SubscriptionPlanController::class, 'store']);
+        Route::put('/plans/{id}',   [SubscriptionPlanController::class, 'update']);
+        Route::delete('/plans/{id}',[SubscriptionPlanController::class, 'destroy']);
 
         // Tenant management
         Route::prefix("tenants")->group(function () {

@@ -235,6 +235,7 @@ class TenantDatabaseSeeder extends Seeder
                     "last_name" => $onboardingAdmin["last_name"],
                     "email" => $onboardingAdmin["email"],
                     "password" => Hash::make($onboardingAdmin["password"]),
+                    "role"       => "school_admin",
                     "is_active" => true,
                 ],
             );

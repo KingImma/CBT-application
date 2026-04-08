@@ -5,27 +5,26 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\StatusType;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-/**
- * @mixin \Illuminate\Database\Eloquent\Builder
- * @mixin \Stancl\Tenancy\Database\Models\Tenant
- */
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
-    use HasDatabase, HasFactory, HasUuids, HasDomains, SoftDeletes;
+    use HasDatabase, HasDomains, HasFactory, SoftDeletes;
 
     protected $table = "tenants";
 
+    // ID is the tenant slug (e.g. "kings-college-lagos"), assigned explicitly
+    // in CreateTenantAction. HasUuids has been removed — it is not appropriate
+    // here because the primary key is not a UUID and must not be auto-generated.
     public $incrementing = false;
+    protected $keyType = "string";
 
-    protected $guarded = []; // allow all mass assignment
+    protected $guarded = [];
 
     protected $casts = [
         "subscription_status" => StatusType::class,
@@ -36,29 +35,33 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         "onboarding_completed_at" => "datetime",
     ];
 
+    /**
+     * Columns that are stored as dedicated columns on the tenants table rather
+     * than being serialised into the stancl/tenancy `data` JSON column.
+     */
     public static function getCustomColumns(): array
     {
         return [
-            'id',
-            'name',
-            'slug',
-            'database',
-            'domain',
-            'email',
-            'phone',
-            'address',
-            'city',
-            'state',
-            'plan_id',
-            'subscription_status',
-            'trial_ends_at',
-            'subscription_ends_at',
-            'settings',
-            'is_active',
-            'onboarding_completed_at',
-            'created_at',
-            'updated_at',
-            'deleted_at',
+            "id",
+            "name",
+            "slug",
+            "database",
+            "email",
+            "phone",
+            "address",
+            "city",
+            "state",
+            "logo",
+            "plan_id",
+            "subscription_status",
+            "trial_ends_at",
+            "subscription_ends_at",
+            "settings",
+            "is_active",
+            "onboarding_completed_at",
+            "created_at",
+            "updated_at",
+            "deleted_at",
         ];
     }
 }

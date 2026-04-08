@@ -12,21 +12,16 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class TenantDatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = now();
-        $currentYear = now()->year;
-        $sessionName = $currentYear . "/" . ($currentYear + 1);
-
-        // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Define all permissions
+        // ── Seed roles and permissions ────────────────────────────────────────
         $permissions = [
-            // Academic management
             "manage_academic_sessions",
             "manage_terms",
             "manage_class_levels",
@@ -34,44 +29,32 @@ class TenantDatabaseSeeder extends Seeder
             "manage_subjects",
             "manage_grading_scales",
             "manage_school_settings",
-
-            // User management
             "manage_teachers",
             "manage_students",
-
-            // Exam management
             "create_exams",
             "edit_exams",
             "publish_exams",
             "view_exams",
-
-            // Results
             "view_results",
             "publish_results",
             "compute_results",
-
-            // Questions
             "manage_questions",
-
-            // Attendance
             "manage_attendance",
         ];
 
-        foreach ($permissions as $permission) {
+        foreach ($permissions as $perm) {
             Permission::firstOrCreate([
-                "name" => $permission,
+                "name" => $perm,
                 "guard_name" => "tenant",
             ]);
         }
 
-        // school_admin — full access
         $adminRole = Role::firstOrCreate([
             "name" => "school_admin",
             "guard_name" => "tenant",
         ]);
         $adminRole->syncPermissions($permissions);
 
-        // teacher — exam and student-facing access
         $teacherRole = Role::firstOrCreate([
             "name" => "teacher",
             "guard_name" => "tenant",
@@ -85,405 +68,193 @@ class TenantDatabaseSeeder extends Seeder
             "manage_attendance",
         ]);
 
-        // student — read-only on their own data
         $studentRole = Role::firstOrCreate([
             "name" => "student",
             "guard_name" => "tenant",
         ]);
         $studentRole->syncPermissions(["view_exams", "view_results"]);
 
-        $admin = User::firstOrCreate(
-            ["email" => "admin@school.com"],
+        // ── Seed default class levels ─────────────────────────────────────────
+        $classLevels = [
+            ["name" => "JSS 1", "order" => 1],
+            ["name" => "JSS 2", "order" => 2],
+            ["name" => "JSS 3", "order" => 3],
+            ["name" => "SS 1", "order" => 4],
+            ["name" => "SS 2", "order" => 5],
+            ["name" => "SS 3", "order" => 6],
+        ];
+
+        foreach ($classLevels as $level) {
+            \Illuminate\Support\Facades\DB::table(
+                "class_levels",
+            )->updateOrInsert(
+                ["name" => $level["name"]],
+                array_merge($level, [
+                    "id" => Str::uuid()->toString(),
+                    "created_at" => now(),
+                    "updated_at" => now(),
+                ]),
+            );
+        }
+
+        // ── Seed default subjects ─────────────────────────────────────────────
+        $subjects = [
+            "Mathematics",
+            "English Language",
+            "Physics",
+            "Chemistry",
+            "Biology",
+            "Agricultural Science",
+            "Geography",
+            "History",
+            "Civic Education",
+            "Economics",
+            "Government",
+            "Literature in English",
+            "Further Mathematics",
+            "Computer Science",
+        ];
+
+        foreach ($subjects as $name) {
+            \Illuminate\Support\Facades\DB::table("subjects")->updateOrInsert(
+                ["name" => $name],
+                [
+                    "id" => Str::uuid()->toString(),
+                    "name" => $name,
+                    "is_active" => true,
+                    "created_at" => now(),
+                    "updated_at" => now(),
+                ],
+            );
+        }
+
+        // ── Seed default grading scale ────────────────────────────────────────
+        \Illuminate\Support\Facades\DB::table("grading_scales")->updateOrInsert(
+            ["is_default" => true],
             [
-                "id" => Str::uuid(),
-                "first_name" => "School",
-                "last_name" => "Admin",
-                "email" => "admin@school.com",
-                "password" => Hash::make("Admin@1234"),
-                "role" => "school_admin",
-                "is_active" => true,
+                "id" => Str::uuid()->toString(),
+                "name" => "Standard Nigerian Grading",
+                "is_default" => true,
+                "grades" => json_encode([
+                    [
+                        "label" => "A1",
+                        "min_score" => 75,
+                        "max_score" => 100,
+                        "remark" => "Excellent",
+                    ],
+                    [
+                        "label" => "B2",
+                        "min_score" => 70,
+                        "max_score" => 74,
+                        "remark" => "Very Good",
+                    ],
+                    [
+                        "label" => "B3",
+                        "min_score" => 65,
+                        "max_score" => 69,
+                        "remark" => "Good",
+                    ],
+                    [
+                        "label" => "C4",
+                        "min_score" => 60,
+                        "max_score" => 64,
+                        "remark" => "Credit",
+                    ],
+                    [
+                        "label" => "C5",
+                        "min_score" => 55,
+                        "max_score" => 59,
+                        "remark" => "Credit",
+                    ],
+                    [
+                        "label" => "C6",
+                        "min_score" => 50,
+                        "max_score" => 54,
+                        "remark" => "Credit",
+                    ],
+                    [
+                        "label" => "D7",
+                        "min_score" => 45,
+                        "max_score" => 49,
+                        "remark" => "Pass",
+                    ],
+                    [
+                        "label" => "E8",
+                        "min_score" => 40,
+                        "max_score" => 44,
+                        "remark" => "Pass",
+                    ],
+                    [
+                        "label" => "F9",
+                        "min_score" => 0,
+                        "max_score" => 39,
+                        "remark" => "Fail",
+                    ],
+                ]),
+                "created_at" => now(),
+                "updated_at" => now(),
             ],
         );
 
-        $admin->assignRole("school_admin");
+        // ── Seed school settings ──────────────────────────────────────────────
+        $settings = [
+            "ca_weight" => "40",
+            "exam_weight" => "60",
+            "allow_result_viewing" => "false",
+            "school_name" => tenant("name") ?? "School",
+            "terms_per_session" => "3",
+            "result_approval_required" => "true",
+        ];
 
-        // --- Domain data seeding ---
-
-        // 1. Class levels
-        DB::table("class_levels")->insert([
-            [
-                "id" => Str::uuid(),
-                "name" => "JSS 1",
-                "slug" => "jss1",
-                "order" => 1,
-                "category" => "junior",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "JSS 2",
-                "slug" => "jss2",
-                "order" => 2,
-                "category" => "junior",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "JSS 3",
-                "slug" => "jss3",
-                "order" => 3,
-                "category" => "junior",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "SS 1",
-                "slug" => "ss1",
-                "order" => 4,
-                "category" => "senior",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "SS 2",
-                "slug" => "ss2",
-                "order" => 5,
-                "category" => "senior",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "SS 3",
-                "slug" => "ss3",
-                "order" => 6,
-                "category" => "senior",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-        ]);
-
-        // 2. Default academic session
-        $sessionId = Str::uuid();
-        DB::table("academic_sessions")->insert([
-            "id" => $sessionId,
-            "name" => $sessionName,
-            "start_date" => "{$currentYear}-09-01",
-            "end_date" => $currentYear + 1 . "-07-31",
-            "is_current" => true,
-            "created_at" => $now,
-            "updated_at" => $now,
-        ]);
-
-        // 3. Three terms for the session
-        DB::table("terms")->insert([
-            [
-                "id" => Str::uuid(),
-                "academic_session_id" => $sessionId,
-                "name" => "First Term",
-                "start_date" => "{$currentYear}-09-01",
-                "end_date" => "{$currentYear}-12-15",
-                "is_current" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "academic_session_id" => $sessionId,
-                "name" => "Second Term",
-                "start_date" => $currentYear + 1 . "-01-10",
-                "end_date" => $currentYear + 1 . "-04-10",
-                "is_current" => false,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "academic_session_id" => $sessionId,
-                "name" => "Third Term",
-                "start_date" => $currentYear + 1 . "-04-28",
-                "end_date" => $currentYear + 1 . "-07-31",
-                "is_current" => false,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-        ]);
-
-        // 4. Default grading scale
-        DB::table("grading_scales")->insert([
-            "id" => Str::uuid(),
-            "name" => "Default Scale",
-            "is_default" => true,
-            "grades" => json_encode([
+        foreach ($settings as $key => $value) {
+            \Illuminate\Support\Facades\DB::table(
+                "school_settings",
+            )->updateOrInsert(
+                ["key" => $key],
                 [
-                    "grade" => "A",
-                    "min" => 70,
-                    "max" => 100,
-                    "remark" => "Excellent",
+                    "id" => Str::uuid()->toString(),
+                    "key" => $key,
+                    "value" => $value,
+                    "created_at" => now(),
+                    "updated_at" => now(),
                 ],
+            );
+        }
+
+        // ── Provision school admin from onboarding data ───────────────────────
+        // Admin credentials were stored in tenant settings during CreateTenantAction.
+        // We read them here, create the user, then clear them for security.
+        $onboardingAdmin = tenant("settings")["onboarding_admin"] ?? null;
+
+        if ($onboardingAdmin) {
+            $admin = User::firstOrCreate(
+                ["email" => $onboardingAdmin["email"]],
                 [
-                    "grade" => "B",
-                    "min" => 60,
-                    "max" => 69,
-                    "remark" => "Very Good",
+                    "id" => Str::uuid()->toString(),
+                    "first_name" => $onboardingAdmin["first_name"],
+                    "last_name" => $onboardingAdmin["last_name"],
+                    "email" => $onboardingAdmin["email"],
+                    "password" => Hash::make($onboardingAdmin["password"]),
+                    "is_active" => true,
                 ],
-                ["grade" => "C", "min" => 50, "max" => 59, "remark" => "Good"],
-                ["grade" => "D", "min" => 45, "max" => 49, "remark" => "Pass"],
-                ["grade" => "F", "min" => 0, "max" => 44, "remark" => "Fail"],
-            ]),
-            "created_at" => $now,
-            "updated_at" => $now,
-        ]);
+            );
 
-        // 5. Default subjects
-        DB::table("subjects")->insert([
-            [
-                "id" => Str::uuid(),
-                "name" => "Mathematics",
-                "code" => "MATH",
-                "category" => "core",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "English Language",
-                "code" => "ENG",
-                "category" => "core",
-                "department" => "General",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Civic Education",
-                "code" => "CIV",
-                "category" => "core",
-                "department" => "General",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Physics",
-                "code" => "PHY",
-                "category" => "elective",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Chemistry",
-                "code" => "CHE",
-                "category" => "elective",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Biology",
-                "code" => "BIO",
-                "category" => "elective",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Government",
-                "code" => "GOV",
-                "category" => "elective",
-                "department" => "Arts",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Economics",
-                "code" => "ECO",
-                "category" => "elective",
-                "department" => "Commercial",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Literature in English",
-                "code" => "LIT",
-                "category" => "elective",
-                "department" => "Arts",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Geography",
-                "code" => "GEO",
-                "category" => "elective",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Further Mathematics",
-                "code" => "FMATH",
-                "category" => "elective",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Computer Studies",
-                "code" => "ICT",
-                "category" => "elective",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Basic Science",
-                "code" => "BSC",
-                "category" => "core",
-                "department" => "Sciences",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "name" => "Social Studies",
-                "code" => "SST",
-                "category" => "core",
-                "department" => "General",
-                "is_active" => true,
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-        ]);
+            $admin->assignRole("school_admin");
 
-        // 6. School settings
-        DB::table("school_settings")->insert([
-            [
-                "id" => Str::uuid(),
-                "key" => "ca_weight",
-                "value" => "40",
-                "type" => "integer",
-                "description" => "Continuous assessment weight (%)",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "exam_weight",
-                "value" => "60",
-                "type" => "integer",
-                "description" => "Main exam weight (%)",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "default_student_password_mode",
-                "value" => "registration_number",
-                "type" => "string",
-                "description" => "Default password mode for new students",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "exam_time_limit_default",
-                "value" => "60",
-                "type" => "integer",
-                "description" => "Default exam duration in minutes",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "shuffle_questions",
-                "value" => "true",
-                "type" => "boolean",
-                "description" => "Shuffle questions by default",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "allow_result_viewing",
-                "value" => "true",
-                "type" => "boolean",
-                "description" => "Allow students to view results after exam",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "negative_marking",
-                "value" => "false",
-                "type" => "boolean",
-                "description" => "Enable negative marking",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "tab_switch_limit",
-                "value" => "3",
-                "type" => "integer",
-                "description" => "Tab switches before auto-submit",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "school_name",
-                "value" => "",
-                "type" => "string",
-                "description" => "Full name of the school",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "school_logo",
-                "value" => "",
-                "type" => "string",
-                "description" => "Path or URL to school logo",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-            [
-                "id" => Str::uuid(),
-                "key" => "school_motto",
-                "value" => "",
-                "type" => "string",
-                "description" => "School motto",
-                "created_at" => $now,
-                "updated_at" => $now,
-            ],
-        ]);
+            // Clear sensitive credentials from settings after use —
+            // they served their purpose and should not persist.
+            // We must use the central connection explicitly because the default
+            // connection inside a tenant context points to the tenant's DB,
+            // not the central DB where the tenants table lives.
+            $currentTenant = tenant();
+            $cleanedSettings = collect($currentTenant->settings ?? [])
+                ->except("onboarding_admin")
+                ->toArray();
+
+            DB::connection(config("tenancy.database.central_connection"))
+                ->table("tenants")
+                ->where("id", $currentTenant->getTenantKey())
+                ->update(["settings" => json_encode($cleanedSettings)]);
+        }
     }
 }

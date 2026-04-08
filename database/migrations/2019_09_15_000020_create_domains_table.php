@@ -8,28 +8,27 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateDomainsTable extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
     public function up(): void
     {
-        Schema::create('domains', function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('domain', 255)->unique();
-            $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
+        Schema::create("domains", function (Blueprint $table) {
+            $table->increments("id");
+            $table->string("domain", 255)->unique();
+
+            // tenant_id references tenants.id which is a slug string (e.g. "kings-college-lagos"),
+            // not a UUID — so we use string(63) instead of foreignUuid().
+            $table->string("tenant_id", 63);
+            $table
+                ->foreign("tenant_id")
+                ->references("id")
+                ->on("tenants")
+                ->cascadeOnDelete();
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
     public function down(): void
     {
-        Schema::dropIfExists('domains');
+        Schema::dropIfExists("domains");
     }
 }

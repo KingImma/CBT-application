@@ -9,7 +9,7 @@ use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -71,15 +71,19 @@ class AuthController extends Controller
             default => now()->addHours(8), 
         };
 
-        // 7. Generate the Sanctum token
-        $token = $user->createToken("tenant-token", ["*"], $expiresAt)->plainTextToken;
+        // 7. Generate the raw Sanctum token
+        $rawToken = $user->createToken("tenant-token", ["*"], $expiresAt)->plainTextToken;
 
-        // 8. Return comprehensive payload including the critical tenant_slug
+        // 8. Create the Self-Routing Token using the "::" delimiter
+        // This glues the slug and the token together!
+        $routedToken = tenant('slug') . '::' . $rawToken;
+
+        // 9. Return the comprehensive payload
         return response()->json([
-            "token" => $token,
+            "token" => $routedToken, // Send the glued token to the frontend
             "token_type" => "Bearer",
             "expires_in" => (int) now()->diffInSeconds($expiresAt),
-            "tenant_slug" => tenant('slug'), // Frontend MUST save this to localStorage
+            "tenant_slug" => tenant('slug'), 
             "user" => [
                 "id" => $user->id,
                 "name" => trim($user->first_name . " " . $user->last_name),

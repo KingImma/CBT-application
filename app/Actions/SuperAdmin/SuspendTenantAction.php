@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Actions\Tenants;
+namespace App\Actions\SuperAdmin;
 
 use App\Enums\StatusType;
 use App\Models\Tenant;

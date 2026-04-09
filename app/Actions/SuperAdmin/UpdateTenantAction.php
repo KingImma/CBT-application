@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Tenants;
+namespace App\Actions\SuperAdmin;
 
 use App\Models\Tenant;
 

@@ -16,11 +16,11 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreTenantRequest;
 use App\Http\Requests\UpdateTenantRequest;
 
-use App\Actions\CreateTenantAction;
-use App\Actions\Tenants\UpdateTenantAction;
-use App\Actions\Tenants\DeleteTenantAction;
-use App\Actions\Tenants\SuspendTenantAction;
-use App\Actions\Tenants\ReinstateTenantAction;
+use App\Actions\SuperAdmin\CreateTenantAction;
+use App\Actions\SuperAdmin\UpdateTenantAction;
+use App\Actions\SuperAdmin\DeleteTenantAction;
+use App\Actions\SuperAdmin\SuspendTenantAction;
+use App\Actions\SuperAdmin\ReinstateTenantAction;
 
 class TenantController extends Controller
 {

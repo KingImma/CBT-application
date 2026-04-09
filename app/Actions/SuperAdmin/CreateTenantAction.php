@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Actions;
+namespace App\Actions\SuperAdmin;
 
 use App\Enums\StatusType;
 use App\Exceptions\TenantSlugAlreadyTakenException;

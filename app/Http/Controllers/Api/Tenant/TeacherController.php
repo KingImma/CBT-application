@@ -55,6 +55,14 @@ class TeacherController extends Controller
         ]);
 
         $user->assignRole('teacher');
+        
+        // In TeacherController@store — after $user->assignRole('teacher')
+        \Illuminate\Support\Facades\DB::connection('central')
+        ->table('tenant_user_index')
+        ->updateOrInsert(
+            ['email' => $user->email, 'tenant_id' => tenant('id')],
+            ['role' => 'teacher', 'updated_at' => now(), 'created_at' => now()]
+        );
 
         $profile = TeacherProfile::create([
             'user_id'       => $user->id,

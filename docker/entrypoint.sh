@@ -23,9 +23,6 @@ php artisan migrate --force
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force
 
-echo "==> Publishing Horizon assets..."
-php artisan horizon:publish
-
 echo "==> Starting PHP-FPM..."
 php-fpm -D
 

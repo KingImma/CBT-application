@@ -259,5 +259,19 @@ class TenantDatabaseSeeder extends Seeder
                 ->where("id", $currentTenant->getTenantKey())
                 ->update(["settings" => json_encode($cleanedSettings)]);
         }
+        
+        // After creating the school admin user inside the tenant seeder
+        // Write to central index so login can resolve tenant without header
+        
+        \Illuminate\Support\Facades\DB::connection('central')
+        ->table('tenant_user_index')
+        ->updateOrInsert(
+            ['email' => $admin->email, 'tenant_id' => tenant('id')],
+            [
+                'role'       => 'school_admin',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 }

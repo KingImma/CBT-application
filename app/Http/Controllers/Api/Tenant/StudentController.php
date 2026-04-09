@@ -64,7 +64,7 @@ class StudentController extends Controller
         $user->assignRole('student');
         
         // In StudentController@store — after $user->assignRole('student')
-        \Illuminate\Support\Facades\DB::connection('central')
+        \Illuminate\Support\Facades\DB::connection(config('tenancy.database.central_connection'))
         ->table('tenant_user_index')
         ->updateOrInsert(
             ['email' => $email, 'tenant_id' => tenant('id')],

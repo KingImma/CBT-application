@@ -27,7 +27,7 @@ class AuthController extends Controller
 
         // 1. Look up the email in the central index
         // This tells us exactly which school this email belongs to without needing a header.
-        $indexRecord = \Illuminate\Support\Facades\DB::connection('central')
+        $indexRecord = \Illuminate\Support\Facades\DB::connection(config('tenancy.database.central_connection'))
             ->table('tenant_user_index')
             ->where('email', $request->email)
             ->first();

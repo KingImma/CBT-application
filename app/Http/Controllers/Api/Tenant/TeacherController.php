@@ -57,7 +57,7 @@ class TeacherController extends Controller
         $user->assignRole('teacher');
         
         // In TeacherController@store — after $user->assignRole('teacher')
-        \Illuminate\Support\Facades\DB::connection('central')
+        \Illuminate\Support\Facades\DB::connection(config('tenancy.database.central_connection'))
         ->table('tenant_user_index')
         ->updateOrInsert(
             ['email' => $user->email, 'tenant_id' => tenant('id')],

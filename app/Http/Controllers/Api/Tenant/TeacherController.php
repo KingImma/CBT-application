@@ -69,7 +69,7 @@ class TeacherController extends Controller
         $profile = TeacherProfile::create([
             'user_id'       => $user->id,
             'qualification' => $validated['qualification'] ?? null,
-            'employee_id'   => $validated['employee_id'] ?? null,
+            'staff_id'      => $validated['staff_id'] ?? null,
         ]);
 
         // TODO: dispatch SendTeacherWelcomeEmail job with $password

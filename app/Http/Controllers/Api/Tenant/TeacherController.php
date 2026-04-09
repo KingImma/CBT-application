@@ -51,6 +51,7 @@ class TeacherController extends Controller
             'last_name'  => $validated['last_name'],
             'email'      => $validated['email'],
             'password'   => Hash::make($password),
+            'phone'         => $validated['phone'] ?? null,
             'role'       => 'teacher',
             'is_active'  => true,
         ]);
@@ -67,7 +68,6 @@ class TeacherController extends Controller
 
         $profile = TeacherProfile::create([
             'user_id'       => $user->id,
-            'phone'         => $validated['phone'] ?? null,
             'qualification' => $validated['qualification'] ?? null,
             'employee_id'   => $validated['employee_id'] ?? null,
         ]);

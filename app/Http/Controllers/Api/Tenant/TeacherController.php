@@ -41,7 +41,7 @@ class TeacherController extends Controller
             'email'           => ['required', 'email', 'unique:users,email'],
             'phone'           => ['nullable', 'string', 'max:20'],
             'qualification'   => ['nullable', 'string', 'max:255'],
-            'employee_id'     => ['nullable', 'string', 'max:50', 'unique:teacher_profiles,employee_id'],
+            'staff_id'     => ['nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id'],
         ]);
 
         $password = Str::random(10);
@@ -103,11 +103,11 @@ class TeacherController extends Controller
             'email'         => ['sometimes', 'email', 'unique:users,email,' . $profile->user_id],
             'phone'         => ['sometimes', 'nullable', 'string', 'max:20'],
             'qualification' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'employee_id'   => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teacher_profiles,employee_id,' . $id],
+            'staff_id'   => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id,' . $id],
         ]);
 
         $profile->user->update(collect($validated)->only(['first_name', 'last_name', 'email'])->toArray());
-        $profile->update(collect($validated)->only(['phone', 'qualification', 'employee_id'])->toArray());
+        $profile->update(collect($validated)->only(['phone', 'qualification', 'staff_id'])->toArray());
 
         return response()->json($profile->fresh('user'));
     }

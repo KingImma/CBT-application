@@ -258,6 +258,18 @@ class TenantDatabaseSeeder extends Seeder
                 ->table("tenants")
                 ->where("id", $currentTenant->getTenantKey())
                 ->update(["settings" => json_encode($cleanedSettings)]);
+
+            // Write to central index so login can resolve tenant without header
+            DB::connection(config("tenancy.database.central_connection"))
+            ->table('tenant_user_index')
+            ->updateOrInsert(
+                ['email' => $admin->email, 'tenant_id' => tenant('id')],
+                [
+                    'role'       => 'school_admin',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
     }
 }

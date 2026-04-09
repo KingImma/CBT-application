@@ -9,11 +9,11 @@ use App\Http\Controllers\Api\Tenant\ClassArmController;
 use App\Http\Controllers\Api\Tenant\SubjectController;
 use App\Http\Controllers\Api\Tenant\GradingScaleController;
 use App\Http\Controllers\Api\Tenant\SchoolSettingController;
-use App\Http\Middleware\InitializeTenancyByHeader;
+use App\Http\Middleware\InitializeTenancyByHeaderOrToken;
 use App\Http\Middleware\EnsureTenantAuthenticated;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('api')->middleware([InitializeTenancyByHeader::class])->group(function () {
+Route::prefix('api')->middleware([InitializeTenancyByHeaderOrToken::class])->group(function () {
 
     // ── Public tenant routes (no auth needed) ────────────────────────────────
     Route::prefix('auth')->group(function () {

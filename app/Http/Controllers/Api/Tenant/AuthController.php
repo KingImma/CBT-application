@@ -9,6 +9,7 @@ use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -18,7 +19,7 @@ class AuthController extends Controller
      * Detects role and returns it with the token so the frontend
      * can route to the correct dashboard (admin vs teacher vs student).
      */
-    public function login(Request $request): \Illuminate\Http\JsonResponse
+    public function login(Request $request): JsonResponse
     {
         $request->validate([
             "email" => ["required", "email"],
@@ -27,13 +28,13 @@ class AuthController extends Controller
 
         // 1. Look up the email in the central index
         // This tells us exactly which school this email belongs to without needing a header.
-        $indexRecord = \Illuminate\Support\Facades\DB::connection(config('tenancy.database.central_connection'))
+        $indexRecord = DB::connection(config('tenancy.database.central_connection'))
             ->table('tenant_user_index')
             ->where('email', $request->email)
             ->first();
 
         if (!$indexRecord) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 "email" => ["The provided credentials are incorrect."],
             ]);
         }
@@ -43,10 +44,10 @@ class AuthController extends Controller
 
         // 3. Now safely connected to the tenant's isolated DB.
         // Look up the actual user model and verify the password.
-        $user = \App\Models\Tenant\User::where("email", $request->email)->first();
+        $user = User::where("email", $request->email)->first();
 
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
                 "email" => ["The provided credentials are incorrect."],
             ]);
         }

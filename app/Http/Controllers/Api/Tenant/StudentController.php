@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Actions\Tenants\Student\CreateStudentAction;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\StudentProfile;
-use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use App\Http\Requests\StoreStudentRequest;
+use App\Http\Requests\UpdateStudentRequest;
+use App\Actions\Tenants\Student\UpdateStudentAction;
 
 class StudentController extends Controller
 {
@@ -36,60 +37,7 @@ class StudentController extends Controller
 
         return response()->json($students);
     }
-
-    public function store(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'first_name'          => ['required', 'string', 'max:100'],
-            'last_name'           => ['required', 'string', 'max:100'],
-            'email'               => ['nullable', 'email', 'unique:users,email'],
-            'class_level_id'      => ['required', 'uuid', 'exists:class_levels,id'],
-            'class_arm_id'        => ['nullable', 'uuid', 'exists:class_arms,id'],
-            'registration_number' => ['nullable', 'string', 'max:50', 'unique:student_profiles,registration_number'],
-            'date_of_birth'       => ['nullable', 'date'],
-            'gender'              => ['nullable', 'in:male,female,other'],
-        ]);
-
-        $regNumber = $validated['registration_number'] ?? $this->generateRegNumber();
-        $password  = $regNumber; // default password = reg number
-
-        $user = User::create([
-            'first_name' => $validated['first_name'],
-            'last_name'  => $validated['last_name'],
-            'email'      => $validated['email'],
-            'password'   => Hash::make($password),
-            'is_active'  => true,
-        ]);
-
-        $user->assignRole('student');
-        
-        // In StudentController@store — after $user->assignRole('student')
-        \Illuminate\Support\Facades\DB::connection(config('tenancy.database.central_connection'))
-        ->table('tenant_user_index')
-        ->updateOrInsert(
-            ['email' => $email, 'tenant_id' => tenant('id')],
-            ['role' => 'student', 'updated_at' => now(), 'created_at' => now()]
-        );
-
-        $profile = StudentProfile::create([
-            'user_id'             => $user->id,
-            'class_level_id'      => $validated['class_level_id'],
-            'class_arm_id'        => $validated['class_arm_id'] ?? null,
-            'registration_number' => $regNumber,
-            'date_of_birth'       => $validated['date_of_birth'] ?? null,
-            'gender'              => $validated['gender'] ?? null,
-        ]);
-
-        return response()->json([
-            'message'  => 'Student created.',
-            'student'  => $profile->load(['user', 'classLevel', 'classArm']),
-            'login_credentials' => [
-                'registration_number' => $regNumber,
-                'default_password'    => $password,
-            ],
-        ], 201);
-    }
-
+    
     public function show(string $id): JsonResponse
     {
         return response()->json(
@@ -97,51 +45,46 @@ class StudentController extends Controller
         );
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function store(StoreStudentRequest $request, CreateStudentAction $action): JsonResponse
     {
-        $profile = StudentProfile::with('user')->findOrFail($id);
+        $result = $action->execute($request->validated());
 
-        $validated = $request->validate([
-            'first_name'    => ['sometimes', 'string', 'max:100'],
-            'last_name'     => ['sometimes', 'string', 'max:100'],
-            'email'         => ['sometimes', 'nullable', 'email', 'unique:users,email,' . $profile->user_id],
-            'date_of_birth' => ['sometimes', 'nullable', 'date'],
-            'gender'        => ['sometimes', 'nullable', 'in:male,female,other'],
-        ]);
-
-        $profile->user->update(
-            collect($validated)->only(['first_name', 'last_name', 'email'])->toArray()
-        );
-        $profile->update(
-            collect($validated)->only(['date_of_birth', 'gender'])->toArray()
-        );
-
-        return response()->json($profile->fresh(['user', 'classLevel', 'classArm']));
+        return response()->json([
+            'message'  => 'Student created.',
+            'student'  => $result['profile']->load(['user', 'classLevel', 'classArm']),
+            'login_credentials' => [
+                'registration_number' => $result['profile']->registration_number,
+                'default_password'    => $result['password'],
+            ],
+        ], 201);
     }
 
-    public function reassignClass(Request $request, string $id): JsonResponse
+    public function update(UpdateStudentRequest $request, string $id, UpdateStudentAction $action): JsonResponse
     {
-        $profile = StudentProfile::findOrFail($id);
+        $result = $action->execute($request->validated(), $id);
 
-        $validated = $request->validate([
+        return response()->json($result['profile']->fresh(['user', 'classLevel', 'classArm']));
+    }
+
+    public function reassignClass(Request $request, string $id, UpdateStudentAction $action): JsonResponse
+    {
+        $result = $action->execute($request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'class_arm_id'   => ['nullable', 'uuid', 'exists:class_arms,id'],
-        ]);
-
-        $profile->update($validated);
+        ]), $id);
 
         return response()->json([
             'message' => 'Student reassigned.',
-            'student' => $profile->fresh(['classLevel', 'classArm']),
+            'student' => $result['profile']->fresh(['classLevel', 'classArm']),
         ]);
     }
 
-    public function toggleActive(string $id): JsonResponse
+    public function toggleActive(string $id, UpdateStudentAction $action): JsonResponse
     {
-        $profile = StudentProfile::with('user')->findOrFail($id);
-        $user    = $profile->user;
+        $result = $action->execute([], $id);
+        $user   = $result['profile']->user; 
 
-        $user->update(['is_active' => ! $user->is_active]);
+        $user->update(['is_active' => ! $user->is_active]);     
 
         return response()->json([
             'message'   => $user->is_active ? 'Student activated.' : 'Student deactivated.',

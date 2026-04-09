@@ -5,14 +5,14 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Redis;
 
-// ── Imports: Super Admin ──────────────────────────────────────────────────────
+// Super Admin
 use App\Http\Controllers\Api\SuperAdmin\AuthController as SuperAdminAuthController;
 use App\Http\Controllers\Api\SuperAdmin\AnalyticsController;
 use App\Http\Controllers\Api\SuperAdmin\TenantController;
 use App\Http\Controllers\Api\SuperAdmin\SubscriptionPlanController;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
 
-// ── Imports: Tenant ───────────────────────────────────────────────────────────
+// Tenant
 use App\Http\Controllers\Api\Tenant\AuthController as TenantAuthController;
 use App\Http\Controllers\Api\Tenant\AcademicSessionController;
 use App\Http\Controllers\Api\Tenant\TermController;
@@ -24,7 +24,7 @@ use App\Http\Controllers\Api\Tenant\GradingScaleController;
 use App\Http\Controllers\Api\Tenant\SchoolSettingController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\StudentController;
-// Note: Ensure TeacherController and StudentController are imported at the top of your actual file
+
 use App\Http\Middleware\InitializeTenancyByHeader;
 use App\Http\Middleware\EnsureTenantAuthenticated;
 
@@ -59,11 +59,7 @@ Route::get('/debug-domain', function () {
 Route::get('/plans', [SubscriptionPlanController::class, 'index']);
 Route::get('/plans/{id}', [SubscriptionPlanController::class, 'show']);
 
-/*
-|--------------------------------------------------------------------------
-| 2. SUPER ADMIN ROUTES (Central Database)
-|--------------------------------------------------------------------------
-*/
+// SUPER ADMIN ROUTES (Central Database)
 Route::prefix('super-admin')->group(function () {
     Route::post('login', [SuperAdminAuthController::class, 'login']);
 
@@ -94,12 +90,7 @@ Route::prefix('super-admin')->group(function () {
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| 3. TENANT "SMART" AUTH ROUTES (No X-Tenant Header Required)
-|--------------------------------------------------------------------------
-| These routes dynamically resolve the tenant based on the user's email.
-*/
+// TENANT AUTH ROUTES 
 Route::prefix('auth')->group(function () {
     Route::post('/login',           [TenantAuthController::class, 'login']);
     Route::post('/forgot-password', [PasswordController::class, 'forgotPassword']);
@@ -109,14 +100,7 @@ Route::prefix('auth')->group(function () {
 // CSV template — no auth needed so admin can share link freely
 Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate']);
 
-
-/*
-|--------------------------------------------------------------------------
-| 4. PROTECTED TENANT ROUTES (X-Tenant Header REQUIRED)
-|--------------------------------------------------------------------------
-| Every route inside this block requires the `X-Tenant` header to route 
-| the database connection, AND the Sanctum Bearer token for auth.
-*/
+// PROTECTED TENANT ROUTES
 Route::middleware([
     InitializeTenancyByHeader::class, 
     EnsureTenantAuthenticated::class
@@ -184,7 +168,6 @@ Route::middleware([
 
     // Students
     Route::prefix('students')->group(function () {
-        // Assuming you have a StudentController
         Route::get('/',                      [StudentController::class, 'index']);
         Route::post('/',                     [StudentController::class, 'store']);
         Route::get('/export',                [StudentController::class, 'exportCsv']);

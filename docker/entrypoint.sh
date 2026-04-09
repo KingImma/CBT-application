@@ -1,8 +1,14 @@
 #!/bin/sh
 set -e
 
-echo "==> Clearing old caches..."
-php artisan config:clear
+echo "==> Manually nuking compiled caches to prevent boot crashes..."
+rm -f bootstrap/cache/config.php
+rm -f bootstrap/cache/events.php
+rm -f bootstrap/cache/packages.php
+rm -f bootstrap/cache/routes.php
+rm -f bootstrap/cache/services.php
+
+echo "==> Clearing application cache..."
 php artisan cache:clear
 
 echo "==> Discovering packages..."

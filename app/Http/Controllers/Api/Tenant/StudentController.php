@@ -62,14 +62,6 @@ class StudentController extends Controller
         ]);
 
         $user->assignRole('student');
-        
-        // In StudentController@store — after $user->assignRole('student')
-        \Illuminate\Support\Facades\DB::connection('central')
-        ->table('tenant_user_index')
-        ->updateOrInsert(
-            ['email' => $email, 'tenant_id' => tenant('id')],
-            ['role' => 'student', 'updated_at' => now(), 'created_at' => now()]
-        );
 
         $profile = StudentProfile::create([
             'user_id'             => $user->id,

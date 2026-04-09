@@ -51,6 +51,7 @@ class TeacherController extends Controller
             'last_name'  => $validated['last_name'],
             'email'      => $validated['email'],
             'password'   => Hash::make($password),
+            'role'       => 'teacher',
             'is_active'  => true,
         ]);
 

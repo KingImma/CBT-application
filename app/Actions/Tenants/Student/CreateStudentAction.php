@@ -33,6 +33,7 @@ class CreateStudentAction
                 'last_name'  => $data['last_name'],
                 'email'      => $data['email'],
                 'password'   => Hash::make($password),
+                'role'       => 'student',
                 'is_active'  => true,
             ]);
 

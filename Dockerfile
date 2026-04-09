@@ -26,14 +26,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-<<<<<<< Updated upstream
 # Copy composer files first for layer caching
 COPY composer.json composer.lock ./
-=======
-RUN docker-php-ext-install pcntl
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --optimize-autoloader
->>>>>>> Stashed changes
 
 # Install dependencies without generating the autoloader yet (app files are not
 # present at this layer, so classmap optimisation would be incomplete).

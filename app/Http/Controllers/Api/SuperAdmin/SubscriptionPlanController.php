@@ -19,7 +19,7 @@ class SubscriptionPlanController extends Controller
      */
     public function index(): JsonResponse
     {
-        $plans = SubscriptionPlan::withCount('tenants')
+        $plans = SubscriptionPlan::query()
             ->orderBy('price_monthly')
             ->get();
 

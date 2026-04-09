@@ -26,6 +26,8 @@ use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\StudentController;
 
 use App\Http\Middleware\InitializeTenancyByHeader;
+use App\Http\Middleware\InitializeTenancyByToken;
+
 use App\Http\Middleware\EnsureTenantAuthenticated;
 
 /*
@@ -102,7 +104,7 @@ Route::get('/students/import/template', [StudentImportController::class, 'downlo
 
 // PROTECTED TENANT ROUTES
 Route::middleware([
-    InitializeTenancyByHeader::class, 
+    InitializeTenancyByToken::class,
     EnsureTenantAuthenticated::class
 ])->group(function () {
 

@@ -10,6 +10,8 @@ RUN apk add --no-cache \
     oniguruma-dev \
     libxml2-dev \
     curl-dev \
+    $PHPIZE_DEPS \
+    && pecl install redis \
     && docker-php-ext-install \
     pdo \
     pdo_pgsql \

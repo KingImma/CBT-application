@@ -77,12 +77,12 @@ class SubscriptionPlanController extends Controller
         if ($activeTenants > 0) {
             return response->json([
                 'message' => "Cannot deactive - {$activeTenants} active school(s) are on this plan. Migrate them first."
-            ], 422)
+            ], 422);
         }
         
         $plan->update(['is_active' => false]);
         
-        return response->json(['message' => "Plan {$plan->name} deactived"])
+        return response->json(['message' => "Plan {$plan->name} deactived"]);
     }
 
 

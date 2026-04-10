@@ -26,6 +26,7 @@ class AcademicSessionController extends Controller
             'name'       => ['required', 'string', 'max:100', 'unique:academic_sessions,name'],
             'start_date' => ['required', 'date'],
             'end_date'   => ['required', 'date', 'after:start_date'],
+            'is_current' => ['sometimes', 'boolean'],
         ]);
 
         $session = AcademicSession::create($validated);
@@ -48,6 +49,7 @@ class AcademicSessionController extends Controller
             'name'       => ['sometimes', 'string', 'max:100', 'unique:academic_sessions,name,' . $id],
             'start_date' => ['sometimes', 'date'],
             'end_date'   => ['sometimes', 'date', 'after:start_date'],
+            'is_current' => ['sometimes', 'boolean'],
         ]);
 
         $session->update($validated);

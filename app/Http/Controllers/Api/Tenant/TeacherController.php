@@ -69,7 +69,7 @@ class TeacherController extends Controller
         $profile = TeacherProfile::create([
             'user_id'       => $user->id,
             'qualification' => $validated['qualification'] ?? null,
-            'staff_id'      => $validated['staff_id'] ?? null,
+            'staff_id'      => $validated['staff_id'] ?? $this->generateStaffId(),
         ]);
 
         // TODO: dispatch SendTeacherWelcomeEmail job with $password
@@ -138,5 +138,24 @@ class TeacherController extends Controller
             'message'            => 'Password reset.',
             'temporary_password' => $password,
         ]);
+    }
+    
+    /**
+    * Automatically generate a sequential staff ID for the current year.
+    * Example output: TCH/2026/001
+    */
+    private function generateStaffId(): string
+    {
+        $currentYear = date('Y');
+        
+        // Count how many teachers were created this year to determine the next number
+        $teacherCount = TeacherProfile::whereYear('created_at', $currentYear)->count();
+        
+        $nextSequence = $teacherCount + 1;
+        
+        // Format the sequence with leading zeros (e.g., 001, 002, 010)
+        $formattedSequence = str_pad((string)$nextSequence, 3, '0', STR_PAD_LEFT);
+
+        return "TCH/{$currentYear}/{$formattedSequence}";
     }
 }

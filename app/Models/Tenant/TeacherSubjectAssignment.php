@@ -13,9 +13,9 @@ class TeacherSubjectAssignment extends Model
 
     protected $guarded = [];
 
-    public function teacher(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(TeacherProfile::class, "teacher_profile_id");
+        return $this->belongsTo(User::class, "user_id");
     }
 
     public function subject(): \Illuminate\Database\Eloquent\Relations\BelongsTo

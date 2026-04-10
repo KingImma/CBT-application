@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+echo "==> Waiting 5 seconds for Docker internal DNS to initialize..."
+sleep 5
+
 echo "==> Manually nuking compiled caches to prevent boot crashes..."
 rm -f bootstrap/cache/config.php
 rm -f bootstrap/cache/events.php

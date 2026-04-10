@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
-            $table->boolean('is_compulsory'):
+            $table->boolean('is_compulsory');
             $table->timestamps();
             
             $table->unique(['class_level_id', 'subject_id']);

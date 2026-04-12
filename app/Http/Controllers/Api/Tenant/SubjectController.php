@@ -8,16 +8,29 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\TeacherProfile;
+use App\Models\Tenant\AcademicSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $sessionId = $request->query("academic_session_id");
+        
+        if (! $sessionId) {
+            $currentSession = AcademicSession::where("is_current", true)->first();
+            $sessionId = $currentSession->id;
+        }
+        
         $subjects = Subject::with([
             "classLevels",
-            "teacherAssignments.user",
+            "teacherAssignments.user" => function ($query) use ($sessionId) {
+                if ($sessionId) {
+                    $query->where("academic_session_id", $sessionId);
+                }
+                $query->select("id", "name");
+            },
         ])
             ->where("is_active", true)
             ->orderBy("name")
@@ -108,6 +121,7 @@ class SubjectController extends Controller
         $validated = $request->validate([
             "user_id" => ["required", "uuid", "exists:users,id"],
             "class_level_id" => ["required", "uuid", "exists:class_levels,id"],
+            "academic_session_id" => ["required", "uuid", "exists:academic_sessions,id"],
         ]);
 
         // Prevent duplicate assignment
@@ -115,6 +129,7 @@ class SubjectController extends Controller
             "subject_id" => $subject->id,
             "user_id" => $validated["user_id"],
             "class_level_id" => $validated["class_level_id"],
+            "academic_session_id" => $validated["academic_session_id"],
         ])->exists();
 
         if ($exists) {
@@ -131,10 +146,11 @@ class SubjectController extends Controller
             "subject_id" => $subject->id,
             "user_id" => $validated["user_id"],
             "class_level_id" => $validated["class_level_id"],
+            "academic_session_id" => $validated["academic_session_id"],
         ]);
 
         // Load the new direct user relationship
-        return response()->json($assignment->load(["user", "classLevel"]), 201);
+        return response()->json($assignment->load(["user", "classLevel", "academicSession"]), 201);
     }
 
     /**

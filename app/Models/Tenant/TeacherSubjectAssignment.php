@@ -27,4 +27,9 @@ class TeacherSubjectAssignment extends Model
     {
         return $this->belongsTo(ClassLevel::class);
     }
+    
+    public function academicSession(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(AcademicSession::class, "academic_session_id");
+    }
 }

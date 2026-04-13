@@ -20,16 +20,22 @@ class SubjectController extends Controller
         
         if (! $sessionId) {
             $currentSession = AcademicSession::where("is_current", true)->first();
-            $sessionId = $currentSession->id;
+            $sessionId = $currentSession?->id;
         }
         
         $subjects = Subject::with([
             "classLevels",
-            "teacherAssignments.user" => function ($query) use ($sessionId) {
+            
+            // 1. Target the assignments table to filter by session
+            "teacherAssignments" => function ($query) use ($sessionId) {
                 if ($sessionId) {
                     $query->where("academic_session_id", $sessionId);
                 }
-                $query->select("id", "name");
+                
+                // 2. Chain the user relationship inside the closure, selecting valid columns
+                $query->with([
+                    "user:id,first_name,last_name"
+                ]);
             },
         ])
             ->where("is_active", true)

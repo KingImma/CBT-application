@@ -106,8 +106,8 @@ class TeacherController extends Controller
             'staff_id'   => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id,' . $id],
         ]);
 
-        $profile->user->update(collect($validated)->only(['first_name', 'last_name', 'email'])->toArray());
-        $profile->update(collect($validated)->only(['phone', 'qualification', 'staff_id'])->toArray());
+        $profile->user->update(collect($validated)->only(['first_name', 'last_name', 'email', 'phone'])->toArray());
+        $profile->update(collect($validated)->only(['qualification', 'staff_id'])->toArray());
 
         return response()->json($profile->fresh('user'));
     }

@@ -77,8 +77,23 @@ class TermController extends Controller
 
         $term = Term::where('academic_session_id', $sessionId)->findOrFail($id);
 
-        Term::where('is_current', true)->update(['is_current' => false]);
-        $term->update(['is_current' => true]);
+        // 1. Prevent unnecessary database calls if it is already current
+        if ($term->is_current) {
+            return response()->json([
+                'message' => "'{$term->name}' is already the current term.",
+                'term'    => $term,
+            ]);
+        }
+
+        // 2. Wrap the toggle in a transaction for data integrity
+        \Illuminate\Support\Facades\DB::transaction(function () use ($term) {
+            // Unset current on ALL terms globally. 
+            // This is a great safety net that guarantees no term from a previous year was accidentally left active.
+            Term::where('is_current', true)->update(['is_current' => false]);
+            
+            // Set the new current term
+            $term->update(['is_current' => true]);
+        });
 
         return response()->json([
             'message' => "'{$term->name}' is now the current term.",

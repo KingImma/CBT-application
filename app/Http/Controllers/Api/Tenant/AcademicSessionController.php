@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\AcademicSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class AcademicSessionController extends Controller
 {
@@ -73,11 +75,20 @@ class AcademicSessionController extends Controller
     {
         $session = AcademicSession::findOrFail($id);
 
-        AcademicSession::where('is_current', true)->update(['is_current' => false]);
-        $session->update(['is_current' => true]);
+        if ($session->is_current) {
+            return response()->json([
+                'message' => "'{$session->name}' is already the current academic session.",
+                'session' => $session->load('terms'),
+            ]);
+        }
 
-        // Also unset current on all terms when switching session
-        \App\Models\Tenant\Term::where('is_current', true)->update(['is_current' => false]);
+        DB::transaction(function () use ($session) {
+            AcademicSession::where('is_current', true)->update(['is_current' => false]);
+            
+            $session->update(['is_current' => true]);
+
+            \App\Models\Tenant\Term::where('is_current', true)->update(['is_current' => false]);
+        });
 
         return response()->json([
             'message' => "'{$session->name}' is now the current academic session.",

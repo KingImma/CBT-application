@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Gate;
+use Dedoc\Scramble\Scramble;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,5 +26,17 @@ class AppServiceProvider extends ServiceProvider
     {
         PermissionRegistrar::class;
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Allow access to the Swagger docs in production environments
+        Gate::define('viewApiDocs', function ($user = null) {
+            return true; 
+        });
+
+        Scramble::configure()
+        ->withDocumentTransformers(function (\Dedoc\Scramble\Support\Generator\OpenApi $openApi) {
+            $openApi->secure(
+                \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer')
+            );
+        });
     }
 }

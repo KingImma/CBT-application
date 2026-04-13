@@ -13,6 +13,7 @@ RUN apk add --no-cache \
     $PHPIZE_DEPS \
     && pecl install redis \
     && docker-php-ext-enable redis \
+    && apk del autoconf g++ make \
     && docker-php-ext-install \
     pdo \
     pdo_pgsql \

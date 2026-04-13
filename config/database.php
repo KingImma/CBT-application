@@ -145,11 +145,11 @@ return [
 
     'redis' => [
 
-        'client' => env('REDIS_CLIENT', 'predis'),
+        'client' => env('REDIS_CLIENT', 'phpredis'),
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'CBT')).'-database-'),
+            'prefix'  => env('CACHE_PREFIX', 'cbt_cache_'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

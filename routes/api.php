@@ -50,6 +50,17 @@ Route::get('/health', function () {
     }
 });
 
+Route::get('/health/session', function () {
+    session(['health_check' => 'ok_' . now()->timestamp]);
+    return response()->json([
+        'session_driver'     => config('session.driver'),
+        'session_connection' => config('session.connection'),
+        'redis_client'       => config('database.redis.client'),
+        'session_value'      => session('health_check'),
+        'status'             => 'connected',
+    ]);
+});
+
 Route::get('/debug-domain', function () {
     return response()->json([
         'env_value'      => env('CENTRAL_DOMAIN'),

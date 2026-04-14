@@ -127,12 +127,6 @@ class SubjectController extends Controller
                 "required",
                 "uuid",
                 "exists:users,id",
-                function ($attribute, $value, $fail) {
-                    $user = \App\Models\Tenant\User::find($value);
-                    if ($user || !$user->is_teacher) {
-                        $fail("The selected user must be a registered teacher.");
-                    }
-                },
             ],
             "class_level_id" => [
                 "required",
@@ -145,6 +139,14 @@ class SubjectController extends Controller
                 "exists:academic_sessions,id",
             ],
         ]);
+        
+        $teacher = \App\Models\Tenant\User::findOrFail($validated['user_id']);
+        
+        if (! $teacher->is_teacher) {
+            return response()->json([
+                "message" => "Invalid assignment. The selected user must be a teacher."
+            ], 422);
+        }
 
         // Prevent duplicate assignment
         $exists = \App\Models\Tenant\TeacherSubjectAssignment::where([

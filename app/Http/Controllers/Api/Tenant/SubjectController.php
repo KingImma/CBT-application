@@ -142,7 +142,7 @@ class SubjectController extends Controller
         
         $teacher = \App\Models\Tenant\User::findOrFail($validated['user_id']);
         
-        if (! $teacher->is_teacher) {
+        if (! $teacher->hasRole('teacher')) {
             return response()->json([
                 "message" => "Invalid assignment. The selected user must be a teacher."
             ], 422);

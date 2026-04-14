@@ -36,6 +36,16 @@ class GradingScaleController extends Controller
 
         return response()->json($scale, 201);
     }
+    
+    public function show(string $id): JsonResponse
+    {
+        $scale = GradingScale::findOrFail($id);
+    
+        return response()->json([
+            'success' => true,
+            'data'    => $scale,
+        ]);
+    }
 
     public function update(Request $request, string $id): JsonResponse
     {

@@ -196,6 +196,7 @@ Route::middleware([
     Route::prefix('grading-scales')->group(function () {
         Route::get('/',         [GradingScaleController::class, 'index']);
         Route::post('/',        [GradingScaleController::class, 'store']);
+        Route::get('/{id}',    [GradingScaleController::class, 'show']);
         Route::patch('/{id}',   [GradingScaleController::class, 'update']);
         Route::delete('/{id}',  [GradingScaleController::class, 'destroy']);
     });

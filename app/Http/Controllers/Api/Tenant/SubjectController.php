@@ -123,8 +123,22 @@ class SubjectController extends Controller
         $subject = Subject::findOrFail($id);
 
         $validated = $request->validate([
-            "user_id" => ["required", "uuid", "exists:users,id"],
-            "class_level_id" => ["required", "uuid", "exists:class_levels,id"],
+            "user_id" => [
+                "required",
+                "uuid",
+                "exists:users,id",
+                function ($attribute, $value, $fail) {
+                    $user = \App\Models\Tenant\User::find($value);
+                    if ($user || !$user->is_teacher) {
+                        $fail("The selected user must be a registered teacher.");
+                    }
+                },
+            ],
+            "class_level_id" => [
+                "required",
+                "uuid",
+                "exists:class_levels,id",
+            ],
             "academic_session_id" => [
                 "required",
                 "uuid",

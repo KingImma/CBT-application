@@ -13,37 +13,52 @@ class SchoolSettingController extends Controller
 {
     /**
      * Return all settings as a flat key-value map.
-     * Frontend reads this once on dashboard load.
      */
     public function index(): JsonResponse
     {
-        $settings = SchoolSetting::all()
-            ->pluck('value', 'key');
-
-        return response()->json($settings);
+        return response()->json([
+            'success' => true,
+            'data'    => SchoolSetting::all()->pluck('value', 'key'),
+        ]);
     }
 
     /**
-     * Bulk update settings.
-     * Accepts a key-value object — only updates keys that are sent.
+     * Get a single setting by key.
+     */
+    public function show(string $key): JsonResponse
+    {
+        $setting = SchoolSetting::where('key', $key)->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'key'   => $setting->key,
+                'value' => $setting->value,
+            ],
+        ]);
+    }
+
+    /**
+     * Bulk update — accepts key-value object.
      */
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'settings'   => ['required', 'array'],
-            'settings.*' => ['nullable', 'string'],
+            'settings.*' => ['nullable', 'string', 'max:500'],
         ]);
 
         foreach ($validated['settings'] as $key => $value) {
             SchoolSetting::updateOrInsert(
-                ['key' => $key],
+                ['key'   => $key],
                 ['value' => $value, 'updated_at' => now()]
             );
         }
 
         return response()->json([
+            'success'  => true,
             'message'  => 'Settings updated.',
-            'settings' => SchoolSetting::all()->pluck('value', 'key'),
+            'data'     => SchoolSetting::all()->pluck('value', 'key'),
         ]);
     }
 }

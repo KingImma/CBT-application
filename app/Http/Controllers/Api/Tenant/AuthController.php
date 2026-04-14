@@ -5,90 +5,41 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\User;
+use App\Services\TenantAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Tenant-scoped login.
-     * Detects role and returns it with the token so the frontend
-     * can route to the correct dashboard (admin vs teacher vs student).
-     */
+    public function __construct(
+        private readonly TenantAuthService $authService
+    ) {}
+
     public function login(Request $request): JsonResponse
     {
-        $request->validate([
-            "email" => ["required", "email"],
+        // 1. Validate the Request
+        $validated = $request->validate([
+            "email"    => ["required", "email"],
             "password" => ["required", "string"],
         ]);
 
-        // 1. Look up the email in the central index
-        // This tells us exactly which school this email belongs to without needing a header.
-        $indexRecord = DB::connection(config('tenancy.database.central_connection'))
-            ->table('tenant_user_index')
-            ->where('email', $request->email)
-            ->first();
+        // 2. Delegate to the Service
+        $authData = $this->authService->authenticate(
+            $validated['email'], 
+            $validated['password']
+        );
 
-        if (!$indexRecord) {
-            throw ValidationException::withMessages([
-                "email" => ["The provided credentials are incorrect."],
-            ]);
-        }
-
-        // 2. Initialize the tenant dynamically
-        tenancy()->initialize($indexRecord->tenant_id);
-
-        // 3. Now safely connected to the tenant's isolated DB.
-        // Look up the actual user model and verify the password.
-        $user = User::where("email", $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                "email" => ["The provided credentials are incorrect."],
-            ]);
-        }
-
-        // 4. Verify account status
-        if (!$user->is_active) {
-            return response()->json([
-                "message" => "Your account has been deactivated. Contact your school admin.",
-            ], 403);
-        }
-
-        // 5. Delete previous tokens for this device — enforce single session per user
-        $user->tokens()->where("name", "tenant-token")->delete();
-
-        // 6. Determine role and expiration
-        $role = $user->getRoleNames()->first(); // school_admin | teacher | student
-
-        // Students get a shorter window (e.g., for exams), Admins/Teachers get a full day
-        $expiresAt = match ($role) {
-            "student" => now()->addHours(4),
-            default => now()->addHours(8), 
-        };
-
-        // 7. Generate the raw Sanctum token
-        $rawToken = $user->createToken("tenant-token", ["*"], $expiresAt)->plainTextToken;
-
-        // 8. Create the Self-Routing Token using the "::" delimiter
-        // This glues the slug and the token together!
-        $routedToken = tenant('slug') . '::' . $rawToken;
-
-        // 9. Return the comprehensive payload
+        // 3. Format and return the HTTP Response
         return response()->json([
-            "token" => $routedToken, // Send the glued token to the frontend
-            "token_type" => "Bearer",
-            "expires_in" => (int) now()->diffInSeconds($expiresAt),
-            "tenant_slug" => tenant('slug'), 
+            "token"       => $authData['token'],
+            "token_type"  => "Bearer",
+            "expires_in"  => $authData['expires_in'],
+            "tenant_slug" => $authData['tenant_slug'], 
             "user" => [
-                "id" => $user->id,
-                "name" => trim($user->first_name . " " . $user->last_name),
-                "email" => $user->email,
-                "role" => $role,
+                "id"    => $authData['user']->id,
+                "name"  => trim($authData['user']->first_name . " " . $authData['user']->last_name),
+                "email" => $authData['user']->email,
+                "role"  => $authData['role'],
             ],
         ]);
     }
@@ -105,11 +56,11 @@ class AuthController extends Controller
         $user = $request->user("tenant");
 
         return response()->json([
-            "id" => $user->id,
-            "first_name" => $user->first_name,
-            "last_name" => $user->last_name,
-            "email" => $user->email,
-            "role" => $user->getRoleNames()->first(),
+            "id"          => $user->id,
+            "first_name"  => $user->first_name,
+            "last_name"   => $user->last_name,
+            "email"       => $user->email,
+            "role"        => $user->getRoleNames()->first(),
             "permissions" => $user->getAllPermissions()->pluck("name"),
         ]);
     }

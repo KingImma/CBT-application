@@ -144,16 +144,18 @@ Route::middleware([
 
     // Class levels
     Route::prefix('class-levels')->group(function () {
-        Route::get('/', fn() => response()->json(
-            \App\Models\Tenant\ClassLevel::withCount(['classArms', 'students'])->get()
-        ));
-
-        // Class arms nested under class levels
+        Route::get('/',        [ClassLevelController::class, 'index']);
+        Route::post('/',       [ClassLevelController::class, 'store']);
+        Route::get('/{id}',    [ClassLevelController::class, 'show']);
+        Route::patch('/{id}',  [ClassLevelController::class, 'update']);
+        Route::delete('/{id}', [ClassLevelController::class, 'destroy']);
+    
+        // Arms nested under class level
         Route::prefix('/{classLevelId}/arms')->group(function () {
-            Route::get('/',         [ClassArmController::class, 'index']);
-            Route::post('/',        [ClassArmController::class, 'store']);
-            Route::patch('/{id}',   [ClassArmController::class, 'update']);
-            Route::delete('/{id}',  [ClassArmController::class, 'destroy']);
+            Route::get('/',        [ClassArmController::class, 'index']);
+            Route::post('/',       [ClassArmController::class, 'store']);
+            Route::patch('/{id}',  [ClassArmController::class, 'update']);
+            Route::delete('/{id}', [ClassArmController::class, 'destroy']);
         });
     });
 

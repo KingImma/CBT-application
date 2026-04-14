@@ -17,15 +17,18 @@ class SubjectController extends Controller
     public function index(Request $request): JsonResponse
     {
         $sessionId = $request->query("academic_session_id");
-        
-        if (! $sessionId) {
-            $currentSession = AcademicSession::where("is_current", true)->first();
+
+        if (!$sessionId) {
+            $currentSession = AcademicSession::where(
+                "is_current",
+                true,
+            )->first();
             $sessionId = $currentSession?->id;
         }
-        
+
         $subjects = Subject::with([
             "classLevels",
-            
+
             // 1. Target the assignments table to filter by session
             "teacherAssignments" => function ($query) use ($sessionId) {
                 if ($sessionId) {
@@ -33,9 +36,7 @@ class SubjectController extends Controller
                 }
                 
                 // 2. Chain the user relationship inside the closure, selecting valid columns
-                $query->with([
-                    "user:id,first_name,last_name"
-                ]);
+                $query->with(["user:id,first_name,last_name"]);
             },
         ])
             ->where("is_active", true)
@@ -50,7 +51,6 @@ class SubjectController extends Controller
         $validated = $request->validate([
             "name" => ["required", "string", "max:100"],
             "code" => ["nullable", "string", "max:20", "unique:subjects,code"],
-            "description" => ["nullable", "string"],
             "class_level_ids" => ["nullable", "array"],
             "class_level_ids.*" => ["uuid", "exists:class_levels,id"],
         ]);
@@ -58,7 +58,6 @@ class SubjectController extends Controller
         $subject = Subject::create([
             "name" => $validated["name"],
             "code" => $validated["code"] ?? null,
-            "description" => $validated["description"] ?? null,
             "is_active" => true,
         ]);
 
@@ -92,7 +91,6 @@ class SubjectController extends Controller
                 "max:20",
                 "unique:subjects,code," . $id,
             ],
-            "description" => ["sometimes", "nullable", "string"],
             "is_active" => ["sometimes", "boolean"],
             "class_level_ids" => ["sometimes", "array"],
             "class_level_ids.*" => ["uuid", "exists:class_levels,id"],
@@ -127,7 +125,11 @@ class SubjectController extends Controller
         $validated = $request->validate([
             "user_id" => ["required", "uuid", "exists:users,id"],
             "class_level_id" => ["required", "uuid", "exists:class_levels,id"],
-            "academic_session_id" => ["required", "uuid", "exists:academic_sessions,id"],
+            "academic_session_id" => [
+                "required",
+                "uuid",
+                "exists:academic_sessions,id",
+            ],
         ]);
 
         // Prevent duplicate assignment
@@ -156,7 +158,10 @@ class SubjectController extends Controller
         ]);
 
         // Load the new direct user relationship
-        return response()->json($assignment->load(["user", "classLevel", "academicSession"]), 201);
+        return response()->json(
+            $assignment->load(["user", "classLevel", "academicSession"]),
+            201,
+        );
     }
 
     /**

@@ -29,6 +29,28 @@ use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Middleware\InitializeTenancyByToken;
 
 use App\Http\Middleware\EnsureTenantAuthenticated;
+
+// Put this ABOVE your protected tenant routes group
+Route::get('/tenant-debug', function (\Illuminate\Http\Request $request) {
+    
+    // Manually run the token split
+    $bearer = $request->bearerToken();
+    $tenantSlug = $bearer ? explode('::', $bearer)[0] : 'No token sent';
+    
+    // Manually check if the tenant exists
+    $tenant = \App\Models\Tenant::where('slug', $tenantSlug)->orWhere('id', $tenantSlug)->first();
+    
+    if ($tenant) {
+        tenancy()->initialize($tenant);
+    }
+
+    return response()->json([
+        '1_token_received'     => $bearer,
+        '2_tenant_found'       => $tenant ? $tenant->id : 'Failed',
+        '3_active_database'    => \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
+        '4_users_in_tenant_db' => $tenant ? \App\Models\Tenant\User::count() : 0,
+    ]);
+});
       
 
 // SUPER ADMIN ROUTES (Central Database)

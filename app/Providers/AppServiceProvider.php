@@ -38,5 +38,20 @@ class AppServiceProvider extends ServiceProvider
                 \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer')
             );
         });
+        
+        Sanctum::getAccessTokenFromRequestUsing(function (Request $request) {
+            $token = $request->header('Authorization');
+            
+            if ($token && str_starts_with($token, 'Bearer ')) {
+                $token = substr($token, 7);
+                
+                // If it has our multi-tenant slug, strip it and return just the Sanctum part
+                if (str_contains($token, '::')) {
+                    return explode('::', $token, 2)[1];
+                }
+                
+                return $token;
+            }
+        });
     }
 }

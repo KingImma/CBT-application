@@ -60,6 +60,7 @@ class TeacherController extends Controller
                 'email'      => $validated['email'],
                 'password'   => Hash::make($password),
                 'phone'      => $validated['phone'] ?? null,
+                'role'       => 'teacher',
                 'is_active'  => true,
             ]);
 

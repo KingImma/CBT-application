@@ -15,9 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'plan.limits' => \App\Http\Middleware\EnforceTenantPlanLimits::class,
             'tenant.auth' => \App\Http\Middleware\EnsureTenantAuthenticated::class,
-            'tenant.header' => \App\Http\Middleware\InitializeTenancyByHeaderOrToken::class,
+            'tenant.header' => \App\Http\Middleware\InitializeTenancyByToken::class,
             'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
-            
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

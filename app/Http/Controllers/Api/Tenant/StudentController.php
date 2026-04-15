@@ -5,34 +5,53 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Student\CreateStudentAction;
+use App\Actions\Tenants\Student\UpdateStudentAction;
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\ClassLevel;
-use App\Models\Tenant\StudentProfile;
+use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
-use App\Actions\Tenants\Student\UpdateStudentAction;
+use Illuminate\Support\Facades\Hash;
+
 
 class StudentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $students = StudentProfile::with(['user', 'classLevel', 'classArm'])
-            ->when($request->search, fn ($q) =>
-                $q->whereHas('user', fn ($u) =>
-                    $u->where('first_name', 'ilike', "%{$request->search}%")
-                      ->orWhere('last_name', 'ilike', "%{$request->search}%")
-                      ->orWhere('email', 'ilike', "%{$request->search}%")
-                )->orWhere('registration_number', 'ilike', "%{$request->search}%")
+        $status = $request->query('status', 'active');
+        $search = $request->query('search');
+
+        $students = User::role('student')
+            ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
+            
+            // 1. Filter by Name/Email on the User table, or Reg Number on the Profile
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('first_name', 'ilike', "%{$search}%")
+                      ->orWhere('last_name', 'ilike', "%{$search}%")
+                      ->orWhere('email', 'ilike', "%{$search}%")
+                      ->orWhereHas('studentProfile', fn ($p) => 
+                          $p->where('registration_number', 'ilike', "%{$search}%")
+                      );
+                });
+            })
+            
+            // 2. Filter by Class/Arm via the Profile relation
+            ->when($request->class_level_id, fn ($q) => 
+                $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id))
             )
-            ->when($request->class_level_id, fn ($q) =>
-                $q->where('class_level_id', $request->class_level_id)
+            ->when($request->class_arm_id, fn ($q) => 
+                $q->whereHas('studentProfile', fn ($p) => $p->where('class_arm_id', $request->class_arm_id))
             )
-            ->when($request->class_arm_id, fn ($q) =>
-                $q->where('class_arm_id', $request->class_arm_id)
-            )
-            ->orderByDesc('created_at')
+            
+            // 3. Apply standard status filters
+            ->when($status === 'archived', fn ($q) => $q->onlyTrashed())
+            ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->when($status === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($status === 'all', fn ($q) => $q->withTrashed())
+            
+            ->orderBy('last_name')
             ->paginate(50);
 
         return response()->json($students);
@@ -40,9 +59,11 @@ class StudentController extends Controller
     
     public function show(string $id): JsonResponse
     {
-        return response()->json(
-            StudentProfile::with(['user', 'classLevel', 'classArm'])->findOrFail($id)
-        );
+        $student = User::role('student')
+            ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
+            ->findOrFail($id);
+
+        return response()->json($student);
     }
 
     public function store(StoreStudentRequest $request, CreateStudentAction $action): JsonResponse
@@ -50,10 +71,10 @@ class StudentController extends Controller
         $result = $action->execute($request->validated());
 
         return response()->json([
-            'message'  => 'Student created.',
-            'student'  => $result['profile']->load(['user', 'classLevel', 'classArm']),
+            'message' => 'Student created.',
+            'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
             'login_credentials' => [
-                'registration_number' => $result['profile']->registration_number,
+                'registration_number' => $result['user']->studentProfile->registration_number,
                 'default_password'    => $result['password'],
             ],
         ], 201);
@@ -61,34 +82,44 @@ class StudentController extends Controller
 
     public function update(UpdateStudentRequest $request, string $id, UpdateStudentAction $action): JsonResponse
     {
+        // Ensure action expects the User ID
         $result = $action->execute($request->validated(), $id);
 
-        return response()->json($result['profile']->fresh(['user', 'classLevel', 'classArm']));
+        return response()->json(
+            $result['user']->fresh(['studentProfile.classLevel', 'studentProfile.classArm'])
+        );
     }
 
     public function reassignClass(Request $request, string $id, UpdateStudentAction $action): JsonResponse
     {
-        $result = $action->execute($request->validate([
+        $validated = $request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'class_arm_id'   => ['nullable', 'uuid', 'exists:class_arms,id'],
-        ]), $id);
+        ]);
+
+        // Handled cleanly by your action
+        $result = $action->execute($validated, $id);
 
         return response()->json([
             'message' => 'Student reassigned.',
-            'student' => $result['profile']->fresh(['classLevel', 'classArm']),
+            'student' => $result['user']->fresh(['studentProfile.classLevel', 'studentProfile.classArm']),
         ]);
     }
 
-    public function toggleActive(string $id, UpdateStudentAction $action): JsonResponse
+    public function toggleActive(string $id): JsonResponse
     {
-        $result = $action->execute([], $id);
-        $user   = $result['profile']->user; 
+        // Removed the UpdateAction wrapper. Direct DB interaction is faster and safer here.
+        $student = User::role('student')->findOrFail($id);
 
-        $user->update(['is_active' => ! $user->is_active]);     
+        $student->update(['is_active' => ! $student->is_active]);     
+
+        if (! $student->is_active) {
+            $student->tokens()->delete();
+        }
 
         return response()->json([
-            'message'   => $user->is_active ? 'Student activated.' : 'Student deactivated.',
-            'is_active' => $user->is_active,
+            'message'   => $student->is_active ? 'Student activated.' : 'Student deactivated.',
+            'is_active' => $student->is_active,
         ]);
     }
 
@@ -99,34 +130,37 @@ class StudentController extends Controller
             'class_arm_id'   => ['nullable', 'uuid', 'exists:class_arms,id'],
         ]);
 
-        $profiles = StudentProfile::with('user')
-            ->where('class_level_id', $validated['class_level_id'])
-            ->when($validated['class_arm_id'] ?? null, fn ($q) =>
-                $q->where('class_arm_id', $validated['class_arm_id'])
-            )
-            ->get();
+        $students = User::role('student')
+            ->whereHas('studentProfile', function ($query) use ($validated) {
+                $query->where('class_level_id', $validated['class_level_id'])
+                      ->when($validated['class_arm_id'] ?? null, fn ($q) => 
+                          $q->where('class_arm_id', $validated['class_arm_id'])
+                      );
+            })->with('studentProfile')->get();
 
         $reset = 0;
 
-        foreach ($profiles as $profile) {
-            // Reset to registration number as default password
-            $profile->user->update([
-                'password' => Hash::make($profile->registration_number),
+        // Note: For classes larger than 100 students, dispatch this to a Queue. 
+        // Hash::make() will block the thread for ~100ms per student.
+        foreach ($students as $student) {
+            $student->update([
+                'password' => Hash::make($student->studentProfile->registration_number),
             ]);
             $reset++;
         }
 
         return response()->json([
-            'message'       => "Passwords reset for {$reset} students.",
+            'message'        => "Passwords reset for {$reset} students.",
             'students_reset' => $reset,
         ]);
     }
 
     public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $query = StudentProfile::with(['user', 'classLevel', 'classArm'])
-            ->when($request->class_level_id, fn ($q) =>
-                $q->where('class_level_id', $request->class_level_id)
+        $query = User::role('student')
+            ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
+            ->when($request->class_level_id, fn ($q) => 
+                $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id))
             );
 
         $headers = [
@@ -144,27 +178,21 @@ class StudentController extends Controller
 
             $query->chunk(200, function ($students) use ($handle) {
                 foreach ($students as $student) {
+                    $profile = $student->studentProfile;
                     fputcsv($handle, [
-                        $student->registration_number,
-                        $student->user->first_name,
-                        $student->user->last_name,
-                        $student->user->email,
-                        $student->classLevel?->name,
-                        $student->classArm?->name,
-                        $student->gender,
-                        $student->date_of_birth?->format('Y-m-d'),
+                        $profile?->registration_number,
+                        $student->first_name,
+                        $student->last_name,
+                        $student->email,
+                        $profile?->classLevel?->name,
+                        $profile?->classArm?->name,
+                        $profile?->gender,
+                        $profile?->date_of_birth?->format('Y-m-d'),
                     ]);
                 }
             });
 
             fclose($handle);
         }, 'students.csv', $headers);
-    }
-
-    private function generateRegNumber(): string
-    {
-        $year  = now()->format('Y');
-        $count = StudentProfile::count() + 1;
-        return "STU/{$year}/" . str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 }

@@ -7,19 +7,13 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\Tenant\StudentProfile;
-use App\Models\Tenant\TeacherProfile;
 
-/**
- * Tenant-scoped user. Completely separate from SuperAdmin.
- * Lives in the tenant database, authenticated via tenant guard.
- * Roles: school_admin, teacher, student.
- */
 class User extends Authenticatable
 {
     use HasApiTokens, HasUuids, HasFactory, Notifiable, HasRoles, SoftDeletes;
@@ -33,18 +27,34 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'is_active'         => 'boolean',
     ];
+
     /**
-     * @return HasOne<StudentProfile,User>
+     * Generic role checker using Spatie Permissions.
      */
-    public function studentProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function isRole(string $role): bool
+    {
+        if (method_exists($this, 'hasRole')) {
+            return $this->hasRole(strtolower($role));
+        }
+
+        return false;
+    }
+
+    public function studentProfile(): HasOne
     {
         return $this->hasOne(StudentProfile::class);
     }
-    /**
-     * @return HasOne<TeacherProfile,User>
-     */
-    public function teacherProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+
+    public function teacherProfile(): HasOne
     {
         return $this->hasOne(TeacherProfile::class);
+    }
+
+    /**
+     * Maps to the TeacherSubjectAssignment bridge table.
+     */
+    public function teacherAssignments(): HasMany
+    {
+        return $this->hasMany(TeacherSubjectAssignment::class, 'user_id');
     }
 }

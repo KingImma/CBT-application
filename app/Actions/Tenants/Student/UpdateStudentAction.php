@@ -1,20 +1,48 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Tenants\Student;
 
 use App\Models\Tenant\User;
-use App\Models\Tenant\StudentProfile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-
 
 class UpdateStudentAction
 {
-    public function handle($student, $data)
+    /**
+     * Executes the student update process.
+     */
+    public function execute(array $data, string $userId): User
     {
-        $student->update($data);    
-        
-        return $student->load(['user', 'classLevel', 'classArm']);
+        $user = User::role('student')->findOrFail($userId);
+
+        DB::transaction(function () use ($user, $data) {
+            
+            // 1. Extract and update the User table fields
+            $userData = collect($data)->only(['first_name', 'last_name', 'email'])->toArray();
+            if (!empty($userData)) {
+                $user->update($userData);
+            }
+
+            // 2. Extract and update the Student Profile (Backpack) fields
+            $profileData = collect($data)->only([
+                'class_level_id', 
+                'class_arm_id', 
+                'registration_number', 
+                'date_of_birth', 
+                'gender'
+            ])->toArray();
+            
+            if (!empty($profileData)) {
+                // updateOrCreate ensures we don't crash if the profile row was accidentally deleted
+                $user->studentProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $profileData
+                );
+            }
+        });
+
+        // We don't need to load the relations here; the Controller handles eager-loading.
+        return $user;
     }
 }

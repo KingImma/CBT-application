@@ -19,58 +19,17 @@ use App\Http\Controllers\Api\Tenant\TermController;
 use App\Http\Controllers\Api\Tenant\PasswordController;
 use App\Http\Controllers\Api\Tenant\StudentImportController;
 use App\Http\Controllers\Api\Tenant\ClassArmController;
+use App\Http\Controllers\Api\Tenant\ClassLevelController;
 use App\Http\Controllers\Api\Tenant\SubjectController;
 use App\Http\Controllers\Api\Tenant\GradingScaleController;
 use App\Http\Controllers\Api\Tenant\SchoolSettingController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\StudentController;
 
-use App\Http\Middleware\InitializeTenancyByHeader;
 use App\Http\Middleware\InitializeTenancyByToken;
 
 use App\Http\Middleware\EnsureTenantAuthenticated;
-
-/*
-|--------------------------------------------------------------------------
-| 1. GLOBAL PUBLIC ROUTES
-|--------------------------------------------------------------------------
-*/
-Route::get('/health', function () {
-    try {
-        Redis::connection()->command('ping');
-        return response()->json([
-            'redis'  => 'connected',
-            'driver' => config('database.redis.client'),
-            'queue'  => config('queue.default'),
-            'cache'  => config('cache.default'),
-            'session'=> config('session.driver'),
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
-
-Route::get('/health/session', function () {
-    session(['health_check' => 'ok_' . now()->timestamp]);
-    return response()->json([
-        'session_driver'     => config('session.driver'),
-        'session_connection' => config('session.connection'),
-        'redis_client'       => config('database.redis.client'),
-        'session_value'      => session('health_check'),
-        'status'             => 'connected',
-    ]);
-});
-
-Route::get('/debug-domain', function () {
-    return response()->json([
-        'env_value'      => env('CENTRAL_DOMAIN'),
-        'app_config'     => config('app.central_domain'),
-        'tenancy_config' => config('tenancy.central_domains'),
-    ]);
-});
-
-Route::get('/plans', [SubscriptionPlanController::class, 'index']);
-Route::get('/plans/{id}', [SubscriptionPlanController::class, 'show']);
+      
 
 // SUPER ADMIN ROUTES (Central Database)
 Route::prefix('super-admin')->group(function () {
@@ -86,6 +45,8 @@ Route::prefix('super-admin')->group(function () {
         Route::get('/audit-logs',         [AnalyticsController::class, 'auditLogs']);
         
         // Subscription Plans
+        Route::get('/plans', [SubscriptionPlanController::class, 'index']);
+        Route::get('/plans/{id}', [SubscriptionPlanController::class, 'show']);
         Route::post('/plans',       [SubscriptionPlanController::class, 'store']);
         Route::put('/plans/{id}',   [SubscriptionPlanController::class, 'update']);
         Route::delete('/plans/{id}',[SubscriptionPlanController::class, 'destroy']);
@@ -125,20 +86,26 @@ Route::middleware([
 
     // Academic sessions
     Route::prefix('academic-sessions')->group(function () {
+        // Custom
+        Route::post('/{id}/set-current',     [AcademicSessionController::class, 'setCurrent']);
+        
+        // CRUD
         Route::get('/',                      [AcademicSessionController::class, 'index']);
         Route::post('/',                     [AcademicSessionController::class, 'store']);
         Route::get('/{id}',                  [AcademicSessionController::class, 'show']);
         Route::patch('/{id}',                [AcademicSessionController::class, 'update']);
         Route::delete('/{id}',               [AcademicSessionController::class, 'destroy']);
-        Route::post('/{id}/set-current',     [AcademicSessionController::class, 'setCurrent']);
 
         // Terms nested under sessions
         Route::prefix('/{sessionId}/terms')->group(function () {
+            // Custom
+            Route::post('/{id}/set-current', [TermController::class, 'setCurrent']);
+            
+            // CRUD
             Route::get('/',                  [TermController::class, 'index']);
             Route::post('/',                 [TermController::class, 'store']);
             Route::patch('/{id}',            [TermController::class, 'update']);
             Route::delete('/{id}',           [TermController::class, 'destroy']);
-            Route::post('/{id}/set-current', [TermController::class, 'setCurrent']);
         });
     });
 
@@ -161,37 +128,47 @@ Route::middleware([
 
     // Subjects
     Route::prefix('subjects')->group(function () {
+        // Custom
+        Route::post('/{id}/assign-teacher',               [SubjectController::class, 'assignTeacher']);
+        Route::delete('/{id}/assignments/{assignmentId}', [SubjectController::class, 'removeTeacher']);
+        
+        // CRUD
         Route::get('/',                                   [SubjectController::class, 'index']);
         Route::post('/',                                  [SubjectController::class, 'store']);
         Route::get('/{id}',                               [SubjectController::class, 'show']);
         Route::patch('/{id}',                             [SubjectController::class, 'update']);
         Route::delete('/{id}',                            [SubjectController::class, 'destroy']);
-        Route::post('/{id}/assign-teacher',               [SubjectController::class, 'assignTeacher']);
-        Route::delete('/{id}/assignments/{assignmentId}', [SubjectController::class, 'removeTeacher']);
     });
     
     // Teachers
     Route::prefix('teachers')->group(function () {
-        // Assuming you have a TeacherController
+        // Custom
+        Route::post('/{id}/toggle-active',  [TeacherController::class, 'toggleActive']);
+        Route::post('/{id}/reset-password', [TeacherController::class, 'resetPassword']);
+        Route::post('/{id}/restore',        [TeacherController::class, 'restore']);
+        
+        // CRUD
         Route::get('/',                     [TeacherController::class, 'index']);
         Route::post('/',                    [TeacherController::class, 'store']);
         Route::get('/{id}',                 [TeacherController::class, 'show']);
         Route::patch('/{id}',               [TeacherController::class, 'update']);
-        Route::post('/{id}/toggle-active',  [TeacherController::class, 'toggleActive']);
-        Route::post('/{id}/reset-password', [TeacherController::class, 'resetPassword']);
+        Route::delete('/{id}',              [TeacherController::class, 'destroy']);
     });
 
     // Students
     Route::prefix('students')->group(function () {
-        Route::get('/',                      [StudentController::class, 'index']);
-        Route::post('/',                     [StudentController::class, 'store']);
-        Route::get('/export',                [StudentController::class, 'exportCsv']);
-        Route::post('/bulk-reset-passwords', [StudentController::class, 'bulkResetPasswords']);
-        Route::post('/import',               [StudentImportController::class, 'import']);
-        Route::get('/{id}',                  [StudentController::class, 'show']);
-        Route::patch('/{id}',                [StudentController::class, 'update']);
+        // Custom
         Route::post('/{id}/toggle-active',   [StudentController::class, 'toggleActive']);
         Route::post('/{id}/reassign-class',  [StudentController::class, 'reassignClass']);
+        Route::post('/import',               [StudentImportController::class, 'import']);
+        Route::get('/export',                [StudentController::class, 'exportCsv']);
+        Route::post('/bulk-reset-passwords', [StudentController::class, 'bulkResetPasswords']);
+        
+        // CRUD
+        Route::get('/',                      [StudentController::class, 'index']);
+        Route::post('/',                     [StudentController::class, 'store']);
+        Route::get('/{id}',                  [StudentController::class, 'show']);
+        Route::patch('/{id}',                [StudentController::class, 'update']);
     });
 
     // Grading scales

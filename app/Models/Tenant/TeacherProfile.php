@@ -5,7 +5,6 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TeacherProfile extends Model
@@ -18,18 +17,10 @@ class TeacherProfile extends Model
         "date_of_birth" => "date",
     ];
 
-    /**
-     * @return BelongsTo<User,TeacherProfile>
-     */
-    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    /**
-     * @return HasMany<TeacherSubjectAssignment,TeacherProfile>
-     */
-    public function subjectAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(TeacherSubjectAssignment::class);
-    }
+    
+    // Note: The subjectAssignments relationship was removed from here.
 }

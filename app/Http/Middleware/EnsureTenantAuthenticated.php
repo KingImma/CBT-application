@@ -11,20 +11,17 @@ class EnsureTenantAuthenticated
 {
     public function handle(Request $request, Closure $next, string ...$roles): mixed
     {
-        // 1. Let Sanctum provide the user
-        $user = $request->user();
+        // Explicitly check the tenant guard we set in the previous step
+        $user = \Illuminate\Support\Facades\Auth::guard('tenant')->user();
 
-        // 2. Safety check in case it slipped past auth
         if (! $user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => 'Auth session lost.'], 401);
         }
 
-        // 3. Your custom business logic: Is the account suspended?
         if (! $user->is_active) {
-            return response()->json(['message' => 'Account deactivated. Please contact administration.'], 403);
+            return response()->json(['message' => 'Account deactivated. Contact administration.'], 403);
         }
 
-        // 4. Role check if roles are passed to middleware (e.g., middleware('tenant.auth:teacher,admin'))
         if (! empty($roles) && ! $user->hasAnyRole($roles)) {
             return response()->json(['message' => 'Unauthorized access.'], 403);
         }

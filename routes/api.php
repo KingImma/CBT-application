@@ -30,47 +30,6 @@ use App\Http\Middleware\InitializeTenancyByToken;
 
 use App\Http\Middleware\EnsureTenantAuthenticated;
 
-// Put this ABOVE your protected tenant routes group
-Route::get('/tenant-debug', function (\Illuminate\Http\Request $request) {
-    
-    // Manually run the token split
-    $bearer = $request->bearerToken();
-    $tenantSlug = $bearer ? explode('::', $bearer)[0] : 'No token sent';
-    
-    // Manually check if the tenant exists
-    $tenant = \App\Models\Tenant::where('slug', $tenantSlug)->orWhere('id', $tenantSlug)->first();
-    
-    if ($tenant) {
-        tenancy()->initialize($tenant);
-    }
-
-    return response()->json([
-        '1_token_received'     => $bearer,
-        '2_tenant_found'       => $tenant ? $tenant->id : 'Failed',
-        '3_active_database'    => \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
-        '4_users_in_tenant_db' => $tenant ? \App\Models\Tenant\User::count() : 0,
-    ]);
-});
-
-Route::middleware([\App\Http\Middleware\InitializeTenancyByToken::class])
-    ->get('/sanctum-test', function (\Illuminate\Http\Request $request) {
-        
-        // 1. Manually extract the raw Sanctum token string
-        $bearer = $request->bearerToken();
-        $tokenStr = str_contains($bearer, '::') ? explode('::', $bearer)[1] : $bearer;
-
-        // 2. Fire Sanctum's internal database lookup method directly
-        $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($tokenStr);
-
-        return response()->json([
-            '1_active_db'    => \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
-            '2_token_string' => $tokenStr,
-            '3_found_in_db'  => $tokenModel ? 'YES' : 'NO',
-            '4_model_type'   => $tokenModel ? $tokenModel->tokenable_type : 'N/A',
-            '5_user_loaded'  => $tokenModel && $tokenModel->tokenable ? 'YES' : 'NO',
-        ]);
-    });
-      
 
 // SUPER ADMIN ROUTES (Central Database)
 Route::prefix('super-admin')->group(function () {
@@ -118,7 +77,6 @@ Route::get('/students/import/template', [StudentImportController::class, 'downlo
 // PROTECTED TENANT ROUTES
 Route::middleware([
     InitializeTenancyByToken::class,
-    'auth:tenant',
     EnsureTenantAuthenticated::class
 ])->group(function () {
 

@@ -16,17 +16,12 @@ class InitializeTenancyByToken
     {
         $bearer = $request->bearerToken();
 
-        // 1. Ensure the token exists and contains our custom delimiter
         if (!$bearer || !str_contains($bearer, '::')) {
-            return response()->json([
-                'message' => 'Unauthenticated or invalid routing token format.'
-            ], 401);
+            return response()->json(['message' => 'Unauthenticated or invalid routing token format.'], 401);
         }
 
-        // 2. Split the token: "lekki-british" and "1|asdfkajshdfkjasdf"
         [$tenantSlug, $sanctumToken] = explode('::', $bearer, 2);
 
-        // 3. Find the tenant
         $tenant = \App\Models\Tenant::where('slug', $tenantSlug)
             ->orWhere('id', $tenantSlug)
             ->first();
@@ -35,13 +30,21 @@ class InitializeTenancyByToken
             return response()->json(['message' => 'Tenant context not found.'], 404);
         }
 
-        // 4. Initialize the isolated database connection
+        // 1. Switch the Database
         $this->tenancy->initialize($tenant);
 
-        // 5. CRITICAL: Strip the slug out of the request header. 
-        // We replace it with the pure Sanctum token so the 'auth:sanctum' 
-        // middleware running directly after this doesn't fail.
-        $request->headers->set('Authorization', 'Bearer ' . $sanctumToken);
+        // 2. Fetch the token directly (This is what your debug route proved works!)
+        $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($sanctumToken);
+
+        if (! $tokenModel || ! $tokenModel->tokenable) {
+            return response()->json(['message' => 'Token is invalid or has expired.'], 401);
+        }
+
+        // 3. Manually authenticate the user into the 'tenant' guard
+        \Illuminate\Support\Facades\Auth::guard('tenant')->setUser($tokenModel->tokenable);
+
+        // 4. Update the token's last used timestamp (replicates native Sanctum behavior)
+        $tokenModel->forceFill(['last_used_at' => now()])->save();
 
         return $next($request);
     }

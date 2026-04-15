@@ -35,7 +35,7 @@ use App\Http\Middleware\EnsureTenantAuthenticated;
 Route::prefix('super-admin')->group(function () {
     Route::post('login', [SuperAdminAuthController::class, 'login']);
 
-    Route::middleware(['auth:sanctum', EnsureUserIsSuperAdmin::class])->group(function () {
+    Route::middleware(['auth:super_admin', EnsureUserIsSuperAdmin::class])->group(function () {
         Route::post('logout', [SuperAdminAuthController::class, 'logout']);
         Route::get('me', [SuperAdminAuthController::class, 'me']);
         
@@ -77,6 +77,7 @@ Route::get('/students/import/template', [StudentImportController::class, 'downlo
 // PROTECTED TENANT ROUTES
 Route::middleware([
     InitializeTenancyByToken::class,
+    'auth:tenant',
     EnsureTenantAuthenticated::class
 ])->group(function () {
 

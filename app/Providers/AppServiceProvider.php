@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Illuminate\Http\Request;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Support\Facades\Gate;
 use Dedoc\Scramble\Scramble;
 

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name',20);
             $table->string('slug', 20);
-            $table->integer('order');
             $table->timestamps();
         });
     }

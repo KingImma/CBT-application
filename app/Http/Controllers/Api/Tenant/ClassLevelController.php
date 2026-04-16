@@ -17,9 +17,9 @@ class ClassLevelController extends Controller
     public function index(): JsonResponse
     {
         $levels = ClassLevel::withCount(['classArms', 'students'])
-            ->orderBy('order')
+            ->orderBy('name') 
             ->get();
-
+    
         return response()->json([
             'success' => true,
             'data'    => $levels,
@@ -30,7 +30,6 @@ class ClassLevelController extends Controller
     {
         $validated = $request->validate([
             'name'  => ['required', 'string', 'max:100', 'unique:class_levels,name'],
-            'category' => ['required', 'string', 'in:junior,senior'],
             'order' => ['nullable', 'integer', 'min:1'],
         ]);
     
@@ -39,15 +38,7 @@ class ClassLevelController extends Controller
     
         // Auto-calculate the order if not provided
         if (empty($validated['order'])) {
-            $maxOrder = ClassLevel::max('order') ?? 0;
-            
-            if ($maxOrder >= 6) {
-                throw ValidationException::withMessages([
-                    'order' => ['Maximum class hierarchy reached. The system only auto-assigns up to 6 levels.']
-                ]);
-            }
-    
-            $validated['order'] = $maxOrder + 1;
+            $validated['order'] = ClassLevel::max('order') ?? 0 + 1;
         }
     
         $level = ClassLevel::create($validated);

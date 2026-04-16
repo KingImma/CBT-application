@@ -30,16 +30,10 @@ class ClassLevelController extends Controller
     {
         $validated = $request->validate([
             'name'  => ['required', 'string', 'max:100', 'unique:class_levels,name'],
-            'order' => ['nullable', 'integer', 'min:1'],
         ]);
     
         // Auto-generate the slug based on the name
         $validated['slug'] = Str::slug($validated['name']);
-    
-        // Auto-calculate the order if not provided
-        if (empty($validated['order'])) {
-            $validated['order'] = ClassLevel::max('order') ?? 0 + 1;
-        }
     
         $level = ClassLevel::create($validated);
     

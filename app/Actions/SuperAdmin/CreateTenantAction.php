@@ -6,10 +6,12 @@ namespace App\Actions\SuperAdmin;
 
 use App\Enums\StatusType;
 use App\Exceptions\TenantSlugAlreadyTakenException;
+use App\Exceptions\TenantProvisioningException; // Make sure this is imported
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB; // <-- Required for transactions
 use Illuminate\Support\Str;
 
 class CreateTenantAction
@@ -20,7 +22,7 @@ class CreateTenantAction
 
     /**
      * @param array<string, mixed> $data
-     * @throws TenantSlugAlreadyTakenException
+     * @throws TenantSlugAlreadyTakenException|TenantProvisioningException
      */
     public function execute(array $data): Tenant
     {
@@ -38,51 +40,53 @@ class CreateTenantAction
 
             $subscriptionDetails = $this->resolveSubscriptionDetails($data['plan_id'] ?? null);
 
-            try {
-                $tenant = Tenant::create([
-                    'id'                   => $slug,
-                    'name'                 => $data['name'],
-                    'slug'                 => $slug,
-                    'database'             => $dbName,
-                    'email'                => $data['email']   ?? null,
-                    'phone'                => $data['phone']   ?? null,
-                    'address'              => $data['address'] ?? null,
-                    'city'                 => $data['city']    ?? null,
-                    'state'                => $data['state']   ?? null,
-                    'plan_id'              => $data['plan_id'] ?? null,
-                    'subscription_status'  => $subscriptionDetails['subscription_status'],
-                    'trial_ends_at'        => $subscriptionDetails['trial_ends_at'],
-                    'subscription_ends_at' => $subscriptionDetails['subscription_ends_at'],
-                    'is_active'            => true,
-
-                    // Admin credentials stored temporarily in settings JSON.
-                    // Picked up by TenantDatabaseSeeder after DB provisioning.
-                    // Cleared from settings after the admin user is created.
-                    'settings' => [
-                        'onboarding_admin' => [
-                            'first_name' => $data['admin_first_name'],
-                            'last_name'  => $data['admin_last_name'],
-                            'email'      => $data['admin_email'],
-                            'password'   => $data['admin_password'], // hashed in seeder
+            // Wrap everything in a database transaction
+            $tenant = DB::transaction(function () use ($data, $slug, $dbName, $subscriptionDetails) {
+                try {
+                    $tenant = Tenant::create([
+                        'id'                   => $slug,
+                        'name'                 => $data['name'],
+                        'slug'                 => $slug,
+                        'database'             => $dbName,
+                        'email'                => $data['email']   ?? null,
+                        'phone'                => $data['phone']   ?? null,
+                        'address'              => $data['address'] ?? null,
+                        'city'                 => $data['city']    ?? null,
+                        'state'                => $data['state']   ?? null,
+                        'plan_id'              => $data['plan_id'] ?? null,
+                        'subscription_status'  => $subscriptionDetails['subscription_status'],
+                        'trial_ends_at'        => $subscriptionDetails['trial_ends_at'],
+                        'subscription_ends_at' => $subscriptionDetails['subscription_ends_at'],
+                        'is_active'            => true,
+                        'settings' => [
+                            'onboarding_admin' => [
+                                'first_name' => $data['admin_first_name'],
+                                'last_name'  => $data['admin_last_name'],
+                                'email'      => $data['admin_email'],
+                                'password'   => $data['admin_password'],
+                            ],
                         ],
-                    ],
-                ]);
-            } catch (QueryException $e) {
-                if ($this->isUniqueViolation($e)) {
-                    throw new TenantSlugAlreadyTakenException($slug);
+                    ]);
+                } catch (QueryException $e) {
+                    if ($this->isUniqueViolation($e)) {
+                        throw new TenantSlugAlreadyTakenException($slug);
+                    }
+                    throw new TenantProvisioningException($slug, $e->getMessage());
                 }
-                throw new TenantProvisioningException($slug, $e->getMessage());
-            }
 
-            $centralDomain = config('app.central_domain')
-                ?? collect(config('tenancy.central_domains', []))
-                    ->reject(fn ($d) => in_array($d, ['127.0.0.1', 'localhost']))
-                    ->first()
-                ?? 'localhost';
+                $centralDomain = config('app.central_domain')
+                    ?? collect(config('tenancy.central_domains', []))
+                        ->reject(fn ($d) => in_array($d, ['127.0.0.1', 'localhost']))
+                        ->first()
+                    ?? 'localhost';
 
-            $tenant->domains()->create([
-                'domain' => $slug . '.' . $centralDomain,
-            ]);
+                // If this fails, the $tenant creation above is completely undone.
+                $tenant->domains()->create([
+                    'domain' => $slug . '.' . $centralDomain,
+                ]);
+
+                return $tenant;
+            }); // End Transaction
 
             $tenant->load('domains');
 
@@ -101,14 +105,18 @@ class CreateTenantAction
 
     private function ensureSlugIsAvailable(string $slug): void
     {
-        if (Tenant::where('slug', $slug)->exists()) {
+        // Check BOTH the tenants table and the domains table to prevent orphan blocks
+        if (
+            Tenant::where('slug', $slug)->exists() || 
+            \Illuminate\Support\Facades\DB::table('domains')->where('domain', 'like', $slug . '.%')->exists()
+        ) {
             throw new TenantSlugAlreadyTakenException($slug);
         }
     }
 
     private function isUniqueViolation(QueryException $e): bool
     {
-        return in_array($e->getCode(), ['23505', '23000', '1062'], true);
+        return in_array((string)$e->getCode(), ['23505', '23000', '1062'], true);
     }
 
     private function resolveSubscriptionDetails(?string $planId): array

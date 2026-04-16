@@ -27,8 +27,20 @@ class ClassLevelController extends Controller
     {
         $validated = $request->validate([
             'name'  => ['required', 'string', 'max:100', 'unique:class_levels,name'],
-            'order' => ['required', 'integer', 'min:1'],
+            'order' => ['nullable', 'integer', 'min:1'],
         ]);
+
+        if (empty($validated['order'])) {
+            $maxOrder = ClassLevel::max('order') ?? 0;
+            
+            if ($maxOrder >= 6) {
+                throw ValidationException::withMessages([
+                    'order' => ['Maximum class hierarchy reached. The system only auto-assigns up to 6 levels (e.g., JSS 1 to SS 3).']
+                ]);
+            }
+
+            $validated['order'] = $maxOrder + 1;
+        }
 
         $level = ClassLevel::create($validated);
 
@@ -57,8 +69,12 @@ class ClassLevelController extends Controller
 
         $validated = $request->validate([
             'name'  => ['sometimes', 'string', 'max:100', 'unique:class_levels,name,' . $id],
-            'order' => ['sometimes', 'integer', 'min:1'],
+            'order' => ['nullable', 'integer', 'min:1'],
         ]);
+
+        if (empty($validated['order'])) {
+            unset($validated['order']); 
+        }
 
         $level->update($validated);
 

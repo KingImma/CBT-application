@@ -17,7 +17,6 @@ class SubscriptionPlanResource extends JsonResource
             'id'                  => $this->id,
             'name'                => $this->name,
             'slug'                => $this->slug,
-            'description'         => $this->description,
             'max_students'        => $this->max_students,
             'max_teachers'        => $this->max_teachers,
             'max_exams_per_term'  => $this->max_exams_per_term,

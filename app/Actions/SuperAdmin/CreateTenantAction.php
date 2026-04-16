@@ -6,12 +6,12 @@ namespace App\Actions\SuperAdmin;
 
 use App\Enums\StatusType;
 use App\Exceptions\TenantSlugAlreadyTakenException;
-use App\Exceptions\TenantProvisioningException; // Make sure this is imported
+use App\Exceptions\Tenant\TenantProvisioningException;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB; // <-- Required for transactions
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CreateTenantAction

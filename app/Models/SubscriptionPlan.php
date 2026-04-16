@@ -31,7 +31,7 @@ class SubscriptionPlan extends Model
      */
     public function tenants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Tenant::class);
+        return $this->hasMany(Tenant::class, 'plan_id');   
     }
     /**
      * @param Builder<Model> $query

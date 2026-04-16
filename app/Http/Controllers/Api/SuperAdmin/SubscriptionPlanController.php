@@ -9,6 +9,7 @@ use App\Http\Resources\SubscriptionPlanResource;
 use App\Models\SubscriptionPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class SubscriptionPlanController extends Controller
 {
@@ -30,16 +31,15 @@ class SubscriptionPlanController extends Controller
     {
         $validated = $request->validate([
             'name'                => ['required', 'string', 'max:100', 'unique:subscription_plans,name'],
-            'slug'                => ['required', 'string', 'max:100', 'unique:subscription_plans,slug'],
-            'description'         => ['nullable', 'string'],
             'max_students'        => ['required', 'integer', 'min:1'],
             'max_teachers'        => ['required', 'integer', 'min:1'],
             'max_exams_per_term'  => ['required', 'integer', 'min:1'],
             'price_monthly'       => ['required', 'integer', 'min:0'],
             'price_yearly'        => ['required', 'integer', 'min:0'],
             'features'            => ['nullable', 'array'],
-            'interval'            => ['nullable', 'in:monthly,yearly'],
         ]);
+        
+        $validated['slug'] = Str::slug($validated['name']);
         
         $plan = SubscriptionPlan::create(array_merge($validated, ['is_active' => true]));
         
@@ -52,8 +52,6 @@ class SubscriptionPlanController extends Controller
         
         $validated = $request->validate([
             'name'                => ['sometimes', 'string', 'max:100', 'unique:subscription_plans,name,' . $id],
-            'slug'                => ['sometimes', 'string', 'max:100', 'unique:subscription_plans,slug,' . $id],
-            'description'         => ['nullable', 'string'],
             'max_students'        => ['sometimes', 'integer', 'min:1'],
             'max_teachers'        => ['sometimes', 'integer', 'min:1'],
             'max_exams_per_term'  => ['sometimes', 'integer', 'min:1'],
@@ -62,6 +60,8 @@ class SubscriptionPlanController extends Controller
             'features'            => ['nullable', 'array'],
             'interval'            => ['nullable', 'in:monthly,yearly'],
         ]);
+        
+        $validated['slug'] = Str::slug($validated['name']);
         
         $plan->update($validated);
         

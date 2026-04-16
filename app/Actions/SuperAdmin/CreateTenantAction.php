@@ -71,7 +71,7 @@ class CreateTenantAction
                 if ($this->isUniqueViolation($e)) {
                     throw new TenantSlugAlreadyTakenException($slug);
                 }
-                throw $e;
+                throw new TenantProvisioningException($slug, $e->getMessage());
             }
 
             $centralDomain = config('app.central_domain')

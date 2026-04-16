@@ -35,10 +35,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         "onboarding_completed_at" => "datetime",
     ];
 
-    /**
-     * Columns that are stored as dedicated columns on the tenants table rather
-     * than being serialised into the stancl/tenancy `data` JSON column.
-     */
+  
     public static function getCustomColumns(): array
     {
         return [

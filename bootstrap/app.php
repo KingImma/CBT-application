@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        //
+    ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return (new \App\Exceptions\Handler(app()))
+                    ->render($request, $e);
+            }
+        });
     })->create();

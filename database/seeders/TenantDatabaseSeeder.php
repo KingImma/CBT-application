@@ -14,6 +14,7 @@ use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Tenant\ClassLevel;
 
+
 class TenantDatabaseSeeder extends Seeder
 {
     public function run(): void
@@ -76,19 +77,18 @@ class TenantDatabaseSeeder extends Seeder
 
         // ── Seed default class levels ─────────────────────────────────────────
         $classLevels = [
-            ["name" => "JSS 1", "order" => 1],
-            ["name" => "JSS 2", "order" => 2],
-            ["name" => "JSS 3", "order" => 3],
-            ["name" => "SS 1",  "order" => 4],
-            ["name" => "SS 2",  "order" => 5],
-            ["name" => "SS 3",  "order" => 6],
+            ["name" => "JSS 1"],
+            ["name" => "JSS 2"],
+            ["name" => "JSS 3"],
+            ["name" => "SS 1"],
+            ["name" => "SS 2"],
+            ["name" => "SS 3"],
         ];
         
         foreach ($classLevels as $level) {
             ClassLevel::updateOrCreate(
                 ['name' => $level['name']], // Search by name
                 [
-                    'order'    => $level['order'],
                     'slug'     => Str::slug($level['name'], ''), 
                 ]
             );

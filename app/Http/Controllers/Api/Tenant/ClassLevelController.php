@@ -8,6 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
 
 class ClassLevelController extends Controller
 {
@@ -27,23 +30,28 @@ class ClassLevelController extends Controller
     {
         $validated = $request->validate([
             'name'  => ['required', 'string', 'max:100', 'unique:class_levels,name'],
+            'category' => ['required', 'string', 'in:junior,senior'],
             'order' => ['nullable', 'integer', 'min:1'],
         ]);
-
+    
+        // Auto-generate the slug based on the name
+        $validated['slug'] = Str::slug($validated['name']);
+    
+        // Auto-calculate the order if not provided
         if (empty($validated['order'])) {
             $maxOrder = ClassLevel::max('order') ?? 0;
             
             if ($maxOrder >= 6) {
                 throw ValidationException::withMessages([
-                    'order' => ['Maximum class hierarchy reached. The system only auto-assigns up to 6 levels (e.g., JSS 1 to SS 3).']
+                    'order' => ['Maximum class hierarchy reached. The system only auto-assigns up to 6 levels.']
                 ]);
             }
-
+    
             $validated['order'] = $maxOrder + 1;
         }
-
+    
         $level = ClassLevel::create($validated);
-
+    
         return response()->json([
             'success' => true,
             'message' => 'Class level created.',

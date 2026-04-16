@@ -71,6 +71,10 @@ class ClassLevelController extends Controller
             'name'  => ['sometimes', 'string', 'max:100', 'unique:class_levels,name,' . $id],
             'order' => ['nullable', 'integer', 'min:1'],
         ]);
+        
+        if (isset($validated['name']) && $validated['name'] !== $level->name) {
+            $validated['slug'] = Str::slug($validated['name']);
+        }
 
         if (empty($validated['order'])) {
             unset($validated['order']); 

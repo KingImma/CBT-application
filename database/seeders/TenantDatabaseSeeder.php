@@ -12,7 +12,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use App\Models\Tenant\ClassLevel;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -76,24 +76,21 @@ class TenantDatabaseSeeder extends Seeder
 
         // ── Seed default class levels ─────────────────────────────────────────
         $classLevels = [
-            ["name" => "JSS 1", "slug" => "jss1", "order" => 1, "category" => "junior"],
-            ["name" => "JSS 2", "slug" => "jss2", "order" => 2, "category" => "junior"],
-            ["name" => "JSS 3", "slug" => "jss3", "order" => 3, "category" => "junior"],
-            ["name" => "SS 1",  "slug" => "ss1",  "order" => 4, "category" => "senior"],
-            ["name" => "SS 2",  "slug" => "ss2",  "order" => 5, "category" => "senior"],
-            ["name" => "SS 3",  "slug" => "ss3",  "order" => 6, "category" => "senior"],
+            ["name" => "JSS 1", "order" => 1],
+            ["name" => "JSS 2", "order" => 2],
+            ["name" => "JSS 3", "order" => 3],
+            ["name" => "SS 1",  "order" => 4],
+            ["name" => "SS 2",  "order" => 5],
+            ["name" => "SS 3",  "order" => 6],
         ];
-
+        
         foreach ($classLevels as $level) {
-            \Illuminate\Support\Facades\DB::table(
-                "class_levels",
-            )->updateOrInsert(
-                ["name" => $level["name"]],
-                array_merge($level, [
-                    "id" => Str::uuid()->toString(),
-                    "created_at" => now(),
-                    "updated_at" => now(),
-                ]),
+            ClassLevel::updateOrCreate(
+                ['name' => $level['name']], // Search by name
+                [
+                    'order'    => $level['order'],
+                    'slug'     => Str::slug($level['name'], ''), 
+                ]
             );
         }
 

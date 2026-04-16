@@ -81,7 +81,7 @@ class ClassLevelController extends Controller
         ]);
         
         if (isset($validated['name']) && $validated['name'] !== $level->name) {
-            $validated['slug'] = Str::slug($validated['name']);
+            $validated['slug'] = Str::slug($validated['name'], '');
         }
 
         if (empty($validated['order'])) {

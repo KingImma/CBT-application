@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('name',20);
             $table->string('slug', 20);
             $table->integer('order');
-            $table->enum('category', ['junior', 'senior']);
             $table->timestamps();
         });
     }

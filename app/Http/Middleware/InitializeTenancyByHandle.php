@@ -3,9 +3,10 @@
 // Why - handle is the subdomain: greenfield.local.com -> handle = greenfield
 // Deliverable - all tenant routes work without X-header
 
-declare(strict_types=1)
+declare(strict_types=1);
 
 namespace App\Http\Middleware;
+
 
 use Closure;
 use Illuminate\Http\Request;

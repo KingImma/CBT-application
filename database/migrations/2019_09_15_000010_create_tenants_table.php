@@ -19,6 +19,7 @@ class CreateTenantsTable extends Migration
 
             $table->string("name");
             $table->string("slug", 63)->unique();
+            $table->string('handle', 100)->nullable()->unique();
             $table->string("database", 63)->unique();
 
             $table->string("logo", 500)->nullable();

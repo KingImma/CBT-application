@@ -43,15 +43,9 @@ class TenantController extends Controller
         return response()->json($tenants);
     }
     
-    public function store(StoreTenantRequest $request, CreateTenantAction $action): JsonResponse
+    public function store(StoreTenantRequest $request, CreateTenantAction $action): \Illuminate\Http\JsonResponse
     {
-        try{
-            $tenant = $action->execute($request->validated());
-        }catch(TenantSlugAlreadyTakenException $e){
-            return response()->json([
-                'message' => $e->getMessage()
-            ], 409);
-        }
+        $tenant = $action->execute($request->validated());
         
         return (new TenantResource($tenant))
             ->additional(['message' => 'School registered successfully.'])

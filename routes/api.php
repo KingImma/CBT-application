@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 
-// Unified Auth
+// Auth
 use App\Http\Controllers\Api\AuthController;
 
 // Super Admin

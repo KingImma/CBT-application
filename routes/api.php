@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 
 // Unified Auth
-use App\Http\Controllers\Api\UniversalAuthController;
+use App\Http\Controllers\Api\AuthController;
 
 // Super Admin
 use App\Http\Controllers\Api\SuperAdmin\AnalyticsController;
@@ -41,7 +41,7 @@ use App\Http\Middleware\EnsureTenantAuthenticated;
 Route::middleware([InitializeTenancyByHeader::class])->group(function () {
     
     // Unified Login
-    Route::post('/auth/login', [UniversalAuthController::class, 'login']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
     
     // Password reset (Requires tenant DB to find the user)
     Route::post('/auth/forgot-password', [PasswordController::class, 'forgotPassword']);
@@ -60,8 +60,8 @@ Route::get('/students/import/template', [StudentImportController::class, 'downlo
 Route::middleware(['auth:super_admin', EnsureUserIsSuperAdmin::class])->group(function () {
     
     // Unified Logout & Me
-    Route::post('/auth/logout', [UniversalAuthController::class, 'logout']);
-    Route::get('/auth/me',      [UniversalAuthController::class, 'me']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me',      [AuthController::class, 'me']);
     
     // Analytics & Logs
     Route::get('/analytics/overview', [AnalyticsController::class, 'overview']);
@@ -89,8 +89,8 @@ Route::middleware([
 ])->group(function () {
 
     // Unified Logout & Me
-    Route::post('/auth/logout',          [UniversalAuthController::class, 'logout']);
-    Route::get('/auth/me',               [UniversalAuthController::class, 'me']);
+    Route::post('/auth/logout',          [AuthController::class, 'logout']);
+    Route::get('/auth/me',               [AuthController::class, 'me']);
     
     Route::post('/auth/change-password', [PasswordController::class, 'change']);
 

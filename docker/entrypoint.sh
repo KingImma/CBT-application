@@ -29,8 +29,8 @@ php artisan view:cache
 echo "==> Running migrations..."
 php artisan migrate --force
 
-echo "==> Backfilling tenant handles..."
-php artisan tenants:backfill-handles || true
+# echo "==> Backfilling tenant handles..."
+# php artisan tenants:backfill-handles || true
 
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force

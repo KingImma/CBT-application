@@ -42,6 +42,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             "id",
             "name",
             "slug",
+            "handle",
             "database",
             "email",
             "phone",

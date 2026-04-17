@@ -9,7 +9,7 @@ use App\Services\TenantAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class UniversalAuthController extends Controller
+class AuthController extends Controller
 {
     public function __construct(
         private readonly SuperAdminAuthService $superAdminAuth,

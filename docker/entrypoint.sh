@@ -30,7 +30,7 @@ echo "==> Running migrations..."
 php artisan migrate --force
 
 echo "==> Backfilling tenant handles..."
-php artisan tenants:backfill-handles --force || true
+php artisan tenants:backfill-handles || true
 
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force

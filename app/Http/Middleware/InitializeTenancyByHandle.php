@@ -17,7 +17,7 @@ use App\Models\Tenant;
 class InitializeTenancyByHandle
 {
 
-    public function __construct(private readonly Tenancy $tenancy)
+    public function __construct(private readonly Tenancy $tenancy);
     
     public function handle(Request $request, Closure $next): Response
     {
@@ -27,7 +27,7 @@ class InitializeTenancyByHandle
             return response()->json([
                 'success' => false,
                 'message' => 'Could not identify school. Check the URL.',
-            ], 400)
+            ], 400);
         }
         
         $tenant = Tenant::where('handle', $handle)
@@ -45,8 +45,12 @@ class InitializeTenancyByHandle
             return response()->json([
                 'success' => false,
                 'message' => 'This school account is inactive'
-            ])
+            ]);
         }
+        
+        $this->tenancy->initialize($tenant);
+        
+        return $next($request);
     }
     
     private function resolveHandle(Request $request): ?string
@@ -57,9 +61,9 @@ class InitializeTenancyByHandle
         
         $appParts = explode('.', $appDomain);
         if (count($parts) > count($appParts)) {
-            return $parts[0]
+            return $parts[0];
         }
         
-        
+        return null;
     }
 }

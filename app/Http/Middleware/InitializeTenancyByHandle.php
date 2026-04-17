@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,8 +15,8 @@ use App\Models\Tenant;
 
 class InitializeTenancyByHandle
 {
-
-    public function __construct(private readonly Tenancy $tenancy);
+    // FIX 1: Replaced the trailing semicolon with empty curly braces {}
+    public function __construct(private readonly Tenancy $tenancy) {}
     
     public function handle(Request $request, Closure $next): Response
     {
@@ -35,17 +34,20 @@ class InitializeTenancyByHandle
             ->first();
         
         if (! $tenant) {
+            // FIX 2: Updated PHP string interpolation from deprecated '${handle}' to '{$handle}'
             return response()->json([
                 'success' => false,
-                'message' => "No school found for '${handle}'."
+                'message' => "No school found for '{$handle}'."
             ], 404);
         }
         
         if (! $tenant->is_active) {
+            // FIX 3: Added the missing 403 Forbidden status code. 
+            // Without this, the frontend receives a 200 OK and might try to proceed.
             return response()->json([
                 'success' => false,
-                'message' => 'This school account is inactive'
-            ]);
+                'message' => 'This school account is inactive.'
+            ], 403);
         }
         
         $this->tenancy->initialize($tenant);
@@ -56,7 +58,13 @@ class InitializeTenancyByHandle
     private function resolveHandle(Request $request): ?string
     {
         $host = $request->getHost();
-        $appDomain = config('app.central_domain', 'localhost');
+        
+        // FIX 4: Safely check Stancl's central_domains array first, fallback to app.central_domain
+        $centralDomains = config('tenancy.central_domains', []);
+        $appDomain = !empty($centralDomains) 
+            ? $centralDomains[0] 
+            : config('app.central_domain', 'localhost');
+            
         $parts = explode('.', $host);
         
         $appParts = explode('.', $appDomain);

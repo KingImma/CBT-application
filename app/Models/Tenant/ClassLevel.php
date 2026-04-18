@@ -14,9 +14,6 @@ class ClassLevel extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'order' => 'integer',
-    ];
 
     public function classArms(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
@@ -33,5 +30,13 @@ class ClassLevel extends Model
     public function students(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(StudentProfile::class);
+    }
+    
+    protected static function booted(): void
+    {
+        static::deleting(function ($level) {
+            $level->subjects()->detach();
+            $level->classArms()->delete(); 
+        });
     }
 }

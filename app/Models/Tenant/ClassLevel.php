@@ -32,11 +32,17 @@ class ClassLevel extends Model
         return $this->hasMany(StudentProfile::class);
     }
     
+    public function teacherAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TeacherSubjectAssignment::class);
+    }
+
     protected static function booted(): void
     {
         static::deleting(function ($level) {
             $level->subjects()->detach();
             $level->classArms()->delete(); 
+            $level->teacherAssignments()->delete();
         });
     }
 }

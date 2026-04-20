@@ -101,4 +101,69 @@ class ClassLevelController extends Controller
             'message' => 'Class level deleted.',
         ]);
     }
+    
+    public function availableSubjects(string $id): JsonResponse
+    {
+        $level = ClassLevel::findOrFail($id);
+
+        $subjects = $level->subjects()
+            ->select('subjects.id', 'subjects.name', 'subjects.code') // Adjust based on your columns
+            ->get()
+            ->map(function ($subject) {
+                return [
+                    'id' => $subject->id,
+                    'name' => $subject->name,
+                    'code' => $subject->code,
+                    'is_compulsory' => (bool) $subject->pivot->is_complusory, 
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $subjects,
+        ]);
+    }
+    
+    public function sync(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'subject_ids' => ['required', 'array'],
+            'subject_ids.*' => ['exists:subjects,id'],
+        ]);
+
+        $level = ClassLevel::findOrFail($id);
+
+        // Sync entirely replaces the current attachments with the new array.
+        // Any subjects not in this array will be detached.
+        $level->subjects()->sync($validated['subject_ids']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Subjects synced successfully.',
+        ]);
+    }
+    
+    public function toggleCompulsory(string $id, string $subjectId): JsonResponse
+    {
+        $level = ClassLevel::findOrFail($id);
+
+        // Retrieve the specific attached subject to check its current pivot state
+        $subject = $level->subjects()->where('subject_id', $subjectId)->firstOrFail();
+
+        // Flip the boolean value
+        $newStatus = ! $subject->pivot->is_complusory;
+
+        // Update the pivot table record
+        $level->subjects()->updateExistingPivot($subjectId, [
+            'is_compulsory' => $newStatus,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Subject compulsory status updated.',
+            'data' => [
+                'is_compulsory' => $newStatus,
+            ],
+        ]);
+    }
 }

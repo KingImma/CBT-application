@@ -9,6 +9,7 @@ use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ClassArmController extends Controller
 {
@@ -24,14 +25,24 @@ class ClassArmController extends Controller
     public function store(Request $request, string $classLevelId): JsonResponse
     {
         $level = ClassLevel::findOrFail($classLevelId);
-
+    
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:50'],
+            'name' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('class_arms', 'name')
+                    ->where('class_level_id', $level->id),
+            ],
         ]);
-
+    
         $arm = $level->classArms()->create($validated);
-
-        return response()->json($arm, 201);
+    
+        return response()->json([
+            'success' => true,
+            'message' => "Class arm '{$arm->name}' created.",
+            'data'    => $arm,
+        ], 201);
     }
 
     public function update(Request $request, string $classLevelId, string $id): JsonResponse
@@ -40,6 +51,9 @@ class ClassArmController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
+            Rule::unique('class_arms', 'name')
+                ->where('class_level_id', $classLevelId)
+                ->ignore($id),
         ]);
 
         $arm->update($validated);

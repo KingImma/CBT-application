@@ -29,8 +29,8 @@ set -e
 echo "==> Running migrations..."
 php artisan migrate --force
 
-# echo "==> Backfilling tenant handles..."
-# php artisan tenants:backfill-handles || true
+echo "==> Backfilling tenant arm subjects..."
+php artisan tenants:backfill-arm-subjects || true
 
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force

@@ -23,4 +23,11 @@ class ClassArm extends Model
     {
         return $this->hasMany(StudentProfile::class);
     }
+    
+    public function subjects(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'class_arm_subject')
+            ->withPivot('is_compulsory')
+            ->withTimestamps();
+    }
 }

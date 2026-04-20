@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\Tenant\GradingScaleController;
 use App\Http\Controllers\Api\Tenant\SchoolSettingController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\StudentController;
+use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
 
 // Middleware
 use App\Http\Middleware\InitializeTenancyByHeader;
@@ -125,6 +126,26 @@ Route::middleware([
             Route::post('/',       [ClassArmController::class, 'store']);
             Route::patch('/{id}',  [ClassArmController::class, 'update']);
             Route::delete('/{id}', [ClassArmController::class, 'destroy']);
+        });
+        
+        Route::prefix('/{classLevelId}/arms/{armId}/subjects')->group(function () {
+            // GET  — list assigned + unassigned subjects for this arm
+            Route::get('/',                        [ClassArmSubjectController::class, 'index']);
+        
+            // POST /sync — replace entire subject list atomically
+            Route::post('/sync',                   [ClassArmSubjectController::class, 'sync']);
+        
+            // POST /inherit — copy all class-level subjects to this arm
+            Route::post('/inherit',                [ClassArmSubjectController::class, 'inheritFromLevel']);
+        
+            // POST /{subjectId} — add one subject
+            Route::post('/{subjectId}',            [ClassArmSubjectController::class, 'attach']);
+        
+            // DELETE /{subjectId} — remove one subject
+            Route::delete('/{subjectId}',          [ClassArmSubjectController::class, 'detach']);
+        
+            // PATCH /{subjectId}/toggle-compulsory
+            Route::patch('/{subjectId}/toggle-compulsory', [ClassArmSubjectController::class, 'toggleCompulsory']);
         });
     });
 

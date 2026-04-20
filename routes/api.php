@@ -122,8 +122,8 @@ Route::middleware([
         Route::delete('/{id}', [ClassLevelController::class, 'destroy']);
         
         Route::prefix('/{id}/subjects')->group(function () {
+            Route::get('/', [ClassLevelController::class, 'availableSubjects']);
             Route::post('/sync', [ClassLevelController::class, 'sync']);
-            Route::get('/', [ClassLevelController::class, 'subjects']);
             Route::patch('/{subjectId}/toggle-compulsory', [ClassLevelController::class, 'toggleCompulsory']);
         });
     

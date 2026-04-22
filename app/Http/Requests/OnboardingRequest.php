@@ -31,12 +31,12 @@ class OnboardingRequest extends FormRequest
             'address'        => ['nullable', 'string', 'max:500'],
             'state'          => ['nullable', 'string', 'max:255'],
             'city'           => ['nullable', 'string', 'max:255'],
-            'schoolType'    => ['nullable', 'string', Rule::in(SchoolType::class)],
+            'schoolType'    => ['nullable', 'string', Rule::enum(SchoolType::class)],
             
             'fullName'       => ['required', 'string', 'max:255'],
             'email'          => ['required', 'email', 'max:255'],
             'phone'          => ['required', 'string', 'max:20'],
-            'password'       => ['required', 'string', 'min:8', 'confirmed'],
+            'password'       => ['required', 'string', 'min:8'],
             
             'plan_id'        => ['nullable', 'string'],
         ];

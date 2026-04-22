@@ -31,7 +31,7 @@ class CreateTenantAction
      */
     public function execute(array $data): Tenant
     {
-        $slug = $data['handle'] ?? $this->generateUniqueSlug($data['name']);
+        $slug = $this->generateUniqueSlug($data['name']);
         
         return $this->withSlugLock($slug, function () use ($data, $slug) {
             

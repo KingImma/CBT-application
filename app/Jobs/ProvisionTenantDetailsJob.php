@@ -50,6 +50,7 @@ class ProvisionTenantDetailsJob implements ShouldQueue
                     "phone" => $this->adminData["phone"] ?? null,
                     "password" => Hash::make($this->adminData["password"]),
                     "role" => "school_admin",
+                    "job_title" => $this->adminData["job_title"] ?? null,
                     "is_active" => true,
                 ],
             );

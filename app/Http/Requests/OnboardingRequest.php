@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use App\Enums\SchoolType;
+
 
 /*
  * 1. What it is: A Laravel FormRequest class (`CompleteOnboardingRequest`).
@@ -25,21 +28,15 @@ class OnboardingRequest extends FormRequest
         return [
             'schoolName'     => ['required', 'string', 'max:255'],
             'handle'         => ['required', 'string', 'alpha_dash', 'max:63', 'unique:tenants,id', 'unique:tenants,handle'],
-            'schoolType'     => ['nullable', 'string', 'in:Secondary School,Primary School,Mixed'],
             'address'        => ['nullable', 'string', 'max:500'],
             'state'          => ['nullable', 'string', 'max:255'],
             'city'           => ['nullable', 'string', 'max:255'],
+            'schoolType'    => ['nullable', 'string', Rule::in(SchoolType::class)],
             
             'fullName'       => ['required', 'string', 'max:255'],
             'email'          => ['required', 'email', 'max:255'],
             'phone'          => ['required', 'string', 'max:20'],
             'password'       => ['required', 'string', 'min:8', 'confirmed'],
-            'referralSource' => ['nullable', 'string'],
-            
-            'grades'         => ['nullable', 'array'],
-            'grades.*'       => ['string'],
-            'termSystem'     => ['nullable', 'string'],
-            'gradingScale'   => ['nullable', 'string'],
             
             'plan_id'        => ['nullable', 'string'],
         ];
@@ -58,7 +55,7 @@ class OnboardingRequest extends FormRequest
             'address'          => $validated['address'] ?? null,
             'state'            => $validated['state'] ?? null,
             'city'             => $validated['city'] ?? null,
-            'referral_source'  => $validated['referralSource'] ?? null,
+            'school_type'      => $validated['schoolType'] ?? null,
             
             'admin_first_name' => $nameParts[0],
             'admin_last_name'  => $nameParts[1] ?? '',
@@ -67,13 +64,8 @@ class OnboardingRequest extends FormRequest
             'admin_phone'      => $validated['phone'],
             
             'plan_id'          => $validated['plan_id'] ?? null,
-            
-            // Group curriculum data for easy passing to the seeder
-            'curriculum' => [
-                'grades'        => $validated['grades'] ?? null,
-                'term_system'   => $validated['termSystem'] ?? null,
-                'grading_scale' => $validated['gradingScale'] ?? null,
-            ]
+
+            'curriculum' => []
         ];
     }
 }

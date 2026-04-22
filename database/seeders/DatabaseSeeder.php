@@ -11,6 +11,6 @@ class DatabaseSeeder extends Seeder
         // Central seeders only — never run in tenant context.
         // Tenant data is seeded by TenantDatabaseSeeder via the
         // TenantCreated event pipeline (see TenancyServiceProvider).
-        $this->call([AdminUserSeeder::class]);
+        // $this->call([AdminUserSeeder::class]);
     }
 }

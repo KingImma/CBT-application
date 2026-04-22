@@ -88,9 +88,7 @@ class TenantDatabaseSeeder extends Seeder
         foreach ($classLevels as $level) {
             ClassLevel::updateOrCreate(
                 ['name' => $level['name']], // Search by name
-                [
-                    'slug'     => Str::slug($level['name'], ''), 
-                ]
+                ['slug' => Str::slug($level['name'], '')]
             );
         }
 
@@ -113,7 +111,7 @@ class TenantDatabaseSeeder extends Seeder
         ];
 
         foreach ($subjects as $name) {
-            \Illuminate\Support\Facades\DB::table("subjects")->updateOrInsert(
+            DB::table("subjects")->updateOrInsert(
                 ["name" => $name],
                 [
                     "id" => Str::uuid()->toString(),
@@ -126,7 +124,7 @@ class TenantDatabaseSeeder extends Seeder
         }
 
         // ── Seed default grading scale ────────────────────────────────────────
-        \Illuminate\Support\Facades\DB::table("grading_scales")->updateOrInsert(
+        DB::table("grading_scales")->updateOrInsert(
             ["is_default" => true],
             [
                 "id" => Str::uuid()->toString(),

@@ -38,4 +38,10 @@ php artisan tenants:migrate --force
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force
 
+echo "==> Starting Redis Queue Worker in the background..."
+# We explicitly call the 'redis' connection here to guarantee it uses your Redis instance.
+# The '&' is critical so it runs silently in the background.
+php artisan queue:work redis --tries=3 --timeout=120 &
+
+echo "==> Starting Web Server..."
 exec php-fpm -D & nginx -g "daemon off;"

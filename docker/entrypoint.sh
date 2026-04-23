@@ -41,7 +41,22 @@ php artisan db:seed --class=SubscriptionPlanSeeder --force
 echo "==> Starting Redis Queue Worker in the background..."
 # We explicitly call the 'redis' connection here to guarantee it uses your Redis instance.
 # The '&' is critical so it runs silently in the background.
-php artisan queue:work redis --tries=3 --timeout=120 &
+php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 &
 
-echo "==> Starting Web Server..."
-exec php-fpm -D & nginx -g "daemon off;"
+echo "==> Starting services with health checks..."
+
+# Start PHP-FPM in background
+php-fpm -D &
+PHP_FPM_PID=$!
+
+# Wait for PHP-FPM (health check)
+echo "==> Waiting for PHP-FPM..."
+until curl -s http://localhost:9000/ping > /dev/null; do
+  echo "PHP-FPM not ready, waiting..."
+  sleep 1
+done
+
+echo "==> PHP-FPM ready!"
+
+# Start Nginx
+exec nginx -g "daemon off;"

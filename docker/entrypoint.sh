@@ -26,10 +26,10 @@ set -e
 # echo "==> Caching views..."
 # php artisan view:cache
 
-php artisan queue:clear redis
-php artisan queue:clear redis --queue=emails
-php artisan queue:flush
-php artisan queue:restart
+# php artisan queue:clear redis
+# php artisan queue:clear redis --queue=emails
+# php artisan queue:flush
+# php artisan queue:restart
 
 echo "==> Running migrations..."
 php artisan migrate --force

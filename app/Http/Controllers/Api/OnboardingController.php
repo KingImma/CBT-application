@@ -10,6 +10,7 @@ use App\Http\Requests\OnboardingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Tenant;
+use App\Jobs\SendSchoolWelcomeEmail;
 
 
 /*
@@ -40,6 +41,14 @@ class OnboardingController extends Controller
         try {
             // Pass the mapped, snake_case data directly to the action
             $tenant = $action->execute($request->mappedData());
+            
+            SendSchoolWelcomeEmail::dispatch(
+                adminEmail: $tenant->admin_email,
+                adminName:  $tenant->admin_name,
+                schoolName: $tenant->name,
+                handle:     $tenant->handle,
+                loginUrl:   $tenant->login_url,
+            );
 
             return response()->json([
                 'success' => true,

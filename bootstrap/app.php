@@ -20,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 
             // 2. Super Admin Routes
             Route::middleware(['api', 'auth:super_admin', 'super-admin'])
-                ->prefix('api')
+                ->prefix('api/super-admin')
                 ->group(base_path('routes/super_admin.php'));
             
             // 3. Tenant Routes

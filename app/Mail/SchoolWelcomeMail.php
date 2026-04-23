@@ -36,7 +36,7 @@ class SchoolWelcomeMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.school-welcome');
+        return new Content(view: 'emails.schools.welcome');
     }
 
     public function attachments(): array

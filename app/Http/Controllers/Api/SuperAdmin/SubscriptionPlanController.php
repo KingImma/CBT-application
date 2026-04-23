@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB; 
 use App\Http\Resources\SubscriptionPlanResource;
 use App\Models\SubscriptionPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+
 
 class SubscriptionPlanController extends Controller
 {
@@ -101,17 +105,19 @@ class SubscriptionPlanController extends Controller
     /**
     * Check all deletion constraints
     */
-    private function checkConstraints(SubscriptionPlan $plan): \Illuminate\Support\Collection
+    private function checkConstraints(SubscriptionPlan $plan): Collection
     {
         $errors = collect();
 
-        // 1. Active tenants
-        $activeTenants = $plan->tenants()->active()->count();
+        $activeTenants = $plan->tenants()
+            ->withTrashed() 
+            ->where('is_active', true)
+            ->count();
+            
         if ($activeTenants > 0) {
-            $errors->push("{$activeTenants} active tenant(s) using this plan");
+            $errors->push("{$activeTenants} active tenant(s)");
         }
 
-        // 2. Trial tenants ending soon
         $trialTenants = $plan->tenants()
             ->whereNull('subscription_ends_at')
             ->where('trial_ends_at', '>', now())
@@ -119,10 +125,11 @@ class SubscriptionPlanController extends Controller
             ->count();
             
         if ($trialTenants > 0) {
-            $errors->push("{$trialTenants} trial tenant(s) ending soon");
+            $errors->push("{$trialTenants} trial(s) ending soon");
         }
 
-        // 3. Recent subscriptions (last 30 days)
+        return $errors;
+        
         $recentSubs = $plan->tenants()
             ->where('created_at', '>', now()->subDays(30))
             ->count();
@@ -130,7 +137,7 @@ class SubscriptionPlanController extends Controller
         if ($recentSubs > 0) {
             $errors->push("{$recentSubs} recent subscription(s)");
         }
-
+    
         return $errors;
     }
 

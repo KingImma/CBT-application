@@ -70,6 +70,16 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         ];
     }
     
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+    
+    public function scopeInTrial($query)
+    {
+        return $query->whereNull('subscription_ends_at')
+            ->where('trial_ends_at', '>', now());
+    }
 
     public function plan()
     {

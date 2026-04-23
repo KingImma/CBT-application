@@ -31,11 +31,10 @@ class CreateTenantsTable extends Migration
             $table->string("phone", 20)->nullable();
             $table->string("email")->nullable();
 
-            // plan_id references subscription_plans.id which uses UUID.
-            $table
-                ->foreignUuid("plan_id")
+            $table->foreignId('plan_id')
                 ->nullable()
-                ->constrained("subscription_plans");
+                ->constrained('subscription_plans')
+                ->nullOnDelete(); 
 
             $table->enum(
                 "subscription_status",

@@ -70,20 +70,68 @@ class SubscriptionPlanController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $plan = SubscriptionPlan::findOrFail($id);
-        
-        $activeTenants = $plan->tenants()->where('is_active', true)->count();
-        
-        if ($activeTenants > 0) {
+
+        // Atomic transaction
+        return DB::transaction(function () use ($plan) {
+            $this->validateDeletion($plan);
+            
+            $plan->delete(); // ✅ Hard delete
+            
             return response()->json([
-                'message' => "Cannot deactive - {$activeTenants} active school(s) are on this plan. Migrate them first."
-            ], 422);
-        }
-        
-        $plan->update(['is_active' => false]);
-        
-        return response()->json(['message' => "Plan {$plan->name} deactived"]);
+                'message' => "Plan '{$plan->name}' deleted successfully"
+            ], 200);
+        });
     }
 
+    /**
+    * Validate plan can be deleted
+    */
+    private function validateDeletion(SubscriptionPlan $plan): void
+    {
+        $constraints = $this->checkConstraints($plan);
+        
+        if ($constraints->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'plan' => $constraints->implode(' | ')
+            ]);
+        }
+    }
+
+    /**
+    * Check all deletion constraints
+    */
+    private function checkConstraints(SubscriptionPlan $plan): \Illuminate\Support\Collection
+    {
+        $errors = collect();
+
+        // 1. Active tenants
+        $activeTenants = $plan->tenants()->active()->count();
+        if ($activeTenants > 0) {
+            $errors->push("{$activeTenants} active tenant(s) using this plan");
+        }
+
+        // 2. Trial tenants ending soon
+        $trialTenants = $plan->tenants()
+            ->whereNull('subscription_ends_at')
+            ->where('trial_ends_at', '>', now())
+            ->where('trial_ends_at', '<', now()->addDays(7))
+            ->count();
+            
+        if ($trialTenants > 0) {
+            $errors->push("{$trialTenants} trial tenant(s) ending soon");
+        }
+
+        // 3. Recent subscriptions (last 30 days)
+        $recentSubs = $plan->tenants()
+            ->where('created_at', '>', now()->subDays(30))
+            ->count();
+            
+        if ($recentSubs > 0) {
+            $errors->push("{$recentSubs} recent subscription(s)");
+        }
+
+        return $errors;
+    }
 
     /**
      * Get a single plan's details.

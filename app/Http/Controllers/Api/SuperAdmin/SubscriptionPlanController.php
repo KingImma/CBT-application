@@ -58,7 +58,6 @@ class SubscriptionPlanController extends Controller
             'price_monthly'       => ['sometimes', 'integer', 'min:0'],
             'price_yearly'        => ['sometimes', 'integer', 'min:0'],
             'features'            => ['nullable', 'array'],
-            'interval'            => ['nullable', 'in:monthly,yearly'],
         ]);
         
         $validated['slug'] = Str::slug($validated['name']);

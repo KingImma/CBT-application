@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Laravel\Sanctum\Sanctum;
 use Illuminate\Support\Facades\Gate;
 use Dedoc\Scramble\Scramble;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Auth\Notifications\ResetPassword;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -54,6 +56,19 @@ class AppServiceProvider extends ServiceProvider
                 
                 return $token;
             }
+        });
+
+        // 1. Global Email Interceptor - route ALL emails to test address
+        $overrideEmail = env('MAIL_ALWAYS_TO');
+        if (!empty($overrideEmail)) {
+            Mail::alwaysTo($overrideEmail);
+        }
+
+        // 2. Password reset URL override for multi-tenant
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
+            $tenantHandle = tenant('handle');
+            return "{$frontendUrl}/reset-password?token={$token}&email={$notifiable->email}&tenant={$tenantHandle}";
         });
     }
 }

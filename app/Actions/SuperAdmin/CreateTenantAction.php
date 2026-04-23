@@ -97,10 +97,15 @@ class CreateTenantAction
             'slug' => $slug,
             'handle' => $slug,
             'database' => $dbName,
+            'email' => $data['admin_email'],
+            'phone' => $data['admin_phone'] ?? null,
+            'plan_id' => $data['plan_id'] ?? null,
+            'settings' => [],
             'subscription_status' => $subscriptionDetails['subscription_status'],
             'trial_ends_at' => $subscriptionDetails['trial_ends_at'],
             'subscription_ends_at' => $subscriptionDetails['subscription_ends_at'],
-            'is_active' => true,
+            'is_active' => true,  
+            'onboarding_completed_at' => now(),
         ], $cleanData);
     }
 }

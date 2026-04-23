@@ -24,9 +24,10 @@ use App\Actions\SuperAdmin\ReinstateTenantAction;
 
 class TenantController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
         $tenants = Tenant::query()
+            ->with('plan') // 1. Eager load the plan to prevent N+1 queries
             ->when($request->search, fn($query) => 
                 $query->where('name', 'ilike', "%{$request->search}%")
                     ->orWhere('slug', 'ilike', "%{$request->search}%")
@@ -40,7 +41,8 @@ class TenantController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
         
-        return response()->json($tenants);
+        // 2. Wrap the paginated results in your secure resource collection
+        return TenantResource::collection($tenants);
     }
     
     public function store(StoreTenantRequest $request, CreateTenantAction $action): \Illuminate\Http\JsonResponse

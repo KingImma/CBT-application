@@ -16,24 +16,38 @@ class TenantResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'   => $this->id,
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'domains' => $this->whenLoaded('domains', function () {
-                return $this->domains->pluck('domain');
-            }),
+            // Core Identity
+            'id'          => $this->id,
+            'name'        => $this->name,
+            'handle'      => $this->handle,
+            'school_type' => $this->school_type,
+            'logo'        => $this->logo,
+            'is_active'   => $this->is_active,
+
+            // Contact Info (Grouped for a cleaner frontend state)
             'contact' => [
-                'email' => $this->email,
-                'phone' => $this->phone
+                'email'    => $this->email,
+                'phone'    => $this->phone,
+                'address'  => $this->address,
+                'city'     => $this->city,
+                'state'    => $this->state,
             ],
-            'location' => [
-                'address' => $this->address,
-                'city'    => $this->city,
-                'state'   => $this->state
+
+            // Subscription & Plan Info
+            'subscription' => [
+                'status'   => $this->subscription_status,
+                // We pull the relationship here
+                'plan'     => $this->whenLoaded('plan', fn () => [
+                    'id'   => $this->plan->id,
+                    'name' => $this->plan->name,
+                ]),
+                'trial_ends_at' => $this->trial_ends_at,
+                'ends_at'       => $this->subscription_ends_at,
             ],
-            'subcription_status' => $this->subscription_status,
-            'is_active'          => $this->is_active,
-            'created_at'         => $this->created_at?->toIso8601String()
-        ];
-    }
+
+            // Timestamps
+            'onboarding_completed_at' => $this->onboarding_completed_at,
+            'created_at'              => $this->created_at,
+            ];
+        }
 }

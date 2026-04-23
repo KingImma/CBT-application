@@ -52,7 +52,6 @@ class OnboardingRequest extends FormRequest
         return [
             'name'             => $validated['schoolName'],
             'handle'           => $validated['handle'],
-            'type'             => $validated['schoolType'] ?? null,
             'address'          => $validated['address'] ?? null,
             'state'            => $validated['state'] ?? null,
             'city'             => $validated['city'] ?? null,

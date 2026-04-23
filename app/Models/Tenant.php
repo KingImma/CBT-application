@@ -13,6 +13,8 @@ use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
+use App\Models\SubscriptionPlan;
+
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
@@ -36,6 +38,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         "trial_ends_at" => "datetime",
         "subscription_ends_at" => "datetime",
         "onboarding_completed_at" => "datetime",
+        'settings' => 'array',
     ];
 
   
@@ -65,5 +68,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             "updated_at",
             "deleted_at",
         ];
+    }
+    
+
+    public function plan()
+    {
+        return $this->belongsTo(SubscriptionPlan::class, 'plan_id'); 
     }
 }

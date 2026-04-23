@@ -23,14 +23,31 @@ class SubscriptionPlanController extends Controller
      * Frontend uses this to render plan selection UI
      * before creating a tenant.
      */
-    public function index(): JsonResponse
-    {
-        $plans = SubscriptionPlan::query()
-            ->orderBy('price_monthly')
-            ->get();
-
-        return response()->json(SubscriptionPlanResource::collection($plans));
-    }
+     public function index(Request $request): JsonResponse
+     {
+         $query = SubscriptionPlan::query()
+             ->where('is_active', true)      // Only active
+             ->orderBy('price_monthly');     // Cheapest first
+     
+         // // Optional filters
+         // if ($request->filled('interval')) {
+         //     $query->where('interval', $request->interval); // monthly/yearly
+         // }
+     
+         // if ($request->filled('category')) {
+         //     $query->where('category', $request->category);
+         // }
+     
+         $plans = $query->get();
+     
+         return response()->json([
+             'data' => SubscriptionPlanResource::collection($plans),
+             'meta' => [
+                 'total' => $plans->count(),
+                 // 'filters' => $request->only(['interval', 'category'])
+             ]
+         ]);
+     }
     
     public function store(Request $request): JsonResponse
     {

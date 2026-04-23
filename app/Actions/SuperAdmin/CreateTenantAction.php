@@ -9,7 +9,7 @@ use App\Concerns\ResolvesSubscriptionDetails;
 use App\Concerns\HasLocking;
 use App\Exceptions\Tenant\TenantProvisioningException;
 use App\Jobs\ProvisionTenantDetailsJob;
-use App\Jobs\SendWelcomeEmailJob;
+use App\Jobs\SendSchoolWelcomeEmail;
 use App\Models\Tenant;
 use Illuminate\Support\Str;
 
@@ -56,6 +56,14 @@ class CreateTenantAction
 
                 // 4. Dispatch the heavy lifting to the queue
                 ProvisionTenantDetailsJob::dispatch($tenant, $adminData, $curriculumData);
+                
+                SendSchoolWelcomeEmail::dispatch(
+                    adminEmail: $data['admin_email'],
+                    adminName:  trim(($data['admin_first_name'] ?? '') . ' ' . ($data['admin_last_name'] ?? '')),
+                    schoolName: $tenant->name,
+                    handle:     $tenant->handle,
+                    loginUrl:   "https://{$tenant->handle}.{$this->resolveCentralDomain()}/login",
+                )->onQueue('emails');
 
             } catch (\Exception $e) {
                 // Rollback if domain creation or job dispatching fails

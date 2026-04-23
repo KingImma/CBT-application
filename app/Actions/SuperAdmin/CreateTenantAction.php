@@ -56,8 +56,6 @@ class CreateTenantAction
 
                 // 4. Dispatch the heavy lifting to the queue
                 ProvisionTenantDetailsJob::dispatch($tenant, $adminData, $curriculumData);
-                
-                SendWelcomeEmailJob::dispatch($tenant, $adminData['email'], $adminData['first_name']);
 
             } catch (\Exception $e) {
                 // Rollback if domain creation or job dispatching fails

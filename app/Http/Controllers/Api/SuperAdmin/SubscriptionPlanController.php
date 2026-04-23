@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB; 
 use App\Http\Resources\SubscriptionPlanResource;
 use App\Models\SubscriptionPlan;
 use Illuminate\Http\JsonResponse;

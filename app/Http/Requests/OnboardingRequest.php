@@ -37,8 +37,7 @@ class OnboardingRequest extends FormRequest
             'email'          => ['required', 'email', 'max:255'],
             'phone'          => ['required', 'string', 'max:20'],
             'password'       => ['required', 'string', 'min:8'],
-            'jobTitle'       => ['nullable', 'string', 'max:255'],
-            
+
             'plan_id'        => ['nullable', 'string'],
         ];
     }
@@ -62,7 +61,6 @@ class OnboardingRequest extends FormRequest
             'admin_email'      => $validated['email'],
             'admin_password'   => $validated['password'],
             'admin_phone'      => $validated['phone'],
-            'admin_job_title'  => $validated['jobTitle'] ?? null,
             
             'plan_id'          => $validated['plan_id'] ?? null,
 

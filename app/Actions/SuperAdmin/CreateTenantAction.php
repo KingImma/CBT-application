@@ -42,7 +42,6 @@ class CreateTenantAction
                 'email'      => $data['admin_email'],
                 'phone'      => $data['admin_phone'] ?? null,
                 'password'   => $data['admin_password'],
-                'job_title'  => $data['admin_job_title'] ?? null,
             ];
             
             $curriculumData = $data['curriculum'] ?? [];
@@ -87,7 +86,7 @@ class CreateTenantAction
 
         // Strip out all the onboarding-specific fields so they don't get saved to the DB
         $cleanData = array_diff_key($data, array_flip([
-            'admin_first_name', 'admin_last_name', 'admin_email', 'admin_job_title', 'admin_password', 'admin_phone', 'plan_id', 'curriculum'
+            'admin_first_name', 'admin_last_name', 'admin_email', 'admin_password', 'admin_phone', 'plan_id', 'curriculum'
         ]));
 
         return array_merge([

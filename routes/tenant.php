@@ -119,7 +119,7 @@ Route::prefix('students')->controller(StudentController::class)->group(function 
     Route::post('/', 'store');
     Route::get('/{id}', 'show');
     Route::patch('/{id}', 'update');
-    // custom
+    // custom-links
     Route::post('/{id}/toggle-active', 'toggleActive');
     Route::post('/{id}/reassign-class', 'reassignClass');
     Route::get('/export', 'exportCsv');

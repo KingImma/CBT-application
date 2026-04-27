@@ -32,3 +32,10 @@ Route::prefix('onboarding')->controller(OnboardingController::class)->group(func
     Route::get('/check-handle', 'checkHandle');
     Route::post('/register', 'register');
 });
+
+Route::controller(PasswordController::class)->middleware('throttle:10,1')->prefix('password')->group(function () {
+    Route::post('/forgot', 'forgot');
+    Route::post('/verify-otp', 'verifyOtp');
+    Route::post('/reset', 'reset');
+    Route::middleware('tenant.header','auth:sanctum')->post('/change', 'change');
+});

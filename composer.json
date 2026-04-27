@@ -12,6 +12,7 @@
         "laravel/horizon": "^5.45",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
+        "league/csv": "^9.28",
         "lorisleiva/laravel-actions": "^2.10",
         "predis/predis": "^3.4",
         "spatie/laravel-permission": "^7.3",

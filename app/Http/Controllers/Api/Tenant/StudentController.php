@@ -7,8 +7,6 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Student\CreateStudentAction;
 use App\Actions\Tenants\Student\UpdateStudentAction;
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\ClassArm;
-use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

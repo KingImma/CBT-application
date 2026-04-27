@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Tenants;
+namespace App\Services;
 
 use App\Actions\Tenants\Student\CreateStudentAction;
 use App\Actions\Tenants\Student\UpdateStudentAction;

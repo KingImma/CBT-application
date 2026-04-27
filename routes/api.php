@@ -37,5 +37,5 @@ Route::controller(PasswordController::class)->middleware('throttle:10,1')->prefi
     Route::post('/forgot', 'forgot');
     Route::post('/verify-otp', 'verifyOtp');
     Route::post('/reset', 'reset');
-    Route::middleware('tenant.header','auth:sanctum')->post('/change', 'change');
+    Route::middleware([InitializeTenancyByHeader::class], 'auth:sanctum')->post('/change', 'change');
 });

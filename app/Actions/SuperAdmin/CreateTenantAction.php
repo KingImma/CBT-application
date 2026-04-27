@@ -67,7 +67,19 @@ class CreateTenantAction
 
             } catch (\Exception $e) {
                 // Rollback if domain creation or job dispatching fails
-                $tenant->delete();
+                try {
+                    $tenant->delete();
+                } catch (\Exception $cleanupException) {
+                    // Cleanup also failed — log the orphaned database for manual recovery
+                    // The tenant record is gone but the database 'tenant->database' still exists
+                    \Illuminate\Support\Facades\Log::critical('Orphaned tenant database after failed provisioning', [
+                        'slug'     => $slug,
+                        'database' => $tenant->database,
+                        'original_error'  => $e->getMessage(),
+                        'cleanup_error'   => $cleanupException->getMessage(),
+                    ]);
+                }
+
                 throw new TenantProvisioningException($slug, $e->getMessage());
             }
 

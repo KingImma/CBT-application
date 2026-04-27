@@ -10,11 +10,16 @@ use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
+use App\Services\GenerateAdmissionNumber;
 use Illuminate\Support\Facades\Validator;
 
 class StudentImportService
 {
     private const BATCH_SIZE = 50;
+    
+    public function __construct(private readonly GenerateAdmissionNumber $admissionNumberGenerator)
+    {
+    }
 
     public function import(array $validated, ?string $filePath): array
     {
@@ -170,7 +175,7 @@ class StudentImportService
                         'first_name'         => $existingProfile->first_name,
                         'last_name'        => $existingProfile->last_name,
                         'email'           => $existingProfile->email,
-                        'registration_number' => $existingProfile->studentProfile->registration_number,
+                        'admission_number' => $existingProfile->studentProfile->admission_number,
                         'class_level'           => $existingProfile->studentProfile->classLevel?->name,
                         'class_arm'             => $existingProfile->studentProfile->classArm?->name,
                     ],
@@ -178,7 +183,7 @@ class StudentImportService
                         'first_name'        => trim($data['first_name']),
                         'last_name'       => trim($data['last_name']),
                         'email'          => $email ?? "{$admissionNumber}@student.local",
-                        'registration_number' => $admissionNumber,
+                        'admission_number' => $admissionNumber,
                         'class_level'          => $data['class_level'],
                         'class_arm'            => $data['class_arm'] ?? null,
                     ],
@@ -187,17 +192,7 @@ class StudentImportService
         }
 
         if (! $admissionNumber) {
-            $year = date('Y');
-            $lastProfile = StudentProfile::lockForUpdate()
-                ->where('registration_number', 'like', "STU/{$year}/%")
-                ->orderBy('id', 'desc')
-                ->first();
-
-            $nextCount = 1;
-            if ($lastProfile && preg_match('/(\d+)$/', $lastProfile->registration_number, $matches)) {
-                $nextCount = (int) $matches[1] + 1;
-            }
-            $admissionNumber = "STU/{$year}/" . str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
+            $admissionNumber = $this->admissionNumberGenerator->generate();
         }
 
         $finalEmail = $email ?? "{$admissionNumber}@student.local";
@@ -208,7 +203,7 @@ class StudentImportService
             'email'       => $finalEmail,
             'class_level_id' => $classLevelId,
             'class_arm_id'  => $classArmId,
-            'registration_number' => $admissionNumber,
+            'admission_number' => $admissionNumber,
             'date_of_birth' => ! empty($data['date_of_birth']) ? $data['date_of_birth'] : null,
             'gender'        => ! empty($data['gender']) ? trim(strtolower($data['gender'])) : null,
         ];

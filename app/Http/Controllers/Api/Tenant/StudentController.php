@@ -32,7 +32,7 @@ class StudentController extends Controller
                       ->orWhere('last_name', 'ilike', "%{$search}%")
                       ->orWhere('email', 'ilike', "%{$search}%")
                       ->orWhereHas('studentProfile', fn ($p) => 
-                          $p->where('registration_number', 'ilike', "%{$search}%")
+                          $p->where('admission_number', 'ilike', "%{$search}%")
                       );
                 });
             })
@@ -74,7 +74,7 @@ class StudentController extends Controller
             'message' => 'Student created.',
             'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
             'login_credentials' => [
-                'registration_number' => $result['user']->studentProfile->registration_number,
+                'admission_number' => $result['user']->studentProfile->admission_number,
                 'default_password'    => $result['password'],
             ],
         ], 201);
@@ -86,7 +86,7 @@ class StudentController extends Controller
         $result = $action->execute($request->validated(), $id);
 
         return response()->json(
-            $result['user']->fresh(['studentProfile.classLevel', 'studentProfile.classArm'])
+            $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm'])
         );
     }
 
@@ -102,7 +102,7 @@ class StudentController extends Controller
 
         return response()->json([
             'message' => 'Student reassigned.',
-            'student' => $result['user']->fresh(['studentProfile.classLevel', 'studentProfile.classArm']),
+            'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
         ]);
     }
 
@@ -144,7 +144,7 @@ class StudentController extends Controller
         // Hash::make() will block the thread for ~100ms per student.
         foreach ($students as $student) {
             $student->update([
-                'password' => Hash::make($student->studentProfile->registration_number),
+                'password' => Hash::make($student->studentProfile->admission_number),
             ]);
             $reset++;
         }
@@ -175,7 +175,7 @@ class StudentController extends Controller
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, [
-                'Registration Number', 'First Name', 'Last Name',
+                'Admission Number', 'First Name', 'Last Name',
                 'Email', 'Class Level', 'Class Arm', 'Gender', 'Date of Birth',
             ]);
 
@@ -183,7 +183,7 @@ class StudentController extends Controller
                 foreach ($students as $student) {
                     $profile = $student->studentProfile;
                     fputcsv($handle, [
-                        $profile?->registration_number,
+                        $profile?->admission_number,
                         $student->first_name,
                         $student->last_name,
                         $student->email,
@@ -208,7 +208,7 @@ class StudentController extends Controller
                 'first_name',
                 'last_name',
                 'email',
-                'registration_number',
+                'admission_number',
                 'class_level',
                 'class_arm',
                 'date_of_birth',

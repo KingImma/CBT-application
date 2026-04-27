@@ -144,9 +144,7 @@ class SubscriptionPlanController extends Controller
         if ($trialTenants > 0) {
             $errors->push("{$trialTenants} trial(s) ending soon");
         }
-
-        return $errors;
-        
+ 
         $recentSubs = $plan->tenants()
             ->where('created_at', '>', now()->subDays(30))
             ->count();

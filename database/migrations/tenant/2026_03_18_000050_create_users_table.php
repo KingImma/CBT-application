@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('last_name', 100);
             $table->string('other_names', 100)->nullable();
             $table->string('email')->unique()->nullable();
-            $table->string('registration_number', 50)->unique()->nullable();
+            $table->string('admission_number', 50)->unique()->nullable();
             $table->string('password');
             $table->enum('role', array_column(RoleType::cases(), 'value'));
             $table->enum('gender', ['male', 'female'])->nullable();
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->softDeletes();
             
             // Indexes
-            $table->index(['registration_number']);
+            $table->index(['admission_number']);
             $table->index(['email']);
             $table->index(['role', 'is_active']);
         });

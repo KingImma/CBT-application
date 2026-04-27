@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\PasswordController;
-use App\Http\Controllers\Api\Tenant\StudentImportController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Middleware\InitializeTenancyByHeader;
 
@@ -26,7 +25,7 @@ Route::middleware([InitializeTenancyByHeader::class])->group(function () {
     });
 });
 
-Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate']);
+Route::get('/students/import/template', [StudentController::class, 'downloadTemplate']);
 
 Route::prefix('onboarding')->controller(OnboardingController::class)->group(function () {
     Route::get('/check-handle', 'checkHandle');

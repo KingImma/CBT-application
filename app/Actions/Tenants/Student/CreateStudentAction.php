@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Hash;
 
 class CreateStudentAction
 {
+    public function __construct(private GenerateAdmissionNumber $admissionNumberGenerator)
+    {
+    }
+    
     /**
      * Executes the student creation process.
      */
@@ -19,8 +23,8 @@ class CreateStudentAction
         // Wrap everything in a transaction so sequence generation and user creation are atomic
         return DB::transaction(function () use ($data) {
             
-            $regNumber = $data['registration_number'] ?? $this->generateRegNumber();
-            $password  = $regNumber; 
+            $admissionNumber = $data['admission_number'] ?? $this->admissionNumberGenerator->generate();
+            $password  = $admissionNumber; 
 
             // 1. Create the base user (Removed the 'role' column since Spatie handles it)
             $user = User::create([
@@ -39,7 +43,7 @@ class CreateStudentAction
             $user->studentProfile()->create([
                 'class_level_id'      => $data['class_level_id'],
                 'class_arm_id'        => $data['class_arm_id'] ?? null,
-                'registration_number' => $regNumber,
+                'admission_number'    => $admissionNumber,
                 'date_of_birth'       => $data['date_of_birth'] ?? null,
                 'gender'              => $data['gender'] ?? null,
             ]);
@@ -64,20 +68,20 @@ class CreateStudentAction
      * Generate a unique sequential registration number safely.
      * Example: STU/2026/0001
      */
-    private function generateRegNumber(): string
+    private function generateAdmissionNumber(): string
     {
         $year = date('Y');
 
         // lockForUpdate() locks the selected rows until the transaction finishes.
         // This prevents two admins from generating STU/2026/0005 at the exact same millisecond.
         $lastProfile = StudentProfile::lockForUpdate()
-            ->where('registration_number', 'like', "STU/{$year}/%")
+            ->where('admission_number', 'like', "STU/{$year}/%")
             ->orderBy('id', 'desc')
             ->first();
 
         $nextCount = 1;
         
-        if ($lastProfile && preg_match('/(\d+)$/', $lastProfile->registration_number, $matches)) {
+        if ($lastProfile && preg_match('/(\d+)$/', $lastProfile->admission_number, $matches)) {
             $nextCount = (int)$matches[1] + 1;
         }
 

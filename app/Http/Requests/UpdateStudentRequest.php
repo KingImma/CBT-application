@@ -12,7 +12,7 @@ class UpdateStudentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,12 +22,15 @@ class UpdateStudentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $userId = $this->route('id');
+        
         return [
             'first_name'    => ['sometimes', 'string', 'max:100'],
             'last_name'     => ['sometimes', 'string', 'max:100'],
-            'email'         => ['sometimes', 'nullable', 'email', 'unique:users,email,' . $profile->user_id],
+            'email'         => ['sometimes', 'nullable', 'email', 'unique:users,email,' . $userId],
             'date_of_birth' => ['sometimes', 'nullable', 'date'],
             'gender'        => ['sometimes', 'nullable', 'in:male,female,other'],
+            'admission_number'     => ['sometimes', 'string', 'max:50', 'unique:student_profiles,registration_number,' . $userId . ',id'],
         ];
     }
 }

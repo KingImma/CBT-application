@@ -48,10 +48,14 @@ class Handler extends ExceptionHandler
     {
         // reportable — structured logging with context for bugs worth tracking
         $this->reportable(function (Throwable $e) {
-            $this->structuredLog($e);
+            // Build context once — structuredLog writes it, monitoring service receives it
+            $context = $this->buildStructuredContext($e);
+        
+            Log::error('Exception occurred', $context);
+        
             app(ExceptionMonitoringService::class)->record(
                 get_class($e),
-                ['message' => $e->getMessage()]
+                $context
             );
         });
 
@@ -193,44 +197,6 @@ class Handler extends ExceptionHandler
     }
 
     /**
-     * Structured log — attaches request context, user, and trace ID.
-     * Follows the BetterStack pattern of rich context without sensitive data.
-     */
-    private function structuredLog(Throwable $e): void
-    {
-        $context = [
-            'trace_id'  => Str::uuid()->toString(),
-            'exception' => get_class($e),
-            'message'   => $e->getMessage(),
-            'file'      => $e->getFile(),
-            'line'      => $e->getLine(),
-        ];
-
-        if (request()) {
-            $context['request'] = [
-                'url'    => request()->fullUrl(),
-                'method' => request()->method(),
-                'ip'     => request()->ip(),
-                'tenant' => request()->header('X-Tenant') ?? tenant('id'),
-            ];
-        }
-
-        if (auth()->check()) {
-            $context['user'] = ['id' => auth()->id()];
-        } elseif (auth('super_admin')->check()) {
-            $context['super_admin'] = ['id' => auth('super_admin')->id()];
-        }
-
-        // Query exception gets SQL context — critical for DB debugging
-        if ($e instanceof QueryException) {
-            $context['sql']      = $e->getSql();
-            $context['bindings'] = $e->getBindings();
-        }
-
-        Log::error('Exception occurred', $context);
-    }
-
-    /**
      * Dev gets full stack trace. Production gets a clean message.
      * Never expose internals to clients in production.
      */
@@ -273,5 +239,48 @@ class Handler extends ExceptionHandler
             503 => 'Service unavailable.',
             default => 'HTTP error.',
         };
+    }
+    
+    private function buildStructuredContext(Throwable $e): array
+    {
+        $context = [
+            'trace_id'  => \Illuminate\Support\Str::uuid()->toString(),
+            'exception' => get_class($e),
+            'message'   => $e->getMessage(),
+            'file'      => $e->getFile(),
+            'line'      => $e->getLine(),
+        ];
+    
+        if (request()) {
+            $context['request'] = [
+                'url'    => request()->fullUrl(),
+                'method' => request()->method(),
+                'ip'     => request()->ip(),
+                'tenant' => request()->header('X-Tenant') ?? tenant('id'),
+            ];
+        }
+    
+        if (auth()->check()) {
+            $context['user'] = ['id' => auth()->id()];
+        } elseif (auth('super_admin')->check()) {
+            $context['super_admin'] = ['id' => auth('super_admin')->id()];
+        }
+    
+        if ($e instanceof \Illuminate\Database\QueryException) {
+            $context['sql']      = $e->getSql();
+            $context['bindings'] = $e->getBindings();
+        }
+    
+        return $context;
+    }
+    
+    /**
+     * Structured log — attaches request context, user, and trace ID.
+     * Follows the BetterStack pattern of rich context without sensitive data.
+     */
+
+    private function structuredLog(Throwable $e): void
+    {
+        Log::error('Exception occurred', $this->buildStructuredContext($e));
     }
 }

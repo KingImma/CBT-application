@@ -28,7 +28,7 @@ class UpdateStudentAction
             $profileData = collect($data)->only([
                 'class_level_id', 
                 'class_arm_id', 
-                'registration_number', 
+                'admission_number', 
                 'date_of_birth', 
                 'gender'
             ])->toArray();
@@ -42,7 +42,7 @@ class UpdateStudentAction
             }
         });
 
-        // We don't need to load the relations here; the Controller handles eager-loading.
-        return $user;
+        
+        return ['user' => $user->fresh()];
     }
 }

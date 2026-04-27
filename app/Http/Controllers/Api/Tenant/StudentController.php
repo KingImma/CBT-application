@@ -7,15 +7,15 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Student\CreateStudentAction;
 use App\Actions\Tenants\Student\UpdateStudentAction;
 use App\Http\Controllers\Controller;
+use App\Models\Tenant\ClassArm;
+use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use Illuminate\Support\Facades\Hash;
-use League\Csv\Reader;
-use League\Csv\Writer;
-
+use App\Services\StudentImportService;
 
 class StudentController extends Controller
 {
@@ -157,6 +157,8 @@ class StudentController extends Controller
         ]);
     }
     
+    
+    
 
     public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
@@ -197,5 +199,60 @@ class StudentController extends Controller
 
             fclose($handle);
         }, 'students.csv', $headers);
+    }
+
+    public function downloadImportTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'first_name',
+                'last_name',
+                'email',
+                'registration_number',
+                'class_level',
+                'class_arm',
+                'date_of_birth',
+                'gender',
+            ]);
+
+            fputcsv($handle, ['John', 'Doe', 'john.doe@example.com', 'STU/2026/0001', 'JSS 1', 'A', '2010-03-15', 'male']);
+            fputcsv($handle, ['Jane', 'Smith', '', '', 'SSS 2', 'B', '2008-07-22', 'female']);
+
+            fclose($handle);
+        }, 'student_import_template.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function importCsv(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'file'                => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+            'overwrite_existing'    => ['nullable', 'in:update,skip'],
+            'class_level_id'       => ['nullable', 'uuid', 'exists:class_levels,id'],
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+
+        $result = app(StudentImportService::class)->import($validated, $path);
+
+        if (isset($result['error'])) {
+            return response()->json(['message' => $result['error']], 422);
+        }
+
+        $statusCode = $result['failed'] > 0 || $result['duplicates_found'] > 0 ? 207 : 201;
+
+        return response()->json([
+            'message'           => "Import complete. {$result['imported']} imported, {$result['duplicates_found']} duplicates, {$result['failed']} failed.",
+            'total_rows'        => $result['total_rows'],
+            'imported'         => $result['imported'],
+            'duplicates_found'  => $result['duplicates_found'],
+            'failed'          => $result['failed'],
+            'duplicates'      => $result['duplicates'],
+            'errors'          => $result['errors'],
+        ], $statusCode);
     }
 }

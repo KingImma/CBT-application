@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\AcademicSessionController;
 use App\Http\Controllers\Api\Tenant\TermController;
-use App\Http\Controllers\Api\Tenant\StudentImportController;
 use App\Http\Controllers\Api\Tenant\ClassArmController;
 use App\Http\Controllers\Api\Tenant\ClassLevelController;
 use App\Http\Controllers\Api\Tenant\SubjectController;
@@ -124,8 +123,9 @@ Route::prefix('students')->controller(StudentController::class)->group(function 
     Route::post('/{id}/toggle-active', 'toggleActive');
     Route::post('/{id}/reassign-class', 'reassignClass');
     Route::get('/export', 'exportCsv');
+    Route::get('/import-template', 'downloadImportTemplate');
+    Route::post('/import', 'importCsv');
     Route::post('/bulk-reset-passwords', 'bulkResetPasswords');
-    Route::post('/import', [StudentImportController::class, 'import']);
 });
 
 // Grading scales

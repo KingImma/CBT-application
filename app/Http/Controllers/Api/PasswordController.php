@@ -8,7 +8,7 @@
 // • Alternative: Move validation to Form Requests (dedicated Request classes) for larger
 //               teams or if validators are reused across controllers
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\PasswordService;

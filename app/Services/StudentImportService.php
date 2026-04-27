@@ -177,8 +177,8 @@ class StudentImportService
                     'imported' => [
                         'first_name'        => trim($data['first_name']),
                         'last_name'       => trim($data['last_name']),
-                        'email'          => $email ?? "{$regNumber}@student.local",
-                        'registration_number' => $regNumber,
+                        'email'          => $email ?? "{$admissionNumber}@student.local",
+                        'registration_number' => $admissionNumber,
                         'class_level'          => $data['class_level'],
                         'class_arm'            => $data['class_arm'] ?? null,
                     ],
@@ -186,7 +186,7 @@ class StudentImportService
             ];
         }
 
-        if (! $regNumber) {
+        if (! $admissionNumber) {
             $year = date('Y');
             $lastProfile = StudentProfile::lockForUpdate()
                 ->where('registration_number', 'like', "STU/{$year}/%")
@@ -197,10 +197,10 @@ class StudentImportService
             if ($lastProfile && preg_match('/(\d+)$/', $lastProfile->registration_number, $matches)) {
                 $nextCount = (int) $matches[1] + 1;
             }
-            $regNumber = "STU/{$year}/" . str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
+            $admissionNumber = "STU/{$year}/" . str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
         }
 
-        $finalEmail = $email ?? "{$regNumber}@student.local";
+        $finalEmail = $email ?? "{$admissionNumber}@student.local";
 
         $createData = [
             'first_name'    => trim($data['first_name']),
@@ -208,7 +208,7 @@ class StudentImportService
             'email'       => $finalEmail,
             'class_level_id' => $classLevelId,
             'class_arm_id'  => $classArmId,
-            'registration_number' => $regNumber,
+            'registration_number' => $admissionNumber,
             'date_of_birth' => ! empty($data['date_of_birth']) ? $data['date_of_birth'] : null,
             'gender'        => ! empty($data['gender']) ? trim(strtolower($data['gender'])) : null,
         ];

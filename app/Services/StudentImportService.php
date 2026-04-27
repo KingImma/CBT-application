@@ -127,16 +127,16 @@ class StudentImportService
             $classArmId = $arm?->id;
         }
 
-        $regNumber = ! empty($data['registration_number'])
-            ? trim($data['registration_number'])
+        $admissionNumber = ! empty($data['admission_number'])
+            ? trim($data['admission_number'])
             : null;
 
         $email = ! empty($data['email']) ? trim($data['email']) : null;
 
-        $existingByReg = $regNumber ? StudentProfile::where('registration_number', $regNumber)->first() : null;
+        $existingByAdmission = $admissionNumber ? StudentProfile::where('admission_number', $admissionNumber)->first() : null;
         $existingByEmail = $email ? User::where('email', $email)->first() : null;
 
-        $existingProfile = $existingByReg?->user;
+        $existingProfile = $existingByAdmission?->user;
         if (! $existingProfile && $existingByEmail) {
             $existingProfile = $existingByEmail;
         }
@@ -146,7 +146,7 @@ class StudentImportService
                 $updateData = [
                     'first_name'     => trim($data['first_name']),
                     'last_name'    => trim($data['last_name']),
-                    'email'        => $email ?? "{$regNumber}@student.local",
+                    'email'        => $email ?? "{$admissionNumber}@student.local",
                     'class_level_id' => $classLevelId,
                     'class_arm_id'   => $classArmId,
                     'date_of_birth'  => ! empty($data['date_of_birth']) ? $data['date_of_birth'] : null,

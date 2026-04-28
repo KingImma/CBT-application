@@ -4,23 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\SuperAdmin;
 
-use App\Exceptions\TenantSlugAlreadyTakenException;
-
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-
-use Illuminate\Http\JsonResponse;
 use App\Http\Resources\TenantResource;
-
 use Illuminate\Http\Request;
-use App\Http\Requests\StoreTenantRequest;
-use App\Http\Requests\UpdateTenantRequest;
-
 use App\Actions\SuperAdmin\CreateTenantAction;
 use App\Actions\SuperAdmin\UpdateTenantAction;
 use App\Actions\SuperAdmin\DeleteTenantAction;
 use App\Actions\SuperAdmin\SuspendTenantAction;
 use App\Actions\SuperAdmin\ReinstateTenantAction;
+use App\Http\Requests\SuperAdmin\StoreTenantRequest;
+use App\Http\Requests\SuperAdmin\UpdateTenantRequest;
 
 class TenantController extends Controller
 {
@@ -55,13 +49,13 @@ class TenantController extends Controller
             ->setStatusCode(201);
     }
     
-    public function show(string $id): JsonResponse
+    public function show(string $id): \Illuminate\Http\JsonResponse
     {
         $tenant = Tenant::with('domains')->findOrFail($id);
         return response()->json(new TenantResource($tenant))->setStatusCode(200);
     }
     
-    public function update(UpdateTenantRequest $request, string $id, UpdateTenantAction $action): JsonResponse
+    public function update(UpdateTenantRequest $request, string $id, UpdateTenantAction $action):\Illuminate\Http\JsonResponse
     {
         $tenant = Tenant::with('domains')->findOrFail($id);
         $updatedTenant = $action->handle($request->validated(), $tenant);
@@ -69,7 +63,7 @@ class TenantController extends Controller
         return response()->json(new TenantResource($updatedTenant->load('domains')));
     }
     
-    public function suspend(string $id, SuspendTenantAction $action): JsonResponse
+    public function suspend(string $id, SuspendTenantAction $action): \Illuminate\Http\JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
         $action->handle($tenant);
@@ -80,7 +74,7 @@ class TenantController extends Controller
         ]);
     }
     
-    public function reinstate(string $id, ReinstateTenantAction $action): JsonResponse
+    public function reinstate(string $id, ReinstateTenantAction $action): \Illuminate\Http\JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
         $action->handle($tenant);
@@ -91,7 +85,7 @@ class TenantController extends Controller
         ]);
     }
     
-    public function destroy(string $id, DeleteTenantAction $action): JsonResponse
+    public function destroy(string $id, DeleteTenantAction $action): \Illuminate\Http\JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
         

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 class EnforceTenantPlanLimits
 {
     /**
-     * @param Closure(): void $next
+     * @param Closure(Request): mixed $next
      */
     public function handle(Request $request, Closure $next, string $resource): mixed
     {

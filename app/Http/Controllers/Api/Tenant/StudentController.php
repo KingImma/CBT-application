@@ -7,13 +7,13 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Student\CreateStudentAction;
 use App\Actions\Tenants\Student\UpdateStudentAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\StoreStudentRequest;
+use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Models\Tenant\User;
+use App\Services\StudentImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\StoreStudentRequest;
-use App\Http\Requests\UpdateStudentRequest;
 use Illuminate\Support\Facades\Hash;
-use App\Services\StudentImportService;
 
 class StudentController extends Controller
 {
@@ -29,11 +29,11 @@ class StudentController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('first_name', 'ilike', "%{$search}%")
-                      ->orWhere('last_name', 'ilike', "%{$search}%")
-                      ->orWhere('email', 'ilike', "%{$search}%")
-                      ->orWhereHas('studentProfile', fn ($p) => 
-                          $p->where('admission_number', 'ilike', "%{$search}%")
-                      );
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%")
+                    ->orWhereHas('studentProfile', fn ($p) => 
+                        $p->where('admission_number', 'ilike', "%{$search}%")
+                    );
                 });
             })
             

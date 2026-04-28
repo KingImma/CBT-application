@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\SuperAdmin;
 
 use App\Models\Tenant;
 use Illuminate\Foundation\Http\FormRequest;

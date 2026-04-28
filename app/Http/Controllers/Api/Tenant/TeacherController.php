@@ -9,9 +9,9 @@ use App\Models\Tenant\TeacherProfile;
 use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 
 class TeacherController extends Controller
 {
@@ -25,8 +25,8 @@ class TeacherController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('first_name', 'ilike', "%{$search}%")
-                      ->orWhere('last_name', 'ilike', "%{$search}%")
-                      ->orWhere('email', 'ilike', "%{$search}%");
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%");
                 });
             })
             ->when($status === 'archived', fn ($query) => $query->onlyTrashed())

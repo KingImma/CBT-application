@@ -10,7 +10,7 @@ use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
-use App\Services\GenerateAdmissionNumber;
+use App\Actions\Tenants\Student\GenerateAdmissionNumber;
 use Illuminate\Support\Facades\Validator;
 
 class StudentImportService

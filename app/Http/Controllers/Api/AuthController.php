@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SuperAdmin;
-use App\Services\SuperAdminAuthService;
-use App\Services\TenantAuthService;
+use App\Services\Auth\SuperAdminAuthService;
+use App\Services\Auth\TenantAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -60,7 +60,7 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Logged out successfully']);
     }
-   
+
     public function me(Request $request): JsonResponse
     {
         // If we are in a tenant DB, pull the tenant user. Otherwise, pull super admin.

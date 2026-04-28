@@ -13,7 +13,7 @@ class EnsureUserIsSuperAdmin
      * Handle an incoming request.
      *
      * @param  Request  $request
-     * @param Closure(): void $next
+     * @param Closure(Request): Response $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -24,7 +24,7 @@ class EnsureUserIsSuperAdmin
         }
 
         if (! $user->is_active) {
-             return response()->json(['message' => 'Forbidden. Account is deactivated.'], 403);
+            return response()->json(['message' => 'Forbidden. Account is deactivated.'], 403);
         }
 
         return $next($request);

@@ -8,6 +8,7 @@ use App\Models\Tenant\User;
 use App\Models\Tenant\StudentProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Actions\Tenants\Student\GenerateAdmissionNumber;
 
 class CreateStudentAction
 {
@@ -62,29 +63,5 @@ class CreateStudentAction
                 'password' => $password,
             ];
         });
-    }
-
-    /**
-     * Generate a unique sequential registration number safely.
-     * Example: STU/2026/0001
-     */
-    private function generateAdmissionNumber(): string
-    {
-        $year = date('Y');
-
-        // lockForUpdate() locks the selected rows until the transaction finishes.
-        // This prevents two admins from generating STU/2026/0005 at the exact same millisecond.
-        $lastProfile = StudentProfile::lockForUpdate()
-            ->where('admission_number', 'like', "STU/{$year}/%")
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $nextCount = 1;
-        
-        if ($lastProfile && preg_match('/(\d+)$/', $lastProfile->admission_number, $matches)) {
-            $nextCount = (int)$matches[1] + 1;
-        }
-
-        return "STU/{$year}/" . str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
     }
 }

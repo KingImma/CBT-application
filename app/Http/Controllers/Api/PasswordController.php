@@ -98,8 +98,16 @@ class PasswordController extends Controller
             'password'         => ['required', 'confirmed', Password::min(8)->numbers()],
         ]);
 
+        $user = Auth::user();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'auth' => 'Unauthenticated.',
+            ]);
+        }
+
         $this->passwordService->changePassword(
-            Auth::user(),
+            $user,
             $request->current_password,
             $request->password
         );

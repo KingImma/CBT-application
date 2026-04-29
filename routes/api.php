@@ -32,9 +32,9 @@ Route::prefix('onboarding')->controller(OnboardingController::class)->group(func
     Route::post('/register', 'register');
 });
 
-Route::controller(PasswordController::class)->middleware('throttle:10,1')->prefix('password')->group(function () {
+Route::controller(PasswordController::class)->middleware(['throttle:10,1', InitializeTenancyByHeader::class])->prefix('password')->group(function () {
     Route::post('/forgot', 'forgot');
     Route::post('/verify-otp', 'verifyOtp');
     Route::post('/reset', 'reset');
-    Route::middleware([InitializeTenancyByHeader::class], 'auth:sanctum')->post('/change', 'change');
+    Route::middleware('auth:sanctum')->post('/change', 'change');
 });

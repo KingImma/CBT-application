@@ -98,7 +98,8 @@ class PasswordController extends Controller
             'password'         => ['required', 'confirmed', Password::min(8)->numbers()],
         ]);
 
-        $user = Auth::user();
+        // Check multiple guards: super_admin first, then tenant
+        $user = Auth::guard('super_admin')->user() ?? Auth::guard('tenant')->user();
 
         if (!$user) {
             throw ValidationException::withMessages([

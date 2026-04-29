@@ -16,7 +16,7 @@ namespace App\Services;
 
 use App\Mail\PasswordResetOtpMail;
 use App\Models\PasswordResetToken;
-use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -137,18 +137,19 @@ class PasswordService
     // CHANGE PASSWORD (Authenticated)
     // ──────────────────────────────────────────
 
-    public function changePassword(User $user, string $currentPassword, string $newPassword): void
+    public function changePassword(Authenticatable $user, string $currentPassword, string $newPassword): void
     {
         // Verify the current password before allowing change
         // Think of this as the lock before the new key — you must prove
         // ownership before overwriting credentials.
-        if (!Hash::check($currentPassword, $user->password)) {
+        if (!Hash::check($currentPassword, $user->getAuthPassword())) {
             throw ValidationException::withMessages([
                 'current_password' => 'Current password is incorrect.',
             ]);
         }
 
-        $user->update(['password' => Hash::make($newPassword)]);
+        // Use the password attribute directly for update
+        $user->forceFill(['password' => Hash::make($newPassword)])->save();
 
         // DO NOT delete tokens here — change password preserves the active session.
         // Forgetting is different from choosing to change.

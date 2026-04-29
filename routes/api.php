@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\StudentController;
 use App\Http\Middleware\InitializeTenancyByHeader;
 
 
@@ -32,9 +33,12 @@ Route::prefix('onboarding')->controller(OnboardingController::class)->group(func
     Route::post('/register', 'register');
 });
 
-Route::controller(PasswordController::class)->middleware(['throttle:10,1', InitializeTenancyByHeader::class])->prefix('password')->group(function () {
+Route::controller(PasswordController::class)->middleware('throttle:10,1')->prefix('password')->group(function () {
+    // Public routes - no auth required
     Route::post('/forgot', 'forgot');
     Route::post('/verify-otp', 'verifyOtp');
     Route::post('/reset', 'reset');
-    Route::middleware('auth:sanctum')->post('/change', 'change');
+    
+    // Protected route - accepts super_admin or tenant users
+    Route::middleware(['tenant.header', 'auth:super_admin,tenant'])->post('/change', 'change');
 });

@@ -33,12 +33,12 @@ Route::prefix('onboarding')->controller(OnboardingController::class)->group(func
     Route::post('/register', 'register');
 });
 
-Route::controller(PasswordController::class)->middleware('throttle:10,1')->prefix('password')->group(function () {
-    // Public routes - no auth required
+Route::controller(PasswordController::class)->middleware(['throttle:10,1', InitializeTenancyByHeader::class])->prefix('password')->group(function () {
+    // Public routes - no auth required, but tenancy is initialized if X-Tenant header is present
     Route::post('/forgot', 'forgot');
     Route::post('/verify-otp', 'verifyOtp');
     Route::post('/reset', 'reset');
     
     // Protected route - accepts super_admin or tenant users (school_admin, teacher)
-    Route::middleware([InitializeTenancyByHeader::class, 'auth.any:super_admin,tenant'])->post('/change', 'change');
+    Route::middleware('auth.any:super_admin,tenant')->post('/change', 'change');
 });

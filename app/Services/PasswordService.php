@@ -15,9 +15,9 @@
 namespace App\Services;
 
 use App\Mail\PasswordResetOtpMail;
-use App\Models\PasswordResetToken;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -48,21 +48,23 @@ class PasswordService
             ]);
         }
 
-        // Look up user — but respond generically regardless (no enumeration)
-        $user = User::where('email', $email)->first();
+        // Determine which User model to use based on tenancy context
+        $userModel = $this->resolveUserModel();
+        $user = $userModel::where('email', $email)->first();
 
         if ($user) {
             // Clean up any existing tokens for this email
-            PasswordResetToken::where('email', $email)->delete();
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
 
             // Generate 6-digit OTP, hash it before storing
             $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-            PasswordResetToken::create([
+            DB::table('password_reset_tokens')->insert([
                 'email'      => $email,
                 'token'      => hash('sha256', $otp),
                 'attempts'   => 0,
                 'expires_at' => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
+                'created_at' => now(),
             ]);
 
             Mail::to($email)->queue(new PasswordResetOtpMail($otp, $schoolName));
@@ -83,10 +85,10 @@ class PasswordService
 
     public function verifyOtp(string $email, string $otp): string
     {
-        $record = PasswordResetToken::where('email', $email)->first();
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
 
         // Treat not-found, expired, and exhausted the same way — no information leakage
-        if (!$record || $record->isExpired() || $record->isExhausted()) {
+        if (!$record || now()->gt($record->expires_at) || $record->attempts >= self::OTP_MAX_ATTEMPTS) {
             throw ValidationException::withMessages([
                 'otp' => 'Invalid or expired code.',
             ]);
@@ -94,12 +96,13 @@ class PasswordService
 
         // Compare hashes — never compare plain OTP to plain OTP
         if (!hash_equals($record->token, hash('sha256', $otp))) {
-            $record->increment('attempts');
+            DB::table('password_reset_tokens')->where('email', $email)->increment('attempts');
 
-            $remaining = self::OTP_MAX_ATTEMPTS - $record->fresh()->attempts;
+            $updated = DB::table('password_reset_tokens')->where('email', $email)->first();
+            $remaining = self::OTP_MAX_ATTEMPTS - $updated->attempts;
 
             if ($remaining <= 0) {
-                $record->delete();
+                DB::table('password_reset_tokens')->where('email', $email)->delete();
                 throw ValidationException::withMessages([
                     'otp' => 'Too many incorrect attempts. Request a new code.',
                 ]);
@@ -111,7 +114,7 @@ class PasswordService
         }
 
         // OTP valid — delete it (single-use), issue a short-lived reset token
-        $record->delete();
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
 
         return $this->issueResetToken($email);
     }
@@ -124,7 +127,8 @@ class PasswordService
     {
         $email = $this->decodeResetToken($resetToken);
 
-        $user = User::where('email', $email)->firstOrFail();
+        $userModel = $this->resolveUserModel();
+        $user = $userModel::where('email', $email)->firstOrFail();
 
         $user->update(['password' => Hash::make($newPassword)]);
 
@@ -158,6 +162,15 @@ class PasswordService
     // ──────────────────────────────────────────
     // Private Helpers
     // ──────────────────────────────────────────
+
+    /**
+     * Resolve the appropriate User model based on tenancy context.
+     * Returns Tenant\User if in tenant context, otherwise central User model.
+     */
+    private function resolveUserModel(): string
+    {
+        return tenant() ? \App\Models\Tenant\User::class : \App\Models\User::class;
+    }
 
     private function issueResetToken(string $email): string
     {

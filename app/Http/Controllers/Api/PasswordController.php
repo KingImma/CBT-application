@@ -98,14 +98,9 @@ class PasswordController extends Controller
             'password'         => ['required', 'confirmed', Password::min(8)->numbers()],
         ]);
 
-        // Check multiple guards: super_admin first, then tenant
-        $user = Auth::guard('super_admin')->user() ?? Auth::guard('tenant')->user();
-
-        if (!$user) {
-            throw ValidationException::withMessages([
-                'auth' => 'Unauthenticated.',
-            ]);
-        }
+        // User is already authenticated by AuthenticateAnyGuard middleware
+        // Auth::user() will return the authenticated user from whichever guard succeeded
+        $user = Auth::user();
 
         $this->passwordService->changePassword(
             $user,

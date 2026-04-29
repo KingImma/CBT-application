@@ -39,6 +39,6 @@ Route::controller(PasswordController::class)->middleware('throttle:10,1')->prefi
     Route::post('/verify-otp', 'verifyOtp');
     Route::post('/reset', 'reset');
     
-    // Protected route - accepts super_admin or tenant users
-    Route::middleware(['tenant.header', 'auth:super_admin,tenant'])->post('/change', 'change');
+    // Protected route - accepts super_admin or tenant users (school_admin, teacher)
+    Route::middleware([InitializeTenancyByHeader::class, 'auth.any:super_admin,tenant'])->post('/change', 'change');
 });

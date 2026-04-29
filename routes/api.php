@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Tenant\PasswordController;
+use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Middleware\InitializeTenancyByHeader;
 

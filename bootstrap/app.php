@@ -36,6 +36,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.header' => \App\Http\Middleware\InitializeTenancyByHeader::class,
             'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
         ]);
+
+        // Prevent auth middleware from redirecting to non-existent login route
+        \Illuminate\Auth\Middleware\Authenticate::redirectUsing(function ($request) {
+            return null;
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         

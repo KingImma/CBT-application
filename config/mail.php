@@ -97,11 +97,6 @@ return [
             'retry_after' => 60,
         ],
 
-        'mailtrap' => [
-            'transport' => 'mailtrap+api',
-            'dsn' => env('MAILTRAP_DSN'),
-        ],
-
     ],
 
     /*

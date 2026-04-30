@@ -1,47 +1,46 @@
-<?php
+<?php 
 
-// • What: Topic Eloquent model
-// • Does: Represents a topic within a subject, parent of questions
-// • Why: Encapsulates the topic → subject → questions hierarchy.
-//        SoftDeletes lets admins deactivate topics without losing question history.
-// • Delivers: Queryable model with subject and questions relationships + ordered scope
-// • Alternative: No soft deletes + archive boolean — simpler but loses Eloquent's
-//                withTrashed/onlyTrashed scoping convenience
+// - Eloquent model matching the topics schema with self-referencing parent
+// - children() + parent() cover the sub-topic hierarchy
+// - Chosen: recursive relationship kept simple with two HasMany/BelongsTo methods
+// - Deliverable: full topic tree navigation from any node
+// - Alternative: nested set (kalnoy/nestedset) — better for deep trees, overkill for 2 levels
 
-namespace App\Models;
+declare(strict_types=1);
 
+namespace App\Models\Tenant;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Topic extends Model
 {
-    use SoftDeletes;
+    use HasUuids;
 
-    protected $fillable = [
-        'subject_id',
-        'name',
-        'description',
-        'order',
-    ];
+    protected $guarded = [];
 
-    protected $casts = [
-        'order' => 'integer',
-    ];
-
-    public function subject(): BelongsTo
+    public function subject(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Subject::class);
     }
 
-    public function questions(): HasMany
+    public function classLevel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->hasMany(Question::class);
+        return $this->belongsTo(ClassLevel::class);
     }
 
-    public function scopeOrdered($query)
+    public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $query->orderBy('order')->orderBy('name');
+        return $this->belongsTo(Topic::class, 'parent_id');
+    }
+
+    public function children(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Topic::class, 'parent_id')->orderBy('order');
+    }
+
+    public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Question::class);
     }
 }

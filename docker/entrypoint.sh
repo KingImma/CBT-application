@@ -20,7 +20,8 @@ set -e
 # echo "==> Caching config..."
 # php artisan config:cache
 
-# php artisan config:clear
+php artisan config:clear
+php artisan queue:restart
 
 # echo "==> Caching routes..."
 # php artisan route:cache

@@ -140,45 +140,41 @@ Route::prefix('school-settings')->controller(SchoolSettingController::class)->gr
     Route::patch('/', 'update');
 });
 
-// Require the user to be logged in
-Route::middleware([InitializeTenancyByHeader::class, 'auth:sanctum'])->group(function () {
-    Route::middleware(['role:teacher|admin'])->group(function () {
-        
-        // Topics — flat with required filter params
-        Route::prefix('topics')->controller(TopicController::class)->group(function () {
-            Route::get('/',        'index');   // ?subject_id=&class_level_id=
-            Route::post('/',       'store');
-            Route::get('/{id}',    'show');
-            Route::patch('/{id}',  'update');
-            Route::delete('/{id}', 'destroy');
-        });
-
-        // Questions
-        Route::prefix('questions')->controller(QuestionController::class)->group(function () {
-            Route::get('/',            'index');
-            Route::post('/',           'store');
-            Route::get('/{id}',        'show');
-            Route::patch('/{id}',      'update');
-            Route::delete('/{id}',     'destroy');
-            Route::post('/{id}/restore', 'restore');
-        });
-
-        // Options nested under questions
-        Route::prefix('questions/{questionId}/options')->controller(QuestionOptionController::class)->group(function () {
-            Route::post('/',           'store');
-            Route::patch('/{id}',      'update');
-            Route::delete('/{id}',     'destroy');
-            Route::post('/reorder',    'reorder');
-        });
-
+Route::middleware(['role:teacher|admin'])->group(function () {
+    
+    // Topics 
+    Route::prefix('topics')->controller(TopicController::class)->group(function () {
+        Route::get('/',        'index');   // ?subject_id=&class_level_id=
+        Route::post('/',       'store');
+        Route::get('/{id}',    'show');
+        Route::patch('/{id}',  'update');
+        Route::delete('/{id}', 'destroy');
     });
 
-    // ==========================================
-    // STUDENT PORTAL ROUTES 
-    // ==========================================
-    Route::middleware(['role:student'])->group(function () {
-        // Students will have entirely separate endpoints for taking exams.
-        // e.g., Route::get('/exams/{id}/take', [ExamController::class, 'take']);
+    // Questions
+    Route::prefix('questions')->controller(QuestionController::class)->group(function () {
+        Route::get('/',              'index');
+        Route::post('/',             'store');
+        Route::get('/{id}',          'show');
+        Route::patch('/{id}',        'update');
+        Route::delete('/{id}',       'destroy');
+        Route::post('/{id}/restore', 'restore');
     });
 
+    // Question Options
+    Route::prefix('questions/{questionId}/options')->controller(QuestionOptionController::class)->group(function () {
+        Route::post('/',           'store');
+        Route::patch('/{id}',      'update');
+        Route::delete('/{id}',     'destroy');
+        Route::post('/reorder',    'reorder');
+    });
+
+});
+
+// ==========================================
+// STUDENT ROUTES 
+// ==========================================
+Route::middleware(['role:student'])->group(function () {
+    // Endpoints specifically for students taking exams
+    // e.g., Route::get('/exams/active', [StudentExamController::class, 'index']);
 });

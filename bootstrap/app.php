@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->group(base_path('routes/super_admin.php'));
             
             // 3. Tenant Routes
-            Route::middleware(['api', 'tenant.header', 'tenant.auth'])
+            Route::middleware(['api', 'tenant.header', 'auth:tenant', 'user.active'])
                 ->prefix('api')
                 ->group(base_path('routes/tenant.php'));
         },
@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'plan.limits' => \App\Http\Middleware\EnforceTenantPlanLimits::class,
-            'tenant.auth' => \App\Http\Middleware\EnsureTenantAuthenticated::class,
+            'user.active' => \App\Http\Middleware\EnsureUserIsActive::class,
             'tenant.header' => \App\Http\Middleware\InitializeTenancyByHeader::class,
             'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
             'auth.any' => \App\Http\Middleware\AuthenticateAnyGuard::class,

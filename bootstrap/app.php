@@ -36,6 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.header' => \App\Http\Middleware\InitializeTenancyByHeader::class,
             'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
             'auth.any' => \App\Http\Middleware\AuthenticateAnyGuard::class,
+            
+            'role' => Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
         // Prevent auth middleware from redirecting to non-existent login route

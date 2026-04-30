@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Gate;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Auth\Notifications\ResetPassword;
-use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Bridge\Mailtrap\Transport\MailtrapTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
 
 class AppServiceProvider extends ServiceProvider
@@ -60,10 +60,10 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // Register Brevo API transport
-        Mail::extend('brevo', function () {
-            return (new BrevoTransportFactory)->create(
-                new Dsn('brevo+api', 'default', config('services.brevo.key'))
+        // Register Mailtrap API transport
+        Mail::extend('mailtrap+api', function () {
+            return (new MailtrapTransportFactory)->create(
+                Dsn::fromString(env('MAILTRAP_DSN'))
             );
         });
 

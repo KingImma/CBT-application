@@ -2,7 +2,7 @@
   - What: password reset email for school admins and teachers
   - Does: shows role-specific context and a 60-minute reset link
   - Why role label: admin sees "school admin account", teacher sees "teacher account"
-  - Expected: renders in Brevo Logs immediately after forgot-password request
+  - Expected: renders in Mailtrap immediately after forgot-password request
   - Alternative: single template without role — slightly less clear for multi-role app
 -->
 <!DOCTYPE html>

@@ -97,8 +97,9 @@ return [
             'retry_after' => 60,
         ],
 
-        'brevo' => [
-            'transport' => 'brevo',
+        'mailtrap' => [
+            'transport' => 'mailtrap+api',
+            'dsn' => env('MAILTRAP_DSN'),
         ],
 
     ],

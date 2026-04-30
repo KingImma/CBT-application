@@ -1,9 +1,9 @@
 <?php
 // - What: mailable for the school welcome email sent after registration
 // - Does: passes school name, admin name, handle and login URL to Blade template
-// - Why separate class per email: explicit, debuggable, each mail has its own log entry in Brevo
+// - Why separate class per email: explicit, debuggable, each mail has its own log entry in Mailtrap
 // - Expected: school admin receives login link immediately after POST /api/schools/setup
-// - Alternative: generic BaseMail with a 'type' param — harder to trace in Brevo logs
+// - Alternative: generic BaseMail with a 'type' param — harder to trace in Mailtrap logs
 
 declare(strict_types=1);
 

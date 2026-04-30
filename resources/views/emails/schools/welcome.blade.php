@@ -2,7 +2,7 @@
   - What: HTML welcome email for new school admins
   - Does: shows school URL, login button, and support contact
   - Why inline styles: email clients strip external CSS — inline is the only reliable option
-  - Expected: renders correctly in Gmail, Outlook, and Brevo's preview tool
+  - Expected: renders correctly in Gmail, Outlook, and Mailtrap's preview tool
   - Alternative: MJML templates — better maintainability but requires a build step
 -->
 <!DOCTYPE html>

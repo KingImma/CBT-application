@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
 use App\Http\Controllers\Api\Tenant\TopicController;
 use App\Http\Controllers\Api\Tenant\QuestionController;
 use App\Http\Controllers\Api\Tenant\QuestionOptionController;
-
+use App\Http\Middleware\InitializeTenancyByHeader;
 
 /*
  * The core operating routes for an individual school.
@@ -141,7 +141,7 @@ Route::prefix('school-settings')->controller(SchoolSettingController::class)->gr
 });
 
 // Require the user to be logged in
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware([InitializeTenancyByHeader::class, 'auth:sanctum'])->group(function () {
     Route::middleware(['role:teacher|admin'])->group(function () {
         
         // Topics — flat with required filter params

@@ -67,7 +67,7 @@ class PasswordService
                 'created_at' => now(),
             ]);
 
-            Mail::to($email)->queue(new PasswordResetOtpMail($otp, $schoolName));
+            Mail::to($email)->send(new PasswordResetOtpMail($otp, $schoolName));
         }
 
         // Increment rate limit counter — even for non-existent emails

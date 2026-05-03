@@ -6,8 +6,8 @@ namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -16,16 +16,16 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasUuids, HasFactory, Notifiable, HasRoles, SoftDeletes;
+    use HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
     protected $guarded = [];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
-        'password'          => 'hashed',
+        'password' => 'hashed',
         'email_verified_at' => 'datetime',
-        'is_active'         => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -56,5 +56,42 @@ class User extends Authenticatable
     public function teacherAssignments(): HasMany
     {
         return $this->hasMany(TeacherSubjectAssignment::class, 'user_id');
+    }
+
+    /**
+     * Scope to filter users by status (active, inactive, archived, all).
+     */
+    public function scopeWithStatus($query, string $status): void
+    {
+        switch ($status) {
+            case 'archived':
+                $query->onlyTrashed();
+                break;
+            case 'inactive':
+                $query->where('is_active', false);
+                break;
+            case 'active':
+                $query->where('is_active', true);
+                break;
+            case 'all':
+                $query->withTrashed();
+                break;
+        }
+    }
+
+    /**
+     * Scope to search users by multiple fields.
+     */
+    public function scopeSearch($query, ?string $search, array $searchFields = ['first_name', 'last_name', 'email']): void
+    {
+        if (! $search) {
+            return;
+        }
+
+        $query->where(function ($q) use ($search, $searchFields) {
+            foreach ($searchFields as $field) {
+                $q->orWhere($field, 'ilike', "%{$search}%");
+            }
+        });
     }
 }

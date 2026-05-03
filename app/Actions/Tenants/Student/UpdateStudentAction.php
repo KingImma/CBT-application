@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Student;
 
+use App\Actions\Contracts\UpdatesStudent;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\DB;
 
-class UpdateStudentAction
+class UpdateStudentAction implements UpdatesStudent
 {
     /**
      * Executes the student update process.

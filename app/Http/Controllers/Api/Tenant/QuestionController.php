@@ -44,6 +44,7 @@ class QuestionController extends Controller
             ->when(! $request->boolean('include_inactive'), fn ($q) =>
                 $q->where('is_active', true)
             )
+            ->with('topic', 'options')
             ->orderByDesc('created_at')
             ->paginate((int) $request->get('per_page', 20));
 

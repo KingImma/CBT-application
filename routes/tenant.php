@@ -17,7 +17,10 @@ use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
 use App\Http\Controllers\Api\Tenant\TopicController;
 use App\Http\Controllers\Api\Tenant\QuestionController;
 use App\Http\Controllers\Api\Tenant\QuestionOptionController;
-use App\Http\Middleware\InitializeTenancyByHeader;
+use App\Http\Controllers\Api\PasswordController;
+// use App\Http\Controllers\Api\Tenant\StudentAnswerController;
+// use App\Http\Controllers\Api\Tenant\StudentAnswerOptionController;
+
 
 /*
  * The core operating routes for an individual school.
@@ -29,7 +32,9 @@ Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('/logout', 'logout');
     Route::get('/me', 'me');
 });
-Route::post('/auth/change-password', [\App\Http\Controllers\Api\Tenant\PasswordController::class, 'change']);
+    Route::post('/auth/change-password', [PasswordController::class, 'change']);
+    Route::post('/teachers/{id}/reset-password-otp', [TeacherController::class, 'resetPassword']);
+    Route::post('/students/bulk-reset-passwords', [StudentController::class, 'bulkResetPasswords']);
 
 // Academic Sessions & Terms
 Route::prefix('academic-sessions')->controller(AcademicSessionController::class)->group(function () {

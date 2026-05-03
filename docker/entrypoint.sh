@@ -22,8 +22,6 @@ set -e
 
 # php artisan config:clear
 
-php artisan optimize:clear
-
 # echo "==> Caching routes..."
 # php artisan route:cache
 

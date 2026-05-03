@@ -32,6 +32,9 @@ set -e
 # php artisan queue:clear redis --queue=emails
 # php artisan queue:flush
 # php artisan queue:restart
+php artisan optimize:clear
+php artisan config:clear
+
 
 echo "==> Running migrations..."
 php artisan migrate --force

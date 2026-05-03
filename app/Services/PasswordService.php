@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class PasswordService
 {
@@ -41,6 +42,8 @@ class PasswordService
 
     public function sendOtp(string $email, string $schoolName): void
     {
+        $email = $this->normalizeEmail($email);
+
         // Rate limit: 3 requests per email per hour (Redis)
         // Think of this as a turnstile: it lets a few people through before locking up.
         $rateLimitKey = "pwd_otp_rl:{$email}";
@@ -71,7 +74,7 @@ class PasswordService
                 'created_at' => now(),
             ]);
 
-            $toEmail = config('mail.override_address', $email);
+            $toEmail = $this->resolveMailRecipient($email);
             Mail::to($toEmail)->send(new PasswordResetOtpMail($otp, $schoolName));
         }
 
@@ -90,6 +93,8 @@ class PasswordService
 
     public function verifyOtp(string $email, string $otp): string
     {
+        $email = $this->normalizeEmail($email);
+
         $record = DB::table('password_reset_tokens')->where('email', $email)->first();
 
         // Treat not-found, expired, and exhausted the same way — no information leakage
@@ -216,5 +221,35 @@ class PasswordService
         Cache::forget($key);
 
         return $email;
+    }
+
+    private function normalizeEmail(string $email): string
+    {
+        $email = strtolower(trim($email));
+
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages([
+                'email' => 'A valid email address is required.',
+            ]);
+        }
+
+        return $email;
+    }
+
+    private function resolveMailRecipient(string $email): string
+    {
+        $overrideAddress = config('mail.override_address');
+
+        if (is_string($overrideAddress)) {
+            $overrideAddress = trim($overrideAddress);
+        }
+
+        $recipient = $overrideAddress ?: $email;
+
+        if (! is_string($recipient) || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            throw new RuntimeException('MAIL_OVERRIDE_ADDRESS must be a valid email address when set.');
+        }
+
+        return $recipient;
     }
 }

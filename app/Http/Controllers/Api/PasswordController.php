@@ -27,19 +27,24 @@ class PasswordController extends Controller
 
     public function forgot(Request $request): JsonResponse
     {
-        $request->validate([
-            'email' => ['required', 'email'],
+        $validated = $request->validate([
+            'email' => ['bail', 'required', 'email:rfc', 'max:254'],
         ]);
 
         // Resolve school name from tenant config for the email template
         $schoolName = config('tenant.school_name', 'EduCBT');
 
-        $this->passwordService->sendOtp($request->email, $schoolName);
+        $this->passwordService->sendOtp($validated['email'], $schoolName);
 
         // Always return 200 — never reveal whether the email exists
         return response()->json([
             'message' => 'If that email is registered, you will receive a reset code.',
         ]);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        return $this->forgot($request);
     }
 
     // ────────────────────────────
@@ -48,14 +53,14 @@ class PasswordController extends Controller
 
     public function verifyOtp(Request $request): JsonResponse
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-            'otp' => ['required', 'string', 'size:6'],
+        $validated = $request->validate([
+            'email' => ['bail', 'required', 'email:rfc', 'max:254'],
+            'otp' => ['bail', 'required', 'string', 'size:6'],
         ]);
 
         $resetToken = $this->passwordService->verifyOtp(
-            $request->email,
-            $request->otp
+            $validated['email'],
+            $validated['otp']
         );
 
         return response()->json([
@@ -69,18 +74,47 @@ class PasswordController extends Controller
 
     public function reset(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'reset_token' => ['required', 'string'],
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
         ]);
 
         $this->passwordService->resetPassword(
-            $request->reset_token,
-            $request->password
+            $validated['reset_token'],
+            $validated['password']
         );
 
         return response()->json([
             'message' => 'Password reset successfully. Please log in.',
+        ]);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        return $this->reset($request);
+    }
+
+    public function change(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'confirmed', Password::min(8)->numbers()],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user) {
+            abort(401);
+        }
+
+        $this->passwordService->changePassword(
+            $user,
+            $validated['current_password'],
+            $validated['password']
+        );
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
         ]);
     }
 }

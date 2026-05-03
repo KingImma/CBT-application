@@ -115,6 +115,6 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
-    'override_address' => env('MAIL_OVERRIDE_ADDRESS'),
+    'override_address' => env('MAIL_OVERRIDE_ADDRESS') ?: null,
 
 ];

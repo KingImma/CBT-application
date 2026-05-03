@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\OnboardingController;
-use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\PasswordController;
+use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Middleware\InitializeTenancyByHeader;
-
+use Illuminate\Support\Facades\Route;
 
 /*
  * 1. What it is: `routes/api.php` (Public routes).
@@ -26,7 +25,7 @@ Route::middleware([InitializeTenancyByHeader::class])->group(function () {
     });
 });
 
-Route::get('/students/import/template', [StudentController::class, 'downloadTemplate']);
+Route::get('/students/import/template', [StudentController::class, 'downloadImportTemplate']);
 
 Route::prefix('onboarding')->controller(OnboardingController::class)->group(function () {
     Route::get('/check-handle', 'checkHandle');
@@ -38,7 +37,7 @@ Route::controller(PasswordController::class)->middleware(['throttle:10,1', Initi
     Route::post('/forgot', 'forgot');
     Route::post('/verify-otp', 'verifyOtp');
     Route::post('/reset', 'reset');
-    
+
     // Protected route - accepts super_admin or tenant users (school_admin, teacher)
     Route::middleware('auth.any:super_admin,tenant')->post('/change', 'change');
 });

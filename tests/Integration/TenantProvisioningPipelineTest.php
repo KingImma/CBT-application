@@ -149,7 +149,7 @@ class TenantProvisioningPipelineTest extends TestCase
         // Hard delete triggers stancl's DeleteDatabase job
         $tenant->forceDelete();
 
-        $this->assertDatabaseMissing($tenant->database);
+        $this->assertPostgresDatabaseMissing($tenant->database);
     }
 
     // -------------------------------------------------------------------------
@@ -180,7 +180,7 @@ class TenantProvisioningPipelineTest extends TestCase
         $this->assertNotEmpty($exists, "Expected database '{$dbName}' to exist.");
     }
 
-    private function assertDatabaseMissing(string $dbName): void
+    private function assertPostgresDatabaseMissing(string $dbName): void
     {
         $exists = DB::select(
             "SELECT 1 FROM pg_database WHERE datname = ?",

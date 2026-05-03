@@ -31,7 +31,7 @@ class CreateTenantsTable extends Migration
             $table->string("phone", 20)->nullable();
             $table->string("email")->nullable();
 
-            $table->foreignId('plan_id')
+            $table->foreignUuid('plan_id')
                 ->nullable()
                 ->constrained('subscription_plans')
                 ->nullOnDelete(); 

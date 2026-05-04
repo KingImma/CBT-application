@@ -9,6 +9,7 @@ use App\Exceptions\Tenant\TenantProvisioningException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OnboardingRequest;
 use App\Models\Tenant;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,10 +23,9 @@ class OnboardingController extends Controller
 
         $exists = Tenant::where('handle', $request->handle)->exists();
 
-        return response()->json([
-            'success'   => true,
+        return ApiResponse::success([
             'available' => ! $exists,
-        ]);
+        ], 'Handle availability checked.');
     }
 
     public function register(OnboardingRequest $request, CreateTenantAction $action): JsonResponse
@@ -36,23 +36,16 @@ class OnboardingController extends Controller
             $tenant = $action->execute($data);
 
             $centralDomain = config('app.central_domain', 'myapp.com');
-            $loginUrl      = "https://{$tenant->handle}.{$centralDomain}/login";
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'School provisioned successfully.',
-                'data'    => [
-                    'handle'    => $tenant->handle,
-                    'name'      => $tenant->name,
-                    'login_url' => $loginUrl,
-                ],
-            ], 201);
+            $loginUrl = "https://{$tenant->handle}.{$centralDomain}/login";
+
+            return ApiResponse::created([
+                'handle' => $tenant->handle,
+                'name' => $tenant->name,
+                'login_url' => $loginUrl,
+            ], 'School provisioned successfully.');
 
         } catch (TenantProvisioningException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Provisioning failed: ' . $e->getMessage(),
-            ], 500);
+            return ApiResponse::error('Provisioning failed: '.$e->getMessage(), 500);
         }
     }
 }

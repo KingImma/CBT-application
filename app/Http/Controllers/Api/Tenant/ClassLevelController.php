@@ -6,42 +6,34 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
-
 
 class ClassLevelController extends Controller
 {
     public function index(): JsonResponse
     {
         $levels = ClassLevel::withCount(['classArms', 'students'])
-            ->orderBy('name') 
+            ->orderBy('name')
             ->get();
-    
-        return response()->json([
-            'success' => true,
-            'data'    => $levels,
-        ]);
+
+        return ApiResponse::success($levels, 'Class levels retrieved successfully.');
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'  => ['required', 'string', 'max:100', 'unique:class_levels,name'],
+            'name' => ['required', 'string', 'max:100', 'unique:class_levels,name'],
         ]);
-    
+
         // Auto-generate the slug based on the name
         $validated['slug'] = Str::slug($validated['name']);
-    
+
         $level = ClassLevel::create($validated);
-    
-        return response()->json([
-            'success' => true,
-            'message' => 'Class level created.',
-            'data'    => $level,
-        ], 201);
+
+        return ApiResponse::created($level, 'Class level created.');
     }
 
     public function show(string $id): JsonResponse
@@ -50,10 +42,7 @@ class ClassLevelController extends Controller
             ->with(['classArms', 'subjects'])
             ->findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'data'    => $level,
-        ]);
+        return ApiResponse::success($level, 'Class level retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -61,25 +50,21 @@ class ClassLevelController extends Controller
         $level = ClassLevel::findOrFail($id);
 
         $validated = $request->validate([
-            'name'  => ['sometimes', 'string', 'max:100', 'unique:class_levels,name,' . $id],
+            'name' => ['sometimes', 'string', 'max:100', 'unique:class_levels,name,'.$id],
             'order' => ['nullable', 'integer', 'min:1'],
         ]);
-        
+
         if (isset($validated['name']) && $validated['name'] !== $level->name) {
             $validated['slug'] = Str::slug($validated['name'], '');
         }
 
         if (empty($validated['order'])) {
-            unset($validated['order']); 
+            unset($validated['order']);
         }
 
         $level->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Class level updated.',
-            'data'    => $level->fresh(),
-        ]);
+        return ApiResponse::success($level->fresh(), 'Class level updated.');
     }
 
     public function destroy(string $id): JsonResponse
@@ -88,20 +73,14 @@ class ClassLevelController extends Controller
 
         // Prevent deletion if students are assigned — data integrity
         if ($level->students_count > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => "Cannot delete — {$level->students_count} student(s) are assigned to this class level.",
-            ], 422);
+            return ApiResponse::error("Cannot delete — {$level->students_count} student(s) are assigned to this class level.", 422);
         }
 
         $level->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Class level deleted.',
-        ]);
+        return ApiResponse::message('Class level deleted.');
     }
-    
+
     public function availableSubjects(string $id): JsonResponse
     {
         $level = ClassLevel::findOrFail($id);
@@ -114,16 +93,13 @@ class ClassLevelController extends Controller
                     'id' => $subject->id,
                     'name' => $subject->name,
                     'code' => $subject->code,
-                    'is_compulsory' => (bool) $subject->pivot->is_complusory, 
+                    'is_compulsory' => (bool) $subject->pivot->is_complusory,
                 ];
             });
 
-        return response()->json([
-            'success' => true,
-            'data' => $subjects,
-        ]);
+        return ApiResponse::success($subjects, 'Available subjects retrieved successfully.');
     }
-    
+
     public function sync(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
@@ -137,12 +113,9 @@ class ClassLevelController extends Controller
         // Any subjects not in this array will be detached.
         $level->subjects()->sync($validated['subject_ids']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Subjects synced successfully.',
-        ]);
+        return ApiResponse::message('Subjects synced successfully.');
     }
-    
+
     public function toggleCompulsory(string $id, string $subjectId): JsonResponse
     {
         $level = ClassLevel::findOrFail($id);
@@ -158,12 +131,8 @@ class ClassLevelController extends Controller
             'is_compulsory' => $newStatus,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Subject compulsory status updated.',
-            'data' => [
-                'is_compulsory' => $newStatus,
-            ],
-        ]);
+        return ApiResponse::success([
+            'is_compulsory' => $newStatus,
+        ], 'Subject compulsory status updated.');
     }
 }

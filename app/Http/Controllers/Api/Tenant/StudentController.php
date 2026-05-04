@@ -13,6 +13,7 @@ use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Models\Tenant\User;
 use App\Services\PasswordService;
 use App\Services\StudentImportService;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -48,7 +49,7 @@ class StudentController extends Controller
             ->orderBy('last_name')
             ->paginate(50);
 
-        return response()->json($students);
+        return ApiResponse::paginated($students, 'Students retrieved successfully.');
     }
 
     public function show(string $id): JsonResponse
@@ -57,21 +58,20 @@ class StudentController extends Controller
             ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
             ->findOrFail($id);
 
-        return response()->json($student);
+        return ApiResponse::success($student, 'Student retrieved successfully.');
     }
 
     public function store(StoreStudentRequest $request, CreatesStudent $action): JsonResponse
     {
         $result = $action->execute($request->validated());
 
-        return response()->json([
-            'message' => 'Student created.',
+        return ApiResponse::created([
             'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
             'login_credentials' => [
                 'admission_number' => $result['user']->studentProfile->admission_number,
                 'default_password' => $result['password'],
             ],
-        ], 201);
+        ], 'Student created.');
     }
 
     public function update(UpdateStudentRequest $request, string $id, UpdatesStudent $action): JsonResponse
@@ -79,8 +79,9 @@ class StudentController extends Controller
         // Ensure action expects the User ID
         $result = $action->execute($request->validated(), $id);
 
-        return response()->json(
-            $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm'])
+        return ApiResponse::success(
+            $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
+            'Student updated successfully.'
         );
     }
 
@@ -94,10 +95,9 @@ class StudentController extends Controller
         // Handled cleanly by your action
         $result = $action->execute($validated, $id);
 
-        return response()->json([
-            'message' => 'Student reassigned.',
+        return ApiResponse::success([
             'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
-        ]);
+        ], 'Student reassigned.');
     }
 
     public function bulkResetPasswords(PasswordService $passwordService, Request $request): JsonResponse
@@ -122,10 +122,9 @@ class StudentController extends Controller
             $reset++;
         }
 
-        return response()->json([
-            'message' => "Passwords reset for {$reset} students.",
+        return ApiResponse::success([
             'students_reset' => $reset,
-        ]);
+        ], "Passwords reset for {$reset} students.");
     }
 
     public function exportCsv(Request $request): StreamedResponse
@@ -207,19 +206,18 @@ class StudentController extends Controller
         $result = app(StudentImportService::class)->import($validated, $path);
 
         if (isset($result['error'])) {
-            return response()->json(['message' => $result['error']], 422);
+            return ApiResponse::error($result['error'], 422);
         }
 
         $statusCode = $result['failed'] > 0 || $result['duplicates_found'] > 0 ? 207 : 201;
 
-        return response()->json([
-            'message' => "Import complete. {$result['imported']} imported, {$result['duplicates_found']} duplicates, {$result['failed']} failed.",
+        return ApiResponse::success([
             'total_rows' => $result['total_rows'],
             'imported' => $result['imported'],
             'duplicates_found' => $result['duplicates_found'],
             'failed' => $result['failed'],
             'duplicates' => $result['duplicates'],
             'errors' => $result['errors'],
-        ], $statusCode);
+        ], "Import complete. {$result['imported']} imported, {$result['duplicates_found']} duplicates, {$result['failed']} failed.", $statusCode);
     }
 }

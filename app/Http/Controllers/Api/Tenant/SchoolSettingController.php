@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\SchoolSetting;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,10 +17,10 @@ class SchoolSettingController extends Controller
      */
     public function index(): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data'    => SchoolSetting::all()->pluck('value', 'key'),
-        ]);
+        return ApiResponse::success(
+            SchoolSetting::all()->pluck('value', 'key'),
+            'School settings retrieved successfully.'
+        );
     }
 
     /**
@@ -29,13 +30,10 @@ class SchoolSettingController extends Controller
     {
         $setting = SchoolSetting::where('key', $key)->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'key'   => $setting->key,
-                'value' => $setting->value,
-            ],
-        ]);
+        return ApiResponse::success([
+            'key' => $setting->key,
+            'value' => $setting->value,
+        ], 'School setting retrieved successfully.');
     }
 
     /**
@@ -44,21 +42,20 @@ class SchoolSettingController extends Controller
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'settings'   => ['required', 'array'],
+            'settings' => ['required', 'array'],
             'settings.*' => ['nullable', 'string', 'max:500'],
         ]);
 
         foreach ($validated['settings'] as $key => $value) {
             SchoolSetting::updateOrInsert(
-                ['key'   => $key],
+                ['key' => $key],
                 ['value' => $value, 'updated_at' => now()]
             );
         }
 
-        return response()->json([
-            'success'  => true,
-            'message'  => 'Settings updated.',
-            'data'     => SchoolSetting::all()->pluck('value', 'key'),
-        ]);
+        return ApiResponse::success(
+            SchoolSetting::all()->pluck('value', 'key'),
+            'Settings updated.'
+        );
     }
 }

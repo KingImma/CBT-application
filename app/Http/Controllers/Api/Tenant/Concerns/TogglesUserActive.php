@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Tenant\Concerns;
 
 use App\Models\Tenant\User;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 trait TogglesUserActive
@@ -16,9 +17,8 @@ trait TogglesUserActive
             $user->tokens()->delete();
         }
 
-        return response()->json([
-            'message' => $user->is_active ? ucfirst($role).' activated.' : ucfirst($role).' deactivated.',
+        return ApiResponse::success([
             'is_active' => $user->is_active,
-        ]);
+        ], $user->is_active ? ucfirst($role).' activated.' : ucfirst($role).' deactivated.');
     }
 }

@@ -11,6 +11,7 @@ use App\Exceptions\Business\PlanLimitExceededException;
 use App\Exceptions\Tenant\TenantProvisioningException;
 use App\Exceptions\Tenant\TenantSlugAlreadyTakenException;
 use App\Services\ExceptionMonitoringService;
+use App\Support\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -20,6 +21,7 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
@@ -49,9 +51,9 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             // Build context once — structuredLog writes it, monitoring service receives it
             $context = $this->buildStructuredContext($e);
-        
+
             Log::error('Exception occurred', $context);
-        
+
             app(ExceptionMonitoringService::class)->record(
                 get_class($e),
                 $context
@@ -70,117 +72,79 @@ class Handler extends ExceptionHandler
     {
         // ── Validation ─────────────────────────────────────────────────────
         if ($e instanceof ValidationException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Validation failed.',
-                'message' => 'The given data was invalid.',
-                'errors'  => $e->errors(),
-            ], 422);
+            return ApiResponse::error('The given data was invalid.', 422, $e->errors());
         }
 
         // ── Authentication ──────────────────────────────────────────────────
         if ($e instanceof AuthenticationException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Unauthenticated.',
-                'message' => 'You must be logged in to access this resource.',
-            ], 401);
+            return ApiResponse::error('You must be logged in to access this resource.', 401);
         }
 
         // ── Invalid credentials / deactivated account ───────────────────────
         if ($e instanceof InvalidCredentialsException ||
             $e instanceof AccountDeactivatedException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Authentication failed.',
-                'message' => $e->getMessage(),
-            ], 401);
+            return ApiResponse::error($e->getMessage(), 401);
         }
 
         // ── Model not found ─────────────────────────────────────────────────
         if ($e instanceof ModelNotFoundException) {
             $model = class_basename($e->getModel());
-            return response()->json([
-                'success' => false,
-                'error'   => 'Not found.',
-                'message' => "{$model} not found.",
-            ], 404);
+
+            return ApiResponse::error("{$model} not found.", 404);
         }
 
         // ── Route not found ─────────────────────────────────────────────────
         if ($e instanceof NotFoundHttpException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Endpoint not found.',
-                'message' => "The path '{$request->path()}' does not exist.",
-            ], 404);
+            return ApiResponse::error("The path '{$request->path()}' does not exist.", 404);
         }
 
         // ── Method not allowed ──────────────────────────────────────────────
         if ($e instanceof MethodNotAllowedHttpException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Method not allowed.',
-                'message' => "{$request->method()} is not supported on this route.",
-                'allowed' => $e->getHeaders()['Allow'] ?? null,
-            ], 405);
+            return ApiResponse::error(
+                "{$request->method()} is not supported on this route.",
+                405,
+                meta: ['allowed' => $e->getHeaders()['Allow'] ?? null]
+            );
         }
 
         // ── Rate limiting ───────────────────────────────────────────────────
         if ($e instanceof ThrottleRequestsException) {
-            return response()->json([
-                'success'     => false,
-                'error'       => 'Too many requests.',
-                'message'     => 'Slow down — you are sending requests too quickly.',
-                'retry_after' => $e->getHeaders()['Retry-After'] ?? 60,
-            ], 429);
+            return ApiResponse::error(
+                'Slow down — you are sending requests too quickly.',
+                429,
+                meta: ['retry_after' => $e->getHeaders()['Retry-After'] ?? 60]
+            );
         }
 
         // ── Tenant slug conflict ────────────────────────────────────────────
         if ($e instanceof TenantSlugAlreadyTakenException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Conflict.',
-                'message' => $e->getMessage(),
-            ], 409);
+            return ApiResponse::error($e->getMessage(), 409);
         }
 
         // ── Tenant provisioning failure ─────────────────────────────────────
         if ($e instanceof TenantProvisioningException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Provisioning failed.',
-                'message' => $e->getMessage(),
-            ], 500);
+            return ApiResponse::error($e->getMessage(), 500);
         }
 
         // ── Plan limit exceeded ─────────────────────────────────────────────
         if ($e instanceof PlanLimitExceededException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Plan limit reached.',
-                'message' => $e->getMessage(),
-            ], 403);
+            return ApiResponse::error($e->getMessage(), 403);
         }
 
         // ── Bulk operation partial failure ──────────────────────────────────
         if ($e instanceof BulkOperationException) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Bulk operation failed.',
-                'message' => $e->getMessage(),
-                'results' => $e->getResults(),
-            ], 422);
+            return ApiResponse::error(
+                $e->getMessage(),
+                422,
+                meta: ['results' => $e->getResults()]
+            );
         }
 
         // ── Generic HTTP exceptions ─────────────────────────────────────────
         if ($e instanceof HttpException) {
             $status = $e->getStatusCode();
-            return response()->json([
-                'success' => false,
-                'error'   => $this->statusLabel($status),
-                'message' => $e->getMessage() ?: $this->statusLabel($status),
-            ], $status);
+
+            return ApiResponse::error($e->getMessage() ?: $this->statusLabel($status), $status);
         }
 
         // ── Database errors ─────────────────────────────────────────────────
@@ -201,26 +165,22 @@ class Handler extends ExceptionHandler
      */
     private function buildServerError(Throwable $e, string $productionMessage): JsonResponse
     {
-        $body = [
-            'success' => false,
-            'error'   => 'Server error.',
-            'message' => $productionMessage,
-        ];
+        $meta = [];
 
         if (! app()->isProduction()) {
-            $body['debug'] = [
+            $meta['debug'] = [
                 'exception' => get_class($e),
-                'message'   => $e->getMessage(),
-                'file'      => $e->getFile(),
-                'line'      => $e->getLine(),
-                'trace'     => collect(explode("\n", $e->getTraceAsString()))
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => collect(explode("\n", $e->getTraceAsString()))
                     ->take(15)
                     ->values()
                     ->toArray(),
             ];
         }
 
-        return response()->json($body, 500);
+        return ApiResponse::error($productionMessage, 500, meta: $meta);
     }
 
     private function statusLabel(int $status): string
@@ -239,45 +199,44 @@ class Handler extends ExceptionHandler
             default => 'HTTP error.',
         };
     }
-    
+
     private function buildStructuredContext(Throwable $e): array
     {
         $context = [
-            'trace_id'  => \Illuminate\Support\Str::uuid()->toString(),
+            'trace_id' => Str::uuid()->toString(),
             'exception' => get_class($e),
-            'message'   => $e->getMessage(),
-            'file'      => $e->getFile(),
-            'line'      => $e->getLine(),
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
         ];
-    
+
         if (request()) {
             $context['request'] = [
-                'url'    => request()->fullUrl(),
+                'url' => request()->fullUrl(),
                 'method' => request()->method(),
-                'ip'     => request()->ip(),
+                'ip' => request()->ip(),
                 'tenant' => request()->header('X-Tenant') ?? tenant('id'),
             ];
         }
-    
+
         if (auth()->check()) {
             $context['user'] = ['id' => auth()->id()];
         } elseif (auth('super_admin')->check()) {
             $context['super_admin'] = ['id' => auth('super_admin')->id()];
         }
-    
-        if ($e instanceof \Illuminate\Database\QueryException) {
-            $context['sql']      = $e->getSql();
+
+        if ($e instanceof QueryException) {
+            $context['sql'] = $e->getSql();
             $context['bindings'] = $e->getBindings();
         }
-    
+
         return $context;
     }
-    
+
     /**
      * Structured log — attaches request context, user, and trace ID.
      * Follows the BetterStack pattern of rich context without sensitive data.
      */
-
     private function structuredLog(Throwable $e): void
     {
         Log::error('Exception occurred', $this->buildStructuredContext($e));

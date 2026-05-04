@@ -1,4 +1,5 @@
 <?php
+
 // - Manages per-arm subject allocation
 // - index: shows arm's subjects + what's available from its class level
 // - sync: bulk-replace the arm's entire subject list in one operation
@@ -15,6 +16,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Subject;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -32,29 +34,28 @@ class ClassArmSubjectController extends Controller
             ->with(['subjects', 'classLevel.subjects'])
             ->findOrFail($armId);
 
-        $assignedIds     = $arm->subjects->pluck('id');
-        $levelSubjects   = $arm->classLevel->subjects;
-        $unassigned      = $levelSubjects->whereNotIn('id', $assignedIds)->values();
+        $assignedIds = $arm->subjects->pluck('id');
+        $levelSubjects = $arm->classLevel->subjects;
+        $unassigned = $levelSubjects->whereNotIn('id', $assignedIds)->values();
 
-        return response()->json([
-            'success'    => true,
-            'arm'        => [
-                'id'           => $arm->id,
-                'name'         => $arm->name,
-                'class_level'  => $arm->classLevel->name,
+        return ApiResponse::success([
+            'arm' => [
+                'id' => $arm->id,
+                'name' => $arm->name,
+                'class_level' => $arm->classLevel->name,
             ],
-            'assigned'   => $arm->subjects->map(fn ($s) => [
-                'id'            => $s->id,
-                'name'          => $s->name,
+            'assigned' => $arm->subjects->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
                 'is_compulsory' => (bool) $s->pivot->is_compulsory,
             ]),
             'unassigned' => $unassigned->map(fn ($s) => [
-                'id'   => $s->id,
+                'id' => $s->id,
                 'name' => $s->name,
             ]),
-            'total_assigned'   => $arm->subjects->count(),
+            'total_assigned' => $arm->subjects->count(),
             'total_unassigned' => $unassigned->count(),
-        ]);
+        ], 'Arm subjects retrieved successfully.');
     }
 
     /**
@@ -67,10 +68,10 @@ class ClassArmSubjectController extends Controller
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($armId);
 
         $validated = $request->validate([
-            'subject_ids'               => ['required', 'array'],
-            'subject_ids.*'             => ['uuid', 'exists:subjects,id'],
-            'compulsory_ids'            => ['nullable', 'array'],
-            'compulsory_ids.*'          => ['uuid'],
+            'subject_ids' => ['required', 'array'],
+            'subject_ids.*' => ['uuid', 'exists:subjects,id'],
+            'compulsory_ids' => ['nullable', 'array'],
+            'compulsory_ids.*' => ['uuid'],
         ]);
 
         // Verify all subjects belong to this class level
@@ -81,29 +82,29 @@ class ClassArmSubjectController extends Controller
 
         $invalid = array_diff($validated['subject_ids'], $levelSubjectIds);
         if (! empty($invalid)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Some subjects are not assigned to this class level.',
-                'invalid_subject_ids' => array_values($invalid),
-            ], 422);
+            return ApiResponse::error(
+                'Some subjects are not assigned to this class level.',
+                422,
+                meta: [
+                    'invalid_subject_ids' => array_values($invalid),
+                ]
+            );
         }
 
         // Build sync data — each entry carries its own UUID and compulsory flag
         $syncData = [];
         foreach ($validated['subject_ids'] as $subjectId) {
             $syncData[$subjectId] = [
-                'id'            => Str::uuid()->toString(),
+                'id' => Str::uuid()->toString(),
                 'is_compulsory' => in_array($subjectId, $validated['compulsory_ids'] ?? []),
             ];
         }
 
         $arm->subjects()->sync($syncData);
 
-        return response()->json([
-            'success' => true,
-            'message' => "Subjects synced for {$arm->classLevel->name} {$arm->name}.",
-            'arm'     => $arm->load('subjects'),
-        ]);
+        return ApiResponse::success([
+            'arm' => $arm->load('subjects'),
+        ], "Subjects synced for {$arm->classLevel->name} {$arm->name}.");
     }
 
     /**
@@ -115,7 +116,7 @@ class ClassArmSubjectController extends Controller
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($armId);
 
         $validated = $request->validate([
-            'subject_id'    => ['required', 'uuid', 'exists:subjects,id'],
+            'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
             'is_compulsory' => ['nullable', 'boolean'],
         ]);
 
@@ -126,36 +127,28 @@ class ClassArmSubjectController extends Controller
             ->exists();
 
         if (! $belongsToLevel) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This subject is not assigned to the class level. Assign it to the level first.',
-            ], 422);
+            return ApiResponse::error('This subject is not assigned to the class level. Assign it to the level first.', 422);
         }
 
         // Check if already attached to this arm
         if ($arm->subjects()->where('subjects.id', $validated['subject_id'])->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This subject is already assigned to this arm.',
-            ], 422);
+            return ApiResponse::error('This subject is already assigned to this arm.', 422);
         }
 
         $arm->subjects()->attach($validated['subject_id'], [
-            'id'            => Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'is_compulsory' => $validated['is_compulsory'] ?? false,
         ]);
 
         $subject = Subject::find($validated['subject_id']);
 
-        return response()->json([
-            'success' => true,
-            'message' => "'{$subject->name}' added to {$arm->classLevel->name} {$arm->name}.",
+        return ApiResponse::created([
             'subject' => [
-                'id'            => $subject->id,
-                'name'          => $subject->name,
+                'id' => $subject->id,
+                'name' => $subject->name,
                 'is_compulsory' => $validated['is_compulsory'] ?? false,
             ],
-        ], 201);
+        ], "'{$subject->name}' added to {$arm->classLevel->name} {$arm->name}.");
     }
 
     /**
@@ -166,19 +159,13 @@ class ClassArmSubjectController extends Controller
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($armId);
 
         if (! $arm->subjects()->where('subjects.id', $subjectId)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This subject is not assigned to this arm.',
-            ], 422);
+            return ApiResponse::error('This subject is not assigned to this arm.', 422);
         }
 
         $subject = Subject::findOrFail($subjectId);
         $arm->subjects()->detach($subjectId);
 
-        return response()->json([
-            'success' => true,
-            'message' => "'{$subject->name}' removed from {$arm->classLevel->name} {$arm->name}.",
-        ]);
+        return ApiResponse::message("'{$subject->name}' removed from {$arm->classLevel->name} {$arm->name}.");
     }
 
     /**
@@ -193,10 +180,7 @@ class ClassArmSubjectController extends Controller
             ->first();
 
         if (! $subjectPivot) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This subject is not assigned to this arm.',
-            ], 404);
+            return ApiResponse::error('This subject is not assigned to this arm.', 404);
         }
 
         $current = (bool) $subjectPivot->pivot->is_compulsory;
@@ -204,13 +188,11 @@ class ClassArmSubjectController extends Controller
             'is_compulsory' => ! $current,
         ]);
 
-        return response()->json([
-            'success'       => true,
-            'message'       => ! $current
-                ? "Subject marked as compulsory."
-                : "Subject marked as optional.",
+        return ApiResponse::success([
             'is_compulsory' => ! $current,
-        ]);
+        ], ! $current
+            ? 'Subject marked as compulsory.'
+            : 'Subject marked as optional.');
     }
 
     /**
@@ -220,7 +202,7 @@ class ClassArmSubjectController extends Controller
      */
     public function inheritFromLevel(string $classLevelId, string $armId): JsonResponse
     {
-        $arm          = ClassArm::where('class_level_id', $classLevelId)->findOrFail($armId);
+        $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($armId);
         $levelSubjects = ClassLevel::findOrFail($classLevelId)
             ->subjects()
             ->withPivot('is_compulsory')
@@ -229,17 +211,15 @@ class ClassArmSubjectController extends Controller
         $syncData = [];
         foreach ($levelSubjects as $subject) {
             $syncData[$subject->id] = [
-                'id'            => Str::uuid()->toString(),
+                'id' => Str::uuid()->toString(),
                 'is_compulsory' => (bool) $subject->pivot->is_compulsory,
             ];
         }
 
         $arm->subjects()->sync($syncData);
 
-        return response()->json([
-            'success'        => true,
-            'message'        => "All {$levelSubjects->count()} class level subjects copied to {$arm->name}.",
+        return ApiResponse::success([
             'subjects_count' => $levelSubjects->count(),
-        ]);
+        ], "All {$levelSubjects->count()} class level subjects copied to {$arm->name}.");
     }
 }

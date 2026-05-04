@@ -11,6 +11,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\PasswordService;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -37,9 +38,7 @@ class PasswordController extends Controller
         $this->passwordService->sendOtp($validated['email'], $schoolName);
 
         // Always return 200 — never reveal whether the email exists
-        return response()->json([
-            'message' => 'If that email is registered, you will receive a reset code.',
-        ]);
+        return ApiResponse::message('If that email is registered, you will receive a reset code.');
     }
 
     public function forgotPassword(Request $request): JsonResponse
@@ -63,9 +62,9 @@ class PasswordController extends Controller
             $validated['otp']
         );
 
-        return response()->json([
+        return ApiResponse::success([
             'reset_token' => $resetToken,
-        ]);
+        ], 'OTP verified successfully.');
     }
 
     // ────────────────────────────
@@ -84,9 +83,7 @@ class PasswordController extends Controller
             $validated['password']
         );
 
-        return response()->json([
-            'message' => 'Password reset successfully. Please log in.',
-        ]);
+        return ApiResponse::message('Password reset successfully. Please log in.');
     }
 
     public function resetPassword(Request $request): JsonResponse
@@ -113,8 +110,6 @@ class PasswordController extends Controller
             $validated['password']
         );
 
-        return response()->json([
-            'message' => 'Password changed successfully.',
-        ]);
+        return ApiResponse::message('Password changed successfully.');
     }
 }

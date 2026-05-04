@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\SuperAdmin;
 use App\Services\Auth\SuperAdminAuthService;
 use App\Services\Auth\TenantAuthService;
-use Illuminate\Http\Request;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
@@ -26,10 +27,10 @@ class AuthController extends Controller
         // 1. TENANT PATH (School Admin, Teacher, Student)
         // If the middleware initialized a tenant, we are in the school's database.
         if (tenant()) {
-            return response()->json($this->tenantAuth->authenticate(
+            return ApiResponse::success($this->tenantAuth->authenticate(
                 $request->email,
                 $request->password
-            ));
+            ), 'Login successful.');
         }
 
         // 2. CENTRAL PATH (Super Admin)
@@ -37,49 +38,46 @@ class AuthController extends Controller
         $superAdmin = SuperAdmin::where('email', $request->email)
             ->where('is_active', true)
             ->first();
-            
+
         if ($superAdmin) {
             return $this->superAdminAuth->authenticate($superAdmin, $request->password);
         }
 
         // Fallback for invalid central credentials
-        return response()->json([
-            'success' => false, 
-            'message' => 'Invalid credentials.'
-        ], 401);
+        return ApiResponse::error('Invalid credentials.', 401);
     }
-    
+
     public function logout(Request $request): JsonResponse
     {
         // Detect auth guard and delete token
         $user = $request->user('sanctum') ?? $request->user('tenant');
-        
+
         if ($user) {
             $user->currentAccessToken()->delete();
         }
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return ApiResponse::message('Logged out successfully');
     }
 
     public function me(Request $request): JsonResponse
     {
         // If we are in a tenant DB, pull the tenant user. Otherwise, pull super admin.
         $user = tenant() ? $request->user('tenant') : $request->user('sanctum');
-        
+
         if (! $user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return ApiResponse::error('Unauthenticated.', 401);
         }
-        
+
         if ($user instanceof SuperAdmin) {
-            return response()->json([
+            return ApiResponse::success([
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'type' => 'super_admin',
-            ]);
+            ], 'Profile retrieved successfully.');
         }
 
-        return response()->json([
+        return ApiResponse::success([
             'id' => $user->id,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
@@ -88,6 +86,6 @@ class AuthController extends Controller
             'permissions' => $user->getAllPermissions()->pluck('name'),
             'type' => 'tenant_user',
             'tenant_handle' => tenant('handle'),
-        ]);
+        ], 'Profile retrieved successfully.');
     }
 }

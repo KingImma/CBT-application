@@ -12,6 +12,7 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Topic;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,7 @@ class TopicController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'subject_id'     => ['required', 'uuid', 'exists:subjects,id'],
+            'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
         ]);
 
@@ -35,21 +36,20 @@ class TopicController extends Controller
             ->orderBy('name')
             ->get();
 
-        return response()->json(['success' => true, 'data' => $topics]);
+        return ApiResponse::success($topics, 'Topics retrieved successfully.');
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'subject_id'     => ['required', 'uuid', 'exists:subjects,id'],
+            'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
-            'parent_id'      => ['nullable', 'uuid', 'exists:topics,id'],
-            'name'           => [
+            'parent_id' => ['nullable', 'uuid', 'exists:topics,id'],
+            'name' => [
                 'required', 'string', 'max:255',
-                Rule::unique('topics')->where(fn ($q) =>
-                    $q->where('subject_id', $request->subject_id)
-                      ->where('class_level_id', $request->class_level_id)
-                      ->where('parent_id', $request->parent_id)
+                Rule::unique('topics')->where(fn ($q) => $q->where('subject_id', $request->subject_id)
+                    ->where('class_level_id', $request->class_level_id)
+                    ->where('parent_id', $request->parent_id)
                 ),
             ],
             'order' => ['nullable', 'integer'],
@@ -57,11 +57,7 @@ class TopicController extends Controller
 
         $topic = Topic::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Topic created.',
-            'data'    => $topic->load('parent'),
-        ], 201);
+        return ApiResponse::created($topic->load('parent'), 'Topic created.');
     }
 
     public function show(string $id): JsonResponse
@@ -73,7 +69,7 @@ class TopicController extends Controller
             'children.children', // two levels deep
         ])->withCount('questions')->findOrFail($id);
 
-        return response()->json(['success' => true, 'data' => $topic]);
+        return ApiResponse::success($topic, 'Topic retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -82,13 +78,12 @@ class TopicController extends Controller
 
         $validated = $request->validate([
             'parent_id' => ['sometimes', 'nullable', 'uuid', 'exists:topics,id'],
-            'name'      => [
+            'name' => [
                 'sometimes', 'string', 'max:255',
                 Rule::unique('topics')
-                    ->where(fn ($q) =>
-                        $q->where('subject_id', $topic->subject_id)
-                          ->where('class_level_id', $topic->class_level_id)
-                          ->where('parent_id', $request->parent_id ?? $topic->parent_id)
+                    ->where(fn ($q) => $q->where('subject_id', $topic->subject_id)
+                        ->where('class_level_id', $topic->class_level_id)
+                        ->where('parent_id', $request->parent_id ?? $topic->parent_id)
                     )
                     ->ignore($id),
             ],
@@ -97,19 +92,12 @@ class TopicController extends Controller
 
         // Prevent self-referencing
         if (($validated['parent_id'] ?? null) === $id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'A topic cannot be its own parent.',
-            ], 422);
+            return ApiResponse::error('A topic cannot be its own parent.', 422);
         }
 
         $topic->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Topic updated.',
-            'data'    => $topic->fresh('parent'),
-        ]);
+        return ApiResponse::success($topic->fresh('parent'), 'Topic updated.');
     }
 
     public function destroy(string $id): JsonResponse
@@ -117,21 +105,15 @@ class TopicController extends Controller
         $topic = Topic::withCount(['questions', 'children'])->findOrFail($id);
 
         if ($topic->questions_count > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => "Cannot delete — {$topic->questions_count} question(s) belong to this topic.",
-            ], 422);
+            return ApiResponse::error("Cannot delete — {$topic->questions_count} question(s) belong to this topic.", 422);
         }
 
         if ($topic->children_count > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => "Cannot delete — {$topic->children_count} sub-topic(s) exist under this topic.",
-            ], 422);
+            return ApiResponse::error("Cannot delete — {$topic->children_count} sub-topic(s) exist under this topic.", 422);
         }
 
         $topic->delete();
 
-        return response()->json(['success' => true, 'message' => 'Topic deleted.']);
+        return ApiResponse::message('Topic deleted.');
     }
 }

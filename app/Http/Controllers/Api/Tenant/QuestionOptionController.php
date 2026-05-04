@@ -13,6 +13,7 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,11 +24,11 @@ class QuestionOptionController extends Controller
         $question = Question::findOrFail($questionId);
 
         $validated = $request->validate([
-            'label'      => ['nullable', 'string', 'max:10'],
-            'content'    => ['required', 'string'],
-            'image_url'  => ['nullable', 'url', 'max:500'],
+            'label' => ['nullable', 'string', 'max:10'],
+            'content' => ['required', 'string'],
+            'image_url' => ['nullable', 'url', 'max:500'],
             'is_correct' => ['required', 'boolean'],
-            'order'      => ['nullable', 'integer'],
+            'order' => ['nullable', 'integer'],
             'match_pair' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -38,27 +39,23 @@ class QuestionOptionController extends Controller
 
         $option = QuestionOption::create(array_merge($validated, [
             'question_id' => $questionId,
-            'order'       => $validated['order'] ?? $question->options()->count(),
+            'order' => $validated['order'] ?? $question->options()->count(),
         ]));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Option added.',
-            'data'    => $option,
-        ], 201);
+        return ApiResponse::created($option, 'Option added.');
     }
 
     public function update(Request $request, string $questionId, string $id): JsonResponse
     {
         $question = Question::findOrFail($questionId);
-        $option   = QuestionOption::where('question_id', $questionId)->findOrFail($id);
+        $option = QuestionOption::where('question_id', $questionId)->findOrFail($id);
 
         $validated = $request->validate([
-            'label'      => ['sometimes', 'nullable', 'string', 'max:10'],
-            'content'    => ['sometimes', 'string'],
-            'image_url'  => ['sometimes', 'nullable', 'url', 'max:500'],
+            'label' => ['sometimes', 'nullable', 'string', 'max:10'],
+            'content' => ['sometimes', 'string'],
+            'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'is_correct' => ['sometimes', 'boolean'],
-            'order'      => ['sometimes', 'integer'],
+            'order' => ['sometimes', 'integer'],
             'match_pair' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
@@ -68,11 +65,7 @@ class QuestionOptionController extends Controller
 
         $option->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Option updated.',
-            'data'    => $option->fresh(),
-        ]);
+        return ApiResponse::success($option->fresh(), 'Option updated.');
     }
 
     public function destroy(string $questionId, string $id): JsonResponse
@@ -80,7 +73,7 @@ class QuestionOptionController extends Controller
         $option = QuestionOption::where('question_id', $questionId)->findOrFail($id);
         $option->delete();
 
-        return response()->json(['success' => true, 'message' => 'Option removed.']);
+        return ApiResponse::message('Option removed.');
     }
 
     public function reorder(Request $request, string $questionId): JsonResponse
@@ -89,7 +82,7 @@ class QuestionOptionController extends Controller
         Question::findOrFail($questionId);
 
         $request->validate([
-            'order'   => ['required', 'array', 'min:1'],
+            'order' => ['required', 'array', 'min:1'],
             'order.*' => ['uuid'],
         ]);
 
@@ -99,11 +92,10 @@ class QuestionOptionController extends Controller
                 ->update(['order' => $position]);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Options reordered.',
-            'data'    => QuestionOption::where('question_id', $questionId)
+        return ApiResponse::success(
+            QuestionOption::where('question_id', $questionId)
                 ->orderBy('order')->get(),
-        ]);
+            'Options reordered.'
+        );
     }
 }

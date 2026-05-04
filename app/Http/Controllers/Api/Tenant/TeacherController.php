@@ -11,8 +11,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
 use App\Services\PasswordService;
+use App\Services\TenantUserService;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 
 class TeacherController extends Controller
@@ -31,7 +34,7 @@ class TeacherController extends Controller
             ->orderBy('last_name')
             ->paginate(20);
 
-        return response()->json($teachers);
+        return ApiResponse::paginated($teachers, 'Teachers retrieved successfully.');
     }
 
     public function store(CreatesTeacher $action, Request $request): JsonResponse
@@ -49,11 +52,10 @@ class TeacherController extends Controller
 
         // TODO: dispatch SendTeacherWelcomeEmail job with $result['password']
 
-        return response()->json([
-            'message' => 'Teacher created.',
+        return ApiResponse::created([
             'teacher' => $result['user']->load('teacherProfile'),
             'temporary_password' => $result['password'],
-        ], 201);
+        ], 'Teacher created.');
     }
 
     public function show(string $id): JsonResponse
@@ -66,7 +68,7 @@ class TeacherController extends Controller
             'teacherAssignments.classLevel',
         ])->findOrFail($id);
 
-        return response()->json($teacher);
+        return ApiResponse::success($teacher, 'Teacher retrieved successfully.');
     }
 
     public function update(UpdatesTeacher $action, Request $request, string $id): JsonResponse
@@ -82,7 +84,7 @@ class TeacherController extends Controller
 
         $teacher = $action->execute($validated, $id);
 
-        return response()->json($teacher);
+        return ApiResponse::success($teacher, 'Teacher updated successfully.');
     }
 
     public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
@@ -98,7 +100,7 @@ class TeacherController extends Controller
             $teacher->delete();
         });
 
-        return response()->json(['message' => 'Teacher permanently archived.']);
+        return ApiResponse::message('Teacher permanently archived.');
     }
 
     public function restore(TenantUserService $tenantUserService, string $id): JsonResponse
@@ -106,18 +108,15 @@ class TeacherController extends Controller
         $teacher = User::withTrashed()->role('teacher')->findOrFail($id);
 
         if (! $teacher->trashed()) {
-            return response()->json([
-                'message' => 'This teacher is already active and has not been deleted.',
-            ], 422);
+            return ApiResponse::error('This teacher is already active and has not been deleted.', 422);
         }
 
         $teacher->restore();
         $tenantUserService->updateCentralIndex($teacher->email, 'teacher');
 
-        return response()->json([
-            'message' => "Teacher '{$teacher->first_name} {$teacher->last_name}' has been restored.",
+        return ApiResponse::success([
             'teacher' => $teacher->fresh('teacherProfile'),
-        ]);
+        ], "Teacher '{$teacher->first_name} {$teacher->last_name}' has been restored.");
     }
 
     public function resetPassword(PasswordService $passwordService, Request $request, string $id): JsonResponse
@@ -130,8 +129,6 @@ class TeacherController extends Controller
 
         $passwordService->resetPasswordForUser($teacher, $validated['password']);
 
-        return response()->json([
-            'message' => 'Password reset successfully.',
-        ]);
+        return ApiResponse::message('Password reset successfully.');
     }
 }

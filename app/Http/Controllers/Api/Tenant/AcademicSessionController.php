@@ -6,10 +6,11 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\AcademicSession;
+use App\Models\Tenant\Term;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
 
 class AcademicSessionController extends Controller
 {
@@ -19,28 +20,28 @@ class AcademicSessionController extends Controller
             ->orderByDesc('start_date')
             ->get();
 
-        return response()->json($sessions);
+        return ApiResponse::success($sessions, 'Academic sessions retrieved successfully.');
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'       => ['required', 'string', 'max:100', 'unique:academic_sessions,name'],
+            'name' => ['required', 'string', 'max:100', 'unique:academic_sessions,name'],
             'start_date' => ['required', 'date'],
-            'end_date'   => ['required', 'date', 'after:start_date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
             'is_current' => ['sometimes', 'boolean'],
         ]);
 
         $session = AcademicSession::create($validated);
 
-        return response()->json($session, 201);
+        return ApiResponse::created($session, 'Academic session created.');
     }
 
     public function show(string $id): JsonResponse
     {
         $session = AcademicSession::with('terms')->findOrFail($id);
 
-        return response()->json($session);
+        return ApiResponse::success($session, 'Academic session retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -48,15 +49,15 @@ class AcademicSessionController extends Controller
         $session = AcademicSession::findOrFail($id);
 
         $validated = $request->validate([
-            'name'       => ['sometimes', 'string', 'max:100', 'unique:academic_sessions,name,' . $id],
+            'name' => ['sometimes', 'string', 'max:100', 'unique:academic_sessions,name,'.$id],
             'start_date' => ['sometimes', 'date'],
-            'end_date'   => ['sometimes', 'date', 'after:start_date'],
+            'end_date' => ['sometimes', 'date', 'after:start_date'],
             'is_current' => ['sometimes', 'boolean'],
         ]);
 
         $session->update($validated);
 
-        return response()->json($session->fresh('terms'));
+        return ApiResponse::success($session->fresh('terms'), 'Academic session updated.');
     }
 
     public function destroy(string $id): JsonResponse
@@ -64,7 +65,7 @@ class AcademicSessionController extends Controller
         $session = AcademicSession::findOrFail($id);
         $session->delete();
 
-        return response()->json(['message' => 'Academic session deleted.']);
+        return ApiResponse::message('Academic session deleted.');
     }
 
     /**
@@ -76,23 +77,21 @@ class AcademicSessionController extends Controller
         $session = AcademicSession::findOrFail($id);
 
         if ($session->is_current) {
-            return response()->json([
-                'message' => "'{$session->name}' is already the current academic session.",
+            return ApiResponse::success([
                 'session' => $session->load('terms'),
-            ]);
+            ], "'{$session->name}' is already the current academic session.");
         }
 
         DB::transaction(function () use ($session) {
             AcademicSession::where('is_current', true)->update(['is_current' => false]);
-            
+
             $session->update(['is_current' => true]);
 
-            \App\Models\Tenant\Term::where('is_current', true)->update(['is_current' => false]);
+            Term::where('is_current', true)->update(['is_current' => false]);
         });
 
-        return response()->json([
-            'message' => "'{$session->name}' is now the current academic session.",
+        return ApiResponse::success([
             'session' => $session->fresh('terms'),
-        ]);
+        ], "'{$session->name}' is now the current academic session.");
     }
 }

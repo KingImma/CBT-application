@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant;
 use App\Models\SubscriptionPlan;
+use App\Models\Tenant;
+use App\Support\ApiResponse;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,28 +23,28 @@ class AnalyticsController extends Controller
     {
         $tenants = Tenant::withTrashed();
 
-        return response()->json([
-            'schools'       => [
-                'total'       => Tenant::count(),
-                'active'      => Tenant::where('is_active', true)->count(),
-                'trial'       => Tenant::where('subscription_status', 'trial')->count(),
-                'suspended'   => Tenant::where('subscription_status', 'suspended')->count(),
+        return ApiResponse::success([
+            'schools' => [
+                'total' => Tenant::count(),
+                'active' => Tenant::where('is_active', true)->count(),
+                'trial' => Tenant::where('subscription_status', 'trial')->count(),
+                'suspended' => Tenant::where('subscription_status', 'suspended')->count(),
                 'new_this_month' => Tenant::whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)->count(),
             ],
-            'plans'         => SubscriptionPlan::withCount('tenants')
+            'plans' => SubscriptionPlan::withCount('tenants')
                 ->where('is_active', true)
                 ->get()
                 ->map(fn ($p) => [
-                    'name'          => $p->name,
-                    'school_count'  => $p->tenants_count,
+                    'name' => $p->name,
+                    'school_count' => $p->tenants_count,
                 ]),
-            'revenue'       => [
+            'revenue' => [
                 // Placeholder — wire to payment processor when billing is live
-                'mrr'   => null,
-                'arr'   => null,
+                'mrr' => null,
+                'arr' => null,
             ],
-        ]);
+        ], 'Platform overview retrieved successfully.');
     }
 
     /**
@@ -61,7 +63,7 @@ class AnalyticsController extends Controller
             ->orderBy('month')
             ->get()
             ->map(fn ($row) => [
-                'month' => \Carbon\Carbon::parse($row->month)->format('Y-m'),
+                'month' => Carbon::parse($row->month)->format('Y-m'),
                 'count' => (int) $row->count,
             ]);
 
@@ -72,11 +74,11 @@ class AnalyticsController extends Controller
             ->get()
             ->mapWithKeys(fn ($row) => [$row->subscription_status => (int) $row->count]);
 
-        return response()->json([
+        return ApiResponse::success([
             'period_months' => $months,
-            'signups'       => $signups,
-            'by_status'     => $byStatus,
-        ]);
+            'signups' => $signups,
+            'by_status' => $byStatus,
+        ], 'Usage analytics retrieved successfully.');
     }
 
     /**
@@ -90,6 +92,6 @@ class AnalyticsController extends Controller
             ->orderByDesc('created_at')
             ->paginate(50);
 
-        return response()->json($logs);
+        return ApiResponse::paginated($logs, 'Audit logs retrieved successfully.');
     }
 }

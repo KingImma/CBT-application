@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,15 +18,16 @@ class ClassArmController extends Controller
     {
         $level = ClassLevel::findOrFail($classLevelId);
 
-        return response()->json(
-            $level->classArms()->withCount('students')->get()
+        return ApiResponse::success(
+            $level->classArms()->withCount('students')->get(),
+            'Class arms retrieved successfully.'
         );
     }
 
     public function store(Request $request, string $classLevelId): JsonResponse
     {
         $level = ClassLevel::findOrFail($classLevelId);
-    
+
         $validated = $request->validate([
             'name' => [
                 'required',
@@ -35,14 +37,10 @@ class ClassArmController extends Controller
                     ->where('class_level_id', $level->id),
             ],
         ]);
-    
+
         $arm = $level->classArms()->create($validated);
-    
-        return response()->json([
-            'success' => true,
-            'message' => "Class arm '{$arm->name}' created.",
-            'data'    => $arm,
-        ], 201);
+
+        return ApiResponse::created($arm, "Class arm '{$arm->name}' created.");
     }
 
     public function update(Request $request, string $classLevelId, string $id): JsonResponse
@@ -58,7 +56,7 @@ class ClassArmController extends Controller
 
         $arm->update($validated);
 
-        return response()->json($arm->fresh());
+        return ApiResponse::success($arm->fresh(), 'Class arm updated.');
     }
 
     public function destroy(string $classLevelId, string $id): JsonResponse
@@ -66,13 +64,11 @@ class ClassArmController extends Controller
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);
 
         if ($arm->students()->count() > 0) {
-            return response()->json([
-                'message' => 'Cannot delete a class arm that has students assigned to it.',
-            ], 422);
+            return ApiResponse::error('Cannot delete a class arm that has students assigned to it.', 422);
         }
 
         $arm->delete();
 
-        return response()->json(['message' => 'Class arm deleted.']);
+        return ApiResponse::message('Class arm deleted.');
     }
 }

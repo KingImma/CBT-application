@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Support\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 class EnforceTenantPlanLimits
 {
     /**
-     * @param Closure(Request): mixed $next
+     * @param  Closure(Request): mixed  $next
      */
     public function handle(Request $request, Closure $next, string $resource): mixed
     {
@@ -37,20 +38,20 @@ class EnforceTenantPlanLimits
             return $next($request);
         }
 
-        $limit   = null;
+        $limit = null;
         $current = 0;
 
         match ($resource) {
             'students' => [
-                $limit   = $plan->max_students,
+                $limit = $plan->max_students,
                 $current = DB::table('student_profiles')->count(),
             ],
             'teachers' => [
-                $limit   = $plan->max_teachers,
+                $limit = $plan->max_teachers,
                 $current = DB::table('teacher_profiles')->count(),
             ],
             'exams' => [
-                $limit   = $plan->max_exams_per_term,
+                $limit = $plan->max_exams_per_term,
                 $current = DB::table('exams')
                     ->where('term_id', $request->route('term_id'))
                     ->count(),
@@ -59,11 +60,14 @@ class EnforceTenantPlanLimits
         };
 
         if ($limit !== null && $current >= $limit) {
-            return response()->json([
-                'message' => "Your {$plan->name} plan allows a maximum of {$limit} {$resource}. Please upgrade to add more.",
-                'limit'   => $limit,
-                'current' => $current,
-            ], 403);
+            return ApiResponse::error(
+                "Your {$plan->name} plan allows a maximum of {$limit} {$resource}. Please upgrade to add more.",
+                403,
+                meta: [
+                    'limit' => $limit,
+                    'current' => $current,
+                ]
+            );
         }
 
         return $next($request);

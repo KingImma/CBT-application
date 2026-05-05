@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\AcademicSessionController;
 use App\Http\Controllers\Api\Tenant\TermController;
@@ -17,6 +16,12 @@ use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
 use App\Http\Controllers\Api\Tenant\TopicController;
 use App\Http\Controllers\Api\Tenant\QuestionController;
 use App\Http\Controllers\Api\Tenant\QuestionOptionController;
+use App\Http\Controllers\Api\Tenant\ExamController;
+use App\Http\Controllers\Api\Tenant\ExamQuestionController;
+use App\Http\Controllers\Api\Tenant\ExamAttendanceController;
+use App\Http\Controllers\Api\Tenant\ExamMonitoringController;
+use App\Http\Controllers\Api\Tenant\ExamGradingController;
+use App\Http\Controllers\Api\Tenant\StudentExamController;
 use App\Http\Controllers\Api\PasswordController;
 // use App\Http\Controllers\Api\Tenant\StudentAnswerController;
 // use App\Http\Controllers\Api\Tenant\StudentAnswerOptionController;
@@ -137,7 +142,13 @@ Route::prefix('students')->controller(StudentController::class)->group(function 
 });
 
 // Grading scales
-Route::apiResource('grading-scales', GradingScaleController::class);
+Route::prefix('grading-scales')->controller(GradingScaleController::class)->group(function () {
+    Route::get('/', 'index')->name('grading-scales.index');
+    Route::post('/', 'store')->name('grading-scales.store');
+    Route::get('/{gradingScale}', 'show')->name('grading-scales.show');
+    Route::patch('/{gradingScale}', 'update')->name('grading-scales.update');
+    Route::delete('/{gradingScale}', 'destroy')->name('grading-scales.destroy');
+});
 
 // School settings
 Route::prefix('school-settings')->controller(SchoolSettingController::class)->group(function () {
@@ -146,8 +157,48 @@ Route::prefix('school-settings')->controller(SchoolSettingController::class)->gr
 });
 
 Route::middleware(['role:teacher|admin'])->group(function () {
-    
-    // Topics 
+
+    // Exams
+    Route::prefix('exams')->controller(ExamController::class)->group(function () {
+        Route::get('/',              'index');
+        Route::post('/',             'store');
+        Route::get('/{id}',          'show');
+        Route::patch('/{id}',        'update');
+        Route::delete('/{id}',       'destroy');
+        Route::post('/{id}/publish', 'publish');
+        Route::post('/{id}/start-session', 'startSession');
+    });
+
+    // Exam Questions
+    Route::prefix('exams/{examId}/questions')->controller(ExamQuestionController::class)->group(function () {
+        Route::post('/',           'store');
+        Route::post('/auto-generate', 'autoGenerate');
+        Route::delete('/{questionId}', 'destroy');
+        Route::post('/reorder',    'reorder');
+    });
+
+    // Exam Attendance
+    Route::prefix('exams/{id}/attendance')->controller(ExamAttendanceController::class)->group(function () {
+        Route::get('/class-students', 'classStudents');
+        Route::post('/batch', 'batchStore');
+        Route::put('/{studentId}', 'update');
+    });
+
+    // Exam Monitoring
+    Route::prefix('exams/{id}/monitor')->controller(ExamMonitoringController::class)->group(function () {
+        Route::get('/', 'index');
+    });
+
+    // Exam Grading
+    Route::prefix('exams/{id}/grading')->controller(ExamGradingController::class)->group(function () {
+        Route::get('/ungraded-attempts', 'ungradedAttempts');
+        Route::get('/attempts/{attemptId}/theory-answers', 'theoryAnswers');
+        Route::put('/answers/{answerId}/grade', 'gradeAnswer');
+        Route::put('/attempts/{attemptId}/mark-fully-graded', 'markFullyGraded');
+        Route::post('/attempts/{attemptId}/recompute-score', 'recomputeScore');
+    });
+
+    // Topics
     Route::prefix('topics')->controller(TopicController::class)->group(function () {
         Route::get('/',        'index');   // ?subject_id=&class_level_id=
         Route::post('/',       'store');
@@ -180,6 +231,18 @@ Route::middleware(['role:teacher|admin'])->group(function () {
 // STUDENT ROUTES 
 // ==========================================
 Route::middleware(['role:student'])->group(function () {
-    // Endpoints specifically for students taking exams
-    // e.g., Route::get('/exams/active', [StudentExamController::class, 'index']);
+    Route::prefix('student/exams')->controller(StudentExamController::class)->group(function () {
+        Route::get('/available', 'index');
+        Route::get('/{id}', 'show');
+        Route::post('/{id}/start', 'start');
+        Route::get('/{id}/attempt', 'activeAttempt');
+        Route::get('/{id}/questions', 'getQuestions');
+        Route::put('/attempts/{id}/answers/{questionId}', 'saveAnswer');
+        Route::post('/attempts/{id}/bulk-save', 'bulkSave');
+        Route::get('/attempts/{id}/time-remaining', 'timeRemaining');
+        Route::post('/attempts/{id}/submit', 'submit');
+        Route::post('/attempts/{id}/flag/{questionId}', 'toggleFlag');
+        Route::post('/attempts/{id}/suspicious-event', 'logSuspiciousEvent');
+        Route::get('/attempts/{id}/result', 'result');
+    });
 });

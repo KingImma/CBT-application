@@ -42,6 +42,7 @@ php artisan migrate --force
 echo "==> Running tenant migrations..."
 php artisan tenants:migrate --force
 
+
 # echo "==> Backfilling tenant arm subjects..."
 # php artisan tenants:backfill-arm-subjects || true
 

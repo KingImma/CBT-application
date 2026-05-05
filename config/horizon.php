@@ -227,16 +227,16 @@ return [
                 'timeout'              => 300, 
             ],
             
-            'supervisor-default' => [
-                'connection'           => 'horizon-redis',
-                'queue'                => ['default', 'notifications', 'emails'],
-                'balance'              => 'auto',
+        'supervisor-default' => [
+                'connection'   => 'horizon-redis',
+                'queue'        => ['default', 'notifications', 'emails', 'exams'],
+                'balance'      => 'auto',
                 'autoScalingStrategy'  => 'time',
                 'minProcesses'         => 1,
                 'maxProcesses'         => 10,
                 'balanceMaxShift'      => 1,
                 'balanceCooldown'      => 3,
-                'tries'                => 3,
+                'tries'        => 3,
                 'timeout'              => 60,
             ],
         ],

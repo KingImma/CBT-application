@@ -25,6 +25,7 @@ class StoreStudentRequest extends FormRequest
             'admission_number'    => ['nullable', 'string', 'max:50', 'unique:student_profiles,admission_number'],
             'date_of_birth'       => ['nullable', 'date'],
             'gender'              => ['nullable', 'in:male,female,other'],
+            'guardian_email'      => ['nullable', 'email', 'max:255'],
         ];
     }
 

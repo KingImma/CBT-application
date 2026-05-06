@@ -45,6 +45,7 @@ class CreateStudentAction implements CreatesStudent
                 'admission_number' => $admissionNumber,
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'gender' => $data['gender'] ?? null,
+                'guardian_email' => $data['guardian_email'] ?? null,
             ]);
 
             // 4. Update the central index (Safe to do inside this transaction if connections are configured correctly)

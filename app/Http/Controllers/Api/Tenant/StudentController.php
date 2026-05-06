@@ -145,6 +145,7 @@ class StudentController extends Controller
             fputcsv($handle, [
                 'Admission Number', 'First Name', 'Last Name',
                 'Email', 'Class Level', 'Class Arm', 'Gender', 'Date of Birth',
+                'Guardian Email',
             ]);
 
             $query->chunk(200, function ($students) use ($handle) {
@@ -159,6 +160,7 @@ class StudentController extends Controller
                         $profile?->classArm?->name,
                         $profile?->gender,
                         $profile?->date_of_birth?->format('Y-m-d'),
+                        $profile?->guardian_email,
                     ]);
                 }
             });
@@ -181,6 +183,7 @@ class StudentController extends Controller
                 'class_arm',
                 'date_of_birth',
                 'gender',
+                'guardian_email',
             ]);
 
             fputcsv($handle, ['John', 'Doe', 'john.doe@example.com', 'STU/2026/0001', 'JSS 1', 'A', '2010-03-15', 'male']);

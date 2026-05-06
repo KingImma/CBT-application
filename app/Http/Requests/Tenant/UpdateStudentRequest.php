@@ -30,6 +30,7 @@ class UpdateStudentRequest extends FormRequest
             'email'         => ['sometimes', 'nullable', 'email', 'unique:users,email,' . $userId],
             'date_of_birth' => ['sometimes', 'nullable', 'date'],
             'gender'        => ['sometimes', 'nullable', 'in:male,female,other'],
+            'guardian_email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'admission_number'     => ['sometimes', 'string', 'max:50', 'unique:student_profiles,registration_number,' . $userId . ',id'],
         ];
     }

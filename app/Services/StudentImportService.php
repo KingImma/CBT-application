@@ -103,6 +103,7 @@ class StudentImportService
             'first_name'  => ['required', 'string', 'max:100'],
             'last_name'   => ['required', 'string', 'max:100'],
             'email'       => ['nullable', 'email'],
+            'guardian_email' => ['nullable', 'email'],
             'class_level' => ['required_without:override_class', 'string'],
         ]);
 
@@ -156,6 +157,7 @@ class StudentImportService
                     'class_arm_id'   => $classArmId,
                     'date_of_birth'  => ! empty($data['date_of_birth']) ? $data['date_of_birth'] : null,
                     'gender'         => ! empty($data['gender']) ? trim(strtolower($data['gender'])) : null,
+                    'guardian_email' => ! empty($data['guardian_email']) ? trim($data['guardian_email']) : null,
                 ];
 
                 app(UpdateStudentAction::class)->execute($updateData, $existingProfile->id);
@@ -206,6 +208,7 @@ class StudentImportService
             'admission_number' => $admissionNumber,
             'date_of_birth' => ! empty($data['date_of_birth']) ? $data['date_of_birth'] : null,
             'gender'        => ! empty($data['gender']) ? trim(strtolower($data['gender'])) : null,
+            'guardian_email' => ! empty($data['guardian_email']) ? trim($data['guardian_email']) : null,
         ];
 
         app(CreateStudentAction::class)->execute($createData);

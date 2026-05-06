@@ -27,11 +27,12 @@ class UpdateStudentAction implements UpdatesStudent
 
             // 2. Extract and update the Student Profile (Backpack) fields
             $profileData = collect($data)->only([
-                'class_level_id', 
-                'class_arm_id', 
-                'admission_number', 
-                'date_of_birth', 
-                'gender'
+                'class_level_id',
+                'class_arm_id',
+                'admission_number',
+                'date_of_birth',
+                'gender',
+                'guardian_email',
             ])->toArray();
             
             if (!empty($profileData)) {

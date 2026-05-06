@@ -17,10 +17,23 @@ use Illuminate\Validation\ValidationException;
 
 class TenantAuthService
 {
-    public function authenticate(string $email, string $password): array
+    private const ADMISSION_REGEX = '/^STU\/\d{4}\/\d+$/';
+
+    public function authenticate(string $identifier, string $password): array
     {
-        // Eloquent is safely querying ONLY the tenant database here.
-        $user = User::where('email', $email)->first();
+        $user = null;
+
+        // Email branch — raw input, no normalization
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $user = User::where('email', $identifier)->first();
+        }
+        // Admission number branch — normalize only here
+        elseif (preg_match(self::ADMISSION_REGEX, strtoupper($identifier))) {
+            $admissionNumber = strtoupper($identifier);
+            $user = User::whereHas('studentProfile', function ($q) use ($admissionNumber) {
+                $q->where('admission_number', $admissionNumber);
+            })->first();
+        }
 
         if (!$user || !Hash::check($password, $user->password)) {
             $this->throwFailedAuthException();

@@ -42,7 +42,7 @@ class CreateStudentAction implements CreatesStudent
             $user->studentProfile()->create([
                 'class_level_id' => $data['class_level_id'],
                 'class_arm_id' => $data['class_arm_id'] ?? null,
-                'admission_number' => $admissionNumber,
+                'admission_number' => strtoupper($admissionNumber),
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'gender' => $data['gender'] ?? null,
                 'guardian_email' => $data['guardian_email'] ?? null,

@@ -34,6 +34,11 @@ class UpdateStudentAction implements UpdatesStudent
                 'gender',
                 'guardian_email',
             ])->toArray();
+
+            // Normalize admission_number to uppercase
+            if (isset($profileData['admission_number'])) {
+                $profileData['admission_number'] = strtoupper($profileData['admission_number']);
+            }
             
             if (!empty($profileData)) {
                 // updateOrCreate ensures we don't crash if the profile row was accidentally deleted

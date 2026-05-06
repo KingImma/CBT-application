@@ -20,7 +20,7 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'identifier' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
@@ -28,14 +28,14 @@ class AuthController extends Controller
         // If the middleware initialized a tenant, we are in the school's database.
         if (tenant()) {
             return ApiResponse::success($this->tenantAuth->authenticate(
-                $request->email,
+                $request->identifier,
                 $request->password
             ), 'Login successful.');
         }
 
         // 2. CENTRAL PATH (Super Admin)
         // If tenant() is null, we are safely on the central database.
-        $superAdmin = SuperAdmin::where('email', $request->email)
+        $superAdmin = SuperAdmin::where('email', $request->identifier)
             ->where('is_active', true)
             ->first();
 

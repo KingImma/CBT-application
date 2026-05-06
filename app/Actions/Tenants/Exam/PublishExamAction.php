@@ -49,7 +49,7 @@ class PublishExamAction
             }
 
             $exam->update([
-                'status' => 'scheduled',
+                'status' => 'published',
                 'settings' => $settings,
             ]);
 

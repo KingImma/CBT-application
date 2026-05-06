@@ -93,7 +93,7 @@ class ClassLevelController extends Controller
                     'id' => $subject->id,
                     'name' => $subject->name,
                     'code' => $subject->code,
-                    'is_compulsory' => (bool) $subject->pivot->is_complusory,
+                    'is_compulsory' => (bool) $subject->pivot->is_compulsory,
                 ];
             });
 
@@ -124,7 +124,7 @@ class ClassLevelController extends Controller
         $subject = $level->subjects()->where('subject_id', $subjectId)->firstOrFail();
 
         // Flip the boolean value
-        $newStatus = ! $subject->pivot->is_complusory;
+        $newStatus = ! $subject->pivot->is_compulsory;
 
         // Update the pivot table record
         $level->subjects()->updateExistingPivot($subjectId, [

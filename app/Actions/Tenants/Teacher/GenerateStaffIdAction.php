@@ -10,11 +10,18 @@ class GenerateStaffIdAction
 {
     public function execute(): string
     {
-        $currentYear = date('Y');
-        $teacherCount = TeacherProfile::whereYear('created_at', $currentYear)->count();
-        $nextSequence = $teacherCount + 1;
-        $formattedSequence = str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
-
-        return "TCH/{$currentYear}/{$formattedSequence}";
+        $year = date('Y');
+    
+        $last = TeacherProfile::lockForUpdate()
+            ->where('staff_id', 'like', "TCH/{$year}/%")
+            ->orderBy('id', 'desc')
+            ->first();
+    
+        $next = 1;
+        if ($last && preg_match('/(\d+)$/', $last->staff_id, $m)) {
+            $next = (int) $m[1] + 1;
+        }
+    
+        return "TCH/{$year}/" . str_pad((string) $next, 3, '0', STR_PAD_LEFT);
     }
 }

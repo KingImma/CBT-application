@@ -44,6 +44,6 @@ class UpdateStudentAction implements UpdatesStudent
         });
 
         
-        return ['user' => $user->fresh()];
+        return $user->fresh();
     }
 }

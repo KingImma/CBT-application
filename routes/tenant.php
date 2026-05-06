@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Tenant\ExamMonitoringController;
 use App\Http\Controllers\Api\Tenant\ExamGradingController;
 use App\Http\Controllers\Api\Tenant\StudentExamController;
 use App\Http\Controllers\Api\PasswordController;
+use Illuminate\Support\Facades\Route;
 // use App\Http\Controllers\Api\Tenant\StudentAnswerController;
 // use App\Http\Controllers\Api\Tenant\StudentAnswerOptionController;
 
@@ -37,18 +38,18 @@ Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('/logout', 'logout');
     Route::get('/me', 'me');
 });
-    Route::post('/auth/change-password', [PasswordController::class, 'change']);
-    Route::post('/teachers/{id}/reset-password-otp', [TeacherController::class, 'resetPassword']);
-    Route::post('/students/bulk-reset-passwords', [StudentController::class, 'bulkResetPasswords']);
+
+// Route::post('/auth/change-password', [PasswordController::class, 'change']);
+Route::post('/teachers/{id}/reset-password-otp', [TeacherController::class, 'resetPassword']);
 
 // Academic Sessions & Terms
 Route::prefix('academic-sessions')->controller(AcademicSessionController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::get('/{id}', 'show');
-        Route::patch('/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
-        Route::post('/{id}/set-current', 'setCurrent');
+    Route::get('/', 'index');
+    Route::post('/', 'store');
+    Route::get('/{id}', 'show');
+    Route::patch('/{id}', 'update');
+    Route::delete('/{id}', 'destroy');
+    Route::post('/{id}/set-current', 'setCurrent');
 
     Route::prefix('/{sessionId}/terms')->controller(TermController::class)->group(function () {
         Route::post('/{id}/set-current', 'setCurrent');

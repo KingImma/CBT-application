@@ -41,23 +41,18 @@ class EnforceTenantPlanLimits
         $limit = null;
         $current = 0;
 
-        match ($resource) {
-            'students' => [
-                $limit = $plan->max_students,
-                $current = DB::table('student_profiles')->count(),
-            ],
-            'teachers' => [
-                $limit = $plan->max_teachers,
-                $current = DB::table('teacher_profiles')->count(),
-            ],
-            'exams' => [
-                $limit = $plan->max_exams_per_term,
-                $current = DB::table('exams')
-                    ->where('term_id', $request->route('term_id'))
-                    ->count(),
-            ],
-            default => null,
-        };
+        if ($resource === 'students') {
+            $limit   = $plan->max_students;
+            $current = DB::table('student_profiles')->count();
+        } elseif ($resource === 'teachers') {
+            $limit   = $plan->max_teachers;
+            $current = DB::table('teacher_profiles')->count();
+        } elseif ($resource === 'exams') {
+            $limit   = $plan->max_exams_per_term;
+            $current = DB::table('exams')
+                ->where('term_id', $request->route('term_id'))
+                ->count();
+        }
 
         if ($limit !== null && $current >= $limit) {
             return ApiResponse::error(

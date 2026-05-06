@@ -80,7 +80,7 @@ class StudentController extends Controller
         $result = $action->execute($request->validated(), $id);
 
         return ApiResponse::success(
-            $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
+            $result->load(['studentProfile.classLevel', 'studentProfile.classArm']),
             'Student updated successfully.'
         );
     }

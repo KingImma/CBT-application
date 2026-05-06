@@ -18,7 +18,6 @@ class GenerateAdmissionNumber
     {
         $year = date('Y');
 
-        // lockForUpdate() prevents two concurrent requests from generating the same sequence number
         $lastProfile = StudentProfile::lockForUpdate()
             ->where('admission_number', 'like', "STU/{$year}/%")
             ->orderBy('id', 'desc')

@@ -14,6 +14,7 @@ use App\Actions\Tenants\Exam\SubmitExamAction;
 use App\Actions\Tenants\Exam\ToggleFlagAnswerAction;
 use App\Actions\Tenants\Exam\LogSuspiciousEventAction;
 use App\Actions\Tenants\Exam\RecoverExamAttemptAction;
+use App\Models\Tenant\ExamAnswer;
 use App\Events\StudentStartedExam;
 use App\Events\StudentSubmittedExam;
 use App\Http\Controllers\Controller;
@@ -56,7 +57,7 @@ class StudentExamController extends Controller
         return ApiResponse::paginated($exams, 'Available exams retrieved.');
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $exam = Exam::with(['subject', 'classLevel', 'topics'])->findOrFail($id);
         

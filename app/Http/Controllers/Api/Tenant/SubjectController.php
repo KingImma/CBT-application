@@ -13,6 +13,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Curriculum & Subjects
+ * * APIs for managing the academic curriculum and subject topics.
+ */
 class SubjectController extends Controller
 {
     public function index(Request $request): JsonResponse

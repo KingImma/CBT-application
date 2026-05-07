@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * @group Super Admin: Billing & Subscriptions
+ * * APIs for managing available SaaS tiers and subscription logic.
+ */
 class SubscriptionPlanController extends Controller
 {
     /**

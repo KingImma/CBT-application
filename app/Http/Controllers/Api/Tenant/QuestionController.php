@@ -19,6 +19,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @group Question Bank
+ * * APIs for creating and managing objective and theory questions.
+ */
 class QuestionController extends Controller
 {
     public function index(Request $request): JsonResponse

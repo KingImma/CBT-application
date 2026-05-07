@@ -11,6 +11,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Exam Administration
+ * * APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.
+ */
 class ExamMonitoringController extends Controller
 {
     public function index(Request $request, string $examId): JsonResponse

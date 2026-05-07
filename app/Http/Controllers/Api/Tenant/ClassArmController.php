@@ -12,6 +12,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * @group Classes & Arms
+ * * APIs for managing class structures (e.g., JSS1) and specific arms (e.g., JSS1A), including subject mapping.
+ */
 class ClassArmController extends Controller
 {
     public function index(string $classLevelId): JsonResponse

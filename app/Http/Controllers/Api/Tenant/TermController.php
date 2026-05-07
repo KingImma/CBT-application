@@ -12,6 +12,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @group Academic Calendar
+ * * APIs for defining school years and terms.
+ */
 class TermController extends Controller
 {
     public function index(string $sessionId): JsonResponse

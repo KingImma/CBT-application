@@ -24,6 +24,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Student Exam Execution
+ * * APIs consumed by the student interface to fetch active questions, submit answers, and finalize attempts.
+ */
 class StudentExamController extends Controller
 {
     public function __construct(

@@ -10,6 +10,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group School Configuration
+ * * APIs for managing tenant-specific preferences and global grading scales.
+ */
 class SchoolSettingController extends Controller
 {
     /**

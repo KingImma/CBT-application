@@ -18,6 +18,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Super Admin: Tenant Management
+ * * APIs for provisioning, suspending, and managing school instances.
+ */
 class TenantController extends Controller
 {
     public function index(Request $request): JsonResponse

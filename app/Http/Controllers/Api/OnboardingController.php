@@ -13,6 +13,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Authentication & Onboarding
+ * * APIs for user login, password resets, and initial school onboarding.
+ */
 class OnboardingController extends Controller
 {
     public function checkHandle(Request $request): JsonResponse

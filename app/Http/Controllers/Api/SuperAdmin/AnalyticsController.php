@@ -13,6 +13,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @group Super Admin: Platform Analytics
+ * * APIs for global SaaS metrics and platform-wide monitoring.
+ */
 class AnalyticsController extends Controller
 {
     /**

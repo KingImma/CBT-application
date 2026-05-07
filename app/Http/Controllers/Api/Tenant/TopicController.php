@@ -17,6 +17,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * @group Curriculum & Subjects
+ * * APIs for managing the academic curriculum and subject topics.
+ */
 class TopicController extends Controller
 {
     public function index(Request $request): JsonResponse

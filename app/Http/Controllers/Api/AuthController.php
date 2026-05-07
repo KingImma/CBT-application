@@ -10,6 +10,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Authentication & Onboarding
+ * * APIs for user login, password resets, and initial school onboarding.
+ */
 class AuthController extends Controller
 {
     public function __construct(
@@ -17,6 +21,10 @@ class AuthController extends Controller
         private readonly TenantAuthService $tenantAuth
     ) {}
 
+    /**
+     * Authenticate a user and return a token.
+     * @subgroup Login & Session
+     */
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -47,6 +55,10 @@ class AuthController extends Controller
         return ApiResponse::error('Invalid credentials.', 401);
     }
 
+    /**
+     * Logout the user and invalidate the token.
+     * @subgroup Login & Session
+     */
     public function logout(Request $request): JsonResponse
     {
         // Detect auth guard and delete token
@@ -59,6 +71,10 @@ class AuthController extends Controller
         return ApiResponse::message('Logged out successfully');
     }
 
+    /**
+     * Get the authenticated user's profile.
+     * @subgroup Login & Session
+     */
     public function me(Request $request): JsonResponse
     {
         // If we are in a tenant DB, pull the tenant user. Otherwise, pull super admin.

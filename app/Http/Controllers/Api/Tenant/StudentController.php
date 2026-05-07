@@ -18,6 +18,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * @group Student Roster
+ * * APIs for managing student enrollments, profiles, and class placements.
+ */
 class StudentController extends Controller
 {
     use TogglesUserActive;

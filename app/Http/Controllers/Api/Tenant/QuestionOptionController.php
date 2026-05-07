@@ -17,6 +17,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Question Bank
+ * * APIs for creating and managing objective and theory questions.
+ */
 class QuestionOptionController extends Controller
 {
     public function store(Request $request, string $questionId): JsonResponse

@@ -16,6 +16,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 
+/**
+ * @group Authentication & Onboarding
+ * * APIs for user login, password resets, and initial school onboarding.
+ */
 class PasswordController extends Controller
 {
     public function __construct(

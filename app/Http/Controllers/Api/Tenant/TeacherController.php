@@ -18,6 +18,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 
+/**
+ * @group Staff Directory
+ * * APIs for managing teachers, roles, and subject assignments.
+ */
 class TeacherController extends Controller
 {
     use TogglesUserActive;

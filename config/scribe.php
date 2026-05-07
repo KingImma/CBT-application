@@ -55,7 +55,7 @@ return [
     // - "static" will generate a static HTMl page in the /public/docs folder,
     // - "laravel" will generate the documentation as a Blade view, so you can add routing and authentication.
     // - "external_static" and "external_laravel" do the same as above, but pass the OpenAPI spec as a URL to an external UI template
-    'type' => 'external_laravel',
+    'type' => 'external_static',
 
     // See https://scribe.knuckles.wtf/laravel/reference/config#theme for supported options
     'theme' => 'scalar',
@@ -154,7 +154,7 @@ return [
     // For 'static' docs, the collection will be generated to public/docs/openapi.yaml.
     // For 'laravel' docs, it will be generated to storage/app/scribe/openapi.yaml.
     // Setting `laravel.add_routes` to true (above) will also add a route for the spec.
-    'openapi' => [
+    'openapi' => [ 
         'enabled' => true,
 
         // The OpenAPI spec version to generate. Supported versions: '3.0.3', '3.1.0'.

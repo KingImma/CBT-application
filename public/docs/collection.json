@@ -10,7 +10,7 @@
     ],
     "info": {
         "name": "EduCBT API Documentation",
-        "_postman_id": "15efe6c6-0cce-497b-9655-ac4e6b2edff6",
+        "_postman_id": "ea003155-0d08-4e03-b982-95c2674d5712",
         "description": "",
         "schema": "https:\/\/schema.getpostman.com\/json\/collection\/v2.1.0\/collection.json"
     },
@@ -89,7 +89,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T13:55:38\",\"end_date\":\"2052-05-30\",\"is_current\":false}"
+                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T14:11:30\",\"end_date\":\"2052-05-30\",\"is_current\":true}"
                         },
                         "description": "",
                         "auth": {
@@ -184,7 +184,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T13:55:38\",\"end_date\":\"2052-05-30\",\"is_current\":false}"
+                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T14:11:30\",\"end_date\":\"2052-05-30\",\"is_current\":true}"
                         },
                         "description": "",
                         "auth": {
@@ -393,7 +393,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T13:55:38\",\"end_date\":\"2052-05-30\",\"is_current\":true}"
+                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T14:11:30\",\"end_date\":\"2052-05-30\",\"is_current\":false}"
                         },
                         "description": "",
                         "auth": {
@@ -438,7 +438,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T13:55:38\",\"end_date\":\"2052-05-30\",\"is_current\":false}"
+                            "raw": "{\"name\":\"b\",\"start_date\":\"2026-05-07T14:11:30\",\"end_date\":\"2052-05-30\",\"is_current\":true}"
                         },
                         "description": "",
                         "auth": {
@@ -2363,7 +2363,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"title\":\"b\",\"subject_id\":\"a4855dc5-0acb-33c3-b921-f4291f719ca0\",\"class_level_id\":\"c90237e9-ced5-3af6-88ea-84aeaa148878\",\"class_arm_id\":\"a1a0a47d-e8c3-3cf0-8e6e-c1ff9dca5d1f\",\"term_id\":\"21c4122b-d554-3723-966c-6d723ea5293f\",\"type\":\"mock\",\"duration_minutes\":40,\"pass_mark\":9,\"max_attempts\":2,\"scheduled_start\":\"2026-05-07T13:55:39\",\"scheduled_end\":\"2052-05-30\",\"instructions\":\"architecto\",\"topic_ids\":[\"a4855dc5-0acb-33c3-b921-f4291f719ca0\"]}"
+                            "raw": "{\"title\":\"b\",\"subject_id\":\"a4855dc5-0acb-33c3-b921-f4291f719ca0\",\"class_level_id\":\"c90237e9-ced5-3af6-88ea-84aeaa148878\",\"class_arm_id\":\"a1a0a47d-e8c3-3cf0-8e6e-c1ff9dca5d1f\",\"term_id\":\"21c4122b-d554-3723-966c-6d723ea5293f\",\"type\":\"quiz\",\"duration_minutes\":40,\"pass_mark\":9,\"max_attempts\":2,\"scheduled_start\":\"2026-05-07T14:11:30\",\"scheduled_end\":\"2052-05-30\",\"instructions\":\"architecto\",\"topic_ids\":[\"a4855dc5-0acb-33c3-b921-f4291f719ca0\"]}"
                         },
                         "description": "",
                         "auth": {
@@ -2458,7 +2458,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"title\":\"b\",\"subject_id\":\"a4855dc5-0acb-33c3-b921-f4291f719ca0\",\"class_level_id\":\"c90237e9-ced5-3af6-88ea-84aeaa148878\",\"class_arm_id\":\"a1a0a47d-e8c3-3cf0-8e6e-c1ff9dca5d1f\",\"term_id\":\"21c4122b-d554-3723-966c-6d723ea5293f\",\"duration_minutes\":40,\"pass_mark\":9,\"max_attempts\":2,\"scheduled_start\":\"2026-05-07T13:55:39\",\"scheduled_end\":\"2052-05-30\",\"instructions\":\"architecto\"}"
+                            "raw": "{\"title\":\"b\",\"subject_id\":\"a4855dc5-0acb-33c3-b921-f4291f719ca0\",\"class_level_id\":\"c90237e9-ced5-3af6-88ea-84aeaa148878\",\"class_arm_id\":\"a1a0a47d-e8c3-3cf0-8e6e-c1ff9dca5d1f\",\"term_id\":\"21c4122b-d554-3723-966c-6d723ea5293f\",\"duration_minutes\":40,\"pass_mark\":9,\"max_attempts\":2,\"scheduled_start\":\"2026-05-07T14:11:31\",\"scheduled_end\":\"2052-05-30\",\"instructions\":\"architecto\"}"
                         },
                         "description": "",
                         "auth": {
@@ -2644,7 +2644,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"rules\":[{\"type\":\"short_answer\",\"difficulty\":\"medium\",\"count\":16}]}"
+                            "raw": "{\"rules\":[{\"type\":\"fill_blank\",\"difficulty\":\"hard\",\"count\":16}]}"
                         },
                         "description": "",
                         "auth": {
@@ -2820,7 +2820,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"attendance\":[{\"student_id\":\"6ff8f7f6-1eb3-3525-be4a-3932c805afed\",\"status\":\"present\"}]}"
+                            "raw": "{\"attendance\":[{\"student_id\":\"6ff8f7f6-1eb3-3525-be4a-3932c805afed\",\"status\":\"absent\"}]}"
                         },
                         "description": "",
                         "auth": {
@@ -2865,7 +2865,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"status\":\"present\"}"
+                            "raw": "{\"status\":\"awp\"}"
                         },
                         "description": "",
                         "auth": {
@@ -3253,7 +3253,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"subject_id\":\"6ff8f7f6-1eb3-3525-be4a-3932c805afed\",\"class_level_id\":\"6b72fe4a-5b40-307c-bc24-f79acf9a1bb9\",\"topic_id\":\"977e5426-8d13-3824-86aa-b092f8ae52c5\",\"type\":\"fill_blank\",\"difficulty\":\"hard\",\"content\":\"architecto\",\"explanation\":\"architecto\",\"default_marks\":22,\"time_estimate_seconds\":22,\"image_url\":\"http:\\\/\\\/www.okuneva.com\\\/fugiat-sunt-nihil-accusantium-harum-mollitia.html\",\"metadata\":{\"source\":\"architecto\",\"year\":16},\"options\":[{\"label\":\"ngzmiy\",\"content\":\"architecto\",\"image_url\":\"http:\\\/\\\/bailey.com\\\/\",\"is_correct\":true,\"order\":16,\"match_pair\":\"n\"}],\"fill_blank_answers\":[{\"answer_text\":\"g\",\"is_primary\":true}]}"
+                            "raw": "{\"subject_id\":\"6ff8f7f6-1eb3-3525-be4a-3932c805afed\",\"class_level_id\":\"6b72fe4a-5b40-307c-bc24-f79acf9a1bb9\",\"topic_id\":\"977e5426-8d13-3824-86aa-b092f8ae52c5\",\"type\":\"fill_blank\",\"difficulty\":\"medium\",\"content\":\"architecto\",\"explanation\":\"architecto\",\"default_marks\":22,\"time_estimate_seconds\":22,\"image_url\":\"http:\\\/\\\/www.okuneva.com\\\/fugiat-sunt-nihil-accusantium-harum-mollitia.html\",\"metadata\":{\"source\":\"architecto\",\"year\":16},\"options\":[{\"label\":\"ngzmiy\",\"content\":\"architecto\",\"image_url\":\"http:\\\/\\\/bailey.com\\\/\",\"is_correct\":true,\"order\":16,\"match_pair\":\"n\"}],\"fill_blank_answers\":[{\"answer_text\":\"g\",\"is_primary\":false}]}"
                         },
                         "description": "",
                         "auth": {
@@ -3348,7 +3348,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"topic_id\":\"6ff8f7f6-1eb3-3525-be4a-3932c805afed\",\"difficulty\":\"easy\",\"content\":\"architecto\",\"explanation\":\"architecto\",\"default_marks\":22,\"time_estimate_seconds\":16,\"image_url\":\"http:\\\/\\\/bailey.com\\\/\",\"is_active\":false}"
+                            "raw": "{\"topic_id\":\"6ff8f7f6-1eb3-3525-be4a-3932c805afed\",\"difficulty\":\"hard\",\"content\":\"architecto\",\"explanation\":\"architecto\",\"default_marks\":22,\"time_estimate_seconds\":16,\"image_url\":\"http:\\\/\\\/bailey.com\\\/\",\"is_active\":false}"
                         },
                         "description": "",
                         "auth": {
@@ -3459,7 +3459,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"label\":\"bngzmi\",\"content\":\"architecto\",\"image_url\":\"http:\\\/\\\/bailey.com\\\/\",\"is_correct\":true,\"order\":16,\"match_pair\":\"n\"}"
+                            "raw": "{\"label\":\"bngzmi\",\"content\":\"architecto\",\"image_url\":\"http:\\\/\\\/bailey.com\\\/\",\"is_correct\":false,\"order\":16,\"match_pair\":\"n\"}"
                         },
                         "description": "",
                         "auth": {
@@ -3670,7 +3670,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"b\",\"is_default\":false,\"grades\":[{\"label\":\"architecto\",\"min_score\":22,\"max_score\":7,\"remark\":\"architecto\"}]}"
+                            "raw": "{\"name\":\"b\",\"is_default\":true,\"grades\":[{\"label\":\"architecto\",\"min_score\":22,\"max_score\":7,\"remark\":\"architecto\"}]}"
                         },
                         "description": "",
                         "auth": {
@@ -3765,7 +3765,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"b\",\"is_default\":true,\"grades\":[{\"label\":\"architecto\",\"min_score\":22,\"max_score\":7,\"remark\":\"architecto\"}]}"
+                            "raw": "{\"name\":\"b\",\"is_default\":false,\"grades\":[{\"label\":\"architecto\",\"min_score\":22,\"max_score\":7,\"remark\":\"architecto\"}]}"
                         },
                         "description": "",
                         "auth": {
@@ -4954,7 +4954,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"first_name\":\"b\",\"last_name\":\"n\",\"email\":\"ashly64@example.com\",\"class_level_id\":\"21c4122b-d554-3723-966c-6d723ea5293f\",\"class_arm_id\":\"add3503c-ebff-3875-93af-b8c6a695762b\",\"admission_number\":\"n\",\"date_of_birth\":\"2026-05-07T13:55:39\",\"gender\":\"female\",\"guardian_email\":\"cecil42@example.com\"}"
+                            "raw": "{\"first_name\":\"b\",\"last_name\":\"n\",\"email\":\"ashly64@example.com\",\"class_level_id\":\"21c4122b-d554-3723-966c-6d723ea5293f\",\"class_arm_id\":\"add3503c-ebff-3875-93af-b8c6a695762b\",\"admission_number\":\"n\",\"date_of_birth\":\"2026-05-07T14:11:30\",\"gender\":\"other\",\"guardian_email\":\"cecil42@example.com\"}"
                         },
                         "description": "",
                         "auth": {
@@ -5049,7 +5049,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"first_name\":\"b\",\"last_name\":\"n\",\"email\":\"ashly64@example.com\",\"date_of_birth\":\"2026-05-07T13:55:39\",\"gender\":\"female\",\"guardian_email\":\"justina.gaylord@example.org\",\"admission_number\":\"i\"}"
+                            "raw": "{\"first_name\":\"b\",\"last_name\":\"n\",\"email\":\"ashly64@example.com\",\"date_of_birth\":\"2026-05-07T14:11:30\",\"gender\":\"other\",\"guardian_email\":\"justina.gaylord@example.org\",\"admission_number\":\"i\"}"
                         },
                         "description": "",
                         "auth": {
@@ -5918,7 +5918,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"b\",\"email\":\"zbailey@example.net\",\"phone\":\"iyvdljnikhwaykcm\",\"address\":\"architecto\",\"city\":\"n\",\"state\":\"g\",\"is_active\":false}"
+                            "raw": "{\"name\":\"b\",\"email\":\"zbailey@example.net\",\"phone\":\"iyvdljnikhwaykcm\",\"address\":\"architecto\",\"city\":\"n\",\"state\":\"g\",\"is_active\":true}"
                         },
                         "description": "",
                         "auth": {

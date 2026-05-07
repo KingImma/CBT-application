@@ -49,6 +49,9 @@ php artisan tenants:migrate --force
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force
 
+echo "==> Generating API documentation (Scribe)..."
+php artisan scribe:generate
+
 echo "==> Starting Redis Queue Worker in the background..."
 # We explicitly call the 'redis' connection here to guarantee it uses your Redis instance.
 # The '&' is critical so it runs silently in the background.

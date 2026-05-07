@@ -91,7 +91,7 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:38'
+                  example: '2026-05-07T14:11:30'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
@@ -99,7 +99,7 @@ paths:
                 is_current:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
               required:
                 - name
                 - start_date
@@ -149,7 +149,7 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:38'
+                  example: '2026-05-07T14:11:30'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
@@ -157,7 +157,7 @@ paths:
                 is_current:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
       security: []
     delete:
       summary: ''
@@ -267,7 +267,7 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:38'
+                  example: '2026-05-07T14:11:30'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
@@ -275,7 +275,7 @@ paths:
                 is_current:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
               required:
                 - name
                 - start_date
@@ -313,7 +313,7 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:38'
+                  example: '2026-05-07T14:11:30'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
@@ -321,7 +321,7 @@ paths:
                 is_current:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
       security: []
     delete:
       summary: ''
@@ -1618,7 +1618,7 @@ paths:
                 type:
                   type: string
                   description: ''
-                  example: mock
+                  example: quiz
                   enum:
                     - exam
                     - test
@@ -1642,7 +1642,7 @@ paths:
                 scheduled_start:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:39'
+                  example: '2026-05-07T14:11:30'
                   nullable: true
                 scheduled_end:
                   type: string
@@ -1749,7 +1749,7 @@ paths:
                 scheduled_start:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:39'
+                  example: '2026-05-07T14:11:31'
                   nullable: true
                 scheduled_end:
                   type: string
@@ -1888,7 +1888,7 @@ paths:
                       type:
                         type: string
                         description: ''
-                        example: short_answer
+                        example: fill_blank
                         enum:
                           - mcq_single
                           - mcq_multi
@@ -1902,7 +1902,7 @@ paths:
                       difficulty:
                         type: string
                         description: ''
-                        example: medium
+                        example: hard
                         enum:
                           - easy
                           - medium
@@ -2050,7 +2050,7 @@ paths:
                       status:
                         type: string
                         description: ''
-                        example: present
+                        example: absent
                         enum:
                           - present
                           - absent
@@ -2089,7 +2089,7 @@ paths:
                 status:
                   type: string
                   description: ''
-                  example: present
+                  example: awp
                   enum:
                     - present
                     - absent
@@ -2380,7 +2380,7 @@ paths:
                 difficulty:
                   type: string
                   description: ''
-                  example: hard
+                  example: medium
                   enum:
                     - easy
                     - medium
@@ -2479,7 +2479,7 @@ paths:
                       is_primary:
                         type: boolean
                         description: ''
-                        example: true
+                        example: false
                         nullable: true
               required:
                 - subject_id
@@ -2534,7 +2534,7 @@ paths:
                 difficulty:
                   type: string
                   description: ''
-                  example: easy
+                  example: hard
                   enum:
                     - easy
                     - medium
@@ -2643,7 +2643,7 @@ paths:
                 is_correct:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
                 order:
                   type: integer
                   description: ''
@@ -2814,7 +2814,7 @@ paths:
                 is_default:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
                 grades:
                   type: array
                   description: 'Must have at least 1 items.'
@@ -2892,7 +2892,7 @@ paths:
                 is_default:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
                 grades:
                   type: array
                   description: 'Must have at least 1 items.'
@@ -3721,12 +3721,12 @@ paths:
                 date_of_birth:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:39'
+                  example: '2026-05-07T14:11:30'
                   nullable: true
                 gender:
                   type: string
                   description: ''
-                  example: female
+                  example: other
                   enum:
                     - male
                     - female
@@ -3795,12 +3795,12 @@ paths:
                 date_of_birth:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T13:55:39'
+                  example: '2026-05-07T14:11:30'
                   nullable: true
                 gender:
                   type: string
                   description: ''
-                  example: female
+                  example: other
                   enum:
                     - male
                     - female
@@ -4417,7 +4417,7 @@ paths:
                 is_active:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
       security: []
     delete:
       summary: ''

@@ -6,7 +6,7 @@ namespace App\Actions\Tenants\Exam;
 
 use App\Enums\ExamType;
 use App\Models\Tenant\Exam;
-use App\Models\Tenant\Topic;
+// use App\Models\Tenant\Topic;
 use Illuminate\Support\Facades\DB;
 
 class PublishExamAction

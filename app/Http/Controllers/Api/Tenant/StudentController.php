@@ -12,8 +12,10 @@ use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Models\Tenant\User;
 use App\Services\PasswordService;
+use App\ImportSchemas\StudentImportSchema;
 use App\Services\StudentImportService;
 use App\Support\ApiResponse;
+use App\ValueObjects\ImportResult;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Events\ActivityFeedEvent;
@@ -189,20 +191,10 @@ class StudentController extends Controller
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, [
-                'first_name',
-                'last_name',
-                'email',
-                'admission_number',
-                'class_level',
-                'class_arm',
-                'date_of_birth',
-                'gender',
-                'guardian_email',
-            ]);
+            fputcsv($handle, StudentImportSchema::allHeaders());
 
-            fputcsv($handle, ['John', 'Doe', 'john.doe@example.com', 'STU/2026/0001', 'JSS 1', 'A', '2010-03-15', 'male']);
-            fputcsv($handle, ['Jane', 'Smith', '', '', 'SSS 2', 'B', '2008-07-22', 'female']);
+            fputcsv($handle, ['John', 'Doe', 'john.doe@example.com', 'STU/2026/0001', 'JSS 1', 'A', '2010-03-15', 'male', '']);
+            fputcsv($handle, ['Jane', 'Smith', '', '', 'SSS 2', 'B', '2008-07-22', 'female', '']);
 
             fclose($handle);
         }, 'student_import_template.csv', [
@@ -214,28 +206,64 @@ class StudentController extends Controller
     {
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
-            'overwrite_existing' => ['nullable', 'in:update,skip'],
+            'dry_run' => ['required', 'in:true,false,1,0'],
+            'overwrite_existing' => ['nullable', 'in:skip,update'],
             'class_level_id' => ['nullable', 'uuid', 'exists:class_levels,id'],
         ]);
+
+        $dryRun = filter_var($validated['dry_run'], FILTER_VALIDATE_BOOLEAN);
 
         $file = $request->file('file');
         $path = $file->getRealPath();
 
-        $result = app(StudentImportService::class)->import($validated, $path);
+        $result = app(StudentImportService::class)->import($validated, $path, $dryRun);
 
-        if (isset($result['error'])) {
-            return ApiResponse::error($result['error'], 422);
+        return $this->buildImportResponse($result, $dryRun);
+    }
+
+    private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse
+    {
+        if ($result->missingHeaders !== []) {
+            return ApiResponse::error(
+                $result->message ?? 'Missing required columns.',
+                422,
+                ['missing_headers' => $result->missingHeaders],
+            );
         }
 
-        $statusCode = $result['failed'] > 0 || $result['duplicates_found'] > 0 ? 207 : 201;
+        if ($result->errors !== []) {
+            return ApiResponse::error(
+                $result->message ?? 'Row validation failed.',
+                422,
+                $result->errors,
+            );
+        }
 
-        return ApiResponse::success([
-            'total_rows' => $result['total_rows'],
-            'imported' => $result['imported'],
-            'duplicates_found' => $result['duplicates_found'],
-            'failed' => $result['failed'],
-            'duplicates' => $result['duplicates'],
-            'errors' => $result['errors'],
-        ], "Import complete. {$result['imported']} imported, {$result['duplicates_found']} duplicates, {$result['failed']} failed.", $statusCode);
+        if ($dryRun) {
+            $data = [
+                'dry_run' => true,
+                'total_rows' => $result->totalRows,
+                'can_proceed' => true,
+            ];
+
+            if ($result->duplicates !== []) {
+                $data['duplicates'] = $result->duplicates;
+            }
+
+            return ApiResponse::success($data, $result->message ?? 'Preview complete.');
+        }
+
+        $data = [
+            'imported' => $result->imported,
+        ];
+
+        if ($result->skipped > 0) {
+            $data['skipped'] = $result->skipped;
+        }
+        if ($result->updated > 0) {
+            $data['updated'] = $result->updated;
+        }
+
+        return ApiResponse::success($data, $result->message ?? 'Import complete.', 201);
     }
 }

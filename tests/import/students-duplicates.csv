@@ -1,0 +1,4 @@
+first_name,last_name,email,admission_number,class_level,class_arm,date_of_birth,gender,guardian_email
+Alice,Johnson,alice.johnson@test.com,,JSS 1,A,2010-05-10,female,parent.alice@test.com
+Bob,Smith,bob.smith@test.com,STU/2026/0100,SS 2,B,2008-11-20,male,
+Frank,Moore,frank.moore@test.com,,SS 1,A,2007-04-18,male,

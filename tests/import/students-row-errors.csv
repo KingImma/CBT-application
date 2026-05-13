@@ -1,0 +1,4 @@
+first_name,last_name,email,admission_number,class_level,class_arm,date_of_birth,gender,guardian_email
+,Jane,jane@test.com,,JSS 1,A,,,female
+Bob,,bob@test.com,,SSS 1,,2008-06-15,male,
+Charlie,Test,not-an-email,,unknown_level,A,2010-01-01,,parent@test.com

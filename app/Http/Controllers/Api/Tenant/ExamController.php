@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Exam\ExamCrudAction;
 use App\Actions\Tenants\Exam\ExamLifecycleAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Data\Schemas\ExamSettingsSchema;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExamResource;
@@ -30,7 +31,8 @@ class ExamController extends Controller
     {
         $perPage = (int) $request->get('per_page', 20);
 
-        $exams = Exam::with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
+        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'creator_id', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'scheduled_end', 'instructions', 'created_at')
+            ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
             ->withCount('examQuestions')
             ->when($request->status, fn ($q, $status) => $q->byStatus($status))
             ->when($request->subject_id, fn ($q, $id) => $q->bySubject($id))
@@ -48,7 +50,7 @@ class ExamController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => ['required', 'string', 'max:255'],
             'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
@@ -60,11 +62,10 @@ class ExamController extends Controller
             'max_attempts' => ['nullable', 'integer', 'min:1'],
             'scheduled_start' => ['nullable', 'date'],
             'scheduled_end' => ['nullable', 'date', 'after:scheduled_start'],
-            'settings' => ['nullable', 'array'],
             'instructions' => ['nullable', 'string'],
             'topic_ids' => ['sometimes', 'array'],
             'topic_ids.*' => ['uuid', 'exists:topics,id'],
-        ]);
+        ], ExamSettingsSchema::validatorRules('settings')));
 
         $exam = $this->crudAction->create(array_merge($validated, [
             'created_by' => $request->user('tenant')->id,
@@ -97,7 +98,7 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('update', $exam);
 
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => ['sometimes', 'string', 'max:255'],
             'subject_id' => ['sometimes', 'uuid', 'exists:subjects,id'],
             'class_level_id' => ['sometimes', 'uuid', 'exists:class_levels,id'],
@@ -108,9 +109,8 @@ class ExamController extends Controller
             'max_attempts' => ['sometimes', 'integer', 'min:1'],
             'scheduled_start' => ['sometimes', 'nullable', 'date'],
             'scheduled_end' => ['sometimes', 'nullable', 'date', 'after:scheduled_start'],
-            'settings' => ['sometimes', 'nullable', 'array'],
             'instructions' => ['sometimes', 'nullable', 'string'],
-        ]);
+        ], ExamSettingsSchema::validatorRules('settings')));
 
         $exam = $this->crudAction->update($exam, $validated);
 

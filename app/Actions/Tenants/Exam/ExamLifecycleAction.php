@@ -47,7 +47,7 @@ class ExamLifecycleAction
         return DB::transaction(function () use ($exam) {
             $settings = $exam->settings;
             if ($exam->type === ExamType::Exam->value) {
-                $settings = new \App\Values\ExamSettings(
+                $settings = new \App\Data\Values\ExamSettings(
                     randomizeQuestions: $settings->randomizeQuestions,
                     showResultImmediately: false,
                     resultsReleaseDate: $settings->resultsReleaseDate,

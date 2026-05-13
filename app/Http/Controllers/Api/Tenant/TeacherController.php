@@ -34,6 +34,7 @@ class TeacherController extends Controller
         $search = $request->query('search');
 
         $teachers = User::role('teacher')
+            ->select('id', 'first_name', 'last_name', 'email', 'phone', 'is_active')
             ->with('teacherProfile')
             ->search($search)
             ->withStatus($status)

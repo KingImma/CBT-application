@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Data\Results\BulkOperationResult;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\User;
@@ -12,28 +13,34 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+
 /**
  * @group Exam Administration
  * * APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.
  */
 class ExamAttendanceController extends Controller
 {
-    public function classStudents(string $examId): JsonResponse
+    public function classStudents(string $examId, Request $request): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
         $this->authorize('viewMonitoring', $exam);
 
-        $studentsQuery = User::whereHas('studentProfile', function ($q) use ($exam) {
-            $q->where('class_level_id', $exam->class_level_id);
-            if ($exam->class_arm_id) {
-                $q->where('class_arm_id', $exam->class_arm_id);
-            }
-        });
+        $students = User::select('id', 'first_name', 'last_name')
+            ->whereHas('studentProfile', function ($q) use ($exam) {
+                $q->where('class_level_id', $exam->class_level_id);
+                if ($exam->class_arm_id) {
+                    $q->where('class_arm_id', $exam->class_arm_id);
+                }
+            })
+            ->orderBy('last_name')
+            ->paginate(200);
 
-        $students = $studentsQuery->get();
-        $attendanceRecords = $exam->attendanceRecords()->get()->keyBy('student_id');
+        $attendanceRecords = $exam->attendanceRecords()
+            ->whereIn('student_id', $students->pluck('id'))
+            ->get()
+            ->keyBy('student_id');
 
-        $data = $students->map(function ($student) use ($attendanceRecords) {
+        $data = $students->getCollection()->map(function ($student) use ($attendanceRecords) {
             $record = $attendanceRecords->get($student->id);
             return [
                 'student_id' => $student->id,
@@ -43,7 +50,7 @@ class ExamAttendanceController extends Controller
             ];
         });
 
-        return ApiResponse::success($data, 'Class students retrieved.');
+        return ApiResponse::paginated($students, 'Class students retrieved.', $data);
     }
 
     public function batchStore(Request $request, string $examId): JsonResponse
@@ -76,9 +83,11 @@ class ExamAttendanceController extends Controller
             }
         }
 
+        $result = BulkOperationResult::fromLoop($successCount, count($failures), $failures);
+
         return ApiResponse::success(
-            ['success_count' => $successCount, 'failures' => $failures],
-            "Batch attendance completed. {$successCount} records saved."
+            $result->toArray(),
+            $result->message ?? 'Batch attendance completed.'
         );
     }
 

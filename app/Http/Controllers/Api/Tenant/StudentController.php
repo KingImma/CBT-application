@@ -12,10 +12,10 @@ use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Models\Tenant\User;
 use App\Services\PasswordService;
-use App\ImportSchemas\StudentImportSchema;
+use App\Data\Schemas\StudentImportSchema;
 use App\Services\StudentImportService;
 use App\Support\ApiResponse;
-use App\ValueObjects\ImportResult;
+use App\Data\Results\ImportResult;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Events\ActivityFeedEvent;
@@ -35,6 +35,7 @@ class StudentController extends Controller
         $search = $request->query('search');
 
         $students = User::role('student')
+            ->select('id', 'first_name', 'last_name', 'email', 'phone', 'is_active')
             ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
 
             // 1. Search by Name/Email on the User table, or Reg Number on the Profile
@@ -124,20 +125,21 @@ class StudentController extends Controller
             'class_arm_id' => ['nullable', 'uuid', 'exists:class_arms,id'],
         ]);
 
-        $students = User::role('student')
+        $query = User::role('student')
             ->whereHas('studentProfile', function ($query) use ($validated) {
                 $query->where('class_level_id', $validated['class_level_id'])
-                    ->when($validated['class_arm_id'] ?? null, fn ($q) => $q->where('class_arm_id', $validated['class_arm_id'])
-                    );
-            })->with('studentProfile')->get();
+                    ->when($validated['class_arm_id'] ?? null, fn ($q) => $q->where('class_arm_id', $validated['class_arm_id']));
+            })->with('studentProfile');
 
         $reset = 0;
 
-        foreach ($students as $student) {
-            $newPassword = $student->studentProfile->admission_number;
-            $passwordService->resetPasswordForUser($student, $newPassword);
-            $reset++;
-        }
+        $query->chunk(200, function ($students) use ($passwordService, &$reset) {
+            foreach ($students as $student) {
+                $newPassword = $student->studentProfile->admission_number;
+                $passwordService->resetPasswordForUser($student, $newPassword);
+                $reset++;
+            }
+        });
 
         return ApiResponse::success([
             'students_reset' => $reset,

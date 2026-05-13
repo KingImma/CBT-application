@@ -55,6 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'user.active' => \App\Http\Middleware\EnsureUserIsActive::class,
             'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
             'auth.any' => \App\Http\Middleware\AuthenticateAnyGuard::class,
+            'httpcache' => \App\Http\Middleware\SetCacheHeaders::class,
             
             'role' => Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => Spatie\Permission\Middleware\PermissionMiddleware::class,

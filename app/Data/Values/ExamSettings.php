@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Values;
+namespace App\Data\Values;
 
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;

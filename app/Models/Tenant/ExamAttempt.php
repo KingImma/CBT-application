@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Tenant;
 
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
-use App\Values\ExamAttemptSettings;
+use App\Data\Values\ExamAttemptSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

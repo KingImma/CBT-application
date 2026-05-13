@@ -79,7 +79,7 @@ class ExamSessionAction
         if ($exam->settings->randomizeQuestions) {
             shuffle($questionIds);
 
-            $attempt->settings = new \App\Values\ExamAttemptSettings(
+            $attempt->settings = new \App\Data\Values\ExamAttemptSettings(
                 questionOrder: $questionIds,
             );
             $attempt->save();

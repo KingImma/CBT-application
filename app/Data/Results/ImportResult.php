@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObjects;
+namespace App\Data\Results;
 
 class ImportResult
 {

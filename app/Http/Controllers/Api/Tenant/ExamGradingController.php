@@ -31,14 +31,11 @@ class ExamGradingController extends Controller
         $attempts = ExamAttempt::forExam($examId)
             ->needsGrading()
             ->with('student:id,first_name,last_name')
-            ->get()
-            ->filter(function ($attempt) {
-                return $attempt->answers()
-                    ->whereHas('question', fn ($q) => $q->where('type', 'essay'))
-                    ->whereNull('marks_awarded')
-                    ->exists();
-            })
-            ->values();
+            ->whereHas('answers', fn ($q) => $q
+                ->whereHas('question', fn ($q) => $q->where('type', 'essay'))
+                ->whereNull('marks_awarded')
+            )
+            ->get();
 
         return ApiResponse::success($attempts, 'Ungraded attempts retrieved.');
     }

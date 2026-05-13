@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Actions\Tenants\Student\StudentAction;
-use App\ImportSchemas\StudentImportSchema;
+use App\Data\Schemas\StudentImportSchema;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
-use App\ValueObjects\ImportResult;
+use App\Data\Results\ImportResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 

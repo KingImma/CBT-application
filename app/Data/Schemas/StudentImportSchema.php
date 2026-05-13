@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\ImportSchemas;
+namespace App\Data\Schemas;
 
 class StudentImportSchema
 {

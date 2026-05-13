@@ -45,16 +45,16 @@ Route::post('/teachers/{id}/reset-password-otp', [TeacherController::class, 'res
 
 // Academic Sessions & Terms
 Route::prefix('academic-sessions')->controller(AcademicSessionController::class)->group(function () {
-    Route::get('/', 'index');
+    Route::get('/', 'index')->middleware('httpcache:300');
     Route::post('/', 'store');
-    Route::get('/{id}', 'show');
+    Route::get('/{id}', 'show')->middleware('httpcache:300');
     Route::patch('/{id}', 'update');
     Route::delete('/{id}', 'destroy');
     Route::post('/{id}/set-current', 'setCurrent');
 
     Route::prefix('/{sessionId}/terms')->controller(TermController::class)->group(function () {
         Route::post('/{id}/set-current', 'setCurrent');
-        Route::get('/', 'index');
+        Route::get('/', 'index')->middleware('httpcache:300');
         Route::post('/', 'store');
         Route::patch('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
@@ -63,14 +63,14 @@ Route::prefix('academic-sessions')->controller(AcademicSessionController::class)
 
 // Class levels & Arms
 Route::prefix('class-levels')->controller(ClassLevelController::class)->group(function () {
-    Route::get('/', 'index');
+    Route::get('/', 'index')->middleware('httpcache:3600');
     Route::post('/', 'store');
-    Route::get('/{id}', 'show');
+    Route::get('/{id}', 'show')->middleware('httpcache:3600');
     Route::patch('/{id}', 'update');
     Route::delete('/{id}', 'destroy');
 
     Route::prefix('/{id}/subjects')->controller(ClassLevelController::class)->group(function () {
-        Route::get('/', 'availableSubjects');
+        Route::get('/', 'availableSubjects')->middleware('httpcache:3600');
         Route::post('/sync', 'sync');
         Route::patch('/{subjectId}/toggle-compulsory', 'toggleCompulsory');
     });
@@ -106,9 +106,9 @@ Route::prefix('class-levels')->controller(ClassLevelController::class)->group(fu
 
 // Subjects
 Route::prefix('subjects')->controller(SubjectController::class)->group(function () {
-    Route::get('/', 'index');
+    Route::get('/', 'index')->middleware('httpcache:3600');
     Route::post('/', 'store');
-    Route::get('/{id}', 'show');
+    Route::get('/{id}', 'show')->middleware('httpcache:3600');
     Route::patch('/{id}', 'update');
     Route::delete('/{id}', 'destroy');
     // custom
@@ -148,9 +148,9 @@ Route::prefix('students')->controller(StudentController::class)->group(function 
 
 // Grading scales (permission-guarded)
 Route::prefix('grading-scales')->middleware(['permission:manage_grading_scales'])->controller(GradingScaleController::class)->group(function () {
-    Route::get('/', 'index')->name('grading-scales.index');
+    Route::get('/', 'index')->middleware('httpcache:3600')->name('grading-scales.index');
     Route::post('/', 'store')->name('grading-scales.store');
-    Route::get('/{gradingScale}', 'show')->name('grading-scales.show');
+    Route::get('/{gradingScale}', 'show')->middleware('httpcache:3600')->name('grading-scales.show');
     Route::patch('/{gradingScale}', 'update')->name('grading-scales.update');
     Route::delete('/{gradingScale}', 'destroy')->name('grading-scales.destroy');
 });
@@ -242,7 +242,7 @@ Route::middleware(['role:teacher|school_admin'])->group(function () {
 
     // Form helpers
     Route::prefix('form')->controller(FormDataController::class)->group(function () {
-        Route::get('/question-bank-data', 'questionBankData');
+        Route::get('/question-bank-data', 'questionBankData')->middleware('httpcache:300');
     });
 
 });

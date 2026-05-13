@@ -18,7 +18,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -56,6 +56,11 @@ class User extends Authenticatable
     public function teacherAssignments(): HasMany
     {
         return $this->hasMany(TeacherSubjectAssignment::class, 'user_id');
+    }
+
+    public function assignedClasses(): HasMany
+    {
+        return $this->hasMany(ClassArm::class, 'assigned_teacher_id');
     }
 
     /**

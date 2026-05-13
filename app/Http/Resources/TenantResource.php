@@ -18,6 +18,7 @@ class TenantResource extends JsonResource
         return [
             // Core Identity
             'id'          => $this->id,
+            'slug'        => $this->slug,
             'name'        => $this->name,
             'handle'      => $this->handle,
             'school_type' => $this->school_type,
@@ -44,6 +45,14 @@ class TenantResource extends JsonResource
                 'trial_ends_at' => $this->trial_ends_at,
                 'ends_at'       => $this->subscription_ends_at,
             ],
+
+            // Relationships
+            'domains' => $this->whenLoaded('domains', fn () =>
+                $this->domains->map(fn ($domain) => [
+                    'id'     => $domain->id,
+                    'domain' => $domain->domain,
+                ])
+            ),
 
             // Timestamps
             'onboarding_completed_at' => $this->onboarding_completed_at,

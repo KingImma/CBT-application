@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Contracts\CreatesStudent;
-use App\Actions\Contracts\UpdatesStudent;
+use App\Actions\Tenants\Student\StudentAction;
 use App\Http\Controllers\Api\Tenant\Concerns\TogglesUserActive;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\StudentResource;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Models\Tenant\User;
@@ -16,6 +16,7 @@ use App\Services\StudentImportService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Events\ActivityFeedEvent;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -53,7 +54,11 @@ class StudentController extends Controller
             ->orderBy('last_name')
             ->paginate(50);
 
-        return ApiResponse::paginated($students, 'Students retrieved successfully.');
+        return ApiResponse::paginated(
+            $students,
+            'Students retrieved successfully.',
+            StudentResource::collection($students->getCollection())->resolve($request)
+        );
     }
 
     public function show(string $id): JsonResponse
@@ -62,12 +67,20 @@ class StudentController extends Controller
             ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
             ->findOrFail($id);
 
-        return ApiResponse::success($student, 'Student retrieved successfully.');
+        return ApiResponse::success(new StudentResource($student), 'Student retrieved successfully.');
     }
 
-    public function store(StoreStudentRequest $request, CreatesStudent $action): JsonResponse
+    public function store(StoreStudentRequest $request, StudentAction $action): JsonResponse
     {
-        $result = $action->execute($request->validated());
+        $result = $action->create($request->validated());
+        
+        broadcast(new ActivityFeedEvent(
+            channelType: 'school',
+            channelId:   tenant('id'),
+            action:      'student.created',
+            description: "Student {$result['user']->first_name} {$result['user']->last_name} added.",
+            meta:        ['student_id' => $result['user']->id],
+        ))->toOthers();
 
         return ApiResponse::created([
             'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
@@ -78,10 +91,9 @@ class StudentController extends Controller
         ], 'Student created.');
     }
 
-    public function update(UpdateStudentRequest $request, string $id, UpdatesStudent $action): JsonResponse
+    public function update(UpdateStudentRequest $request, string $id, StudentAction $action): JsonResponse
     {
-        // Ensure action expects the User ID
-        $result = $action->execute($request->validated(), $id);
+        $result = $action->update($request->validated(), $id);
 
         return ApiResponse::success(
             $result->load(['studentProfile.classLevel', 'studentProfile.classArm']),
@@ -89,18 +101,17 @@ class StudentController extends Controller
         );
     }
 
-    public function reassignClass(Request $request, string $id, UpdatesStudent $action): JsonResponse
+    public function reassignClass(Request $request, string $id, StudentAction $action): JsonResponse
     {
         $validated = $request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'class_arm_id' => ['nullable', 'uuid', 'exists:class_arms,id'],
         ]);
 
-        // Handled cleanly by your action
-        $result = $action->execute($validated, $id);
+        $result = $action->update($validated, $id);
 
         return ApiResponse::success([
-            'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
+            'student' => $result->load(['studentProfile.classLevel', 'studentProfile.classArm']),
         ], 'Student reassigned.');
     }
 

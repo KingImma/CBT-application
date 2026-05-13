@@ -10,6 +10,15 @@ To maintain code quality and consistency, all contributors are expected to follo
 - Use type hints and return types wherever possible.
 - Keep controllers lean; use Services or Actions for business logic.
 
+#### Model Conventions
+- Default: all Eloquent models must set `protected $guarded = ['id']` for mass-assignment protection.
+- Exception: models that assign their primary key manually (`$incrementing = false` AND no auto-generating trait like `HasUuids`) must NOT guard `id`, or `Model::create(['id' => ...])` silently drops the key.
+
+#### Refactoring Checklist
+When deleting or renaming a class:
+1. Run `rg "OldClassName" app/ --type php` (or equivalent) to find all remaining references.
+2. Update or remove each reference before committing the deletion.
+
 ### Frontend (Vue/Vue)
 - Use **Vue 3 Composition API** with `<script setup>`.
 - Use **Tailwind CSS** for styling.

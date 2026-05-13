@@ -17,6 +17,7 @@ use App\Models\Tenant;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Events\ActivityFeedEvent;
 
 /**
  * @group Super Admin: Tenant Management
@@ -48,6 +49,14 @@ class TenantController extends Controller
     public function store(StoreTenantRequest $request, CreateTenantAction $action): JsonResponse
     {
         $tenant = $action->execute($request->validated());
+        
+        broadcast(new ActivityFeedEvent(
+            channelType: 'super_admin',
+            channelId:   'platform',
+            action:      'tenant.created',
+            description: "New school '{$tenant->name}' registered.",
+            meta:        ['tenant_id' => $tenant->id],
+        ));
 
         return ApiResponse::created(
             (new TenantResource($tenant))->resolve(),

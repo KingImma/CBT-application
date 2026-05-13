@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Actions\Tenants\Student\CreateStudentAction;
-use App\Actions\Tenants\Student\UpdateStudentAction;
+use App\Actions\Tenants\Student\StudentAction;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
-use App\Actions\Tenants\Student\GenerateAdmissionNumber;
 use Illuminate\Support\Facades\Validator;
 
 class StudentImportService
@@ -18,11 +16,8 @@ class StudentImportService
     private const BATCH_SIZE = 50;
     
     public function __construct(
-        private readonly GenerateAdmissionNumber $admissionNumberGenerator,
-        private readonly CreateStudentAction $createStudentAction,
-        private readonly UpdateStudentAction $updateStudentAction,)
-    {
-    }
+        private readonly StudentAction $studentAction,
+    ) {}
 
     public function import(array $validated, string $filePath): array
     {
@@ -144,7 +139,7 @@ class StudentImportService
     
         $classArmId = $this->resolveClassArmId($classLevelId, $data['class_arm'] ?? null, $classArms);
     
-        $admissionNumber = $data['admission_number'] ?: $this->admissionNumberGenerator->generate();
+        $admissionNumber = $data['admission_number'] ?: $this->studentAction->generateAdmissionNumber();
         $admissionNumber = strtoupper(trim($admissionNumber));
     
         $email = $data['email'] ?: "{$admissionNumber}@student.local";
@@ -153,7 +148,7 @@ class StudentImportService
     
         if ($existingStudent) {
             if ($overwriteExisting === 'update') {
-                $this->updateStudentAction->execute(
+                $this->studentAction->update(
                     $this->buildPayload($data, $classLevelId, $classArmId, $admissionNumber, $email),
                     $existingStudent->id
                 );
@@ -183,16 +178,89 @@ class StudentImportService
             ];
         }
     
-        $this->createStudentAction->execute(
+        $this->studentAction->create(
             $this->buildPayload($data, $classLevelId, $classArmId, $admissionNumber, $email)
         );
-    
+
         return [
             'status' => 'imported',
             'data' => [
                 'row' => $rowNumber,
                 'action' => 'created',
             ],
+        ];
+    }
+
+    private function readHeaders($handle): array
+    {
+        $headers = fgetcsv($handle);
+        if ($headers === false || $headers === null) {
+            return [];
+        }
+
+        return array_map(fn ($h) => strtolower(trim($h)), $headers);
+    }
+
+    private function normalizeRow(array $data): array
+    {
+        return array_map(fn ($v) => is_string($v) ? trim($v) : $v, $data);
+    }
+
+    private function resolveClassLevelId(?string $name, $classLevels, int $rowNumber): ?string
+    {
+        if ($name === null || $name === '') {
+            return null;
+        }
+
+        $level = $classLevels->get(strtolower(trim($name)));
+
+        return $level?->id;
+    }
+
+    private function resolveClassArmId(string $classLevelId, ?string $name, $classArms): ?string
+    {
+        if ($name === null || $name === '') {
+            return null;
+        }
+
+        $key = $classLevelId . ':' . strtolower(trim($name));
+
+        return $classArms->get($key)?->id;
+    }
+
+    private function findExistingStudent(string $admissionNumber, string $email): ?User
+    {
+        return User::role('student')
+            ->where(function ($query) use ($admissionNumber, $email) {
+                $query->where('email', $email)
+                    ->orWhereHas('studentProfile', fn ($p) => $p->where('admission_number', $admissionNumber));
+            })
+            ->first();
+    }
+
+    private function notFoundError(int $rowNumber, string $field, ?string $value): array
+    {
+        return [
+            'status' => 'error',
+            'error' => [
+                'row' => $rowNumber,
+                'errors' => [$field => ["{$field} '{$value}' not found."]],
+            ],
+        ];
+    }
+
+    private function buildPayload(array $data, ?string $classLevelId, ?string $classArmId, string $admissionNumber, string $email): array
+    {
+        return [
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $email,
+            'admission_number' => $admissionNumber,
+            'class_level_id' => $classLevelId,
+            'class_arm_id' => $classArmId,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'gender' => $data['gender'] ?? null,
+            'guardian_email' => $data['guardian_email'] ?? null,
         ];
     }
 }

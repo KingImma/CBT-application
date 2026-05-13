@@ -34,17 +34,16 @@ class SubjectController extends Controller
         $subjects = Subject::with([
             'classLevels',
 
-            // 1. Target the assignments table to filter by session
             'teacherAssignments' => function ($query) use ($sessionId) {
                 if ($sessionId) {
                     $query->where('academic_session_id', $sessionId);
                 }
 
-                // 2. Chain the user relationship inside the closure, selecting valid columns
                 $query->with(['user:id,first_name,last_name']);
             },
         ])
             ->where('is_active', true)
+            ->when($request->class_level_id, fn ($q, $id) => $q->whereHas('classLevels', fn ($q2) => $q2->where('class_level_id', $id)))
             ->orderBy('name')
             ->get();
 

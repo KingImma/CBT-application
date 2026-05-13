@@ -3,34 +3,35 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\Tenant\AcademicSessionController;
-use App\Http\Controllers\Api\Tenant\TermController;
 use App\Http\Controllers\Api\Tenant\ClassArmController;
-use App\Http\Controllers\Api\Tenant\ClassLevelController;
-use App\Http\Controllers\Api\Tenant\SubjectController;
-use App\Http\Controllers\Api\Tenant\GradingScaleController;
-use App\Http\Controllers\Api\Tenant\SchoolSettingController;
-use App\Http\Controllers\Api\Tenant\TeacherController;
-use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
-use App\Http\Controllers\Api\Tenant\TopicController;
+use App\Http\Controllers\Api\Tenant\ClassLevelController;
+use App\Http\Controllers\Api\Tenant\ExamAttendanceController;
+use App\Http\Controllers\Api\Tenant\ExamController;
+use App\Http\Controllers\Api\Tenant\ExamGradingController;
+use App\Http\Controllers\Api\Tenant\ExamMonitoringController;
+use App\Http\Controllers\Api\Tenant\ExamQuestionController;
+use App\Http\Controllers\Api\Tenant\FormDataController;
+use App\Http\Controllers\Api\Tenant\GradingScaleController;
 use App\Http\Controllers\Api\Tenant\QuestionController;
 use App\Http\Controllers\Api\Tenant\QuestionOptionController;
-use App\Http\Controllers\Api\Tenant\ExamController;
-use App\Http\Controllers\Api\Tenant\ExamQuestionController;
-use App\Http\Controllers\Api\Tenant\ExamAttendanceController;
-use App\Http\Controllers\Api\Tenant\ExamMonitoringController;
-use App\Http\Controllers\Api\Tenant\ExamGradingController;
+use App\Http\Controllers\Api\Tenant\SchoolSettingController;
+use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Controllers\Api\Tenant\StudentExamController;
-use App\Http\Controllers\Api\PasswordController;
+use App\Http\Controllers\Api\Tenant\SubjectController;
+use App\Http\Controllers\Api\Tenant\TeacherController;
+use App\Http\Controllers\Api\Tenant\TermController;
+use App\Http\Controllers\Api\Tenant\TopicController;
 use Illuminate\Support\Facades\Route;
+
 // use App\Http\Controllers\Api\Tenant\StudentAnswerController;
 // use App\Http\Controllers\Api\Tenant\StudentAnswerOptionController;
 
-
 /*
  * The core operating routes for an individual school.
- * Expected deliverables: A highly maintainable map of your core business features. 
+ * Expected deliverables: A highly maintainable map of your core business features.
  */
 
 // Auth & Passwords
@@ -62,11 +63,11 @@ Route::prefix('academic-sessions')->controller(AcademicSessionController::class)
 
 // Class levels & Arms
 Route::prefix('class-levels')->controller(ClassLevelController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::get('/{id}', 'show');
-        Route::patch('/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
+    Route::get('/', 'index');
+    Route::post('/', 'store');
+    Route::get('/{id}', 'show');
+    Route::patch('/{id}', 'update');
+    Route::delete('/{id}', 'destroy');
 
     Route::prefix('/{id}/subjects')->controller(ClassLevelController::class)->group(function () {
         Route::get('/', 'availableSubjects');
@@ -77,26 +78,27 @@ Route::prefix('class-levels')->controller(ClassLevelController::class)->group(fu
     Route::prefix('/{classLevelId}/arms')->controller(ClassArmController::class)->group(function () {
         Route::get('/', 'index');
         Route::post('/', 'store');
+        Route::patch('/{id}/assign-teacher', 'assignTeacher');
         Route::patch('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
     });
-    
+
     Route::prefix('/{classLevelId}/arms/{armId}/subjects')->controller(ClassArmSubjectController::class)->group(function () {
         // GET  — list assigned + unassigned subjects for this arm
         Route::get('/', 'index');
-    
+
         // POST /sync — replace entire subject list atomically
         Route::post('/sync', 'sync');
-    
+
         // POST /inherit — copy all class-level subjects to this arm
         Route::post('/inherit', 'inheritFromLevel');
-    
+
         // POST /{subjectId} — add one subject
         Route::post('/{subjectId}', 'attach');
-    
+
         // DELETE /{subjectId} — remove one subject
         Route::delete('/{subjectId}', 'detach');
-    
+
         // PATCH /{subjectId}/toggle-compulsory
         Route::patch('/{subjectId}/toggle-compulsory', 'toggleCompulsory');
     });
@@ -118,6 +120,8 @@ Route::prefix('subjects')->controller(SubjectController::class)->group(function 
 Route::prefix('teachers')->controller(TeacherController::class)->group(function () {
     Route::get('/', 'index');
     Route::post('/', 'store');
+    Route::get('/{id}/classes', 'classes');
+    Route::get('/{id}/subjects', 'subjects');
     Route::get('/{id}', 'show');
     Route::patch('/{id}', 'update');
     Route::delete('/{id}', 'destroy');
@@ -142,8 +146,8 @@ Route::prefix('students')->controller(StudentController::class)->group(function 
     Route::post('/bulk-reset-passwords', 'bulkResetPasswords');
 });
 
-// Grading scales
-Route::prefix('grading-scales')->controller(GradingScaleController::class)->group(function () {
+// Grading scales (permission-guarded)
+Route::prefix('grading-scales')->middleware(['permission:manage_grading_scales'])->controller(GradingScaleController::class)->group(function () {
     Route::get('/', 'index')->name('grading-scales.index');
     Route::post('/', 'store')->name('grading-scales.store');
     Route::get('/{gradingScale}', 'show')->name('grading-scales.show');
@@ -152,30 +156,39 @@ Route::prefix('grading-scales')->controller(GradingScaleController::class)->grou
 });
 
 // School settings
-Route::prefix('school-settings')->controller(SchoolSettingController::class)->group(function () {
+Route::prefix('school-settings')->middleware(['role:teacher|school_admin'])->controller(SchoolSettingController::class)->group(function () {
     Route::get('/', 'index');
     Route::patch('/', 'update');
+
+    Route::middleware(['permission:manage_school_settings'])->group(function () {
+        Route::get('/assessments', 'assessments');
+        Route::patch('/assessments', 'updateAssessments');
+        Route::get('/assessment-defaults', 'assessmentDefaults');
+        Route::patch('/assessment-defaults', 'updateAssessmentDefaults');
+    });
 });
 
-Route::middleware(['role:teacher|admin'])->group(function () {
+Route::middleware(['role:teacher|school_admin'])->group(function () {
 
     // Exams
     Route::prefix('exams')->controller(ExamController::class)->group(function () {
-        Route::get('/',              'index');
-        Route::post('/',             'store');
-        Route::get('/{id}',          'show');
-        Route::patch('/{id}',        'update');
-        Route::delete('/{id}',       'destroy');
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::patch('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
         Route::post('/{id}/publish', 'publish');
         Route::post('/{id}/start-session', 'startSession');
+        Route::post('/{id}/end-session', 'endSession');
     });
 
     // Exam Questions
     Route::prefix('exams/{examId}/questions')->controller(ExamQuestionController::class)->group(function () {
-        Route::post('/',           'store');
+        Route::post('/', 'store');
         Route::post('/auto-generate', 'autoGenerate');
+        Route::patch('/{questionId}', 'update');
         Route::delete('/{questionId}', 'destroy');
-        Route::post('/reorder',    'reorder');
+        Route::post('/reorder', 'reorder');
     });
 
     // Exam Attendance
@@ -201,35 +214,41 @@ Route::middleware(['role:teacher|admin'])->group(function () {
 
     // Topics
     Route::prefix('topics')->controller(TopicController::class)->group(function () {
-        Route::get('/',        'index');   // ?subject_id=&class_level_id=
-        Route::post('/',       'store');
-        Route::get('/{id}',    'show');
-        Route::patch('/{id}',  'update');
+        Route::get('/', 'index');   // ?subject_id=&class_level_id=
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::patch('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
     });
 
     // Questions
     Route::prefix('questions')->controller(QuestionController::class)->group(function () {
-        Route::get('/',              'index');
-        Route::post('/',             'store');
-        Route::get('/{id}',          'show');
-        Route::patch('/{id}',        'update');
-        Route::delete('/{id}',       'destroy');
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::post('/clone-from-term', 'cloneFromTerm');
+        Route::get('/{id}', 'show');
+        Route::patch('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
         Route::post('/{id}/restore', 'restore');
     });
 
     // Question Options
     Route::prefix('questions/{questionId}/options')->controller(QuestionOptionController::class)->group(function () {
-        Route::post('/',           'store');
-        Route::patch('/{id}',      'update');
-        Route::delete('/{id}',     'destroy');
-        Route::post('/reorder',    'reorder');
+        Route::post('/', 'store');
+        Route::patch('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+        Route::post('/reorder', 'reorder');
+    });
+
+    // Form helpers
+    Route::prefix('form')->controller(FormDataController::class)->group(function () {
+        Route::get('/question-bank-data', 'questionBankData');
     });
 
 });
 
 // ==========================================
-// STUDENT ROUTES 
+// STUDENT ROUTES
 // ==========================================
 Route::middleware(['role:student'])->group(function () {
     Route::prefix('student/exams')->controller(StudentExamController::class)->group(function () {

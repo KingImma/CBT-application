@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\SessionTermContext;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
 use Illuminate\Support\Facades\Gate;
@@ -15,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(SessionTermContext::class);
     }
 
     /**

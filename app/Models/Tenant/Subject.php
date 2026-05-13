@@ -12,7 +12,7 @@ class Subject extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'is_active' => 'boolean',

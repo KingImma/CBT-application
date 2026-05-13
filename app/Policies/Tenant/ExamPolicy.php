@@ -14,12 +14,12 @@ class ExamPolicy
 
     public function view(User $user, Exam $exam): bool
     {
-        return $user->id === $exam->created_by || $user->hasRole('admin');
+        return $user->id === $exam->created_by || $user->hasRole('school_admin');
     }
 
     public function create(User $user): bool
     {
-        return $user->hasRole('teacher') || $user->hasRole('admin');
+        return $user->hasRole('teacher') || $user->hasRole('school_admin');
     }
 
     public function update(User $user, Exam $exam): bool
@@ -44,7 +44,7 @@ class ExamPolicy
 
     public function viewMonitoring(User $user, Exam $exam): bool
     {
-        return $user->id === $exam->created_by || $user->hasRole('admin');
+        return $user->id === $exam->created_by || $user->hasRole('school_admin');
     }
 
     public function manageQuestions(User $user, Exam $exam): bool

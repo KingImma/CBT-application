@@ -2,10 +2,7 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
-use App\Models\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
-use Illuminate\Support\Str;
 
 class StoreTenantRequest extends FormRequest
 {
@@ -54,38 +51,5 @@ class StoreTenantRequest extends FormRequest
         ];
     }
 
-    /**
-     * Validate slug uniqueness after basic rules pass.
-     * Runs the same slug-building logic as CreateTenantAction so the
-     * error is raised before the action even runs.
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            if (!$this->filled("name")) {
-                return;
-            }
 
-            $slug = Str::slug(mb_strtolower($this->input("name")));
-
-            if (empty($slug)) {
-                $validator
-                    ->errors()
-                    ->add(
-                        "name",
-                        "The school name could not be converted into a valid subdomain. Please use standard characters.",
-                    );
-                return;
-            }
-
-            if (Tenant::where("slug", $slug)->exists()) {
-                $validator
-                    ->errors()
-                    ->add(
-                        "name",
-                        "A school with the subdomain '{$slug}' already exists. Please use a different school name.",
-                    );
-            }
-        });
-    }
 }

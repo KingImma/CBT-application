@@ -63,6 +63,21 @@ class ClassArmController extends Controller
         return ApiResponse::success($arm->fresh(), 'Class arm updated.');
     }
 
+    public function assignTeacher(Request $request, string $classLevelId, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'assigned_teacher_id' => ['required', 'uuid', 'exists:users,id'],
+        ]);
+
+        $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);
+        $arm->update(['assigned_teacher_id' => $validated['assigned_teacher_id']]);
+
+        return ApiResponse::success(
+            $arm->load('assignedTeacher'),
+            'Teacher assigned to class.'
+        );
+    }
+
     public function destroy(string $classLevelId, string $id): JsonResponse
     {
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);

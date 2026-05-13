@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\QuestionType;
-use App\Enums\DifficultyType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -20,7 +19,6 @@ return new class extends Migration
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();
             $table->foreignUuid('created_by')->constrained('users')->restrictOnDelete();
             $table->enum('type', array_column(QuestionType::cases(), 'value'));
-            $table->enum('difficulty', array_column(DifficultyType::cases(), 'value')); 
             $table->text('content');
             $table->text('explanation')->nullable();
             $table->decimal('default_marks', 5, 2);
@@ -33,7 +31,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
             
-            $table->index(['subject_id', 'class_level_id', 'difficulty']);
+            $table->index(['subject_id', 'class_level_id']);
             $table->index(['type', 'is_active']);
         });
     }

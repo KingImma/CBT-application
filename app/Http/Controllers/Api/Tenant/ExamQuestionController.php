@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\AddQuestionToExamAction;
-use App\Actions\Tenants\Exam\RemoveQuestionFromExamAction;
-use App\Actions\Tenants\Exam\ReorderExamQuestionsAction;
-use App\Actions\Tenants\Exam\AutoGenerateQuestionsAction;
+use App\Actions\Tenants\Exam\ExamQuestionAction;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Support\ApiResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,10 +19,7 @@ use Illuminate\Http\Request;
 class ExamQuestionController extends Controller
 {
     public function __construct(
-        private AddQuestionToExamAction $addAction,
-        private RemoveQuestionFromExamAction $removeAction,
-        private ReorderExamQuestionsAction $reorderAction,
-        private AutoGenerateQuestionsAction $autoGenerateAction,
+        private ExamQuestionAction $questionAction,
     ) {}
 
     public function store(Request $request, string $examId): JsonResponse
@@ -37,7 +32,16 @@ class ExamQuestionController extends Controller
             'marks_override' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $examQuestion = $this->addAction->execute($exam, $validated['question_id'], $validated['marks_override'] ?? null);
+        try {
+            $examQuestion = $this->questionAction->add($exam, $validated['question_id'], $validated['marks_override'] ?? null);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'duplicate') || str_contains($e->getMessage(), 'UNIQUE')) {
+                return ApiResponse::error('This question has already been added to the exam.', 422);
+            }
+            throw $e;
+        }
 
         return ApiResponse::created(
             $examQuestion->load('question'),
@@ -53,12 +57,11 @@ class ExamQuestionController extends Controller
         $validated = $request->validate([
             'rules' => ['required', 'array', 'min:1'],
             'rules.*.type' => ['nullable', 'in:mcq_single,mcq_multi,true_false,fill_blank,short_answer,essay,matching,ordering'],
-            'rules.*.difficulty' => ['nullable', 'in:easy,medium,hard'],
             'rules.*.count' => ['required', 'integer', 'min:1'],
         ]);
 
         try {
-            $this->autoGenerateAction->execute($exam, $validated['rules']);
+            $this->questionAction->autoGenerate($exam, $validated['rules']);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -72,12 +75,33 @@ class ExamQuestionController extends Controller
         );
     }
 
+    public function update(Request $request, string $examId, string $questionId): JsonResponse
+    {
+        $exam = Exam::findOrFail($examId);
+        $this->authorize('manageQuestions', $exam);
+
+        $validated = $request->validate([
+            'marks_override' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            $examQuestion = $this->questionAction->updateMarks($exam, $questionId, $validated['marks_override'] ?? null);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success(
+            $examQuestion->load('question'),
+            'Question marks updated.'
+        );
+    }
+
     public function destroy(string $examId, string $questionId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
-        $this->removeAction->execute($exam, $questionId);
+        $this->questionAction->remove($exam, $questionId);
 
         return ApiResponse::message('Question removed from exam.');
     }
@@ -92,7 +116,7 @@ class ExamQuestionController extends Controller
             'order.*' => ['required', 'integer', 'min:1'],
         ]);
 
-        $this->reorderAction->execute($exam, $validated['order']);
+        $this->questionAction->reorder($exam, $validated['order']);
 
         return ApiResponse::message('Questions reordered.');
     }

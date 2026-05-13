@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\GradeTheoryAnswerAction;
-use App\Actions\Tenants\Exam\MarkAttemptFullyGradedAction;
-use App\Actions\Tenants\Exam\RecomputeAttemptScoreAction;
+use App\Actions\Tenants\Exam\ExamGradingAction;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
@@ -22,9 +20,7 @@ use Illuminate\Http\Request;
 class ExamGradingController extends Controller
 {
     public function __construct(
-        private GradeTheoryAnswerAction $gradeAction,
-        private MarkAttemptFullyGradedAction $markGradedAction,
-        private RecomputeAttemptScoreAction $recomputeAction,
+        private ExamGradingAction $gradingAction,
     ) {}
 
     public function ungradedAttempts(string $examId): JsonResponse
@@ -73,7 +69,7 @@ class ExamGradingController extends Controller
             'feedback' => ['nullable', 'string'],
         ]);
 
-        $answer = $this->gradeAction->execute(
+        $answer = $this->gradingAction->gradeTheory(
             $answer,
             (float) $validated['marks'],
             $validated['feedback'] ?? '',
@@ -89,7 +85,7 @@ class ExamGradingController extends Controller
         $this->authorize('grade', $attempt);
 
         try {
-            $attempt = $this->markGradedAction->execute($attempt);
+            $attempt = $this->gradingAction->markFullyGraded($attempt);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -102,7 +98,7 @@ class ExamGradingController extends Controller
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('grade', $attempt);
 
-        $attempt = $this->recomputeAction->execute($attempt);
+        $attempt = $this->gradingAction->recomputeScore($attempt);
 
         return ApiResponse::success($attempt, 'Score recomputed.');
     }

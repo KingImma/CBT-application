@@ -28,6 +28,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public $incrementing = false;
     protected $keyType = "string";
 
+    // NOT guarded — primary key is assigned manually (slug), not auto-generated.
     protected $guarded = [];
 
     protected $casts = [

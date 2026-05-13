@@ -233,12 +233,4 @@ class Handler extends ExceptionHandler
         return $context;
     }
 
-    /**
-     * Structured log — attaches request context, user, and trace ID.
-     * Follows the BetterStack pattern of rich context without sensitive data.
-     */
-    private function structuredLog(Throwable $e): void
-    {
-        Log::error('Exception occurred', $this->buildStructuredContext($e));
-    }
 }

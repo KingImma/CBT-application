@@ -16,7 +16,7 @@ class QuestionOption extends Model
 {
     use HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = ['is_correct' => 'boolean'];
 

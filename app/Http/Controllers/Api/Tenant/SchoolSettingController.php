@@ -62,4 +62,83 @@ class SchoolSettingController extends Controller
             'Settings updated.'
         );
     }
+
+    public function assessments(): JsonResponse
+    {
+        $settings = SchoolSetting::whereIn('key', [
+            'assessment_max_score',
+            'exam_max_score',
+        ])->pluck('value', 'key');
+
+        return ApiResponse::success([
+            'assessment_max_score' => (int) ($settings['assessment_max_score'] ?? 50),
+            'exam_max_score' => (int) ($settings['exam_max_score'] ?? 100),
+        ], 'Assessment configuration retrieved.');
+    }
+
+    public function updateAssessments(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'assessment_max_score' => ['required', 'integer', 'min:1', 'max:100'],
+            'exam_max_score' => ['required', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        foreach ($validated as $key => $value) {
+            SchoolSetting::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => (string) $value,
+                    'type' => 'integer',
+                    'updated_at' => now(),
+                ]
+            );
+        }
+
+        return ApiResponse::success($validated, 'Assessment configuration updated.');
+    }
+
+    public function assessmentDefaults(): JsonResponse
+    {
+        return ApiResponse::success([
+            'duration_minutes' => (int) (SchoolSetting::value('default_duration_minutes') ?? 120),
+            'max_attempts' => (int) (SchoolSetting::value('default_max_attempts') ?? 1),
+            'show_result_immediately' => filter_var(SchoolSetting::value('default_show_result_immediately') ?? false, FILTER_VALIDATE_BOOLEAN),
+            'pass_mark' => (float) (SchoolSetting::value('default_pass_mark') ?? 50),
+        ], 'Assessment defaults retrieved.');
+    }
+
+    public function updateAssessmentDefaults(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'duration_minutes' => ['sometimes', 'integer', 'min:1', 'max:1440'],
+            'max_attempts' => ['sometimes', 'integer', 'min:1', 'max:10'],
+            'show_result_immediately' => ['sometimes', 'boolean'],
+            'pass_mark' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        foreach ($validated as $key => $value) {
+            $dbKey = match ($key) {
+                'duration_minutes' => 'default_duration_minutes',
+                'max_attempts' => 'default_max_attempts',
+                'show_result_immediately' => 'default_show_result_immediately',
+                'pass_mark' => 'default_pass_mark',
+            };
+
+            SchoolSetting::updateOrCreate(
+                ['key' => $dbKey],
+                [
+                    'value' => is_bool($value) ? ($value ? 'true' : 'false') : (string) $value,
+                    'type' => is_bool($value) ? 'boolean' : (is_int($value) ? 'integer' : 'decimal'),
+                    'updated_at' => now(),
+                ]
+            );
+        }
+
+        return ApiResponse::success([
+            'duration_minutes' => (int) (SchoolSetting::value('default_duration_minutes') ?? 120),
+            'max_attempts' => (int) (SchoolSetting::value('default_max_attempts') ?? 1),
+            'show_result_immediately' => filter_var(SchoolSetting::value('default_show_result_immediately') ?? false, FILTER_VALIDATE_BOOLEAN),
+            'pass_mark' => (float) (SchoolSetting::value('default_pass_mark') ?? 50),
+        ], 'Assessment defaults updated.');
+    }
 }

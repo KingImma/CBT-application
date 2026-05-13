@@ -15,7 +15,9 @@ class ExamAnswerPolicy
     public function view(User $user, ExamAnswer $answer): bool
     {
         $attempt = $answer->attempt;
-        return $user->id === $attempt->student_id || $user->id === $attempt->exam->created_by || $user->hasRole('admin');
+        return $user->id === $attempt->student_id
+            || $user->id === $attempt->exam->created_by
+            || $user->hasAnyRole(['admin', 'school_admin']);
     }
 
     public function update(User $user, ExamAnswer $answer): bool

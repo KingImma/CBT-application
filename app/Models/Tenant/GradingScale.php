@@ -12,7 +12,7 @@ class GradingScale extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'grades'     => 'array',

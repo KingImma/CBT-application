@@ -12,7 +12,7 @@ class ClassLevel extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
 
     public function classArms(): \Illuminate\Database\Eloquent\Relations\HasMany

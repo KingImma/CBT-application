@@ -10,7 +10,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Actions\Tenants\CloneQuestionAction;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\QuestionResource;
+use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\FillBlankAnswer;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
@@ -27,7 +30,7 @@ class QuestionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $questions = Question::with(['topic', 'classLevel', 'creator:id,first_name,last_name'])
+        $questions = Question::with(['topic', 'classLevel', 'subject', 'creator:id,first_name,last_name'])
             ->when($request->subject_id, fn ($q) => $q->where('subject_id', $request->subject_id)
             )
             ->when($request->class_level_id, fn ($q) => $q->where('class_level_id', $request->class_level_id)
@@ -35,8 +38,6 @@ class QuestionController extends Controller
             ->when($request->topic_id, fn ($q) => $q->where('topic_id', $request->topic_id)
             )
             ->when($request->type, fn ($q) => $q->where('type', $request->type)
-            )
-            ->when($request->difficulty, fn ($q) => $q->where('difficulty', $request->difficulty)
             )
             ->when($request->search, fn ($q) => $q->where('content', 'ilike', "%{$request->search}%")
             )
@@ -46,17 +47,35 @@ class QuestionController extends Controller
             ->orderByDesc('created_at')
             ->paginate((int) $request->get('per_page', 20));
 
-        return ApiResponse::paginated($questions, 'Questions retrieved successfully.');
+        return ApiResponse::paginated(
+            $questions,
+            'Questions retrieved successfully.',
+            QuestionResource::collection($questions->getCollection())->resolve($request)
+        );
     }
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', Question::class);
+
         $validated = $request->validate([
-            'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
+            'subject_id' => [
+                'required', 'uuid', 'exists:subjects,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $classLevelId = $request->input('class_level_id');
+                    if ($classLevelId) {
+                        $exists = ClassLevel::where('id', $classLevelId)
+                            ->whereHas('subjects', fn ($q) => $q->where('subject_id', $value))
+                            ->exists();
+                        if (! $exists) {
+                            $fail('The selected subject is not assigned to the selected class level.');
+                        }
+                    }
+                },
+            ],
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'topic_id' => ['nullable', 'uuid', 'exists:topics,id'],
             'type' => ['required', 'in:mcq_single,mcq_multi,true_false,fill_blank,short_answer,essay,matching,ordering'],
-            'difficulty' => ['required', 'in:easy,medium,hard'],
             'content' => ['required', 'string'],
             'explanation' => ['nullable', 'string'],
             'default_marks' => ['required', 'numeric', 'min:0.5', 'max:100'],
@@ -97,7 +116,6 @@ class QuestionController extends Controller
                 'class_level_id' => $validated['class_level_id'],
                 'topic_id' => $validated['topic_id'] ?? null,
                 'type' => $validated['type'],
-                'difficulty' => $validated['difficulty'],
                 'content' => $validated['content'],
                 'explanation' => $validated['explanation'] ?? null,
                 'default_marks' => $validated['default_marks'],
@@ -149,16 +167,18 @@ class QuestionController extends Controller
             'creator:id,first_name,last_name',
         ])->findOrFail($id);
 
-        return ApiResponse::success($question, 'Question retrieved successfully.');
+        $this->authorize('view', $question);
+
+        return ApiResponse::success(new QuestionResource($question), 'Question retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
         $question = Question::findOrFail($id);
+        $this->authorize('update', $question);
 
         $validated = $request->validate([
             'topic_id' => ['sometimes', 'nullable', 'uuid', 'exists:topics,id'],
-            'difficulty' => ['sometimes', 'in:easy,medium,hard'],
             'content' => ['sometimes', 'string'],
             'explanation' => ['sometimes', 'nullable', 'string'],
             'default_marks' => ['sometimes', 'numeric', 'min:0.5', 'max:100'],
@@ -180,6 +200,7 @@ class QuestionController extends Controller
     {
         // - Soft deletes so exam history referencing this question stays intact
         $question = Question::findOrFail($id);
+        $this->authorize('delete', $question);
         $question->delete();
 
         return ApiResponse::message('Question archived.');
@@ -192,6 +213,44 @@ class QuestionController extends Controller
         $question->update(['is_active' => true]);
 
         return ApiResponse::message('Question restored.');
+    }
+
+    public function cloneFromTerm(Request $request): JsonResponse
+    {
+        $this->authorize('create', Question::class);
+
+        $validated = $request->validate([
+            'source_session_id' => ['required', 'uuid', 'exists:academic_sessions,id'],
+            'source_term_id' => ['required', 'uuid', 'exists:terms,id'],
+            'target_session_id' => ['required', 'uuid', 'exists:academic_sessions,id'],
+            'target_term_id' => ['required', 'uuid', 'exists:terms,id'],
+            'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
+            'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
+            'topic_map' => ['nullable', 'array'],
+            'topic_map.*.from' => ['required_with:topic_map', 'uuid', 'exists:topics,id'],
+            'topic_map.*.to' => ['required_with:topic_map', 'uuid', 'exists:topics,id'],
+        ]);
+
+        $topicMap = [];
+        foreach ($validated['topic_map'] ?? [] as $mapping) {
+            $topicMap[$mapping['from']] = $mapping['to'];
+        }
+
+        $count = app(CloneQuestionAction::class)->cloneToTerm(
+            sourceSessionId: $validated['source_session_id'],
+            sourceTermId: $validated['source_term_id'],
+            targetSessionId: $validated['target_session_id'],
+            targetTermId: $validated['target_term_id'],
+            subjectId: $validated['subject_id'],
+            classLevelId: $validated['class_level_id'],
+            topicMap: $topicMap,
+            createdBy: $request->user('tenant')->id,
+        );
+
+        return ApiResponse::success(
+            ['cloned_count' => $count],
+            "{$count} questions cloned successfully."
+        );
     }
 
     private function validateTypeRules(array $data): ?string

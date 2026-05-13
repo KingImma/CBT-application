@@ -7,8 +7,10 @@ use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Middleware\InitializeTenancyByHeader;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
-// bb
+
+
 /*
  * 1. What it is: `routes/api.php` (Public routes).
  * 2. What it does in a nutshell: Holds ONLY routes that do not require an active user session.
@@ -23,6 +25,10 @@ Route::middleware([InitializeTenancyByHeader::class])->group(function () {
         Route::post('/forgot-password', 'forgotPassword');
         Route::post('/reset-password', 'resetPassword');
     });
+});
+
+Route::middleware([InitializeTenancyByHeader::class, 'auth:sanctum',])->post('/broadcasting/auth', function () {
+    return Broadcast::auth(request());
 });
 
 Route::get('/students/import/template', [StudentController::class, 'downloadImportTemplate']);

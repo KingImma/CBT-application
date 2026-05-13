@@ -1,43 +1,87 @@
 <?php
 
+namespace Tests\Feature\Api\SuperAdmin;
+
 use App\Models\SubscriptionPlan;
 use App\Models\SuperAdmin;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class TenantTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase {
+        beginDatabaseTransaction as baseBeginDatabaseTransaction;
+    }
 
     private SuperAdmin $admin;
 
-    /*
-     * setUp authenticates a super admin for every test in this class.
-     * All tenant management endpoints require a valid Sanctum token so this
-     * avoids repeating actingAs() in every test.
-     */
+    protected function beginDatabaseTransaction(): void
+    {
+        // No-op: CREATE DATABASE cannot run inside a transaction block.
+        // Data isolation is handled by setUp/tearDown.
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->admin = SuperAdmin::factory()->create();
-        $this->actingAs($this->admin, "sanctum");
+        $this->actingAs($this->admin, "super_admin");
     }
 
-    /*
-     * List tenants — verifies pagination shape and that all created tenants appear.
-     * Checks data key specifically because Laravel pagination wraps results.
-     */
+    protected function tearDown(): void
+    {
+        // Ensure we are on the central connection before doing any DB work.
+        // The previous test may have left tenancy initialized, which switches
+        // the pgsql connection to the tenant DB — you cannot DROP a database
+        // while connected to it.
+        if (tenancy()->initialized) {
+            tenancy()->end();
+        }
+
+        // Suppress TenantDeleted → DeleteDatabase (no IF EXISTS) by wrapping
+        // all tenant cleanup inside withoutEvents.
+        Tenant::withoutEvents(function () {
+            $centralPdo = DB::connection('pgsql')->getPdo();
+
+            foreach (Tenant::all() as $tenant) {
+                $dbName = $tenant->database()->getName();
+                if ($dbName) {
+                    try {
+                        $centralPdo->exec(
+                            'DROP DATABASE IF EXISTS "' . $dbName . '"'
+                        );
+                    } catch (\Throwable) {
+                        // DB may not exist / cannot drop while connected
+                    }
+                }
+            }
+
+            Tenant::query()->forceDelete();
+        });
+
+        parent::tearDown();
+    }
+
+    private function adminFields(): array
+    {
+        return [
+            'admin_first_name' => 'Admin',
+            'admin_last_name'  => 'User',
+            'admin_email'      => 'admin@school.com',
+            'admin_password'   => 'password123',
+        ];
+    }
+
     #[Test]
     public function can_list_all_tenants(): void
     {
         Tenant::factory()->count(3)->create();
 
-        $response = $this->getJson("/api/super-admin/tenants")->assertStatus(
-            200,
-        );
+        $response = $this->getJson("/api/super-admin/tenants")->assertStatus(200);
 
         expect($response->json("data"))->toHaveCount(3);
     }
@@ -45,9 +89,7 @@ class TenantTest extends TestCase
     #[Test]
     public function list_tenants_returns_empty_data_when_no_tenants_exist(): void
     {
-        $response = $this->getJson("/api/super-admin/tenants")->assertStatus(
-            200,
-        );
+        $response = $this->getJson("/api/super-admin/tenants")->assertStatus(200);
 
         expect($response->json("data"))->toHaveCount(0);
     }
@@ -81,51 +123,45 @@ class TenantTest extends TestCase
         expect($response->json("data"))->toHaveCount(1);
     }
 
-    /*
-     * Create tenant — only tests the API response and DB record.
-     * Does not test database provisioning (that's covered in TenantProvisioningTest).
-     * Domain is auto-generated from slug so we don't pass it in the request.
-     */
     #[Test]
     public function can_create_a_new_tenant(): void
     {
         $plan = SubscriptionPlan::factory()->create();
 
-        $this->postJson("/api/super-admin/tenants", [
+        $this->postJson("/api/super-admin/tenants", array_merge([
             "name" => "Test School",
             "email" => "info@testschool.com",
             "plan_id" => $plan->id,
-        ])
+        ], $this->adminFields()))
             ->assertStatus(201)
-            ->assertJsonPath("name", "Test School")
-            ->assertJsonPath("slug", "test-school");
+            ->assertJsonPath("data.name", "Test School")
+            ->assertJsonPath("data.slug", "test-school");
     }
 
     #[Test]
     public function create_tenant_auto_generates_slug_from_name(): void
     {
-        $this->postJson("/api/super-admin/tenants", [
+        $this->postJson("/api/super-admin/tenants", array_merge([
             "name" => "Kings College Lagos",
-        ])
+        ], $this->adminFields()))
             ->assertStatus(201)
-            ->assertJsonPath("slug", "kings-college-lagos");
+            ->assertJsonPath("data.slug", "kings-college-lagos");
     }
 
     #[Test]
     public function create_tenant_slug_is_unique_when_name_conflicts(): void
     {
-        // Create tenant with id and slug both set to 'test-school'
         Tenant::factory()->create([
             "id" => "test-school",
             "slug" => "test-school",
             "name" => "Test School",
         ]);
 
-        $response = $this->postJson("/api/super-admin/tenants", [
+        $this->postJson("/api/super-admin/tenants", array_merge([
             "name" => "Test School",
-        ])->assertStatus(201);
-
-        expect($response->json("slug"))->toBe("test-school-1");
+        ], $this->adminFields()))
+            ->assertStatus(409)
+            ->assertJsonPath("message", "The subdomain 'test-school' is already taken. Please choose a different school name.");
     }
 
     #[Test]
@@ -136,9 +172,6 @@ class TenantTest extends TestCase
             ->assertJsonValidationErrors(["name"]);
     }
 
-    /*
-     * View tenant — verifies the show endpoint returns tenant with domains relationship.
-     */
     #[Test]
     public function can_view_a_single_tenant(): void
     {
@@ -146,8 +179,8 @@ class TenantTest extends TestCase
 
         $this->getJson("/api/super-admin/tenants/{$tenant->id}")
             ->assertStatus(200)
-            ->assertJsonPath("id", $tenant->id)
-            ->assertJsonStructure(["id", "name", "slug", "domains"]);
+            ->assertJsonPath("data.id", $tenant->id)
+            ->assertJsonStructure(["data" => ["id", "name", "slug", "domains"]]);
     }
 
     #[Test]
@@ -158,10 +191,6 @@ class TenantTest extends TestCase
         )->assertStatus(404);
     }
 
-    /*
-     * Update tenant — uses PATCH so only provided fields are updated.
-     * Verifies both the response and the DB record are updated.
-     */
     #[Test]
     public function can_update_tenant_details(): void
     {
@@ -171,7 +200,7 @@ class TenantTest extends TestCase
             "name" => "New Name",
         ])
             ->assertStatus(200)
-            ->assertJsonPath("name", "New Name");
+            ->assertJsonPath("data.name", "New Name");
 
         $this->assertDatabaseHas("tenants", [
             "id" => $tenant->id,
@@ -187,10 +216,6 @@ class TenantTest extends TestCase
         ])->assertStatus(404);
     }
 
-    /*
-     * Suspend — sets is_active to false and subscription_status to suspended.
-     * Both fields must change — checking only one would miss a partial update bug.
-     */
     #[Test]
     public function can_suspend_an_active_tenant(): void
     {
@@ -198,11 +223,10 @@ class TenantTest extends TestCase
 
         $this->postJson("/api/super-admin/tenants/{$tenant->id}/suspend")
             ->assertStatus(200)
-            ->assertJsonPath("message", "Tenant suspended successfully");
+            ->assertJsonPath("message", "Tenant suspended successfully.");
 
         $fresh = $tenant->fresh();
         expect($fresh->is_active)->toBeFalse();
-        // Compare against the enum value, not a raw string
         expect($fresh->subscription_status->value)->toBe("suspended");
     }
 
@@ -216,9 +240,6 @@ class TenantTest extends TestCase
             ->assertJsonPath("message", "Tenant is already suspended");
     }
 
-    /*
-     * Reinstate — reverses suspension. Mirrors the suspend tests for symmetry.
-     */
     #[Test]
     public function can_reinstate_a_suspended_tenant(): void
     {
@@ -226,7 +247,7 @@ class TenantTest extends TestCase
 
         $this->postJson("/api/super-admin/tenants/{$tenant->id}/reinstate")
             ->assertStatus(200)
-            ->assertJsonPath("message", "Tenant reinstated successfully");
+            ->assertJsonPath("message", "Tenant reinstated successfully.");
 
         $fresh = $tenant->fresh();
         expect($fresh->is_active)->toBeTrue();
@@ -243,10 +264,6 @@ class TenantTest extends TestCase
             ->assertJsonPath("message", "Tenant is not suspended");
     }
 
-    /*
-     * Soft delete — verifies the record is soft deleted not hard deleted.
-     * The tenant DB itself is preserved until a hard delete is triggered.
-     */
     #[Test]
     public function can_soft_delete_a_tenant(): void
     {
@@ -272,14 +289,14 @@ class TenantTest extends TestCase
     {
         $plan = SubscriptionPlan::factory()->create();
 
-        $response = $this->postJson("/api/super-admin/tenants", [
+        $response = $this->postJson("/api/super-admin/tenants", array_merge([
             "name" => "Test School",
             "email" => "info@testschool.com",
             "plan_id" => $plan->id,
-        ])
+        ], $this->adminFields()))
             ->assertStatus(201)
-            ->assertJsonPath("name", "Test School")
-            ->assertJsonPath("slug", "test-school");
+            ->assertJsonPath("data.name", "Test School")
+            ->assertJsonPath("data.slug", "test-school");
 
         $tenant = Tenant::where("slug", "test-school")->first();
         expect($tenant)->not->toBeNull();

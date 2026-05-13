@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Contracts\CreatesTeacher;
-use App\Actions\Contracts\UpdatesTeacher;
+use App\Actions\Tenants\Teacher\TeacherAction;
 use App\Http\Controllers\Api\Tenant\Concerns\TogglesUserActive;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\TeacherResource;
+use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
 use App\Services\PasswordService;
@@ -17,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
+use App\Events\ActivityFeedEvent;
 
 /**
  * @group Staff Directory
@@ -38,10 +40,14 @@ class TeacherController extends Controller
             ->orderBy('last_name')
             ->paginate(20);
 
-        return ApiResponse::paginated($teachers, 'Teachers retrieved successfully.');
+        return ApiResponse::paginated(
+            $teachers,
+            'Teachers retrieved successfully.',
+            TeacherResource::collection($teachers->getCollection())->resolve($request)
+        );
     }
 
-    public function store(CreatesTeacher $action, Request $request): JsonResponse
+    public function store(TeacherAction $action, Request $request): JsonResponse
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
@@ -52,7 +58,14 @@ class TeacherController extends Controller
             'staff_id' => ['nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id'],
         ]);
 
-        $result = $action->execute($validated);
+        $result = $action->create($validated);
+        
+        broadcast(new ActivityFeedEvent(
+            channelType: 'school_admin',
+            channelId:   tenant('id'),
+            action:      'teacher.created',
+            description: "Teacher {$result['user']->first_name} {$result['user']->last_name} added.",
+        ))->toOthers();
 
         // TODO: dispatch SendTeacherWelcomeEmail job with $result['password']
 
@@ -67,15 +80,66 @@ class TeacherController extends Controller
         // Now finding by USER ID, not Profile ID
         $teacher = User::role('teacher')->with([
             'teacherProfile',
-            // Update these relations if they are defined on the User model
+            'assignedClasses.classLevel',
+            'assignedClasses.subjects',
             'teacherAssignments.subject',
             'teacherAssignments.classLevel',
         ])->findOrFail($id);
 
-        return ApiResponse::success($teacher, 'Teacher retrieved successfully.');
+        return ApiResponse::success(new TeacherResource($teacher), 'Teacher retrieved successfully.');
     }
 
-    public function update(UpdatesTeacher $action, Request $request, string $id): JsonResponse
+    public function classes(string $id): JsonResponse
+    {
+        $teacher = User::role('teacher')->findOrFail($id);
+
+        $classes = ClassArm::where('assigned_teacher_id', $teacher->id)
+            ->with(['classLevel', 'subjects'])
+            ->get();
+
+        return ApiResponse::success($classes, 'Teacher classes retrieved.');
+    }
+
+    public function subjects(string $id): JsonResponse
+    {
+        $teacher = User::role('teacher')->findOrFail($id);
+
+        $subjectTeacherSubjects = $teacher->teacherAssignments()
+            ->with('subject', 'classLevel')
+            ->get()
+            ->map(fn ($assignment) => [
+                'subject' => $assignment->subject,
+                'class_level' => $assignment->classLevel,
+                'role' => 'subject_teacher',
+            ]);
+
+        $classArms = ClassArm::where('assigned_teacher_id', $teacher->id)
+            ->with('classLevel', 'subjects')
+            ->get();
+
+        $classTeacherSubjects = $classArms->flatMap(fn ($arm) => $arm->subjects
+            ->map(fn ($subject) => [
+                'subject' => $subject,
+                'class_level' => $arm->classLevel,
+                'class_arm' => $arm,
+                'role' => 'class_teacher',
+            ])
+        );
+
+        $merged = $subjectTeacherSubjects->concat(
+            $classTeacherSubjects->reject(fn ($classTeacherSubject) =>
+                $subjectTeacherSubjects->contains(
+                    fn ($subjectTeacherSubject) =>
+                        $subjectTeacherSubject['subject']->id === $classTeacherSubject['subject']->id
+                        && $subjectTeacherSubject['class_level']->id === $classTeacherSubject['class_level']->id
+                )
+            )
+        )->values();
+
+        return ApiResponse::success($merged, 'Teacher subjects retrieved.');
+    }
+
+    public function update(TeacherAction $action, Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'first_name' => ['sometimes', 'string', 'max:100'],
@@ -86,7 +150,7 @@ class TeacherController extends Controller
             'staff_id' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id,'.$id],
         ]);
 
-        $teacher = $action->execute($validated, $id);
+        $teacher = $action->update($validated, $id);
 
         return ApiResponse::success($teacher, 'Teacher updated successfully.');
     }

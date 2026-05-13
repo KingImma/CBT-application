@@ -12,6 +12,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassLevel;
 
 
@@ -90,6 +91,32 @@ class TenantDatabaseSeeder extends Seeder
                 ['name' => $level['name']], // Search by name
                 ['slug' => Str::slug($level['name'], '')]
             );
+        }
+
+        // ── Seed default current academic context ────────────────────────────
+        $currentSession = AcademicSession::where('is_current', true)->first();
+
+        if (! $currentSession) {
+            $startYear = now()->month >= 9 ? now()->year : now()->year - 1;
+            $endYear = $startYear + 1;
+
+            $currentSession = AcademicSession::create([
+                'id' => Str::uuid()->toString(),
+                'name' => "{$startYear}/{$endYear}",
+                'start_date' => now()->setDate($startYear, 9, 1)->startOfDay(),
+                'end_date' => now()->setDate($endYear, 8, 31)->startOfDay(),
+                'is_current' => true,
+            ]);
+        }
+
+        if (! $currentSession->terms()->where('is_current', true)->exists()) {
+            $currentSession->terms()->create([
+                'id' => Str::uuid()->toString(),
+                'name' => 'First Term',
+                'start_date' => now()->subMonths(3)->startOfDay(),
+                'end_date' => now()->addMonths(3)->startOfDay(),
+                'is_current' => true,
+            ]);
         }
 
         // ── Seed default subjects ─────────────────────────────────────────────
@@ -199,6 +226,8 @@ class TenantDatabaseSeeder extends Seeder
             ["key" => "school_name",              "value" => tenant("name") ?? "School",    "type" => "string"],
             ["key" => "terms_per_session",        "value" => "3",                           "type" => "integer"],
             ["key" => "result_approval_required", "value" => "true",                        "type" => "boolean"],
+            ["key" => "assessment_max_score",     "value" => "50",                          "type" => "integer"],
+            ["key" => "exam_max_score",           "value" => "100",                         "type" => "integer"],
         ];
 
         foreach ($settings as $setting) {

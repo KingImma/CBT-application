@@ -28,16 +28,18 @@ class AuthTest extends TestCase
             'password' => 'password123',
         ]);
     
-        $response = $this->postJson('/api/super-admin/login', [
-            'email'    => 'admin@educbt.com',
-            'password' => 'password123',
+        $response = $this->postJson('/api/auth/login', [
+            'identifier' => 'admin@educbt.com',
+            'password'   => 'password123',
         ]);
     
         // Assert the response shape matches what the frontend expects
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'token',
-                'admin' => ['id', 'name', 'email'],
+                'data' => [
+                    'token',
+                    'admin' => ['id', 'name', 'email'],
+                ],
         ]);
     }
     
@@ -47,9 +49,9 @@ class AuthTest extends TestCase
         // Verifies the token is actually persisted, not just returned in memory
         $this->admin = SuperAdmin::factory()->create(['password' => 'password123']);
     
-        $this->postJson('/api/super-admin/login', [
-            'email'    => $this->admin->email,
-            'password' => 'password123',
+        $this->postJson('/api/auth/login', [
+            'identifier' => $this->admin->email,
+            'password'   => 'password123',
         ])->assertStatus(200);
     
         expect(PersonalAccessToken::count())->toBe(1);
@@ -62,9 +64,9 @@ class AuthTest extends TestCase
         // Ensures audit trail is maintained on each login
         $this->admin = SuperAdmin::factory()->create(['password' => 'password123']);
     
-        $this->postJson('/api/super-admin/login', [
-            'email'    => $this->admin->email,
-            'password' => 'password123',
+        $this->postJson('/api/auth/login', [
+            'identifier' => $this->admin->email,
+            'password'   => 'password123',
         ]);
     
         expect($this->admin->fresh()->last_login_at)->not->toBeNull();
@@ -75,9 +77,9 @@ class AuthTest extends TestCase
     {
         $this->admin = SuperAdmin::factory()->create(['password' => 'password123']);
     
-        $this->postJson('/api/super-admin/login', [
-            'email'    => $this->admin->email,
-            'password' => 'wrongpassword',
+        $this->postJson('/api/auth/login', [
+            'identifier' => $this->admin->email,
+            'password'   => 'wrongpassword',
         ])->assertStatus(422)
           ->assertJsonValidationErrors(['email']);
     }
@@ -89,18 +91,18 @@ class AuthTest extends TestCase
         // This prevents suspended platform admins from accessing the system
         $this->admin = SuperAdmin::factory()->inactive()->create(['password' => 'password123']);
     
-        $this->postJson('/api/super-admin/login', [
-            'email'    => $this->admin->email,
-            'password' => 'password123',
-        ])->assertStatus(422);
+        $this->postJson('/api/auth/login', [
+            'identifier' => $this->admin->email,
+            'password'   => 'password123',
+        ])->assertStatus(401);
     }
     
     #[Test]
     public function login_fails_with_missing_fields():void 
     {
-        $this->postJson('/api/super-admin/login', [])
+        $this->postJson('/api/auth/login', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['email', 'password']);
+            ->assertJsonValidationErrors(['identifier', 'password']);
     }
     
     /*
@@ -154,13 +156,16 @@ class AuthTest extends TestCase
     {
         $this->admin = SuperAdmin::factory()->create();
     
-        $this->actingAs($this->admin, 'sanctum')
+        $this->actingAs($this->admin, 'super_admin')
             ->getJson('/api/super-admin/me')
             ->assertStatus(200)
             ->assertJson([
-                'id'    => $this->admin->id,
-                'email' => $this->admin->email,
-                'name'  => $this->admin->name,
+                'data' => [
+                    'id'    => $this->admin->id,
+                    'email' => $this->admin->email,
+                    'name'  => $this->admin->name,
+                    'type'  => 'super_admin',
+                ],
             ]);
     }
     
@@ -171,11 +176,11 @@ class AuthTest extends TestCase
         // Ensures the hidden field is respected in JSON output
         $this->admin = SuperAdmin::factory()->create();
     
-        $response = $this->actingAs($this-> admin, 'sanctum')
+        $response = $this->actingAs($this->admin, 'super_admin')
             ->getJson('/api/super-admin/me')
             ->assertStatus(200);
     
-        expect($response->json())->not->toHaveKey('password');
+        expect($response->json('data'))->not->toHaveKey('password');
     }
     
     #[Test]

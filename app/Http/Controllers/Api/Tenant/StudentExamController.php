@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ValidateExamStartAction;
-use App\Actions\Tenants\Exam\CreateExamAttemptAction;
-use App\Actions\Tenants\Exam\GetExamQuestionsAction;
-use App\Actions\Tenants\Exam\SaveAnswerAction;
-use App\Actions\Tenants\Exam\BulkSaveAnswersAction;
-use App\Actions\Tenants\Exam\GetTimeRemainingAction;
-use App\Actions\Tenants\Exam\SubmitExamAction;
-use App\Actions\Tenants\Exam\ToggleFlagAnswerAction;
-use App\Actions\Tenants\Exam\LogSuspiciousEventAction;
-use App\Actions\Tenants\Exam\RecoverExamAttemptAction;
+use App\Actions\Tenants\Exam\ExamAnswerAction;
+use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Models\Tenant\ExamAnswer;
 use App\Events\StudentStartedExam;
 use App\Events\StudentSubmittedExam;
+use App\Events\SuspiciousActivityDetected;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ExamAttemptResource;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Support\ApiResponse;
@@ -31,16 +25,8 @@ use Illuminate\Http\Request;
 class StudentExamController extends Controller
 {
     public function __construct(
-        private ValidateExamStartAction $validateAction,
-        private CreateExamAttemptAction $createAttemptAction,
-        private GetExamQuestionsAction $getQuestionsAction,
-        private SaveAnswerAction $saveAnswerAction,
-        private BulkSaveAnswersAction $bulkSaveAction,
-        private GetTimeRemainingAction $timeRemainingAction,
-        private SubmitExamAction $submitAction,
-        private ToggleFlagAnswerAction $toggleFlagAction,
-        private LogSuspiciousEventAction $logSuspiciousAction,
-        private RecoverExamAttemptAction $recoverAction,
+        private ExamSessionAction $sessionAction,
+        private ExamAnswerAction $answerAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -82,13 +68,13 @@ class StudentExamController extends Controller
         $student = $request->user('tenant');
 
         try {
-            $this->validateAction->execute($exam, $student);
+            $this->sessionAction->validateStart($exam, $student);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
 
-        $attempt = $this->createAttemptAction->execute($exam, $student);
-        $questionsData = $this->getQuestionsAction->execute($attempt);
+        $attempt = $this->sessionAction->startAttempt($exam, $student);
+        $questionsData = $this->sessionAction->getQuestions($attempt);
 
         // Broadcast to teacher
         broadcast(new StudentStartedExam($attempt));
@@ -114,7 +100,7 @@ class StudentExamController extends Controller
             return ApiResponse::error('No active attempt found.', 404);
         }
 
-        $data = $this->recoverAction->execute($attempt);
+        $data = $this->sessionAction->recover($attempt);
 
         return ApiResponse::success($data, 'Active attempt retrieved.');
     }
@@ -128,7 +114,7 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
-        $questionsData = $this->getQuestionsAction->execute($attempt);
+        $questionsData = $this->sessionAction->getQuestions($attempt);
 
         return ApiResponse::success($questionsData, 'Questions retrieved.');
     }
@@ -148,7 +134,7 @@ class StudentExamController extends Controller
             'time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $answer = $this->saveAnswerAction->execute($attempt, $questionId, $validated);
+        $answer = $this->answerAction->save($attempt, $questionId, $validated);
 
         return ApiResponse::success($answer, 'Answer saved.');
     }
@@ -168,7 +154,7 @@ class StudentExamController extends Controller
             'answers.*.time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $this->bulkSaveAction->execute($attempt, $validated['answers']);
+        $this->answerAction->bulkSave($attempt, $validated['answers']);
 
         return ApiResponse::message('Answers saved.');
     }
@@ -182,9 +168,12 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
-        $data = $this->timeRemainingAction->execute($attempt);
+        $remainingSeconds = $attempt->getTimeRemainingSeconds();
 
-        return ApiResponse::success($data, 'Time remaining retrieved.');
+        return ApiResponse::success([
+            'remaining_seconds' => $remainingSeconds,
+            'expired' => $remainingSeconds <= 0,
+        ], 'Time remaining retrieved.');
     }
 
     public function submit(Request $request, string $attemptId): JsonResponse
@@ -193,7 +182,7 @@ class StudentExamController extends Controller
         $this->authorize('submit', $attempt);
 
         try {
-            $attempt = $this->submitAction->execute($attempt);
+            $attempt = $this->sessionAction->submit($attempt);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -203,11 +192,11 @@ class StudentExamController extends Controller
 
         // Check if results can be shown
         $exam = $attempt->exam;
-        $settings = $exam->settings ?? [];
+        $examSettings = $exam->settings;
         $canShowResult = false;
         $result = null;
 
-        if (($settings['show_result_immediately'] ?? false) && $attempt->status === 'graded') {
+        if ($examSettings->showResultImmediately && $attempt->status === 'graded') {
             $canShowResult = true;
             $result = $attempt;
         }
@@ -228,7 +217,7 @@ class StudentExamController extends Controller
             ->where('question_id', $questionId)
             ->firstOrFail();
 
-        $isFlagged = $this->toggleFlagAction->execute($answer);
+        $isFlagged = $this->answerAction->toggleFlag($answer);
 
         return ApiResponse::success(['is_flagged' => $isFlagged], 'Flag toggled.');
     }
@@ -243,7 +232,7 @@ class StudentExamController extends Controller
             'metadata' => ['sometimes', 'array'],
         ]);
 
-        $this->logSuspiciousAction->execute($attempt, $validated['type'], $validated['metadata'] ?? []);
+        $attempt->logSuspiciousEvent($validated['type'], $validated['metadata'] ?? []);
 
         // Broadcast to teacher
         broadcast(new SuspiciousActivityDetected($attempt, $validated['type'], $validated['metadata'] ?? []));
@@ -261,21 +250,19 @@ class StudentExamController extends Controller
         }
 
         $exam = $attempt->exam;
-        $settings = $exam->settings ?? [];
+        $examSettings = $exam->settings;
 
-        // Check if results can be shown
-        if (($settings['show_result_immediately'] ?? false) && $attempt->status === 'graded') {
-            return ApiResponse::success($attempt, 'Result retrieved.');
+        if ($examSettings->showResultImmediately && $attempt->status === 'graded') {
+            return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
         }
 
-        // Check results release date
-        $releaseDate = $settings['results_release_date'] ?? null;
+        $releaseDate = $examSettings->resultsReleaseDate;
         if ($releaseDate && now()->greaterThanOrEqualTo($releaseDate)) {
-            return ApiResponse::success($attempt, 'Result retrieved.');
+            return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
         }
 
         if ($exam->status === 'published') {
-            return ApiResponse::success($attempt, 'Result retrieved.');
+            return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
         }
 
         return ApiResponse::error('Results not yet released.', 403);

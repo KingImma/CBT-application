@@ -12,7 +12,7 @@ class ExamAnswer extends Model
 {
     use HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'selected_option_ids' => 'array',

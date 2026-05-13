@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\Concerns\BelongsToSessionTerm;
+use App\Values\ExamAttemptSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -13,9 +15,9 @@ use Illuminate\Support\Facades\DB;
 
 class ExamAttempt extends Model
 {
-    use HasUuids;
+    use BelongsToSessionTerm, HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'started_at' => 'datetime',
@@ -27,7 +29,7 @@ class ExamAttempt extends Model
         'theory_score' => 'decimal:2',
         'is_theory_graded' => 'boolean',
         'suspicious_events' => 'array',
-        'settings' => 'array',
+        'settings' => ExamAttemptSettings::class,
     ];
 
     /**

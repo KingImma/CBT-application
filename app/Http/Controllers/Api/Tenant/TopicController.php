@@ -30,10 +30,10 @@ class TopicController extends Controller
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
         ]);
 
-        // Return only root topics (parent_id = null); children are nested inside
         $topics = Topic::where('subject_id', $request->subject_id)
             ->where('class_level_id', $request->class_level_id)
             ->whereNull('parent_id')
+            ->with(['subject:id,name', 'classLevel:id,name'])
             ->with(['children' => fn ($q) => $q->withCount('questions')])
             ->withCount('questions')
             ->orderBy('order')

@@ -59,7 +59,7 @@ class TenantProvisioningPipelineTest extends TestCase
 
         // Give the pipeline a moment — it runs synchronously in testing
         // but CreateDatabase needs a tick to complete
-        $this->assertDatabaseExists($tenant->database);
+        $this->assertDatabaseExists($tenant->database()->getName());
     }
 
     public function test_provisioning_pipeline_runs_tenant_migrations(): void
@@ -144,12 +144,12 @@ class TenantProvisioningPipelineTest extends TestCase
             'is_active'           => true,
         ]);
 
-        $this->assertDatabaseExists($tenant->database);
+        $this->assertDatabaseExists($tenant->database()->getName());
 
         // Hard delete triggers stancl's DeleteDatabase job
         $tenant->forceDelete();
 
-        $this->assertPostgresDatabaseMissing($tenant->database);
+        $this->assertPostgresDatabaseMissing($tenant->database()->getName());
     }
 
     // -------------------------------------------------------------------------
@@ -164,7 +164,7 @@ class TenantProvisioningPipelineTest extends TestCase
         // Drop the tenant DB if it exists — handle gracefully since it may
         // not exist if the test failed before the pipeline ran
         try {
-            DB::statement('DROP DATABASE IF EXISTS ' . self::TENANT_DB);
+            DB::statement('DROP DATABASE IF EXISTS "' . self::TENANT_SLUG . '"');
         } catch (\Throwable) {
             // Silently ignore — DB may not exist
         }

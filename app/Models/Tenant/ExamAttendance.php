@@ -12,7 +12,7 @@ class ExamAttendance extends Model
 {
     use HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'marked_at' => 'datetime',

@@ -9,7 +9,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
 
 // Prune expired Sanctum tokens from central database (SuperAdmin tokens)
@@ -24,4 +23,18 @@ Schedule::command('tenants:prune-expired-tokens --hours=24')
     ->daily()
     ->onFailure(function () {
         Log::channel('slack')->error('Tenant token pruning failed');
+    });
+
+// Auto-submit exam attempts whose individual or session timer has expired
+Schedule::command('exams:auto-submit-expired')
+    ->everyMinute()
+    ->onFailure(function () {
+        Log::channel('slack')->error('Auto-submit expired exams failed');
+    });
+
+// End exam sessions that have passed their scheduled end time
+Schedule::command('exams:end-expired-sessions')
+    ->everyMinute()
+    ->onFailure(function () {
+        Log::channel('slack')->error('End expired exam sessions failed');
     });

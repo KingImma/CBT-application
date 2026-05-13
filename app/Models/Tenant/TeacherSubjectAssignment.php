@@ -11,7 +11,7 @@ class TeacherSubjectAssignment extends Model
 {
     use HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

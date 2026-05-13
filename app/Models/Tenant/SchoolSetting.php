@@ -11,5 +11,5 @@ class SchoolSetting extends Model
 {
     use HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 }

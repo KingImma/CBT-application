@@ -12,7 +12,7 @@ class ExamQuestion extends Model
 {
     use HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'marks_override' => 'decimal:2',

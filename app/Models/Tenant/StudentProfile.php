@@ -12,7 +12,7 @@ class StudentProfile extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
     
     protected $casts = [
         'date_of_birth' => 'date',

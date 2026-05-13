@@ -12,7 +12,7 @@ class Term extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'is_current' => 'boolean',

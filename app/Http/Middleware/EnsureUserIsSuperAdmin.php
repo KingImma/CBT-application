@@ -17,9 +17,14 @@ class EnsureUserIsSuperAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        $user = $request->user('super_admin');
 
         if (! $user instanceof SuperAdmin) {
+            // Fallback for backward compatibility
+            $user = $request->user();
+            if ($user instanceof SuperAdmin) {
+                return $next($request);
+            }
             return ApiResponse::error('Forbidden. Administrator access required.', 403);
         }
 

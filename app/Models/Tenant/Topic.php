@@ -10,14 +10,15 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\Concerns\BelongsToSessionTerm;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class Topic extends Model
 {
-    use HasUuids;
+    use BelongsToSessionTerm, HasUuids;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     public function subject(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

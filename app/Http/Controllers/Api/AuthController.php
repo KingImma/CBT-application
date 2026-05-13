@@ -62,7 +62,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         // Detect auth guard and delete token
-        $user = $request->user('sanctum') ?? $request->user('tenant');
+        $user = $request->user('super_admin') ?? $request->user('tenant');
 
         if ($user) {
             $user->currentAccessToken()->delete();
@@ -78,7 +78,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         // If we are in a tenant DB, pull the tenant user. Otherwise, pull super admin.
-        $user = tenant() ? $request->user('tenant') : $request->user('sanctum');
+        $user = tenant() ? $request->user('tenant') : $request->user('super_admin');
 
         if (! $user) {
             return ApiResponse::error('Unauthenticated.', 401);

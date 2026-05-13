@@ -2,12 +2,29 @@
 
 namespace Tests\Feature\Api\Tenant;
 
+use App\Models\Tenant;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\User;
 use Tests\TestCase;
 
 class ExamCreationTest extends TestCase
 {
+    protected Tenant $tenant;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->tenant = Tenant::factory()->create();
+        tenancy()->initialize($this->tenant);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->tenant->database()->drop();
+        parent::tearDown();
+    }
+
     public function test_can_create_exam(): void
     {
         $teacher = User::create([

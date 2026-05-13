@@ -36,6 +36,11 @@ class GradingScaleController extends Controller
             'grades.*.remark' => ['nullable', 'string'],
         ]);
 
+        $error = $this->validateGradeRanges($validated['grades']);
+        if ($error !== null) {
+            return ApiResponse::error($error, 422);
+        }
+
         if (! empty($validated['is_default'])) {
             GradingScale::where('is_default', true)->update(['is_default' => false]);
         }
@@ -66,6 +71,13 @@ class GradingScaleController extends Controller
             'grades.*.remark' => ['nullable', 'string'],
         ]);
 
+        if (! empty($validated['grades'])) {
+            $error = $this->validateGradeRanges($validated['grades']);
+            if ($error !== null) {
+                return ApiResponse::error($error, 422);
+            }
+        }
+
         if (! empty($validated['is_default'])) {
             GradingScale::where('is_default', true)
                 ->where('id', '!=', $id)
@@ -88,5 +100,37 @@ class GradingScaleController extends Controller
         $scale->delete();
 
         return ApiResponse::message('Grading scale deleted.');
+    }
+
+    private function validateGradeRanges(array $grades): ?string
+    {
+        $labels = [];
+        foreach ($grades as $g) {
+            if ($g['min_score'] > $g['max_score']) {
+                return "Grade {$g['label']}: minimum score ({$g['min_score']}) cannot exceed maximum score ({$g['max_score']}).";
+            }
+
+            if (in_array($g['label'], $labels)) {
+                return "Duplicate grade label '{$g['label']}' found. Each label must be unique.";
+            }
+            $labels[] = $g['label'];
+        }
+
+        $sorted = collect($grades)->sortBy('min_score')->values();
+
+        for ($i = 0; $i < $sorted->count() - 1; $i++) {
+            $current = $sorted[$i];
+            $next = $sorted[$i + 1];
+
+            if ($current['max_score'] >= $next['min_score']) {
+                return "Grade ranges overlap: '{$current['label']}' ({$current['min_score']}-{$current['max_score']}) and '{$next['label']}' ({$next['min_score']}-{$next['max_score']}).";
+            }
+
+            if (($next['min_score'] - $current['max_score']) > 1) {
+                return "Gap between grade ranges: '{$current['label']}' ends at {$current['max_score']} but '{$next['label']}' starts at {$next['min_score']}.";
+            }
+        }
+
+        return null;
     }
 }

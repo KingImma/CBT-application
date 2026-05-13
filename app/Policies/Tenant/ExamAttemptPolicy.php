@@ -14,7 +14,9 @@ class ExamAttemptPolicy
 
     public function view(User $user, ExamAttempt $attempt): bool
     {
-        return $user->id === $attempt->student_id || $user->id === $attempt->exam->created_by || $user->hasRole('admin');
+        return $user->id === $attempt->student_id
+            || $user->id === $attempt->exam->created_by
+            || $user->hasAnyRole(['admin', 'school_admin']);
     }
 
     public function start(User $user, ExamAttempt $attempt): bool
@@ -34,6 +36,6 @@ class ExamAttemptPolicy
 
     public function grade(User $user, ExamAttempt $attempt): bool
     {
-        return $user->id === $attempt->exam->created_by || $user->hasRole('admin');
+        return $user->id === $attempt->exam->created_by || $user->hasAnyRole(['admin', 'school_admin']);
     }
 }

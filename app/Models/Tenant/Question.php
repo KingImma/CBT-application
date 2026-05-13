@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\Concerns\BelongsToSessionTerm;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -16,9 +17,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Question extends Model
 {
-    use HasUuids, SoftDeletes;
+    use BelongsToSessionTerm, HasUuids, SoftDeletes;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'metadata'             => 'array',

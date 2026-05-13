@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Values\ExamSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -17,13 +18,13 @@ class Exam extends Model
 {
     use HasUuids, HasFactory, SoftDeletes;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'scheduled_start' => 'datetime',
         'scheduled_end'   => 'datetime',
         'session_started_at' => 'datetime',
-        'settings'        => 'array',
+        'settings'        => ExamSettings::class,
         'duration_minutes'=> 'integer',
         'session_duration_minutes' => 'integer',
         'total_marks'     => 'decimal:2',
@@ -117,7 +118,7 @@ class Exam extends Model
         return $query->where('subject_id', $subjectId);
     }
 
-    public function scopeByClass(Builder $query, string $classLevelId): Builder
+    public function scopeByClassLevel(Builder $query, string $classLevelId): Builder
     {
         return $query->where('class_level_id', $classLevelId);
     }

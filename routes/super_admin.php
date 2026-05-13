@@ -15,7 +15,7 @@ use App\Http\Controllers\Api\SuperAdmin\SubscriptionPlanController;
  * 4. Expected deliverables and alternatives: A strictly isolated control plane for your application.
  */
 
-Route::controller(AuthController::class)->prefix('auth')->group(function () {
+Route::controller(AuthController::class)->group(function () {
     Route::post('/logout', 'logout');
     Route::get('/me', 'me');
 });

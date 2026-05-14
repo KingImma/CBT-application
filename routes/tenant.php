@@ -241,9 +241,9 @@ Route::middleware(['role:teacher|school_admin'])->group(function () {
     });
 
     // Form helpers
-    Route::prefix('form')->controller(FormDataController::class)->group(function () {
-        Route::get('/question-bank-data', 'questionBankData')->middleware('httpcache:300');
-    });
+    // Route::prefix('form')->controller(FormDataController::class)->group(function () {
+    //     Route::get('/question-bank-data', 'questionBankData')->middleware('httpcache:300');
+    // });
 
 });
 

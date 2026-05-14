@@ -71,7 +71,7 @@ class TeacherController extends Controller
         // TODO: dispatch SendTeacherWelcomeEmail job with $result['password']
 
         return ApiResponse::created([
-            'teacher' => $result['user']->load('teacherProfile'),
+            'teacher' => new TeacherResource($result['user']->load('teacherProfile')),
             'temporary_password' => $result['password'],
         ], 'Teacher created.');
     }
@@ -153,7 +153,7 @@ class TeacherController extends Controller
 
         $teacher = $action->update($validated, $id);
 
-        return ApiResponse::success($teacher, 'Teacher updated successfully.');
+        return ApiResponse::success(new TeacherResource($teacher), 'Teacher updated successfully.');
     }
 
     public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
@@ -184,7 +184,7 @@ class TeacherController extends Controller
         $tenantUserService->updateCentralIndex($teacher->email, 'teacher');
 
         return ApiResponse::success([
-            'teacher' => $teacher->fresh('teacherProfile'),
+            'teacher' => new TeacherResource($teacher->fresh('teacherProfile')),
         ], "Teacher '{$teacher->first_name} {$teacher->last_name}' has been restored.");
     }
 

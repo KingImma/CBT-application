@@ -26,14 +26,6 @@ use App\Http\Controllers\Api\Tenant\TermController;
 use App\Http\Controllers\Api\Tenant\TopicController;
 use Illuminate\Support\Facades\Route;
 
-// use App\Http\Controllers\Api\Tenant\StudentAnswerController;
-// use App\Http\Controllers\Api\Tenant\StudentAnswerOptionController;
-
-/*
- * The core operating routes for an individual school.
- * Expected deliverables: A highly maintainable map of your core business features.
- */
-
 // Auth & Passwords
 Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('/logout', 'logout');
@@ -142,7 +134,7 @@ Route::prefix('students')->controller(StudentController::class)->group(function 
     Route::post('/{id}/reassign-class', 'reassignClass');
     Route::get('/export', 'exportCsv');
     Route::get('/import-template', 'downloadImportTemplate');
-    Route::post('/import', 'importCsv');
+    Route::post('/import', 'importCsv')->middleware(['permission:manage_students']);
     Route::post('/bulk-reset-passwords', 'bulkResetPasswords');
 });
 

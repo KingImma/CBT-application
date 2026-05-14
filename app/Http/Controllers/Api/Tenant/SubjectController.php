@@ -174,7 +174,7 @@ class SubjectController extends Controller
 
         // Load the new direct user relationship
         return ApiResponse::created(
-            $assignment->load(['user', 'classLevel', 'academicSession']),
+            $assignment->load(['user', 'subject', 'classLevel', 'academicSession']),
             'Teacher assigned to subject.'
         );
     }

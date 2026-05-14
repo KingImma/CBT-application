@@ -8,7 +8,6 @@ use App\Exceptions\Auth\AccountDeactivatedException;
 use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Exceptions\Business\BulkOperationException;
 use App\Exceptions\Business\PlanLimitExceededException;
-use App\Exceptions\Tenant\TenantProvisioningException;
 use App\Exceptions\Tenant\TenantSlugAlreadyTakenException;
 use App\Services\ExceptionMonitoringService;
 use App\Support\ApiResponse;
@@ -119,11 +118,6 @@ class Handler extends ExceptionHandler
         // ── Tenant slug conflict ────────────────────────────────────────────
         if ($e instanceof TenantSlugAlreadyTakenException) {
             return ApiResponse::error($e->getMessage(), 409);
-        }
-
-        // ── Tenant provisioning failure ─────────────────────────────────────
-        if ($e instanceof TenantProvisioningException) {
-            return ApiResponse::error($e->getMessage(), 500);
         }
 
         // ── Plan limit exceeded ─────────────────────────────────────────────

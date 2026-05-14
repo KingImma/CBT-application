@@ -23,7 +23,7 @@ class ClassArmController extends Controller
         $level = ClassLevel::findOrFail($classLevelId);
 
         return ApiResponse::success(
-            $level->classArms()->withCount('students')->get(),
+            $level->classArms()->with('assignedTeacher')->withCount('students')->get(),
             'Class arms retrieved successfully.'
         );
     }

@@ -35,7 +35,13 @@ class TeacherController extends Controller
 
         $teachers = User::role('teacher')
             ->select('id', 'first_name', 'last_name', 'email', 'phone', 'is_active')
-            ->with('teacherProfile')
+            ->with([
+                'teacherProfile',
+                'teacherAssignments.subject',
+                'teacherAssignments.classLevel',
+                'assignedClasses.classLevel',
+                'assignedClasses.subjects',
+            ])
             ->search($search)
             ->withStatus($status)
             ->orderBy('last_name')
@@ -83,6 +89,7 @@ class TeacherController extends Controller
             'teacherProfile',
             'assignedClasses.classLevel',
             'assignedClasses.subjects',
+            'assignedClasses.assignedTeacher',
             'teacherAssignments.subject',
             'teacherAssignments.classLevel',
         ])->findOrFail($id);

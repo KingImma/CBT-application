@@ -48,8 +48,6 @@ class OnboardingController extends Controller
                 'login_url' => $loginUrl,
             ], 'School provisioned successfully.');
 
-        } catch (TenantProvisioningException $e) {
-            return ApiResponse::error('Provisioning failed: '.$e->getMessage(), 500);
         }
     }
 }

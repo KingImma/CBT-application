@@ -11,8 +11,6 @@ class StudentResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $profile = $this->whenLoaded('studentProfile');
-
         return [
             'id' => $this->id,
             'first_name' => $this->first_name,
@@ -20,12 +18,12 @@ class StudentResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
-            'profile' => $this->when($this->relationLoaded('studentProfile'), fn () => [
-                'admission_number' => $profile?->admission_number,
-                'gender' => $profile?->gender,
-                'date_of_birth' => $profile?->date_of_birth,
-                'class_level' => new ClassLevelResource($profile?->classLevel),
-                'class_arm' => new ClassArmResource($profile?->classArm),
+            'student_profile' => $this->whenLoaded('studentProfile', fn () => [
+                'admission_number' => $this->studentProfile?->admission_number,
+                'gender' => $this->studentProfile?->gender,
+                'date_of_birth' => $this->studentProfile?->date_of_birth,
+                'class_level' => new ClassLevelResource($this->studentProfile?->classLevel),
+                'class_arm' => new ClassArmResource($this->studentProfile?->classArm),
             ]),
         ];
     }

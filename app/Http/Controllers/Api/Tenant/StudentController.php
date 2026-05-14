@@ -86,7 +86,7 @@ class StudentController extends Controller
         ))->toOthers();
 
         return ApiResponse::created([
-            'student' => $result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm']),
+            'student' => new StudentResource($result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
             'login_credentials' => [
                 'admission_number' => $result['user']->studentProfile->admission_number,
                 'default_password' => $result['password'],
@@ -99,7 +99,7 @@ class StudentController extends Controller
         $result = $action->update($request->validated(), $id);
 
         return ApiResponse::success(
-            $result->load(['studentProfile.classLevel', 'studentProfile.classArm']),
+            new StudentResource($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
             'Student updated successfully.'
         );
     }
@@ -114,7 +114,7 @@ class StudentController extends Controller
         $result = $action->update($validated, $id);
 
         return ApiResponse::success([
-            'student' => $result->load(['studentProfile.classLevel', 'studentProfile.classArm']),
+            'student' => new StudentResource($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
         ], 'Student reassigned.');
     }
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
@@ -21,26 +20,9 @@ class SubjectController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $sessionId = $request->query('academic_session_id');
-
-        if (! $sessionId) {
-            $currentSession = AcademicSession::where(
-                'is_current',
-                true,
-            )->first();
-            $sessionId = $currentSession?->id;
-        }
-
         $subjects = Subject::with([
             'classLevels',
-
-            'teacherAssignments' => function ($query) use ($sessionId) {
-                if ($sessionId) {
-                    $query->where('academic_session_id', $sessionId);
-                }
-
-                $query->with(['user:id,first_name,last_name']);
-            },
+            'teacherAssignments.user:id,first_name,last_name',
         ])
             ->where('is_active', true)
             ->when($request->class_level_id, fn ($q, $id) => $q->whereHas('classLevels', fn ($q2) => $q2->where('class_level_id', $id)))

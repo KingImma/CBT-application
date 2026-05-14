@@ -36,18 +36,15 @@ class OnboardingController extends Controller
     {
         $data = $request->mappedData();
 
-        try {
-            $tenant = $action->execute($data);
+        $tenant = $action->execute($data);
 
-            $centralDomain = config('app.central_domain', 'myapp.com');
-            $loginUrl = "https://{$tenant->handle}.{$centralDomain}/login";
+        $centralDomain = config('app.central_domain', 'myapp.com');
+        $loginUrl = "https://{$tenant->handle}.{$centralDomain}/login";
 
-            return ApiResponse::created([
-                'handle' => $tenant->handle,
-                'name' => $tenant->name,
-                'login_url' => $loginUrl,
-            ], 'School provisioned successfully.');
-
-        }
+        return ApiResponse::created([
+            'handle' => $tenant->handle,
+            'name' => $tenant->name,
+            'login_url' => $loginUrl,
+        ], 'School provisioned successfully.');
     }
 }

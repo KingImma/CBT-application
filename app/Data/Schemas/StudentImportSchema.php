@@ -12,7 +12,7 @@ class StudentImportSchema
         'email' => ['required' => false, 'rules' => ['nullable', 'email']],
         'admission_number' => ['required' => false, 'rules' => ['nullable', 'string', 'max:50']],
         'class_level' => ['required' => true, 'rules' => ['required', 'string']],
-        'class_arm' => ['required' => false, 'rules' => ['nullable', 'string']],
+        'class_arm' => ['required' => true, 'rules' => ['required', 'string']],
         'date_of_birth' => ['required' => false, 'rules' => ['nullable', 'date']],
         'gender' => ['required' => false, 'rules' => ['nullable', 'in:male,female,other']],
         'guardian_email' => ['required' => false, 'rules' => ['nullable', 'email', 'max:255']],

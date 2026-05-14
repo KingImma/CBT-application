@@ -33,7 +33,7 @@ class StudentAction
 
             $user->studentProfile()->create([
                 'class_level_id' => $data['class_level_id'],
-                'class_arm_id' => $data['class_arm_id'] ?? null,
+                'class_arm_id' => $data['class_arm_id'],
                 'admission_number' => strtoupper($admissionNumber),
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'gender' => $data['gender'] ?? null,

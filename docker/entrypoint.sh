@@ -32,8 +32,8 @@ set -e
 # php artisan queue:clear redis --queue=emails
 # php artisan queue:flush
 # php artisan queue:restart
-php artisan optimize:clear
-php artisan config:clear
+# php artisan optimize:clear
+# php artisan config:clear
 
 
 echo "==> Running migrations..."
@@ -43,9 +43,6 @@ echo "==> Running tenant migrations..."
 php artisan tenants:migrate --force
 
 
-# echo "==> Backfilling tenant arm subjects..."
-# php artisan tenants:backfill-arm-subjects || true
-
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force
 
@@ -53,8 +50,6 @@ echo "==> Generating API documentation (Scribe)..."
 php artisan scribe:generate
 
 echo "==> Starting Redis Queue Worker in the background..."
-# We explicitly call the 'redis' connection here to guarantee it uses your Redis instance.
-# The '&' is critical so it runs silently in the background.
 php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 &
 
 echo "==> Starting Web Server..."

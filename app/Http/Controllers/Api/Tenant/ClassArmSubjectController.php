@@ -35,7 +35,13 @@ class ClassArmSubjectController extends Controller
     public function index(string $classLevelId, string $armId): JsonResponse
     {
         $arm = ClassArm::where('class_level_id', $classLevelId)
-            ->with(['subjects', 'classLevel.subjects'])
+            ->with([
+                'subjects' => fn ($q) => $q->with(['teacherAssignments' => fn ($q2) => $q2
+                    ->where('class_level_id', $classLevelId)
+                    ->with('user:id,first_name,last_name'),
+                ]),
+                'classLevel.subjects',
+            ])
             ->findOrFail($armId);
 
         $assignedIds = $arm->subjects->pluck('id');
@@ -52,6 +58,11 @@ class ClassArmSubjectController extends Controller
                 'id' => $s->id,
                 'name' => $s->name,
                 'is_compulsory' => (bool) $s->pivot->is_compulsory,
+                'assigned_teacher' => ($teacher = $s->teacherAssignments->first()?->user) ? [
+                    'id' => $teacher->id,
+                    'first_name' => $teacher->first_name,
+                    'last_name' => $teacher->last_name,
+                ] : null,
             ]),
             'unassigned' => $unassigned->map(fn ($s) => [
                 'id' => $s->id,

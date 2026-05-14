@@ -43,7 +43,7 @@ class ClassLevelController extends Controller
     public function show(string $id): JsonResponse
     {
         $level = ClassLevel::withCount(['classArms', 'students'])
-            ->with(['classArms', 'subjects'])
+            ->with(['classArms.assignedTeacher', 'subjects'])
             ->findOrFail($id);
 
         return ApiResponse::success($level, 'Class level retrieved successfully.');
@@ -90,14 +90,24 @@ class ClassLevelController extends Controller
         $level = ClassLevel::findOrFail($id);
 
         $subjects = $level->subjects()
-            ->select('subjects.id', 'subjects.name', 'subjects.code') // Adjust based on your columns
+            ->select('subjects.id', 'subjects.name', 'subjects.code')
+            ->with(['teacherAssignments' => fn ($q) => $q
+                ->where('class_level_id', $level->id)
+                ->with('user:id,first_name,last_name'),
+            ])
             ->get()
             ->map(function ($subject) {
+                $teacher = $subject->teacherAssignments->first()?->user;
                 return [
                     'id' => $subject->id,
                     'name' => $subject->name,
                     'code' => $subject->code,
                     'is_compulsory' => (bool) $subject->pivot->is_compulsory,
+                    'assigned_teacher' => $teacher ? [
+                        'id' => $teacher->id,
+                        'first_name' => $teacher->first_name,
+                        'last_name' => $teacher->last_name,
+                    ] : null,
                 ];
             });
 
@@ -109,13 +119,26 @@ class ClassLevelController extends Controller
         $validated = $request->validate([
             'subject_ids' => ['required', 'array'],
             'subject_ids.*' => ['exists:subjects,id'],
+            'compulsory_ids' => ['nullable', 'array'],
+            'compulsory_ids.*' => ['exists:subjects,id'],
         ]);
 
         $level = ClassLevel::findOrFail($id);
 
-        // Sync entirely replaces the current attachments with the new array.
-        // Any subjects not in this array will be detached.
         $level->subjects()->sync($validated['subject_ids']);
+
+        if (! empty($validated['compulsory_ids'])) {
+            $level->classArms->each(function ($arm) use ($validated) {
+                foreach ($validated['compulsory_ids'] as $subjectId) {
+                    $arm->subjects()->syncWithoutDetaching([
+                        $subjectId => [
+                            'id' => Str::uuid()->toString(),
+                            'is_compulsory' => true,
+                        ],
+                    ]);
+                }
+            });
+        }
 
         return ApiResponse::message('Subjects synced successfully.');
     }
@@ -124,16 +147,24 @@ class ClassLevelController extends Controller
     {
         $level = ClassLevel::findOrFail($id);
 
-        // Retrieve the specific attached subject to check its current pivot state
         $subject = $level->subjects()->where('subject_id', $subjectId)->firstOrFail();
 
-        // Flip the boolean value
         $newStatus = ! $subject->pivot->is_compulsory;
 
-        // Update the pivot table record
         $level->subjects()->updateExistingPivot($subjectId, [
             'is_compulsory' => $newStatus,
         ]);
+
+        if ($newStatus) {
+            $level->classArms->each(function ($arm) use ($subjectId) {
+                $arm->subjects()->syncWithoutDetaching([
+                    $subjectId => [
+                        'id' => Str::uuid()->toString(),
+                        'is_compulsory' => true,
+                    ],
+                ]);
+            });
+        }
 
         return ApiResponse::success([
             'is_compulsory' => $newStatus,

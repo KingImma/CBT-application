@@ -10,6 +10,7 @@ use App\Models\Tenant\ClassLevel;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
@@ -43,6 +44,15 @@ class ClassArmController extends Controller
         ]);
 
         $arm = $level->classArms()->create($validated);
+
+        $level->subjects()->wherePivot('is_compulsory', true)->each(function ($subject) use ($arm) {
+            $arm->subjects()->syncWithoutDetaching([
+                $subject->id => [
+                    'id' => Str::uuid()->toString(),
+                    'is_compulsory' => true,
+                ],
+            ]);
+        });
 
         return ApiResponse::created($arm, "Class arm '{$arm->name}' created.");
     }

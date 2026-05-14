@@ -76,7 +76,7 @@ class SubjectController extends Controller
     {
         $subject = Subject::with([
             'classLevels',
-            'teacherAssignments.teacher.user',
+            'teacherAssignments.user:id,first_name,last_name',
         ])->findOrFail($id);
 
         return ApiResponse::success($subject, 'Subject retrieved successfully.');
@@ -114,7 +114,7 @@ class SubjectController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $subject = Subject::findOrFail($id);
-        $subject->update(['is_active' => false]); // soft disable, not hard delete
+        $subject->update(['is_active' => false]);
 
         return ApiResponse::message('Subject deactivated.');
     }
@@ -150,7 +150,6 @@ class SubjectController extends Controller
             return ApiResponse::error('Invalid assignment. The selected user must be a teacher.', 422);
         }
 
-        // Prevent duplicate assignment
         $exists = TeacherSubjectAssignment::where([
             'subject_id' => $subject->id,
             'user_id' => $validated['user_id'],
@@ -172,7 +171,11 @@ class SubjectController extends Controller
             'academic_session_id' => $validated['academic_session_id'],
         ]);
 
-        // Load the new direct user relationship
+        // Ensure the subject is linked to the class level pivot
+        if (! $subject->classLevels()->where('class_level_id', $validated['class_level_id'])->exists()) {
+            $subject->classLevels()->attach($validated['class_level_id'], ['is_compulsory' => false]);
+        }
+
         return ApiResponse::created(
             $assignment->load(['user', 'subject', 'classLevel', 'academicSession']),
             'Teacher assigned to subject.'

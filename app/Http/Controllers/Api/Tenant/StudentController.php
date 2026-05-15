@@ -34,7 +34,7 @@ class StudentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $status = $request->query('status', 'all');
+        $status = $request->query('status', 'active');
         $search = $request->query('search');
 
         $students = User::role('student')

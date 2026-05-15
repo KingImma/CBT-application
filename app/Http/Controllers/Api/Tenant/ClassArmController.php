@@ -73,6 +73,9 @@ class ClassArmController extends Controller
         return ApiResponse::success($arm->fresh(), 'Class arm updated.');
     }
 
+    /**
+     * Assign a teacher to a class arm.
+     */
     public function assignTeacher(Request $request, string $classLevelId, string $id): JsonResponse
     {
         $validated = $request->validate([

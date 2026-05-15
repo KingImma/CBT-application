@@ -10,14 +10,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\StudentResource;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
+use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
 use App\Services\PasswordService;
+use App\Services\TenantUserService;
 use App\Data\Schemas\StudentImportSchema;
 use App\Services\StudentImportService;
 use App\Support\ApiResponse;
 use App\Data\Results\ImportResult;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Events\ActivityFeedEvent;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -116,6 +119,56 @@ class StudentController extends Controller
         return ApiResponse::success([
             'student' => new StudentResource($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
         ], 'Student reassigned.');
+    }
+
+    public function revoke(TenantUserService $tenantUserService, string $id): JsonResponse
+    {
+        $student = User::role('student')->findOrFail($id);
+
+        DB::transaction(function () use ($student, $tenantUserService) {
+            $student->update(['is_active' => false]);
+            $student->tokens()->delete();
+
+            $student->studentProfile()->update([
+                'class_level_id' => null,
+                'class_arm_id' => null,
+            ]);
+            $tenantUserService->removeFromCentralIndex($student->email);
+            $student->delete();
+        });
+
+        return ApiResponse::message('Student revoked.');
+    }
+
+    public function restore(TenantUserService $tenantUserService, string $id): JsonResponse
+    {
+        $student = User::withTrashed()->role('student')->findOrFail($id);
+
+        if (! $student->trashed()) {
+            return ApiResponse::error('This student is already active and has not been deleted.', 422);
+        }
+
+        $student->restore();
+        $student->update(['is_active' => true]);
+        $tenantUserService->updateCentralIndex($student->email, 'student');
+
+        return ApiResponse::success([
+            'student' => new StudentResource($student->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
+        ], "Student '{$student->first_name} {$student->last_name}' has been restored.");
+    }
+
+    public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
+    {
+        $student = User::withTrashed()->role('student')->findOrFail($id);
+
+        DB::transaction(function () use ($student, $tenantUserService) {
+            $student->studentProfile()->delete();
+            $tenantUserService->removeFromCentralIndex($student->email);
+            $student->syncRoles([]);
+            $student->forceDelete();
+        });
+
+        return ApiResponse::message('Student permanently deleted.');
     }
 
     public function bulkResetPasswords(PasswordService $passwordService, Request $request): JsonResponse

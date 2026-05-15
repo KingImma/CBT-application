@@ -93,7 +93,9 @@ class ClassArmController extends Controller
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);
 
         if ($arm->students()->count() > 0) {
-            return ApiResponse::error('Cannot delete a class arm that has students assigned to it.', 422);
+            return ApiResponse::error('Cannot delete a class arm that has stude
+            
+            nts assigned to it.', 422);
         }
 
         $arm->delete();

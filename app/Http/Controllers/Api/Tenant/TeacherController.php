@@ -163,7 +163,7 @@ class TeacherController extends Controller
         return ApiResponse::success(new TeacherResource($teacher), 'Teacher updated successfully.');
     }
 
-    public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
+    public function revoke(TenantUserService $tenantUserService, string $id): JsonResponse
     {
         $teacher = User::role('teacher')->findOrFail($id);
 
@@ -176,7 +176,22 @@ class TeacherController extends Controller
             $teacher->delete();
         });
 
-        return ApiResponse::message('Teacher permanently archived.');
+        return ApiResponse::message('Teacher revoked.');
+    }
+
+    public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
+    {
+        $teacher = User::withTrashed()->role('teacher')->findOrFail($id);
+
+        DB::transaction(function () use ($teacher, $tenantUserService) {
+            $teacher->teacherProfile()->delete();
+            TeacherSubjectAssignment::where('user_id', $teacher->id)->delete();
+            $tenantUserService->removeFromCentralIndex($teacher->email);
+            $teacher->syncRoles([]);
+            $teacher->forceDelete();
+        });
+
+        return ApiResponse::message('Teacher permanently deleted.');
     }
 
     public function restore(TenantUserService $tenantUserService, string $id): JsonResponse
@@ -188,6 +203,7 @@ class TeacherController extends Controller
         }
 
         $teacher->restore();
+        $teacher->update(['is_active' => true]);
         $tenantUserService->updateCentralIndex($teacher->email, 'teacher');
 
         return ApiResponse::success([

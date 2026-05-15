@@ -116,6 +116,7 @@ Route::prefix('teachers')->controller(TeacherController::class)->group(function 
     Route::get('/{id}/subjects', 'subjects');
     Route::get('/{id}', 'show');
     Route::patch('/{id}', 'update');
+    Route::post('/{id}/revoke', 'revoke');
     Route::delete('/{id}', 'destroy');
     // custom
     Route::post('/{id}/toggle-active', 'toggleActive');
@@ -129,6 +130,9 @@ Route::prefix('students')->controller(StudentController::class)->group(function 
     Route::post('/', 'store');
     Route::get('/{id}', 'show');
     Route::patch('/{id}', 'update');
+    Route::post('/{id}/revoke', 'revoke');
+    Route::post('/{id}/restore', 'restore');
+    Route::delete('/{id}', 'destroy');
     // custom-links
     Route::post('/{id}/toggle-active', 'toggleActive');
     Route::post('/{id}/reassign-class', 'reassignClass');

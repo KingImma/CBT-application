@@ -18,7 +18,7 @@ class TeacherAction
     public function create(array $data): array
     {
         return DB::transaction(function () use ($data) {
-            $password = $data['password'] ?? Str::random(10);
+            $password = $data['password'] ?? 'teach12345';
 
             $user = User::create([
                 'first_name' => $data['first_name'],

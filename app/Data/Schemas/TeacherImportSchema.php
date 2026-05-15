@@ -13,7 +13,6 @@ class TeacherImportSchema
         'phone'         => ['required' => false, 'rules' => ['nullable', 'string', 'max:20']],
         'staff_id'      => ['required' => false, 'rules' => ['nullable', 'string', 'max:50']],
         'qualification' => ['required' => false, 'rules' => ['nullable', 'string', 'max:255']],
-        'password'      => ['required' => false, 'rules' => ['nullable', 'string', 'min:8']],
     ];
 
     public const IDENTITY = ['email', 'staff_id'];

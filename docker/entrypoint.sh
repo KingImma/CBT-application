@@ -7,7 +7,6 @@ php artisan migrate --force
 echo "==> Running tenant migrations..."
 php artisan tenants:migrate --force
 
-php artisan tenants:backfill-teacher-passwords
 
 echo "==> Seeding subscription plans..."
 php artisan db:seed --class=SubscriptionPlanSeeder --force

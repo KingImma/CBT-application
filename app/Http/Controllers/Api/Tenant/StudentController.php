@@ -34,7 +34,7 @@ class StudentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $status = $request->query('status', 'active');
+        $status = $request->query('status', 'all');
         $search = $request->query('search');
 
         $students = User::role('student')
@@ -130,7 +130,6 @@ class StudentController extends Controller
             $student->tokens()->delete();
 
             $student->studentProfile()->update([
-                'class_level_id' => null,
                 'class_arm_id' => null,
             ]);
             $tenantUserService->removeFromCentralIndex($student->email);

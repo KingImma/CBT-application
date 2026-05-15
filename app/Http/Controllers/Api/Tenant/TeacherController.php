@@ -30,7 +30,7 @@ class TeacherController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $status = $request->query('status', 'active');
+        $status = $request->query('status', 'all');
         $search = $request->query('search');
 
         $teachers = User::role('teacher')

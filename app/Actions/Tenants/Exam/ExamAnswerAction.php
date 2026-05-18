@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,15 @@ class ExamAnswerAction
 {
     public function save(ExamAttempt $attempt, string $questionId, array $data): ExamAnswer
     {
+        if ($attempt->status !== 'in_progress') {
+            throw new \RuntimeException('Attempt is no longer active.');
+        }
+
+        if ($attempt->getTimeRemainingSeconds() <= 0) {
+            app(ExamSessionAction::class)->submit($attempt);
+            throw new \RuntimeException('Exam time has expired.');
+        }
+
         return DB::transaction(function () use ($attempt, $questionId, $data) {
             return ExamAnswer::updateOrCreate(
                 [

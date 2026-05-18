@@ -40,6 +40,16 @@ class ExamSessionAction
             }
         }
 
+        // Prevent concurrent in-progress attempts
+        $hasInProgress = $exam->attempts()
+            ->forStudent($student->id)
+            ->inProgress()
+            ->exists();
+
+        if ($hasInProgress) {
+            throw new \RuntimeException('You already have an active exam attempt.');
+        }
+
         $maxAttempts = $exam->max_attempts ?? 1;
         $lastAttempt = $exam->attempts()->forStudent($student->id)->max('attempt_number');
         if ($lastAttempt !== null && $lastAttempt >= $maxAttempts) {

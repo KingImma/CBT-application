@@ -7,9 +7,7 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Exam\ExamAnswerAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Models\Tenant\ExamAnswer;
-use App\Events\StudentStartedExam;
-use App\Events\StudentSubmittedExam;
-use App\Events\SuspiciousActivityDetected;
+use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExamAttemptResource;
 use App\Models\Tenant\Exam;
@@ -75,9 +73,6 @@ class StudentExamController extends Controller
 
         $attempt = $this->sessionAction->startAttempt($exam, $student);
         $questionsData = $this->sessionAction->getQuestions($attempt);
-
-        // Broadcast to teacher
-        broadcast(new StudentStartedExam($attempt));
 
         return ApiResponse::created([
             'attempt' => $attempt,
@@ -187,9 +182,6 @@ class StudentExamController extends Controller
             return ApiResponse::error($e->getMessage(), 422);
         }
 
-        // Broadcast to teacher
-        broadcast(new StudentSubmittedExam($attempt));
-
         // Check if results can be shown
         $exam = $attempt->exam;
         $examSettings = $exam->settings;
@@ -228,14 +220,17 @@ class StudentExamController extends Controller
         $this->authorize('saveAnswer', $attempt);
 
         $validated = $request->validate([
-            'type' => ['required', 'string'],
+            'type' => ['required', 'string', Rule::in([
+                'tab_switch',
+                'visibility_change',
+                'fullscreen_exit',
+                'copy_attempt',
+                'paste_detected',
+            ])],
             'metadata' => ['sometimes', 'array'],
         ]);
 
         $attempt->logSuspiciousEvent($validated['type'], $validated['metadata'] ?? []);
-
-        // Broadcast to teacher
-        broadcast(new SuspiciousActivityDetected($attempt, $validated['type'], $validated['metadata'] ?? []));
 
         return ApiResponse::message('Suspicious event logged.');
     }

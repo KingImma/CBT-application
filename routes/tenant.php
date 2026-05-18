@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\Tenant\AcademicSessionController;
 use App\Http\Controllers\Api\Tenant\ClassArmController;
 use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
@@ -13,7 +12,6 @@ use App\Http\Controllers\Api\Tenant\ExamController;
 use App\Http\Controllers\Api\Tenant\ExamGradingController;
 use App\Http\Controllers\Api\Tenant\ExamMonitoringController;
 use App\Http\Controllers\Api\Tenant\ExamQuestionController;
-use App\Http\Controllers\Api\Tenant\FormDataController;
 use App\Http\Controllers\Api\Tenant\GradingScaleController;
 use App\Http\Controllers\Api\Tenant\QuestionController;
 use App\Http\Controllers\Api\Tenant\QuestionOptionController;
@@ -112,6 +110,8 @@ Route::prefix('subjects')->controller(SubjectController::class)->group(function 
 Route::prefix('teachers')->controller(TeacherController::class)->group(function () {
     Route::get('/', 'index');
     Route::post('/', 'store');
+    Route::get('/import-template', 'downloadImportTemplate');
+    Route::post('/import', 'importCsv')->middleware(['permission:manage_staff']);
     Route::get('/{id}/classes', 'classes');
     Route::get('/{id}/subjects', 'subjects');
     Route::get('/{id}', 'show');
@@ -258,7 +258,7 @@ Route::middleware(['role:student'])->group(function () {
         Route::get('/attempts/{id}/time-remaining', 'timeRemaining');
         Route::post('/attempts/{id}/submit', 'submit');
         Route::post('/attempts/{id}/flag/{questionId}', 'toggleFlag');
-        Route::post('/attempts/{id}/suspicious-event', 'logSuspiciousEvent');
+        Route::post('/attempts/{id}/suspicious-event', 'logSuspiciousEvent')->middleware('throttle:30,1');
         Route::get('/attempts/{id}/result', 'result');
     });
 });

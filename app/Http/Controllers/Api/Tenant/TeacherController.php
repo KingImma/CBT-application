@@ -11,14 +11,18 @@ use App\Http\Resources\TeacherResource;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
+use App\Data\Schemas\TeacherImportSchema;
 use App\Services\PasswordService;
+use App\Services\TeacherImportService;
 use App\Services\TenantUserService;
 use App\Support\ApiResponse;
+use App\Data\Results\ImportResult;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 use App\Events\ActivityFeedEvent;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * @group Staff Directory
@@ -222,5 +226,85 @@ class TeacherController extends Controller
         $passwordService->resetPasswordForUser($teacher, $validated['password']);
 
         return ApiResponse::message('Password reset successfully.');
+    }
+
+    public function downloadImportTemplate(): StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, TeacherImportSchema::allHeaders());
+
+            fputcsv($handle, ['John', 'Doe', 'john.doe@example.com', '+2348012345678', 'B.Ed Mathematics', 'TCH/2026/001']);
+            fputcsv($handle, ['Jane', 'Smith', 'jane.smith@school.edu', '', 'M.Sc Physics', '']);
+
+            fclose($handle);
+        }, 'teacher_import_template.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function importCsv(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+            'dry_run' => ['required', 'in:true,false,1,0'],
+            'overwrite_existing' => ['nullable', 'in:skip,update'],
+        ]);
+
+        $dryRun = filter_var($validated['dry_run'], FILTER_VALIDATE_BOOLEAN);
+
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+
+        $result = app(TeacherImportService::class)->import($validated, $path, $dryRun);
+
+        return $this->buildImportResponse($result, $dryRun);
+    }
+
+    private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse
+    {
+        if ($result->missingHeaders !== []) {
+            return ApiResponse::error(
+                $result->message ?? 'Missing required columns.',
+                422,
+                ['missing_headers' => $result->missingHeaders],
+            );
+        }
+
+        if ($result->errors !== []) {
+            return ApiResponse::error(
+                $result->message ?? 'Row validation failed.',
+                422,
+                $result->errors,
+            );
+        }
+
+        if ($dryRun) {
+            $data = [
+                'dry_run' => true,
+                'total_rows' => $result->totalRows,
+                'can_proceed' => true,
+            ];
+
+            if ($result->duplicates !== []) {
+                $data['duplicates'] = $result->duplicates;
+            }
+
+            return ApiResponse::success($data, $result->message ?? 'Preview complete.');
+        }
+
+        $data = [
+            'imported' => $result->imported,
+        ];
+
+        if ($result->skipped > 0) {
+            $data['skipped'] = $result->skipped;
+        }
+        if ($result->updated > 0) {
+            $data['updated'] = $result->updated;
+        }
+
+        return ApiResponse::success($data, $result->message ?? 'Import complete.', 201);
     }
 }

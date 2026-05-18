@@ -20,6 +20,7 @@ class StoreStudentRequest extends FormRequest
             'first_name'          => ['required', 'string', 'max:100'],
             'last_name'           => ['required', 'string', 'max:100'],
             'email'               => ['nullable', 'email', 'unique:users,email'],
+            'phone'               => ['nullable', 'string', 'max:20'],
             'class_level_id'      => ['required', 'uuid', 'exists:class_levels,id'],
             'class_arm_id'        => ['required', 'uuid', 'exists:class_arms,id'],
             'admission_number'    => ['nullable', 'string', 'max:50', 'unique:student_profiles,admission_number'],

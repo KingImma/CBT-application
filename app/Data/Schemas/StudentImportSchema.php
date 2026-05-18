@@ -10,6 +10,7 @@ class StudentImportSchema
         'first_name' => ['required' => true, 'rules' => ['required', 'string', 'max:100']],
         'last_name' => ['required' => true, 'rules' => ['required', 'string', 'max:100']],
         'email' => ['required' => false, 'rules' => ['nullable', 'email']],
+        'phone' => ['required' => false, 'rules' => ['nullable', 'string', 'max:20']],
         'admission_number' => ['required' => false, 'rules' => ['nullable', 'string', 'max:50']],
         'class_level' => ['required' => true, 'rules' => ['required', 'string']],
         'class_arm' => ['required' => true, 'rules' => ['required', 'string']],

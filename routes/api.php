@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\PasswordController;
-use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Middleware\InitializeTenancyByHeader;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -27,11 +26,9 @@ Route::middleware([InitializeTenancyByHeader::class])->group(function () {
     });
 });
 
-Route::middleware([InitializeTenancyByHeader::class, 'auth:sanctum',])->post('/broadcasting/auth', function () {
+Route::middleware([InitializeTenancyByHeader::class, 'auth:tenant',])->post('/broadcasting/auth', function () {
     return Broadcast::auth(request());
 });
-
-Route::get('/students/import/template', [StudentController::class, 'downloadImportTemplate']);
 
 Route::prefix('onboarding')->controller(OnboardingController::class)->group(function () {
     Route::get('/check-handle', 'checkHandle');

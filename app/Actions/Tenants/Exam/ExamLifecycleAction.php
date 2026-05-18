@@ -7,6 +7,8 @@ namespace App\Actions\Tenants\Exam;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\ExamType;
+use App\Events\ExamSessionEnded;
+use App\Events\ExamSessionStarted;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\Topic;
@@ -79,7 +81,11 @@ class ExamLifecycleAction
                 'session_duration_minutes' => $exam->session_duration_minutes ?? ($exam->duration_minutes + 60),
             ]);
 
-            return $exam->fresh();
+            $exam = $exam->fresh();
+
+            broadcast(new ExamSessionStarted($exam));
+
+            return $exam;
         });
     }
 
@@ -106,7 +112,11 @@ class ExamLifecycleAction
                 'status' => ExamStatus::Grading->value,
             ]);
 
-            return $exam->fresh();
+            $exam = $exam->fresh();
+
+            broadcast(new ExamSessionEnded($exam));
+
+            return $exam;
         });
     }
 

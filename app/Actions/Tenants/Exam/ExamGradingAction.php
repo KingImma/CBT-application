@@ -85,6 +85,17 @@ class ExamGradingAction
 
     public function markFullyGraded(ExamAttempt $attempt): ExamAttempt
     {
+        if ($attempt->status === ExamAttemptStatus::Disqualified->value) {
+            return DB::transaction(function () use ($attempt) {
+                $attempt->update([
+                    'is_theory_graded' => true,
+                    'status' => ExamAttemptStatus::Graded->value,
+                ]);
+
+                return $attempt->fresh();
+            });
+        }
+
         $allGraded = $attempt->answers()
             ->whereNull('marks_awarded')
             ->whereHas('question', fn ($q) => $q->whereIn('type', ['essay', 'short_answer']))
@@ -141,8 +152,12 @@ class ExamGradingAction
 
             $exam = $attempt->exam;
             $ungradedAttempts = $exam->attempts()
-                ->whereIn('status', [ExamAttemptStatus::Submitted->value, ExamAttemptStatus::Timed_out->value, ExamAttemptStatus::Grading->value])
-                ->exists();
+                ->whereIn('status', [
+                    ExamAttemptStatus::Submitted->value,
+                    ExamAttemptStatus::Timed_out->value,
+                    ExamAttemptStatus::Grading->value,
+                    ExamAttemptStatus::Disqualified->value,
+                ])->exists();
 
             if (! $ungradedAttempts && $exam->status === ExamStatus::Grading->value) {
                 $exam->update(['status' => ExamStatus::Completed->value]);

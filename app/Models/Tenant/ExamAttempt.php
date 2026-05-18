@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
 use App\Data\Values\ExamAttemptSettings;
 use Illuminate\Database\Eloquent\Builder;
@@ -73,7 +74,7 @@ class ExamAttempt extends Model
 
     public function scopeSubmitted(Builder $query): Builder
     {
-        return $query->whereIn('status', ['submitted', 'timed_out']);
+        return $query->whereIn('status', ['submitted', 'timed_out', 'disqualified']);
     }
 
     public function scopeNeedsGrading(Builder $query): Builder
@@ -97,11 +98,19 @@ class ExamAttempt extends Model
     {
         $events = $this->suspicious_events ?? [];
         $events[] = [
-            'type' => $type,
+            'type'      => $type,
             'timestamp' => now()->toIso8601String(),
-            'metadata' => $metadata,
+            'metadata'  => $metadata,
         ];
         $this->suspicious_events = $events;
+
+        $maxEvents = $this->exam->settings->maxSuspiciousEvents;
+        if (count($events) >= $maxEvents) {
+            $this->status = ExamAttemptStatus::Disqualified->value;
+            $this->submitted_at = now();
+            $this->time_spent_seconds = now()->diffInSeconds($this->started_at);
+        }
+
         $this->save();
     }
 

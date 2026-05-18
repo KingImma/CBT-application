@@ -25,6 +25,7 @@ class StudentAction
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
                 'password' => Hash::make($password),
+                'phone' => $data['phone'] ?? null,
                 'role' => 'student',
                 'is_active' => true,
             ]);
@@ -54,7 +55,7 @@ class StudentAction
         $user = User::role('student')->findOrFail($userId);
 
         DB::transaction(function () use ($user, $data) {
-            $userData = collect($data)->only(['first_name', 'last_name', 'email'])->toArray();
+            $userData = collect($data)->only(['first_name', 'last_name', 'email', 'phone'])->toArray();
             if (! empty($userData)) {
                 $user->update($userData);
             }

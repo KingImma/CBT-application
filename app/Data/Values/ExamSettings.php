@@ -17,6 +17,7 @@ class ExamSettings implements Castable
         public readonly bool $requireAttendance = true,
         public readonly string $distribution = 'pooled',
         public readonly array $topicWeights = [],
+        public readonly int $maxSuspiciousEvents = 5,
     ) {}
 
     public static function fromArray(?array $data): self
@@ -32,6 +33,7 @@ class ExamSettings implements Castable
             requireAttendance: (bool) ($data['require_attendance'] ?? true),
             distribution: (string) ($data['distribution'] ?? 'pooled'),
             topicWeights: (array) ($data['topic_weights'] ?? []),
+            maxSuspiciousEvents: (int) ($data['max_suspicious_events'] ?? 5),
         );
     }
 
@@ -44,6 +46,7 @@ class ExamSettings implements Castable
             'require_attendance' => $this->requireAttendance,
             'distribution' => $this->distribution,
             'topic_weights' => $this->topicWeights,
+            'max_suspicious_events' => $this->maxSuspiciousEvents,
         ];
     }
 

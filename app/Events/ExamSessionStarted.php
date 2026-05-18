@@ -9,11 +9,11 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Queue\SerializesModels;
 
-class ExamSessionEnded implements ShouldBroadcastNow
+class ExamSessionStarted implements ShouldBroadcastNow
 {
     use SerializesModels;
 
-    public function __construct(public Exam $exam) {}
+    public function __construct(public readonly Exam $exam) {}
 
     public function broadcastOn(): array
     {
@@ -25,14 +25,14 @@ class ExamSessionEnded implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'exam_id'  => $this->exam->id,
-            'ended_at' => now()->toIso8601String(),
-            'action'   => 'force_submit',
+            'exam_id'            => $this->exam->id,
+            'session_started_at' => $this->exam->session_started_at->toIso8601String(),
+            'duration_minutes'   => $this->exam->duration_minutes,
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'exam.session.ended';
+        return 'exam.session.started';
     }
 }

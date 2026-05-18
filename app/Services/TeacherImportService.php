@@ -4,25 +4,21 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Actions\Tenants\Student\StudentAction;
-use App\Data\Schemas\StudentImportSchema;
-use App\Models\Tenant\ClassArm;
-use App\Models\Tenant\ClassLevel;
-use App\Models\Tenant\StudentProfile;
+use App\Actions\Tenants\Teacher\TeacherAction;
+use App\Data\Schemas\TeacherImportSchema;
 use App\Models\Tenant\User;
 use App\Data\Results\ImportResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-class StudentImportService
+class TeacherImportService
 {
     public function __construct(
-        private readonly StudentAction $studentAction,
+        private readonly TeacherAction $teacherAction,
     ) {}
 
     public function import(array $validated, string $filePath, bool $dryRun = true): ImportResult
     {
-        $overrideClassLevelId = $validated['class_level_id'] ?? null;
         $overwriteExisting = $validated['overwrite_existing'] ?? null;
 
         if (! is_readable($filePath)) {
@@ -35,13 +31,12 @@ class StudentImportService
         }
 
         try {
-            // Stage 1 — Header Validation
             $headers = $this->readHeaders($handle);
             if ($headers === []) {
                 return new ImportResult(success: false, message: 'CSV file is empty or missing headers.');
             }
 
-            $missing = StudentImportSchema::missingRequiredHeaders($headers);
+            $missing = TeacherImportSchema::missingRequiredHeaders($headers);
             if ($missing !== []) {
                 return new ImportResult(
                     success: false,
@@ -50,15 +45,7 @@ class StudentImportService
                 );
             }
 
-            // Stage 2 — Row Validation & Duplicate Detection
-            $classLevels = ClassLevel::query()->get()->keyBy(
-                fn ($level) => strtolower(trim($level->name))
-            );
-            $classArms = ClassArm::query()->get()->keyBy(
-                fn ($arm) => $arm->class_level_id . ':' . strtolower(trim($arm->name))
-            );
-
-            $parsed = $this->parseAndValidateRows($handle, $headers, $classLevels, $classArms, $overrideClassLevelId);
+            $parsed = $this->parseAndValidateRows($handle, $headers);
 
             if ($parsed['errors'] !== []) {
                 return new ImportResult(
@@ -105,7 +92,6 @@ class StudentImportService
                 );
             }
 
-            // Stage 3 — Process
             $duplicateByRow = [];
             foreach ($duplicates as $d) {
                 $duplicateByRow[$d['row']] = $d;
@@ -117,21 +103,18 @@ class StudentImportService
                     $skipped = 0;
                     $updated = 0;
 
-                    $reservedNumbers = [];
-                    foreach ($parsed['rows'] as $row) {
-                        if ($row['admission_number']) {
-                            $reservedNumbers[] = strtoupper(trim($row['admission_number']));
-                        }
-                    }
-
                     foreach ($parsed['rows'] as $row) {
                         $rn = $row['row_number'];
 
                         if (isset($duplicateByRow[$rn])) {
                             if ($overwriteExisting === 'update') {
                                 $dup = $duplicateByRow[$rn];
-                                $this->studentAction->update(
-                                    $this->buildPayload($row['data'], $row['class_level_id'], $row['class_arm_id'], $dup['admission_number'], $dup['email']),
+                                $payload = $this->buildPayload($row['data'], $dup['email']);
+                                if (empty($row['data']['staff_id'])) {
+                                    unset($payload['staff_id']);
+                                }
+                                $this->teacherAction->update(
+                                    $payload,
                                     $dup['user_id'],
                                 );
                                 $updated++;
@@ -141,16 +124,10 @@ class StudentImportService
                             continue;
                         }
 
-                        $admissionNumber = $row['admission_number'];
-                        if (! $admissionNumber) {
-                            $admissionNumber = $this->nextAvailableAdmissionNumber($reservedNumbers);
-                            $reservedNumbers[] = $admissionNumber;
-                        }
-                        $admissionNumber = strtoupper(trim($admissionNumber));
-                        $email = $row['email'] ?: "{$admissionNumber}@student.local";
+                        $email = $row['data']['email'];
 
-                        $this->studentAction->create(
-                            $this->buildPayload($row['data'], $row['class_level_id'], $row['class_arm_id'], $admissionNumber, $email)
+                        $this->teacherAction->create(
+                            $this->buildPayload($row['data'], $email)
                         );
                         $imported++;
                     }
@@ -192,13 +169,8 @@ class StudentImportService
         }
     }
 
-    private function parseAndValidateRows(
-        $handle,
-        array $headers,
-        $classLevels,
-        $classArms,
-        ?string $overrideClassLevelId,
-    ): array {
+    private function parseAndValidateRows($handle, array $headers): array
+    {
         $rows = [];
         $errors = [];
         $rowNumber = 1;
@@ -219,44 +191,15 @@ class StudentImportService
 
             $data = $this->normalizeRow($data);
 
-            $validator = Validator::make($data, StudentImportSchema::validatorRules($overrideClassLevelId));
+            $validator = Validator::make($data, TeacherImportSchema::validatorRules());
             if ($validator->fails()) {
                 $errors[] = ['row' => $rowNumber, 'errors' => $validator->errors()->toArray()];
-                continue;
-            }
-
-            $classLevelId = $overrideClassLevelId
-                ?? $this->resolveClassLevelId($data['class_level'] ?? null, $classLevels);
-
-            if (! $overrideClassLevelId && ! $classLevelId) {
-                $errors[] = [
-                    'row' => $rowNumber,
-                    'errors' => ['class_level' => ["Class level '{$data['class_level']}' not found."]],
-                ];
-                continue;
-            }
-
-            $classArmId = $this->resolveClassArmId(
-                $classLevelId ?? $overrideClassLevelId,
-                $data['class_arm'] ?? null,
-                $classArms,
-            );
-
-            if (! $classArmId && ! empty($data['class_arm'])) {
-                $errors[] = [
-                    'row' => $rowNumber,
-                    'errors' => ['class_arm' => ["Class arm '{$data['class_arm']}' not found for the specified class level."]],
-                ];
                 continue;
             }
 
             $rows[] = [
                 'row_number' => $rowNumber,
                 'data' => $data,
-                'class_level_id' => $classLevelId ?? $overrideClassLevelId,
-                'class_arm_id' => $classArmId,
-                'admission_number' => $data['admission_number'] ?: null,
-                'email' => $data['email'] ?: null,
             ];
         }
 
@@ -269,34 +212,34 @@ class StudentImportService
 
     private function findDuplicates(array $rows, array &$errors): array
     {
-        $emails = array_values(array_unique(array_filter(array_column($rows, 'email'))));
-        $admissionNumbers = array_values(array_unique(array_filter(array_column($rows, 'admission_number'))));
+        $emails = array_values(array_unique(array_filter(array_column(array_column($rows, 'data'), 'email'))));
+        $staffIds = array_values(array_unique(array_filter(array_column(array_column($rows, 'data'), 'staff_id'))));
 
-        if ($emails === [] && $admissionNumbers === []) {
+        if ($emails === [] && $staffIds === []) {
             return [];
         }
 
-        $existing = User::role('student')
-            ->with('studentProfile')
-            ->where(function ($q) use ($emails, $admissionNumbers) {
+        $existing = User::role('teacher')
+            ->with('teacherProfile')
+            ->where(function ($q) use ($emails, $staffIds) {
                 if ($emails !== []) {
                     $q->whereIn('email', $emails);
-                    if ($admissionNumbers !== []) {
-                        $q->orWhereHas('studentProfile', fn ($p) => $p->whereIn('admission_number', $admissionNumbers));
+                    if ($staffIds !== []) {
+                        $q->orWhereHas('teacherProfile', fn ($p) => $p->whereIn('staff_id', $staffIds));
                     }
-                } elseif ($admissionNumbers !== []) {
-                    $q->whereHas('studentProfile', fn ($p) => $p->whereIn('admission_number', $admissionNumbers));
+                } elseif ($staffIds !== []) {
+                    $q->whereHas('teacherProfile', fn ($p) => $p->whereIn('staff_id', $staffIds));
                 }
             })
             ->get();
 
         $byEmail = $existing->keyBy(fn ($u) => $u->email);
 
-        $byAdmission = [];
+        $byStaffId = [];
         foreach ($existing as $user) {
-            $num = $user->studentProfile?->admission_number;
-            if ($num) {
-                $byAdmission[$num] = $user;
+            $sid = $user->teacherProfile?->staff_id;
+            if ($sid) {
+                $byStaffId[$sid] = $user;
             }
         }
 
@@ -304,8 +247,8 @@ class StudentImportService
 
         foreach ($rows as $row) {
             $rn = $row['row_number'];
-            $email = $row['email'];
-            $admissionNumber = $row['admission_number'];
+            $email = $row['data']['email'];
+            $staffId = $row['data']['staff_id'] ?: null;
 
             $byEmailMatch = $email && isset($byEmail[$email]);
             if ($byEmailMatch) {
@@ -313,20 +256,19 @@ class StudentImportService
                 $duplicates[] = [
                     'row' => $rn,
                     'email' => $found->email,
-                    'admission_number' => $found->studentProfile?->admission_number,
+                    'staff_id' => $found->teacherProfile?->staff_id,
                     'user_id' => $found->id,
                 ];
                 continue;
             }
 
-            $byAdmissionMatch = $admissionNumber && isset($byAdmission[$admissionNumber]);
-            if ($byAdmissionMatch) {
-                $found = $byAdmission[$admissionNumber];
+            if ($staffId && isset($byStaffId[$staffId])) {
+                $found = $byStaffId[$staffId];
 
                 if ($email && $email !== $found->email) {
                     $errors[] = [
                         'row' => $rn,
-                        'message' => "Admission number '{$admissionNumber}' already assigned to another student ({$found->email}).",
+                        'message' => "Staff ID '{$staffId}' already assigned to another teacher ({$found->email}).",
                     ];
                     continue;
                 }
@@ -334,33 +276,13 @@ class StudentImportService
                 $duplicates[] = [
                     'row' => $rn,
                     'email' => $found->email,
-                    'admission_number' => $found->studentProfile?->admission_number,
+                    'staff_id' => $found->teacherProfile?->staff_id,
                     'user_id' => $found->id,
                 ];
             }
         }
 
         return $duplicates;
-    }
-
-    private function nextAvailableAdmissionNumber(array $reservedNumbers): string
-    {
-        $year = date('Y');
-        $existing = StudentProfile::where('admission_number', 'like', "STU/{$year}/%")
-            ->pluck('admission_number');
-
-        $occupied = array_merge($existing->toArray(), $reservedNumbers);
-        $occupied = array_unique($occupied);
-
-        $candidate = 1;
-        $number = "STU/{$year}/" . str_pad((string) $candidate, 4, '0', STR_PAD_LEFT);
-
-        while (in_array(strtoupper($number), $occupied, true)) {
-            $candidate++;
-            $number = "STU/{$year}/" . str_pad((string) $candidate, 4, '0', STR_PAD_LEFT);
-        }
-
-        return $number;
     }
 
     private function readHeaders($handle): array
@@ -378,37 +300,15 @@ class StudentImportService
         return array_map(fn ($v) => is_string($v) ? trim($v) : $v, $data);
     }
 
-    private function resolveClassLevelId(?string $name, $classLevels): ?string
-    {
-        if ($name === null || $name === '') {
-            return null;
-        }
-
-        return $classLevels->get(strtolower(trim($name)))?->id;
-    }
-
-    private function resolveClassArmId(string $classLevelId, ?string $name, $classArms): ?string
-    {
-        if ($name === null || $name === '') {
-            return null;
-        }
-
-        return $classArms->get($classLevelId . ':' . strtolower(trim($name)))?->id;
-    }
-
-    private function buildPayload(array $data, ?string $classLevelId, ?string $classArmId, string $admissionNumber, string $email): array
+    private function buildPayload(array $data, string $email): array
     {
         return [
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
             'email' => $email,
             'phone' => $data['phone'] ?? null,
-            'admission_number' => $admissionNumber,
-            'class_level_id' => $classLevelId,
-            'class_arm_id' => $classArmId,
-            'date_of_birth' => $data['date_of_birth'] ?? null,
-            'gender' => $data['gender'] ?? null,
-            'guardian_email' => $data['guardian_email'] ?? null,
+            'qualification' => $data['qualification'] ?? null,
+            'staff_id' => $data['staff_id'] ?? null,
         ];
     }
 }

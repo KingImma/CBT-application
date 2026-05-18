@@ -81,7 +81,7 @@ class StudentController extends Controller
         $result = $action->create($request->validated());
         
         broadcast(new ActivityFeedEvent(
-            channelType: 'school',
+            channelType: 'school_admin',
             channelId:   tenant('id'),
             action:      'student.created',
             description: "Student {$result['user']->first_name} {$result['user']->last_name} added.",
@@ -215,7 +215,7 @@ class StudentController extends Controller
 
             fputcsv($handle, [
                 'Admission Number', 'First Name', 'Last Name',
-                'Email', 'Class Level', 'Class Arm', 'Gender', 'Date of Birth',
+                'Email', 'Phone', 'Class Level', 'Class Arm', 'Gender', 'Date of Birth',
                 'Guardian Email',
             ]);
 
@@ -227,6 +227,7 @@ class StudentController extends Controller
                         $student->first_name,
                         $student->last_name,
                         $student->email,
+                        $student->phone,
                         $profile?->classLevel?->name,
                         $profile?->classArm?->name,
                         $profile?->gender,
@@ -247,8 +248,8 @@ class StudentController extends Controller
 
             fputcsv($handle, StudentImportSchema::allHeaders());
 
-            fputcsv($handle, ['John', 'Doe', 'john.doe@example.com', 'STU/2026/0001', 'JSS 1', 'A', '2010-03-15', 'male', '']);
-            fputcsv($handle, ['Jane', 'Smith', '', '', 'SSS 2', 'B', '2008-07-22', 'female', '']);
+            fputcsv($handle, ['John', 'Doe', 'john.doe@example.com', '+2348012345678', 'STU/2026/0001', 'JSS 1', 'A', '2010-03-15', 'male', '']);
+            fputcsv($handle, ['Jane', 'Smith', '', '', '', 'SSS 2', 'B', '2008-07-22', 'female', '']);
 
             fclose($handle);
         }, 'student_import_template.csv', [

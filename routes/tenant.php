@@ -111,7 +111,8 @@ Route::prefix('teachers')->controller(TeacherController::class)->group(function 
     Route::get('/', 'index');
     Route::post('/', 'store');
     Route::get('/import-template', 'downloadImportTemplate');
-    Route::post('/import', 'importCsv')->middleware(['permission:manage_staff']);
+    Route::post('/import', 'importCsv')->middleware(['permission:manage_teachers
+    ']);
     Route::get('/{id}/classes', 'classes');
     Route::get('/{id}/subjects', 'subjects');
     Route::get('/{id}', 'show');

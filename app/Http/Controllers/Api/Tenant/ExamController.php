@@ -31,7 +31,7 @@ class ExamController extends Controller
     {
         $perPage = (int) $request->get('per_page', 20);
 
-        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'creator_id', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'scheduled_end', 'instructions', 'created_at')
+        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'created_by', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'scheduled_end', 'instructions', 'created_at')
             ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
             ->withCount('examQuestions')
             ->when($request->status, fn ($q, $status) => $q->byStatus($status))
@@ -128,6 +128,48 @@ class ExamController extends Controller
         $this->crudAction->delete($exam);
 
         return ApiResponse::message('Exam deleted.');
+    }
+
+    public function submitForReview(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('submitForReview', $exam);
+
+        try {
+            $exam = $this->lifecycleAction->submitForReview($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam submitted for review.');
+    }
+
+    public function activate(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('activate', $exam);
+
+        try {
+            $exam = $this->lifecycleAction->activate($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam activated.');
+    }
+
+    public function lock(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('lock', $exam);
+
+        try {
+            $exam = $this->lifecycleAction->lock($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam locked.');
     }
 
     public function publish(string $id): JsonResponse

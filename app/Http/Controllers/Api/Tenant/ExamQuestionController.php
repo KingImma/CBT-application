@@ -33,14 +33,14 @@ class ExamQuestionController extends Controller
         ]);
 
         try {
-            $examQuestion = $this->questionAction->add($exam, $validated['question_id'], $validated['marks_override'] ?? null);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
+            $examQuestion = $this->questionAction->add($exam, $validated['question_id'], $validated['marks_override'] ?? null, auth()->id());
         } catch (QueryException $e) {
             if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'duplicate') || str_contains($e->getMessage(), 'UNIQUE')) {
                 return ApiResponse::error('This question has already been added to the exam.', 422);
             }
             throw $e;
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
         }
 
         return ApiResponse::created(

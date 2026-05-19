@@ -15,7 +15,7 @@ class ExamQuestion extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'marks_override' => 'decimal:2',
+        'marks' => 'decimal:2',
         'order' => 'integer',
     ];
 
@@ -37,10 +37,6 @@ class ExamQuestion extends Model
 
     public function getEffectiveMarks(): string
     {
-        if ($this->marks_override !== null) {
-            return $this->marks_override;
-        }
-
-        return $this->question->default_marks;
+        return (string) ($this->marks ?? $this->question->default_marks);
     }
 }

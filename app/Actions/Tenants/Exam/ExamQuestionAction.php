@@ -12,21 +12,27 @@ use Illuminate\Support\Facades\DB;
 
 class ExamQuestionAction
 {
-    public function add(Exam $exam, string $questionId, ?string $marksOverride = null): ExamQuestion
+    public function add(Exam $exam, string $questionId, ?string $marksOverride = null, ?string $userId = null): ExamQuestion
     {
         if (! in_array($exam->status, ['draft', 'scheduled'])) {
             throw new \RuntimeException('Questions can only be added to draft or scheduled exams.');
         }
 
         $question = Question::findOrFail($questionId);
+
+        if ($userId !== null && $question->created_by !== $userId) {
+            throw new \RuntimeException('Question does not belong to your question bank.');
+        }
+
         $maxOrder = $exam->examQuestions()->max('order') ?? 0;
 
         return DB::transaction(function () use ($exam, $question, $marksOverride, $maxOrder) {
+            $marks = $marksOverride ?? $question->default_marks;
             $examQuestion = ExamQuestion::create([
                 'exam_id' => $exam->id,
                 'question_id' => $question->id,
                 'order' => $maxOrder + 1,
-                'marks_override' => $marksOverride,
+                'marks' => $marks,
             ]);
 
             $this->recomputeTotalMarks($exam);
@@ -46,7 +52,7 @@ class ExamQuestionAction
                 ->where('question_id', $questionId)
                 ->firstOrFail();
 
-            $examQuestion->update(['marks_override' => $marksOverride]);
+            $examQuestion->update(['marks' => $marksOverride ?? $examQuestion->question->default_marks]);
             $this->recomputeTotalMarks($exam);
 
             return $examQuestion->fresh();
@@ -134,7 +140,7 @@ class ExamQuestionAction
                 'exam_id' => $exam->id,
                 'question_id' => $question->id,
                 'order' => $maxOrder + $index + 1,
-                'marks_override' => null,
+                'marks' => $question->default_marks,
             ]);
         }
     }

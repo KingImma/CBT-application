@@ -37,6 +37,21 @@ class ExamPolicy
         return $user->id === $exam->created_by && $exam->status === 'draft';
     }
 
+    public function submitForReview(User $user, Exam $exam): bool
+    {
+        return $user->id === $exam->created_by && $exam->status === 'draft';
+    }
+
+    public function activate(User $user, Exam $exam): bool
+    {
+        return $user->hasRole('school_admin') && $exam->status === 'submitted';
+    }
+
+    public function lock(User $user, Exam $exam): bool
+    {
+        return $user->hasRole('school_admin') && in_array($exam->status, ['active', 'submitted']);
+    }
+
     public function startSession(User $user, Exam $exam): bool
     {
         return $user->id === $exam->created_by && $exam->status === 'scheduled';
@@ -49,6 +64,6 @@ class ExamPolicy
 
     public function manageQuestions(User $user, Exam $exam): bool
     {
-        return $user->id === $exam->created_by && in_array($exam->status, ['draft', 'scheduled']);
+        return $user->id === $exam->created_by && $exam->status === 'draft';
     }
 }

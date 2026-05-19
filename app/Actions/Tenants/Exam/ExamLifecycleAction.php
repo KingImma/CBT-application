@@ -16,6 +16,62 @@ use Illuminate\Support\Facades\DB;
 
 class ExamLifecycleAction
 {
+    public function submitForReview(Exam $exam): Exam
+    {
+        if ($exam->status !== 'draft') {
+            throw new \RuntimeException('Only draft exams can be submitted for review.');
+        }
+
+        if ($exam->examQuestions()->count() === 0) {
+            throw new \RuntimeException('Exam must have at least one question.');
+        }
+
+        if ((float) $exam->total_marks <= 0) {
+            throw new \RuntimeException('Exam total marks must be greater than 0.');
+        }
+
+        return DB::transaction(function () use ($exam) {
+            $exam->update(['status' => 'submitted']);
+            return $exam->fresh();
+        });
+    }
+
+    public function activate(Exam $exam): Exam
+    {
+        if ($exam->status !== 'submitted') {
+            throw new \RuntimeException('Only submitted exams can be activated.');
+        }
+
+        if ($exam->duration_minutes <= 0) {
+            throw new \RuntimeException('Exam duration must be greater than 0.');
+        }
+
+        if ($exam->pass_mark === null) {
+            throw new \RuntimeException('Exam pass mark must be set.');
+        }
+
+        if ((float) $exam->pass_mark > (float) $exam->total_marks) {
+            throw new \RuntimeException('Pass mark cannot exceed total marks.');
+        }
+
+        return DB::transaction(function () use ($exam) {
+            $exam->update(['status' => 'active']);
+            return $exam->fresh();
+        });
+    }
+
+    public function lock(Exam $exam): Exam
+    {
+        if (! in_array($exam->status, ['active', 'submitted'])) {
+            throw new \RuntimeException('Only active or submitted exams can be locked.');
+        }
+
+        return DB::transaction(function () use ($exam) {
+            $exam->update(['status' => 'locked']);
+            return $exam->fresh();
+        });
+    }
+
     public function publish(Exam $exam): Exam
     {
         if ($exam->status !== 'draft') {

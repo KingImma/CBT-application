@@ -111,7 +111,7 @@ Route::prefix('teachers')->controller(TeacherController::class)->group(function 
     Route::get('/', 'index');
     Route::post('/', 'store');
     Route::get('/import-template', 'downloadImportTemplate');
-    Route::post('/import', 'importCsv')->middleware(['permission:manage_teachers, tenant']);
+    Route::post('/import', 'importCsv')->middleware(['permission:manage_teachers,tenant']);
     Route::get('/{id}/classes', 'classes');
     Route::get('/{id}/subjects', 'subjects');
     Route::get('/{id}', 'show');
@@ -173,6 +173,9 @@ Route::middleware(['role:teacher|school_admin'])->group(function () {
         Route::get('/{id}', 'show');
         Route::patch('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
+        Route::post('/{id}/submit-for-review', 'submitForReview');
+        Route::post('/{id}/activate', 'activate');
+        Route::post('/{id}/lock', 'lock');
         Route::post('/{id}/publish', 'publish');
         Route::post('/{id}/start-session', 'startSession');
         Route::post('/{id}/end-session', 'endSession');

@@ -30,8 +30,12 @@ class QuestionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $questions = Question::select('id', 'type', 'content', 'explanation', 'default_marks', 'time_estimate', 'image_url', 'metadata', 'topic_id', 'subject_id', 'class_level_id', 'creator_id', 'is_active', 'created_at')
+        /** @var \App\Models\Tenant\User $user */
+        $user = $request->user('tenant');
+
+        $questions = Question::select('id', 'type', 'content', 'explanation', 'default_marks', 'time_estimate_seconds', 'image_url', 'metadata', 'topic_id', 'subject_id', 'class_level_id', 'created_by', 'is_active', 'created_at')
             ->with(['topic', 'classLevel', 'subject', 'creator:id,first_name,last_name'])
+            ->when($user && $user->role === \App\Enums\RoleType::Teacher->value, fn ($q) => $q->where('created_by', $user->id))
             ->when($request->subject_id, fn ($q) => $q->where('subject_id', $request->subject_id)
             )
             ->when($request->class_level_id, fn ($q) => $q->where('class_level_id', $request->class_level_id)

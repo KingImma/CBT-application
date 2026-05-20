@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Illuminate\Foundation\Http\Kernel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -30,7 +31,7 @@ class TenancyServiceProvider extends ServiceProvider
                     Jobs\SeedDatabase::class,
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
-                })
+                }),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -127,7 +128,7 @@ class TenancyServiceProvider extends ServiceProvider
         // Fix: use app() helper instead of the Application contract
         // which doesn't have prependToMiddlewarePriority
         foreach (array_reverse($tenancyMiddleware) as $middleware) {
-            app(\Illuminate\Foundation\Http\Kernel::class)
+            app(Kernel::class)
                 ->prependToMiddlewarePriority($middleware);
         }
     }

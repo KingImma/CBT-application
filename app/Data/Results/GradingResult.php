@@ -8,16 +8,16 @@ class GradingResult
 {
     public function __construct(
         public readonly string $questionId,
-        public readonly bool   $isCorrect,
-        public readonly float  $marksAwarded,
+        public readonly bool $isCorrect,
+        public readonly float $marksAwarded,
         public readonly string $questionType,
     ) {}
 
     public static function incorrect(string $questionId, string $questionType): self
     {
         return new self(
-            questionId:   $questionId,
-            isCorrect:    false,
+            questionId: $questionId,
+            isCorrect: false,
             marksAwarded: 0.0,
             questionType: $questionType,
         );
@@ -26,8 +26,8 @@ class GradingResult
     public static function correct(string $questionId, float $marks, string $questionType): self
     {
         return new self(
-            questionId:   $questionId,
-            isCorrect:    true,
+            questionId: $questionId,
+            isCorrect: true,
             marksAwarded: $marks,
             questionType: $questionType,
         );

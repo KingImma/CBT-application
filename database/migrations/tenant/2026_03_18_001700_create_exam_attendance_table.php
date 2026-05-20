@@ -1,6 +1,5 @@
 <?php
 
-
 use App\Enums\ExamAttendanceStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -22,7 +21,7 @@ return new class extends Migration
             $table->timestamp('marked_at');
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['exam_id', 'student_id']);
         });
     }

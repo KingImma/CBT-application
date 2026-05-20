@@ -26,9 +26,10 @@ use Illuminate\Support\Str;
 class ProvisionTenantDetailsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     /**
-     * @param array<int,mixed> $adminData
-     * @param array<int,mixed> $curriculumData
+     * @param  array<int,mixed>  $adminData
+     * @param  array<int,mixed>  $curriculumData
      */
     public function __construct(
         public readonly Tenant $tenant,
@@ -41,91 +42,91 @@ class ProvisionTenantDetailsJob implements ShouldQueue
         $this->tenant->run(function () {
             // ── 1. Create the Admin User & Sync to Central Index ──────────────
             $admin = User::firstOrCreate(
-                ["email" => $this->adminData["email"]],
+                ['email' => $this->adminData['email']],
                 [
-                    "id" => Str::uuid()->toString(),
-                    "first_name" => $this->adminData["first_name"],
-                    "last_name" => $this->adminData["last_name"],
-                    "email" => $this->adminData["email"],
-                    "phone" => $this->adminData["phone"] ?? null,
-                    "password" => Hash::make($this->adminData["password"]),
-                    "role" => "school_admin",
-                    "is_active" => true,
+                    'id' => Str::uuid()->toString(),
+                    'first_name' => $this->adminData['first_name'],
+                    'last_name' => $this->adminData['last_name'],
+                    'email' => $this->adminData['email'],
+                    'phone' => $this->adminData['phone'] ?? null,
+                    'password' => Hash::make($this->adminData['password']),
+                    'role' => 'school_admin',
+                    'is_active' => true,
                 ],
             );
 
-            $admin->assignRole("school_admin");
+            $admin->assignRole('school_admin');
 
-            DB::connection(config("tenancy.database.central_connection"))
-                ->table("tenant_user_index")
+            DB::connection(config('tenancy.database.central_connection'))
+                ->table('tenant_user_index')
                 ->updateOrInsert(
                     [
-                        "email" => $admin->email,
-                        "tenant_id" => $this->tenant->id,
+                        'email' => $admin->email,
+                        'tenant_id' => $this->tenant->id,
                     ],
                     [
-                        "role" => "school_admin",
-                        "created_at" => now(),
-                        "updated_at" => now(),
+                        'role' => 'school_admin',
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ],
                 );
 
             // ── 2. Apply Custom Class Levels ──────────────────────────────────
-            if (!empty($this->curriculumData["grades"])) {
+            if (! empty($this->curriculumData['grades'])) {
                 ClassLevel::truncate();
 
-                foreach ($this->curriculumData["grades"] as $gradeName) {
+                foreach ($this->curriculumData['grades'] as $gradeName) {
                     ClassLevel::create([
-                        "name" => $gradeName,
-                        "slug" => Str::slug($gradeName, ""),
+                        'name' => $gradeName,
+                        'slug' => Str::slug($gradeName, ''),
                     ]);
                 }
             }
-            
+
             // ── 3. Handle Relational Grading Scales ───────────────────────────
-            if (!empty($this->curriculumData["gradingScale"])) {
+            if (! empty($this->curriculumData['gradingScale'])) {
                 // First, remove the default flag from all existing scales seeded by the DB
-                DB::table("grading_scales")->update(["is_default" => false]);
+                DB::table('grading_scales')->update(['is_default' => false]);
 
                 // Assuming the frontend sends a name like "WAEC Standard" or "GPA"
-                $scaleName = $this->curriculumData["gradingScale"];
+                $scaleName = $this->curriculumData['gradingScale'];
 
                 // Check if this scale exists in the database
-                $exists = DB::table("grading_scales")->where("name", $scaleName)->exists();
+                $exists = DB::table('grading_scales')->where('name', $scaleName)->exists();
 
                 if ($exists) {
                     // Make the selected existing scale the default
-                    DB::table("grading_scales")
-                        ->where("name", $scaleName)
-                        ->update(["is_default" => true]);
+                    DB::table('grading_scales')
+                        ->where('name', $scaleName)
+                        ->update(['is_default' => true]);
                 } else {
-                    DB::table("grading_scales")->insert([
-                        "id" => Str::uuid()->toString(),
-                        "name" => $scaleName,
-                        "is_default" => true,
-                        "grades" => json_encode([]),
-                        "created_at" => now(),
-                        "updated_at" => now(),
+                    DB::table('grading_scales')->insert([
+                        'id' => Str::uuid()->toString(),
+                        'name' => $scaleName,
+                        'is_default' => true,
+                        'grades' => json_encode([]),
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                 }
             }
 
             // ── 4. Batch Update Key-Value Settings ────────────────────────────
             $settingsToUpdate = [
-                "school_name" => $this->tenant->name,
+                'school_name' => $this->tenant->name,
             ];
 
-            if (!empty($this->curriculumData["term_system"])) {
-                $settingsToUpdate["terms_per_session"] = (string) filter_var(
-                    $this->curriculumData["term_system"],
+            if (! empty($this->curriculumData['term_system'])) {
+                $settingsToUpdate['terms_per_session'] = (string) filter_var(
+                    $this->curriculumData['term_system'],
                     FILTER_SANITIZE_NUMBER_INT,
                 );
             }
 
             foreach ($settingsToUpdate as $key => $value) {
-                DB::table("school_settings")
-                    ->where("key", $key)
-                    ->update(["value" => $value]);
+                DB::table('school_settings')
+                    ->where('key', $key)
+                    ->update(['value' => $value]);
             }
         });
     }

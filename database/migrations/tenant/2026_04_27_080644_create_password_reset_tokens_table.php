@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,16 +13,16 @@ return new class extends Migration
                 if (Schema::hasColumn('password_reset_tokens', 'id')) {
                     $table->id();
                 }
-                if (!Schema::hasColumn('password_reset_tokens', 'token')) {
+                if (! Schema::hasColumn('password_reset_tokens', 'token')) {
                     $table->string('token')->after('email');
                 }
-                if (!Schema::hasColumn('password_reset_tokens', 'attempts')) {
+                if (! Schema::hasColumn('password_reset_tokens', 'attempts')) {
                     $table->unsignedTinyInteger('attempts')->default(0)->after('token');
                 }
-                if (!Schema::hasColumn('password_reset_tokens', 'expires_at')) {
+                if (! Schema::hasColumn('password_reset_tokens', 'expires_at')) {
                     $table->timestamp('expires_at')->nullable()->after('attempts');
                 }
-                if (!Schema::hasColumn('password_reset_tokens', 'created_at')) {
+                if (! Schema::hasColumn('password_reset_tokens', 'created_at')) {
                     $table->timestamp('created_at')->useCurrent()->after('expires_at');
                 }
             });

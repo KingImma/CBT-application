@@ -1,4 +1,5 @@
 <?php
+
 // - Eloquent model for question_options — covers MCQ, T/F, Matching, Ordering
 // - match_pair used only for Matching type questions
 // - Chosen: single model handles all option variants via nullable fields
@@ -11,6 +12,7 @@ namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QuestionOption extends Model
 {
@@ -20,7 +22,7 @@ class QuestionOption extends Model
 
     protected $casts = ['is_correct' => 'boolean'];
 
-    public function question(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function question(): BelongsTo
     {
         return $this->belongsTo(Question::class);
     }

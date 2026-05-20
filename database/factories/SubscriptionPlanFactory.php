@@ -22,20 +22,20 @@ class SubscriptionPlanFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'               => fake()->randomElement(['Free', 'Standard', 'Premium']),
-            'slug'               => fake()->unique()->slug(2),
-            'max_students'       => 200,
-            'max_teachers'       => 20,
+            'name' => fake()->randomElement(['Free', 'Standard', 'Premium']),
+            'slug' => fake()->unique()->slug(2),
+            'max_students' => 200,
+            'max_teachers' => 20,
             'max_exams_per_term' => 10,
-            'features'           => json_encode([
+            'features' => json_encode([
                 'theory_questions' => false,
-                'image_upload'     => false,
-                'analytics'        => false,
-                'csv_export'       => false,
+                'image_upload' => false,
+                'analytics' => false,
+                'csv_export' => false,
             ]),
             'price_monthly' => 0,
-            'price_yearly'  => 0,
-            'is_active'     => true,
+            'price_yearly' => 0,
+            'is_active' => true,
         ];
     }
 }

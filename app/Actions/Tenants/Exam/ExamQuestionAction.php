@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Actions\Tenants\Exam;
 
 use App\Models\Tenant\Exam;
-use App\Models\Tenant\Question;
 use App\Models\Tenant\ExamQuestion;
+use App\Models\Tenant\Question;
 use App\Models\Tenant\SchoolSetting;
 use Illuminate\Support\Facades\DB;
 

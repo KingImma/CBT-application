@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Models\Tenant\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
@@ -30,6 +31,7 @@ class BackfillTeacherPasswords extends Command
 
         if ($tenants->isEmpty()) {
             $this->error('No tenants found.');
+
             return self::FAILURE;
         }
 
@@ -45,7 +47,7 @@ class BackfillTeacherPasswords extends Command
                 tenancy()->initialize($tenant);
                 $count = $this->backfillTenant($isDryRun);
                 $totalUpdated += $count;
-                $this->info("  ✓ {$count} teacher(s) " . ($isDryRun ? 'would be updated' : 'updated'));
+                $this->info("  ✓ {$count} teacher(s) ".($isDryRun ? 'would be updated' : 'updated'));
             } catch (\Throwable $e) {
                 $this->error("  ✗ Failed: {$e->getMessage()}");
             } finally {
@@ -54,7 +56,7 @@ class BackfillTeacherPasswords extends Command
         }
 
         $this->newLine();
-        $this->info("Total teachers " . ($isDryRun ? 'to be updated' : 'updated') . ": {$totalUpdated}");
+        $this->info('Total teachers '.($isDryRun ? 'to be updated' : 'updated').": {$totalUpdated}");
 
         $isDryRun
             ? $this->warn('Dry run complete. Re-run without --dry-run to apply.')
@@ -68,15 +70,16 @@ class BackfillTeacherPasswords extends Command
         $defaultPassword = 'teach12345';
         $hashed = Hash::make($defaultPassword);
 
-        $count = \App\Models\Tenant\User::role('teacher')->count();
+        $count = User::role('teacher')->count();
 
         if ($count === 0) {
             $this->line('  → No teachers found.');
+
             return 0;
         }
 
         if (! $isDryRun) {
-            \App\Models\Tenant\User::role('teacher')
+            User::role('teacher')
                 ->where('password', '!=', $hashed)
                 ->update(['password' => $hashed]);
         }

@@ -10,7 +10,7 @@ class ExamRouteTest extends TestCase
     {
         // Test that exam routes are registered
         $response = $this->get('/api/exams');
-        
+
         // Should get 401 (unauthenticated) not 404 (route not found)
         $this->assertNotEquals(404, $response->getStatusCode());
     }

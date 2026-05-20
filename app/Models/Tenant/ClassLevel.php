@@ -7,32 +7,33 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClassLevel extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     protected $guarded = ['id'];
 
-
-    public function classArms(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function classArms(): HasMany
     {
         return $this->hasMany(ClassArm::class);
     }
 
-    public function subjects(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function subjects(): BelongsToMany
     {
         return $this->belongsToMany(Subject::class, 'class_level_subject')
             ->withPivot('is_compulsory')
             ->withTimestamps();
     }
 
-    public function students(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function students(): HasMany
     {
         return $this->hasMany(StudentProfile::class);
     }
-    
-    public function teacherAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+
+    public function teacherAssignments(): HasMany
     {
         return $this->hasMany(TeacherSubjectAssignment::class);
     }
@@ -41,7 +42,7 @@ class ClassLevel extends Model
     {
         static::deleting(function ($level) {
             $level->subjects()->detach();
-            $level->classArms()->delete(); 
+            $level->classArms()->delete();
             $level->teacherAssignments()->delete();
         });
     }

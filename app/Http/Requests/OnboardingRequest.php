@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\SchoolType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\SchoolType;
-
 
 /*
  * 1. What it is: A Laravel FormRequest class (`CompleteOnboardingRequest`).
@@ -26,45 +25,45 @@ class OnboardingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'schoolName'     => ['required', 'string', 'max:255'],
-            'handle'         => ['required', 'string', 'alpha_dash', 'max:63', 'unique:tenants,id', 'unique:tenants,handle'],
-            'address'        => ['nullable', 'string', 'max:500'],
-            'state'          => ['nullable', 'string', 'max:255'],
-            'city'           => ['nullable', 'string', 'max:255'],
-            'schoolType'    => ['nullable', 'string', Rule::enum(SchoolType::class)],
-            
-            'fullName'       => ['required', 'string', 'max:255'],
-            'email'          => ['required', 'email', 'max:255'],
-            'phone'          => ['required', 'string', 'max:20'],
-            'password'       => ['required', 'string', 'min:8'],
+            'schoolName' => ['required', 'string', 'max:255'],
+            'handle' => ['required', 'string', 'alpha_dash', 'max:63', 'unique:tenants,id', 'unique:tenants,handle'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'state' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'schoolType' => ['nullable', 'string', Rule::enum(SchoolType::class)],
 
-            'plan_id'        => ['nullable', 'string'],
+            'fullName' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:20'],
+            'password' => ['required', 'string', 'min:8'],
+
+            'plan_id' => ['nullable', 'string'],
         ];
     }
 
     public function mappedData(): array
     {
         $validated = $this->validated();
-        
+
         $nameParts = explode(' ', $validated['fullName'], 2);
 
         return [
-            'name'             => $validated['schoolName'],
-            'handle'           => $validated['handle'],
-            'address'          => $validated['address'] ?? null,
-            'state'            => $validated['state'] ?? null,
-            'city'             => $validated['city'] ?? null,
-            'school_type'      => $validated['schoolType'] ?? null,
-            
-            'admin_first_name' => $nameParts[0],
-            'admin_last_name'  => $nameParts[1] ?? '',
-            'admin_email'      => $validated['email'],
-            'admin_password'   => $validated['password'],
-            'admin_phone'      => $validated['phone'],
-            
-            'plan_id'          => $validated['plan_id'] ?? null,
+            'name' => $validated['schoolName'],
+            'handle' => $validated['handle'],
+            'address' => $validated['address'] ?? null,
+            'state' => $validated['state'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'school_type' => $validated['schoolType'] ?? null,
 
-            'curriculum' => []
+            'admin_first_name' => $nameParts[0],
+            'admin_last_name' => $nameParts[1] ?? '',
+            'admin_email' => $validated['email'],
+            'admin_password' => $validated['password'],
+            'admin_phone' => $validated['phone'],
+
+            'plan_id' => $validated['plan_id'] ?? null,
+
+            'curriculum' => [],
         ];
     }
 }

@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Broadcast;
 use App\Models\SuperAdmin;
-use App\Models\Tenant\User;
 use App\Models\Tenant\ExamAttempt;
+use App\Models\Tenant\User;
+use Illuminate\Support\Facades\Broadcast;
 
 // Super admin activity feed
 Broadcast::channel('super-admin.activity', function ($user) {
-     return $user instanceof SuperAdmin && $user->is_active;
+    return $user instanceof SuperAdmin && $user->is_active;
 });
 
 // School admin activity feed

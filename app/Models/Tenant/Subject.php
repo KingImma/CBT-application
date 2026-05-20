@@ -7,10 +7,12 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subject extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     protected $guarded = ['id'];
 
@@ -18,14 +20,14 @@ class Subject extends Model
         'is_active' => 'boolean',
     ];
 
-    public function classLevels(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function classLevels(): BelongsToMany
     {
         return $this->belongsToMany(ClassLevel::class, 'class_level_subject')
             ->withPivot('is_compulsory')
             ->withTimestamps();
     }
 
-    public function teacherAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function teacherAssignments(): HasMany
     {
         return $this->hasMany(TeacherSubjectAssignment::class);
     }

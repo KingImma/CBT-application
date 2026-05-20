@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignUuid('question_id')->constrained('questions')->restrictOnDelete();
             $table->jsonb('selected_optons_ids')->nullable(); // UUID[]
             $table->text('text_answer')->nullable();
-            $table->jsonb('ordering_answer')->nullable(); //UUID[]
+            $table->jsonb('ordering_answer')->nullable(); // UUID[]
             $table->jsonb('matching_answer')->nullable();
             $table->boolean('is_correct')->nullable();
             $table->decimal('marks_awarded', 5, 2)->nullable();
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->foreignUuid('graded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('teacher_feedback')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['attempt_id', 'question_id']);
         });
     }

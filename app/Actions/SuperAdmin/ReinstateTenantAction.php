@@ -9,13 +9,12 @@ use App\Models\Tenant;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ReinstateTenantAction
-{   
-   /**
-    * Reactivate a suspended tenant.
-    * 
-    * @param Tenant $tenant
-    * @throws HttpResponseException if tenant is not currently suspended
-    */
+{
+    /**
+     * Reactivate a suspended tenant.
+     *
+     * @throws HttpResponseException if tenant is not currently suspended
+     */
     public function handle(Tenant $tenant): void
     {
         $currentStatus = $tenant->subscription_status instanceof StatusType
@@ -30,7 +29,7 @@ class ReinstateTenantAction
 
         $tenant->update([
             'subscription_status' => StatusType::Active->value,
-            'is_active'           => true,
+            'is_active' => true,
         ]);
     }
 }

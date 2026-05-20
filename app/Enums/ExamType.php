@@ -8,5 +8,5 @@ enum ExamType: string
     case Test = 'test';
     case Quiz = 'quiz';
     case Mock = 'mock';
-    case Ca   = 'ca';
+    case Ca = 'ca';
 }

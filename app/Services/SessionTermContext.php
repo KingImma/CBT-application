@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 class SessionTermContext
 {
     private const CACHE_KEY = 'session_term_context';
+
     private const CACHE_TTL = 60;
 
     public function currentSession(): ?AcademicSession

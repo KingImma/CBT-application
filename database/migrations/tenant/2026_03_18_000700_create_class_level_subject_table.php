@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->boolean('is_compulsory')->default(false);
             $table->timestamps();
-            
+
             $table->unique(['class_level_id', 'subject_id']);
         });
     }

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('order');
             $table->decimal('marks', 5, 2);
             $table->timestamps();
-            
+
             $table->unique(['exam_id', 'question_id']);
         });
     }

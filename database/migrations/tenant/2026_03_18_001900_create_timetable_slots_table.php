@@ -23,7 +23,7 @@ return new class extends Migration
             $table->time('end_time');
             $table->string('venue')->nullable();
             $table->timestamps();
-            
+
             $table->index('date');
         });
     }

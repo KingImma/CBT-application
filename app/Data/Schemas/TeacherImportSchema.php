@@ -38,6 +38,7 @@ class TeacherImportSchema
         foreach (self::COLUMNS as $name => $config) {
             $rules[$name] = $config['rules'];
         }
+
         return $rules;
     }
 }

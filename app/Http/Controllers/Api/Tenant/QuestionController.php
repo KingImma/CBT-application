@@ -11,12 +11,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\CloneQuestionAction;
+use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QuestionResource;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\FillBlankAnswer;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
+use App\Models\Tenant\User;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,12 +32,12 @@ class QuestionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        /** @var \App\Models\Tenant\User $user */
+        /** @var User $user */
         $user = $request->user('tenant');
 
         $questions = Question::select('id', 'type', 'content', 'explanation', 'default_marks', 'time_estimate_seconds', 'image_url', 'metadata', 'topic_id', 'subject_id', 'class_level_id', 'created_by', 'is_active', 'created_at')
             ->with(['topic', 'classLevel', 'subject', 'creator:id,first_name,last_name'])
-            ->when($user && $user->role === \App\Enums\RoleType::Teacher->value, fn ($q) => $q->where('created_by', $user->id))
+            ->when($user && $user->role === RoleType::Teacher->value, fn ($q) => $q->where('created_by', $user->id))
             ->when($request->subject_id, fn ($q) => $q->where('subject_id', $request->subject_id)
             )
             ->when($request->class_level_id, fn ($q) => $q->where('class_level_id', $request->class_level_id)

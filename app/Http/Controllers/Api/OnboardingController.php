@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Actions\SuperAdmin\CreateTenantAction;
-use App\Exceptions\Tenant\TenantProvisioningException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OnboardingRequest;
 use App\Models\Tenant;

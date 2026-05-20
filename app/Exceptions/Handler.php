@@ -226,5 +226,4 @@ class Handler extends ExceptionHandler
 
         return $context;
     }
-
 }

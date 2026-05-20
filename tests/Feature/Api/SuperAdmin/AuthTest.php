@@ -13,9 +13,9 @@ use Tests\TestCase;
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
-    
-    protected SuperAdmin $admin;    
-    
+
+    protected SuperAdmin $admin;
+
     /*
      * Login tests verify the full auth flow — credentials validation,
      * token generation, and that inactive admins are blocked.
@@ -24,15 +24,15 @@ class AuthTest extends TestCase
     public function super_admin_can_login_with_valid_credentials(): void
     {
         $this->admin = SuperAdmin::factory()->create([
-            'email'    => 'admin@educbt.com',
+            'email' => 'admin@educbt.com',
             'password' => 'password123',
         ]);
-    
+
         $response = $this->postJson('/api/auth/login', [
             'identifier' => 'admin@educbt.com',
-            'password'   => 'password123',
+            'password' => 'password123',
         ]);
-    
+
         // Assert the response shape matches what the frontend expects
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -40,71 +40,71 @@ class AuthTest extends TestCase
                     'token',
                     'admin' => ['id', 'name', 'email'],
                 ],
-        ]);
+            ]);
     }
-    
+
     #[Test]
     public function login_creates_a_personal_access_token_in_database(): void
     {
         // Verifies the token is actually persisted, not just returned in memory
         $this->admin = SuperAdmin::factory()->create(['password' => 'password123']);
-    
+
         $this->postJson('/api/auth/login', [
             'identifier' => $this->admin->email,
-            'password'   => 'password123',
+            'password' => 'password123',
         ])->assertStatus(200);
-    
+
         expect(PersonalAccessToken::count())->toBe(1);
         expect(PersonalAccessToken::first()->tokenable_id)->toBe($this->admin->id);
     }
-    
+
     #[Test]
     public function login_updates_last_login_at_timestamp(): void
     {
         // Ensures audit trail is maintained on each login
         $this->admin = SuperAdmin::factory()->create(['password' => 'password123']);
-    
+
         $this->postJson('/api/auth/login', [
             'identifier' => $this->admin->email,
-            'password'   => 'password123',
+            'password' => 'password123',
         ]);
-    
+
         expect($this->admin->fresh()->last_login_at)->not->toBeNull();
     }
-    
+
     #[Test]
     public function login_fails_with_incorrect_password(): void
     {
         $this->admin = SuperAdmin::factory()->create(['password' => 'password123']);
-    
+
         $this->postJson('/api/auth/login', [
             'identifier' => $this->admin->email,
-            'password'   => 'wrongpassword',
+            'password' => 'wrongpassword',
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['email']);
+            ->assertJsonValidationErrors(['email']);
     }
-    
+
     #[Test]
     public function login_fails_for_inactive_super_admin(): void
     {
         // Inactive admins must be blocked even with correct credentials
         // This prevents suspended platform admins from accessing the system
         $this->admin = SuperAdmin::factory()->inactive()->create(['password' => 'password123']);
-    
+
         $this->postJson('/api/auth/login', [
             'identifier' => $this->admin->email,
-            'password'   => 'password123',
+            'password' => 'password123',
         ])->assertStatus(401);
     }
-    
+
     #[Test]
-    public function login_fails_with_missing_fields():void 
+    public function login_fails_with_missing_fields(): void
     {
         $this->postJson('/api/auth/login', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['identifier', 'password']);
     }
-    
+
     /*
      * Logout tests verify token revocation.
      * The key check is that the token is removed from the DB, not just
@@ -115,38 +115,38 @@ class AuthTest extends TestCase
     {
         $this->admin = SuperAdmin::factory()->create();
         $token = $this->admin->createToken('test-token')->plainTextToken;
-    
+
         $this->withToken($token)
             ->postJson('/api/super-admin/logout')
             ->assertStatus(200)
             ->assertJson(['message' => 'Logged out successfully']);
-    
+
         // Refresh from DB — the in-memory relationship is cached and stale after logout
         expect($this->admin->fresh()->tokens()->count())->toBe(0);
     }
-    
+
     #[Test]
     public function logout_only_revokes_the_current_token_not_all_tokens(): void
     {
         // An admin logged in on multiple devices should only lose the current session
-        $this->admin        = SuperAdmin::factory()->create();
-        $activeToken  = $this->admin->createToken('device-1')->plainTextToken;
+        $this->admin = SuperAdmin::factory()->create();
+        $activeToken = $this->admin->createToken('device-1')->plainTextToken;
         $this->admin->createToken('device-2'); // second token, should survive
-    
+
         $this->withToken($activeToken)
             ->postJson('/api/super-admin/logout')
             ->assertStatus(200);
-    
+
         expect($this->admin->fresh()->tokens()->count())->toBe(1);
     }
-    
+
     #[Test]
     public function unauthenticated_request_to_logout_returns_401(): void
     {
         $this->postJson('/api/super-admin/logout')
             ->assertStatus(401);
     }
-    
+
     /*
      * /me endpoint tests verify the authenticated admin's profile is returned.
      * Uses actingAs with the sanctum guard explicitly to avoid guard resolution issues.
@@ -155,34 +155,33 @@ class AuthTest extends TestCase
     public function super_admin_can_fetch_their_own_profile(): void
     {
         $this->admin = SuperAdmin::factory()->create();
-    
+
         $this->actingAs($this->admin, 'super_admin')
             ->getJson('/api/super-admin/me')
             ->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'id'    => $this->admin->id,
+                    'id' => $this->admin->id,
                     'email' => $this->admin->email,
-                    'name'  => $this->admin->name,
-                    'type'  => 'super_admin',
+                    'name' => $this->admin->name,
+                    'type' => 'super_admin',
                 ],
             ]);
     }
-    
-    
+
     #[Test]
     public function profile_response_does_not_expose_password(): void
     {
         // Ensures the hidden field is respected in JSON output
         $this->admin = SuperAdmin::factory()->create();
-    
+
         $response = $this->actingAs($this->admin, 'super_admin')
             ->getJson('/api/super-admin/me')
             ->assertStatus(200);
-    
+
         expect($response->json('data'))->not->toHaveKey('password');
     }
-    
+
     #[Test]
     public function unauthenticated_request_to_me_returns_401(): void
     {

@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Teacher\TeacherAction;
+use App\Data\Results\ImportResult;
+use App\Data\Schemas\TeacherImportSchema;
+use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Api\Tenant\Concerns\TogglesUserActive;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TeacherResource;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
-use App\Data\Schemas\TeacherImportSchema;
 use App\Services\PasswordService;
 use App\Services\TeacherImportService;
 use App\Services\TenantUserService;
 use App\Support\ApiResponse;
-use App\Data\Results\ImportResult;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
-use App\Events\ActivityFeedEvent;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -70,11 +70,11 @@ class TeacherController extends Controller
         ]);
 
         $result = $action->create($validated);
-        
+
         broadcast(new ActivityFeedEvent(
             channelType: 'school_admin',
-            channelId:   tenant('id'),
-            action:      'teacher.created',
+            channelId: tenant('id'),
+            action: 'teacher.created',
             description: "Teacher {$result['user']->first_name} {$result['user']->last_name} added.",
         ))->toOthers();
 
@@ -139,12 +139,10 @@ class TeacherController extends Controller
         );
 
         $merged = $subjectTeacherSubjects->concat(
-            $classTeacherSubjects->reject(fn ($classTeacherSubject) =>
-                $subjectTeacherSubjects->contains(
-                    fn ($subjectTeacherSubject) =>
-                        $subjectTeacherSubject['subject']->id === $classTeacherSubject['subject']->id
-                        && $subjectTeacherSubject['class_level']->id === $classTeacherSubject['class_level']->id
-                )
+            $classTeacherSubjects->reject(fn ($classTeacherSubject) => $subjectTeacherSubjects->contains(
+                fn ($subjectTeacherSubject) => $subjectTeacherSubject['subject']->id === $classTeacherSubject['subject']->id
+                    && $subjectTeacherSubject['class_level']->id === $classTeacherSubject['class_level']->id
+            )
             )
         )->values();
 

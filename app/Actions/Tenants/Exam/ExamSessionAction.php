@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Data\Values\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\Exam;
-use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamAnswer;
+use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\DB;
@@ -87,12 +88,21 @@ class ExamSessionAction
         $questionIds = $questions->pluck('question.id')->toArray();
 
         if ($exam->settings->randomizeQuestions) {
-            shuffle($questionIds);
+            $savedOrder = $attempt->settings?->questionOrder;
 
-            $attempt->settings = new \App\Data\Values\ExamAttemptSettings(
-                questionOrder: $questionIds,
-            );
-            $attempt->save();
+            if (! empty($savedOrder)) {
+                $questionIds = $savedOrder;
+            } else {
+                shuffle($questionIds);
+                $attempt->settings = new ExamAttemptSettings(
+                    questionOrder: $questionIds,
+                );
+                $attempt->save();
+            }
+
+            $questions = $questions->sortBy(
+                fn (ExamQuestion $eq) => array_search($eq->question->id, $questionIds)
+            )->values();
         }
 
         return [
@@ -118,10 +128,14 @@ class ExamSessionAction
                 ->whereHas('question', fn ($q) => $q->whereIn('type', ['essay', 'short_answer']))
                 ->exists();
 
+            $timeSpentSeconds = ExamAnswer::where('attempt_id', $attempt->id)
+                ->whereNotNull('time_spent_seconds')
+                ->max('time_spent_seconds');
+
             $attempt->update([
                 'status' => $hasTheory ? ExamAttemptStatus::Grading->value : ExamAttemptStatus::Graded->value,
                 'submitted_at' => now(),
-                'time_spent_seconds' => now()->diffInSeconds($attempt->started_at),
+                'time_spent_seconds' => $timeSpentSeconds ?? now()->diffInSeconds($attempt->started_at),
             ]);
 
             $this->gradingAction->recomputeScore($attempt);

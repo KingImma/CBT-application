@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignUuid('exam_id')->constrained('exams')->restrictOnDelete();
             $table->foreignUuid('student_id')->constrained('users')->restrictOnDelete();
             $table->integer('attempt_number');
-            $table->enum('status', array_column(\App\Enums\ExamAttemptStatus::cases(), 'value'));
+            $table->enum('status', array_column(ExamAttemptStatus::cases(), 'value'));
             $table->timestamp('started_at');
             $table->timestamp('submitted_at')->nullable();
             $table->integer('time_spent_seconds')->nullable();
@@ -32,9 +32,9 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->jsonb('suspicious_events')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['exam_id', 'student_id', 'attempt_number']);
-            
+
             $table->index('status');
         });
     }

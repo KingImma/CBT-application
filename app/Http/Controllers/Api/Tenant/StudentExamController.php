@@ -6,15 +6,16 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamAnswerAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
-use App\Models\Tenant\ExamAnswer;
-use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExamAttemptResource;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Support\ApiResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * @group Student Exam Execution
@@ -34,10 +35,10 @@ class StudentExamController extends Controller
         $exams = Exam::where('status', 'active')
             ->where(function ($q) use ($request) {
                 $q->where('class_level_id', $request->user('tenant')->studentProfile?->class_level_id)
-                  ->where(function ($q2) use ($request) {
-                      $q2->whereNull('class_arm_id')
-                         ->orWhere('class_arm_id', $request->user('tenant')->studentProfile?->class_arm_id);
-                  });
+                    ->where(function ($q2) use ($request) {
+                        $q2->whereNull('class_arm_id')
+                            ->orWhere('class_arm_id', $request->user('tenant')->studentProfile?->class_arm_id);
+                    });
             })
             ->with(['subject', 'classLevel'])
             ->paginate($perPage);
@@ -48,7 +49,7 @@ class StudentExamController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         $exam = Exam::with(['subject', 'classLevel', 'topics'])->findOrFail($id);
-        
+
         $lastAttempt = ExamAttempt::forExam($exam->id)
             ->forStudent($request->user('tenant')->id)
             ->orderByDesc('attempt_number')
@@ -71,7 +72,15 @@ class StudentExamController extends Controller
             return ApiResponse::error($e->getMessage(), 422);
         }
 
-        $attempt = $this->sessionAction->startAttempt($exam, $student);
+        try {
+            $attempt = $this->sessionAction->startAttempt($exam, $student);
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'idx_unique_in_progress_attempt')) {
+                return ApiResponse::error('You already have an active exam attempt.', 422);
+            }
+            throw $e;
+        }
+
         $questionsData = $this->sessionAction->getQuestions($attempt);
 
         return ApiResponse::created([
@@ -104,7 +113,7 @@ class StudentExamController extends Controller
     {
         $attempt = ExamAttempt::with('exam')->findOrFail($id);
         $student = $request->user('tenant');
-        
+
         if ($attempt->student_id !== $student->id) {
             return ApiResponse::error('Unauthorized.', 403);
         }
@@ -118,7 +127,7 @@ class StudentExamController extends Controller
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
         $student = $request->user('tenant');
-        
+
         $this->authorize('saveAnswer', $attempt);
 
         $validated = $request->validate([
@@ -158,7 +167,7 @@ class StudentExamController extends Controller
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
         $student = $request->user('tenant');
-        
+
         if ($attempt->student_id !== $student->id) {
             return ApiResponse::error('Unauthorized.', 403);
         }
@@ -239,7 +248,7 @@ class StudentExamController extends Controller
     {
         $attempt = ExamAttempt::with('exam')->findOrFail($attemptId);
         $student = $request->user('tenant');
-        
+
         if ($attempt->student_id !== $student->id) {
             return ApiResponse::error('Unauthorized.', 403);
         }

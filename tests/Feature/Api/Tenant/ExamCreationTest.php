@@ -3,7 +3,11 @@
 namespace Tests\Feature\Api\Tenant;
 
 use App\Models\Tenant;
+use App\Models\Tenant\AcademicSession;
+use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\Subject;
+use App\Models\Tenant\Term;
 use App\Models\Tenant\User;
 use Tests\TestCase;
 
@@ -37,18 +41,18 @@ class ExamCreationTest extends TestCase
         $this->actingAs($teacher, 'tenant');
 
         // Create subject, class level, term first
-        $subject = \App\Models\Tenant\Subject::create([
+        $subject = Subject::create([
             'name' => 'Mathematics',
             'code' => 'MATH101',
         ]);
 
-        $classLevel = \App\Models\Tenant\ClassLevel::create([
+        $classLevel = ClassLevel::create([
             'name' => 'Grade 10',
         ]);
 
-        $term = \App\Models\Tenant\Term::create([
+        $term = Term::create([
             'name' => 'First Term',
-            'academic_session_id' => \App\Models\Tenant\AcademicSession::create([
+            'academic_session_id' => AcademicSession::create([
                 'name' => '2025/2026',
                 'is_current' => true,
             ])->id,
@@ -82,11 +86,11 @@ class ExamCreationTest extends TestCase
 
         Exam::create([
             'title' => 'Test Exam',
-            'subject_id' => \App\Models\Tenant\Subject::create(['name' => 'English', 'code' => 'ENG101'])->id,
-            'class_level_id' => \App\Models\Tenant\ClassLevel::create(['name' => 'Grade 11'])->id,
-            'term_id' => \App\Models\Tenant\Term::create([
+            'subject_id' => Subject::create(['name' => 'English', 'code' => 'ENG101'])->id,
+            'class_level_id' => ClassLevel::create(['name' => 'Grade 11'])->id,
+            'term_id' => Term::create([
                 'name' => 'Second Term',
-                'academic_session_id' => \App\Models\Tenant\AcademicSession::create([
+                'academic_session_id' => AcademicSession::create([
                     'name' => '2025/2026',
                     'is_current' => true,
                 ])->id,

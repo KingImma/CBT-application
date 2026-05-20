@@ -41,6 +41,7 @@ class ExamCrudAction
 
         return DB::transaction(function () use ($exam, $data) {
             $exam->update($data);
+
             return $exam->fresh();
         });
     }

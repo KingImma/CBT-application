@@ -4,32 +4,32 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Data\Values\ExamSettings;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Data\Values\ExamSettings;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Exam extends Model
 {
-    use HasUuids, HasFactory, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $guarded = ['id'];
 
     protected $casts = [
         'scheduled_start' => 'datetime',
-        'scheduled_end'   => 'datetime',
+        'scheduled_end' => 'datetime',
         'session_started_at' => 'datetime',
-        'settings'        => ExamSettings::class,
-        'duration_minutes'=> 'integer',
+        'settings' => ExamSettings::class,
+        'duration_minutes' => 'integer',
         'session_duration_minutes' => 'integer',
-        'total_marks'     => 'decimal:2',
-        'pass_mark'       => 'decimal:2',
-        'max_attempts'    => 'integer',
+        'total_marks' => 'decimal:2',
+        'pass_mark' => 'decimal:2',
+        'max_attempts' => 'integer',
     ];
 
     /**

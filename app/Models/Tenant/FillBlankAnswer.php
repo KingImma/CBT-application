@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 // - Eloquent model for fill_blank_answers
 // - is_primary flags the canonical answer shown in result feedback
@@ -12,6 +12,7 @@ namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FillBlankAnswer extends Model
 {
@@ -21,7 +22,7 @@ class FillBlankAnswer extends Model
 
     protected $casts = ['is_primary' => 'boolean'];
 
-    public function question(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function question(): BelongsTo
     {
         return $this->belongsTo(Question::class);
     }

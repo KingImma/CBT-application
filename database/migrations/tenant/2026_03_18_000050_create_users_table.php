@@ -30,7 +30,7 @@ return new class extends Migration
             $table->timestamp('password_changed_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             // Indexes
             $table->index(['admission_number']);
             $table->index(['email']);

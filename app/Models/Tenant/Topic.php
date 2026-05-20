@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 // - Eloquent model matching the topics schema with self-referencing parent
 // - children() + parent() cover the sub-topic hierarchy
@@ -13,6 +13,8 @@ namespace App\Models\Tenant;
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Topic extends Model
 {
@@ -20,27 +22,27 @@ class Topic extends Model
 
     protected $guarded = ['id'];
 
-    public function subject(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
     }
 
-    public function classLevel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
     }
 
-    public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function parent(): BelongsTo
     {
         return $this->belongsTo(Topic::class, 'parent_id');
     }
 
-    public function children(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function children(): HasMany
     {
         return $this->hasMany(Topic::class, 'parent_id')->orderBy('order');
     }
 
-    public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function questions(): HasMany
     {
         return $this->hasMany(Question::class);
     }

@@ -42,13 +42,13 @@ class EnforceTenantPlanLimits
         $current = 0;
 
         if ($resource === 'students') {
-            $limit   = $plan->max_students;
+            $limit = $plan->max_students;
             $current = DB::table('student_profiles')->count();
         } elseif ($resource === 'teachers') {
-            $limit   = $plan->max_teachers;
+            $limit = $plan->max_teachers;
             $current = DB::table('teacher_profiles')->count();
         } elseif ($resource === 'exams') {
-            $limit   = $plan->max_exams_per_term;
+            $limit = $plan->max_exams_per_term;
             $current = DB::table('exams')
                 ->where('term_id', $request->route('term_id'))
                 ->count();

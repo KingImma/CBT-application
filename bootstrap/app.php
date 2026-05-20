@@ -1,10 +1,29 @@
 <?php
 
+use App\Http\Middleware\AuthenticateAnyGuard;
+use App\Http\Middleware\EnforceTenantPlanLimits;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsSuperAdmin;
+use App\Http\Middleware\InitializeTenancyByHeader;
+use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
+use Illuminate\Contracts\Session\Middleware\AuthenticatesSessions;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,17 +32,17 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
         then: function () {
-            
+
             // 1. Public API Routes
             Route::middleware('api')
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
-                
+
             // 2. Super Admin Routes
             Route::middleware(['api', 'auth:super_admin', 'super-admin'])
                 ->prefix('api/super-admin')
                 ->group(base_path('routes/super_admin.php'));
-            
+
             // 3. Tenant Routes
             Route::middleware(['api', 'tenant.header', 'auth:tenant', 'user.active'])
                 ->prefix('api')
@@ -32,45 +51,45 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->priority([
-            \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
-            \Illuminate\Routing\Middleware\ThrottleRequests::class,
-            \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
-            \Illuminate\Contracts\Session\Middleware\AuthenticatesSessions::class,
-            
-            // --- YOUR CUSTOM PRIORITY INJECTION ---
-            \App\Http\Middleware\InitializeTenancyByHeader::class, // Force DB switch first
-            \Illuminate\Auth\Middleware\Authenticate::class,       // Then run auth:tenant
-            \App\Http\Middleware\EnsureUserIsActive::class,        // Then check if active
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Illuminate\Auth\Middleware\Authorize::class,          // Spatie role checks
-        ]);
-                
-        $middleware->alias([
-            'plan.limits' => \App\Http\Middleware\EnforceTenantPlanLimits::class,
-            'tenant.header' => \App\Http\Middleware\InitializeTenancyByHeader::class,
-            'user.active' => \App\Http\Middleware\EnsureUserIsActive::class,
-            'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
-            'auth.any' => \App\Http\Middleware\AuthenticateAnyGuard::class,
+            HandlePrecognitiveRequests::class,
+            EncryptCookies::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            AuthenticatesRequests::class,
+            ThrottleRequests::class,
+            ThrottleRequestsWithRedis::class,
+            AuthenticatesSessions::class,
 
-            'role' => Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role_or_permission' => Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            // --- YOUR CUSTOM PRIORITY INJECTION ---
+            InitializeTenancyByHeader::class, // Force DB switch first
+            Authenticate::class,       // Then run auth:tenant
+            EnsureUserIsActive::class,        // Then check if active
+            SubstituteBindings::class,
+            Authorize::class,          // Spatie role checks
+        ]);
+
+        $middleware->alias([
+            'plan.limits' => EnforceTenantPlanLimits::class,
+            'tenant.header' => InitializeTenancyByHeader::class,
+            'user.active' => EnsureUserIsActive::class,
+            'super-admin' => EnsureUserIsSuperAdmin::class,
+            'auth.any' => AuthenticateAnyGuard::class,
+
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
         // Prevent auth middleware from redirecting to non-existent login route
-        \Illuminate\Auth\Middleware\Authenticate::redirectUsing(function ($request) {
+        Authenticate::redirectUsing(function ($request) {
             return null;
         });
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        
+
         // Force JSON responses for all API routes natively
-        $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $e) {
+        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
             return $request->is('api/*') || $request->expectsJson();
         });
-        
+
     })->create();

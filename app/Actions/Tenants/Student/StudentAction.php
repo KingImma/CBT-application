@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Student;
 
-use App\Models\Tenant\User;
 use App\Models\Tenant\StudentProfile;
+use App\Models\Tenant\User;
 use App\Services\TenantUserService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -95,6 +95,6 @@ class StudentAction
             $nextCount = (int) $matches[1] + 1;
         }
 
-        return "STU/{$year}/" . str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
+        return "STU/{$year}/".str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
     }
 }

@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class GradingScale extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     protected $guarded = ['id'];
 
     protected $casts = [
-        'grades'     => 'array',
+        'grades' => 'array',
         'is_default' => 'boolean',
     ];
 }

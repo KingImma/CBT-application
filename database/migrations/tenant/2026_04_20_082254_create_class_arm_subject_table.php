@@ -27,7 +27,7 @@ return new class extends Migration
             $table->foreign('subject_id')
                 ->references('id')->on('subjects')
                 ->cascadeOnDelete();
-        }); 
+        });
     }
 
     /**

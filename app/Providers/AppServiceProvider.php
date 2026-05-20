@@ -3,11 +3,11 @@
 namespace App\Providers;
 
 use App\Services\SessionTermContext;
-use Illuminate\Support\ServiceProvider;
-use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\PermissionRegistrar;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,12 +29,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Allow access to the Swagger docs in production environments
         Gate::define('viewApiDocs', function ($user = null) {
-            return true; 
+            return true;
         });
-        
+
         // 1. Global Email Interceptor - route ALL emails to test address
         $overrideEmail = env('MAIL_ALWAYS_TO');
-        if (!empty($overrideEmail)) {
+        if (! empty($overrideEmail)) {
             Mail::alwaysTo($overrideEmail);
         }
 
@@ -42,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
             $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
             $tenantHandle = tenant('handle');
+
             return "{$frontendUrl}/reset-password?token={$token}&email={$notifiable->email}&tenant={$tenantHandle}";
         });
     }

@@ -6,6 +6,7 @@ namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TeacherSubjectAssignment extends Model
 {
@@ -13,23 +14,23 @@ class TeacherSubjectAssignment extends Model
 
     protected $guarded = ['id'];
 
-    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, "user_id");
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function subject(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
     }
 
-    public function classLevel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
     }
-    
-    public function academicSession(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+
+    public function academicSession(): BelongsTo
     {
-        return $this->belongsTo(AcademicSession::class, "academic_session_id");
+        return $this->belongsTo(AcademicSession::class, 'academic_session_id');
     }
 }

@@ -16,7 +16,8 @@ class SendSchoolWelcomeEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $backoff = 30;
 
     public function __construct(
@@ -31,10 +32,10 @@ class SendSchoolWelcomeEmail implements ShouldQueue
     {
         Mail::to($this->adminEmail)->send(new SchoolWelcomeMail(
             schoolName: $this->schoolName,
-            adminName:  $this->adminName,
+            adminName: $this->adminName,
             adminEmail: $this->adminEmail,
-            handle:     $this->handle,
-            loginUrl:   $this->loginUrl,
+            handle: $this->handle,
+            loginUrl: $this->loginUrl,
         ));
     }
 }

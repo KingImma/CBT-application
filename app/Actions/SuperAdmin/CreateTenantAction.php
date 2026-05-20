@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Actions\SuperAdmin;
 
-use App\Concerns\ValidatesTenantSlug;
-use App\Concerns\ResolvesSubscriptionDetails;
 use App\Concerns\HasLocking;
+use App\Concerns\ResolvesSubscriptionDetails;
+use App\Concerns\ValidatesTenantSlug;
 use App\Exceptions\Tenant\TenantProvisioningException;
 use App\Jobs\ProvisionTenantDetailsJob;
 use App\Jobs\SendSchoolWelcomeEmail;
 use App\Models\Tenant;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /*
@@ -22,33 +23,35 @@ use Illuminate\Support\Str;
 
 class CreateTenantAction
 {
-    use ValidatesTenantSlug, ResolvesSubscriptionDetails, HasLocking;
+    use HasLocking, ResolvesSubscriptionDetails, ValidatesTenantSlug;
 
     private const DB_PREFIX = 'tenant_';
+
     private const MAX_IDENTIFIER_LENGTH = 63;
+
     /**
-     * @param array<int,mixed> $data
+     * @param  array<int,mixed>  $data
      */
     public function execute(array $data): Tenant
     {
         $slug = $this->generateUniqueSlug($data['name']);
-        
+
         return $this->withSlugLock($slug, function () use ($data, $slug) {
-            
+
             // 1. Isolate the setup data before building the DB record
             $adminData = [
                 'first_name' => $data['admin_first_name'],
-                'last_name'  => $data['admin_last_name'],
-                'email'      => $data['admin_email'],
-                'phone'      => $data['admin_phone'] ?? null,
-                'password'   => $data['admin_password'],
+                'last_name' => $data['admin_last_name'],
+                'email' => $data['admin_email'],
+                'phone' => $data['admin_phone'] ?? null,
+                'password' => $data['admin_password'],
             ];
-            
+
             $curriculumData = $data['curriculum'] ?? [];
 
             // 2. Create the strictly clean Tenant record
             $tenant = Tenant::create($this->buildTenantData($data, $slug));
-            
+
             try {
                 // 3. Attach the domain mapping
                 $tenant->domains()->create(['domain' => "{$slug}.{$this->resolveCentralDomain()}"]);
@@ -56,13 +59,13 @@ class CreateTenantAction
 
                 // 4. Dispatch the heavy lifting to the queue
                 ProvisionTenantDetailsJob::dispatch($tenant, $adminData, $curriculumData);
-                
+
                 SendSchoolWelcomeEmail::dispatch(
                     adminEmail: $data['admin_email'],
-                    adminName:  trim(($data['admin_first_name'] ?? '') . ' ' . ($data['admin_last_name'] ?? '')),
+                    adminName: trim(($data['admin_first_name'] ?? '').' '.($data['admin_last_name'] ?? '')),
                     schoolName: $tenant->name,
-                    handle:     $tenant->handle,
-                    loginUrl:   "https://{$tenant->handle}.{$this->resolveCentralDomain()}/login",
+                    handle: $tenant->handle,
+                    loginUrl: "https://{$tenant->handle}.{$this->resolveCentralDomain()}/login",
                 )->onQueue('emails');
 
             } catch (\Exception $e) {
@@ -72,11 +75,11 @@ class CreateTenantAction
                 } catch (\Exception $cleanupException) {
                     // Cleanup also failed — log the orphaned database for manual recovery
                     // The tenant record is gone but the database 'tenant->database' still exists
-                    \Illuminate\Support\Facades\Log::critical('Orphaned tenant database after failed provisioning', [
-                        'slug'     => $slug,
+                    Log::critical('Orphaned tenant database after failed provisioning', [
+                        'slug' => $slug,
                         'database' => $tenant->database,
-                        'original_error'  => $e->getMessage(),
-                        'cleanup_error'   => $cleanupException->getMessage(),
+                        'original_error' => $e->getMessage(),
+                        'cleanup_error' => $cleanupException->getMessage(),
                     ]);
                 }
 
@@ -91,20 +94,21 @@ class CreateTenantAction
     {
         $slug = Str::limit(Str::slug(mb_strtolower($name)), self::MAX_IDENTIFIER_LENGTH);
         $this->ensureSlugAvailable($slug);
+
         return $slug;
     }
+
     /**
-     * @param array<int,mixed> $data
+     * @param  array<int,mixed>  $data
      * @return array<string|array-key,mixed|<missing>>*/
-     
     private function buildTenantData(array $data, string $slug): array
     {
-        $dbName = Str::limit(self::DB_PREFIX . str_replace('-', '_', $slug), self::MAX_IDENTIFIER_LENGTH);
+        $dbName = Str::limit(self::DB_PREFIX.str_replace('-', '_', $slug), self::MAX_IDENTIFIER_LENGTH);
         $subscriptionDetails = $this->resolveSubscriptionDetails($data['plan_id'] ?? null);
 
         // Strip out all the onboarding-specific fields so they don't get saved to the DB
         $cleanData = array_diff_key($data, array_flip([
-            'admin_first_name', 'admin_last_name', 'admin_email', 'admin_password', 'admin_phone', 'plan_id', 'curriculum'
+            'admin_first_name', 'admin_last_name', 'admin_email', 'admin_password', 'admin_phone', 'plan_id', 'curriculum',
         ]));
 
         return array_merge([
@@ -121,7 +125,7 @@ class CreateTenantAction
             'subscription_status' => $subscriptionDetails['subscription_status'],
             'trial_ends_at' => $subscriptionDetails['trial_ends_at'],
             'subscription_ends_at' => $subscriptionDetails['subscription_ends_at'],
-            'is_active' => true,  
+            'is_active' => true,
             'onboarding_completed_at' => now(),
         ], $cleanData);
     }

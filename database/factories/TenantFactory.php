@@ -7,6 +7,7 @@ namespace Database\Factories;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Tenant>
@@ -24,17 +25,17 @@ class TenantFactory extends Factory
     public function definition(): array
     {
         $name = fake()->company();
-        $slug = \Illuminate\Support\Str::slug($name);
+        $slug = Str::slug($name);
 
         return [
-            'id'                  => $slug,
-            'name'                => $name,
-            'slug'                => $slug,
-            'database'            => 'tenant_' . str_replace('-', '_', $slug),
-            'plan_id'             => SubscriptionPlan::factory(),
+            'id' => $slug,
+            'name' => $name,
+            'slug' => $slug,
+            'database' => 'tenant_'.str_replace('-', '_', $slug),
+            'plan_id' => SubscriptionPlan::factory(),
             'subscription_status' => 'trial',
-            'trial_ends_at'       => now()->addDays(30),
-            'is_active'           => true,
+            'trial_ends_at' => now()->addDays(30),
+            'is_active' => true,
         ];
     }
 
@@ -42,7 +43,7 @@ class TenantFactory extends Factory
     {
         return $this->state([
             'subscription_status' => 'suspended',
-            'is_active'           => false,
+            'is_active' => false,
         ]);
     }
 
@@ -50,7 +51,7 @@ class TenantFactory extends Factory
     {
         return $this->state([
             'subscription_status' => 'active',
-            'is_active'           => true,
+            'is_active' => true,
         ]);
     }
 }

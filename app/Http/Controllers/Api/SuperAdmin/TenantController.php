@@ -9,6 +9,7 @@ use App\Actions\SuperAdmin\DeleteTenantAction;
 use App\Actions\SuperAdmin\ReinstateTenantAction;
 use App\Actions\SuperAdmin\SuspendTenantAction;
 use App\Actions\SuperAdmin\UpdateTenantAction;
+use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SuperAdmin\StoreTenantRequest;
 use App\Http\Requests\SuperAdmin\UpdateTenantRequest;
@@ -17,7 +18,6 @@ use App\Models\Tenant;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Events\ActivityFeedEvent;
 
 /**
  * @group Super Admin: Tenant Management
@@ -49,13 +49,13 @@ class TenantController extends Controller
     public function store(StoreTenantRequest $request, CreateTenantAction $action): JsonResponse
     {
         $tenant = $action->execute($request->validated());
-        
+
         broadcast(new ActivityFeedEvent(
             channelType: 'super_admin',
-            channelId:   'platform',
-            action:      'tenant.created',
+            channelId: 'platform',
+            action: 'tenant.created',
             description: "New school '{$tenant->name}' registered.",
-            meta:        ['tenant_id' => $tenant->id],
+            meta: ['tenant_id' => $tenant->id],
         ));
 
         return ApiResponse::created(

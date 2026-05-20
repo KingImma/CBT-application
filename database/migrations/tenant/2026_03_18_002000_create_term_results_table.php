@@ -25,7 +25,7 @@ return new class extends Migration
             $table->integer('rank_in_level')->nullable();
             $table->text('teacher_remark')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['student_id', 'subject_id', 'term_id']);
         });
     }

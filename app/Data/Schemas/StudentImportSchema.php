@@ -46,6 +46,7 @@ class StudentImportSchema
                 $rules[$name] = $config['rules'];
             }
         }
+
         return $rules;
     }
 }

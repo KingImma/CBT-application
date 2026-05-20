@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateTenantRequest extends FormRequest
 {
@@ -27,8 +27,8 @@ class UpdateTenantRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string'],
-            'city'    => ['nullable', 'string', 'max:100'],
-            'state'   => ['nullable', 'string', 'max:50'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:50'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

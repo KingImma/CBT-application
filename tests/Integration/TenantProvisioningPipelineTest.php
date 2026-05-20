@@ -24,7 +24,8 @@ use Tests\TestCase;
 class TenantProvisioningPipelineTest extends TestCase
 {
     private const TENANT_SLUG = 'pipeline-test-school';
-    private const TENANT_DB   = 'naijacbt_tenant_pipeline_test_school';
+
+    private const TENANT_DB = 'naijacbt_tenant_pipeline_test_school';
 
     protected function setUp(): void
     {
@@ -47,14 +48,14 @@ class TenantProvisioningPipelineTest extends TestCase
         $plan = SubscriptionPlan::factory()->create();
 
         $tenant = Tenant::create([
-            'id'                  => self::TENANT_SLUG,
-            'name'                => 'Pipeline Test School',
-            'slug'                => self::TENANT_SLUG,
-            'database'            => self::TENANT_DB,
-            'plan_id'             => $plan->id,
+            'id' => self::TENANT_SLUG,
+            'name' => 'Pipeline Test School',
+            'slug' => self::TENANT_SLUG,
+            'database' => self::TENANT_DB,
+            'plan_id' => $plan->id,
             'subscription_status' => 'trial',
-            'trial_ends_at'       => now()->addDays(30),
-            'is_active'           => true,
+            'trial_ends_at' => now()->addDays(30),
+            'is_active' => true,
         ]);
 
         // Give the pipeline a moment — it runs synchronously in testing
@@ -67,14 +68,14 @@ class TenantProvisioningPipelineTest extends TestCase
         $plan = SubscriptionPlan::factory()->create();
 
         Tenant::create([
-            'id'                  => self::TENANT_SLUG,
-            'name'                => 'Pipeline Test School',
-            'slug'                => self::TENANT_SLUG,
-            'database'            => self::TENANT_DB,
-            'plan_id'             => $plan->id,
+            'id' => self::TENANT_SLUG,
+            'name' => 'Pipeline Test School',
+            'slug' => self::TENANT_SLUG,
+            'database' => self::TENANT_DB,
+            'plan_id' => $plan->id,
             'subscription_status' => 'trial',
-            'trial_ends_at'       => now()->addDays(30),
-            'is_active'           => true,
+            'trial_ends_at' => now()->addDays(30),
+            'is_active' => true,
         ]);
 
         $tenant = Tenant::find(self::TENANT_SLUG);
@@ -96,14 +97,14 @@ class TenantProvisioningPipelineTest extends TestCase
         $plan = SubscriptionPlan::factory()->create();
 
         Tenant::create([
-            'id'                  => self::TENANT_SLUG,
-            'name'                => 'Pipeline Test School',
-            'slug'                => self::TENANT_SLUG,
-            'database'            => self::TENANT_DB,
-            'plan_id'             => $plan->id,
+            'id' => self::TENANT_SLUG,
+            'name' => 'Pipeline Test School',
+            'slug' => self::TENANT_SLUG,
+            'database' => self::TENANT_DB,
+            'plan_id' => $plan->id,
             'subscription_status' => 'trial',
-            'trial_ends_at'       => now()->addDays(30),
-            'is_active'           => true,
+            'trial_ends_at' => now()->addDays(30),
+            'is_active' => true,
         ]);
 
         $tenant = Tenant::find(self::TENANT_SLUG);
@@ -134,14 +135,14 @@ class TenantProvisioningPipelineTest extends TestCase
         $plan = SubscriptionPlan::factory()->create();
 
         $tenant = Tenant::create([
-            'id'                  => self::TENANT_SLUG,
-            'name'                => 'Pipeline Test School',
-            'slug'                => self::TENANT_SLUG,
-            'database'            => self::TENANT_DB,
-            'plan_id'             => $plan->id,
+            'id' => self::TENANT_SLUG,
+            'name' => 'Pipeline Test School',
+            'slug' => self::TENANT_SLUG,
+            'database' => self::TENANT_DB,
+            'plan_id' => $plan->id,
             'subscription_status' => 'trial',
-            'trial_ends_at'       => now()->addDays(30),
-            'is_active'           => true,
+            'trial_ends_at' => now()->addDays(30),
+            'is_active' => true,
         ]);
 
         $this->assertDatabaseExists($tenant->database()->getName());
@@ -164,7 +165,7 @@ class TenantProvisioningPipelineTest extends TestCase
         // Drop the tenant DB if it exists — handle gracefully since it may
         // not exist if the test failed before the pipeline ran
         try {
-            DB::statement('DROP DATABASE IF EXISTS "' . self::TENANT_SLUG . '"');
+            DB::statement('DROP DATABASE IF EXISTS "'.self::TENANT_SLUG.'"');
         } catch (\Throwable) {
             // Silently ignore — DB may not exist
         }
@@ -173,7 +174,7 @@ class TenantProvisioningPipelineTest extends TestCase
     private function assertDatabaseExists(string $dbName): void
     {
         $exists = DB::select(
-            "SELECT 1 FROM pg_database WHERE datname = ?",
+            'SELECT 1 FROM pg_database WHERE datname = ?',
             [$dbName]
         );
 
@@ -183,7 +184,7 @@ class TenantProvisioningPipelineTest extends TestCase
     private function assertPostgresDatabaseMissing(string $dbName): void
     {
         $exists = DB::select(
-            "SELECT 1 FROM pg_database WHERE datname = ?",
+            'SELECT 1 FROM pg_database WHERE datname = ?',
             [$dbName]
         );
 

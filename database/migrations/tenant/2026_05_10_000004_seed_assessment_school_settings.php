@@ -19,12 +19,12 @@ return new class extends Migration
             }
 
             DB::table('school_settings')->insert([
-                    'id' => Str::uuid()->toString(),
-                    'key' => $key,
-                    'value' => $value,
-                    'type' => 'integer',
-                    'updated_at' => now(),
-                    'created_at' => now(),
+                'id' => Str::uuid()->toString(),
+                'key' => $key,
+                'value' => $value,
+                'type' => 'integer',
+                'updated_at' => now(),
+                'created_at' => now(),
             ]);
         }
     }

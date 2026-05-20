@@ -13,7 +13,6 @@ class SuspendTenantAction
     /**
      * Suspend a tenant.
      *
-     * @param Tenant $tenant
      * @throws HttpResponseException if tenant is already suspended
      */
     public function handle(Tenant $tenant): void
@@ -30,7 +29,7 @@ class SuspendTenantAction
 
         $tenant->update([
             'subscription_status' => StatusType::Suspended->value,
-            'is_active'           => false,
+            'is_active' => false,
         ]);
     }
 }

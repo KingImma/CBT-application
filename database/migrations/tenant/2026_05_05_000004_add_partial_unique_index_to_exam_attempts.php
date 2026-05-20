@@ -16,6 +16,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement("DROP INDEX IF EXISTS idx_unique_in_progress_attempt");
+        DB::statement('DROP INDEX IF EXISTS idx_unique_in_progress_attempt');
     }
 };

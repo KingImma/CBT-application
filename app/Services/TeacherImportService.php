@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Actions\Tenants\Teacher\TeacherAction;
+use App\Data\Results\ImportResult;
 use App\Data\Schemas\TeacherImportSchema;
 use App\Models\Tenant\User;
-use App\Data\Results\ImportResult;
+use App\Support\CsvHeaderNormalizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -40,7 +41,7 @@ class TeacherImportService
             if ($missing !== []) {
                 return new ImportResult(
                     success: false,
-                    message: 'CSV is missing required column(s): ' . implode(', ', $missing),
+                    message: 'CSV is missing required column(s): '.implode(', ', $missing),
                     missingHeaders: $missing,
                 );
             }
@@ -50,7 +51,7 @@ class TeacherImportService
             if ($parsed['errors'] !== []) {
                 return new ImportResult(
                     success: false,
-                    message: count($parsed['errors']) . ' row(s) have errors. Import cannot proceed.',
+                    message: count($parsed['errors']).' row(s) have errors. Import cannot proceed.',
                     totalRows: $parsed['totalRows'],
                     errors: $parsed['errors'],
                     canProceed: false,
@@ -63,7 +64,7 @@ class TeacherImportService
             if ($conflictErrors !== []) {
                 return new ImportResult(
                     success: false,
-                    message: count($conflictErrors) . ' row(s) have data conflicts. Import cannot proceed.',
+                    message: count($conflictErrors).' row(s) have data conflicts. Import cannot proceed.',
                     totalRows: $parsed['totalRows'],
                     errors: $conflictErrors,
                     canProceed: false,
@@ -80,8 +81,8 @@ class TeacherImportService
 
             if ($dryRun) {
                 $msg = $duplicates !== []
-                    ? 'Preview complete. ' . count($duplicates) . ' duplicate record(s) found.'
-                    : 'Preview complete. ' . count($parsed['rows']) . ' rows ready for import.';
+                    ? 'Preview complete. '.count($duplicates).' duplicate record(s) found.'
+                    : 'Preview complete. '.count($parsed['rows']).' rows ready for import.';
 
                 return new ImportResult(
                     success: true,
@@ -121,6 +122,7 @@ class TeacherImportService
                             } else {
                                 $skipped++;
                             }
+
                             continue;
                         }
 
@@ -148,7 +150,7 @@ class TeacherImportService
             } catch (\Throwable $e) {
                 return new ImportResult(
                     success: false,
-                    message: 'Import failed: ' . $e->getMessage(),
+                    message: 'Import failed: '.$e->getMessage(),
                     totalRows: $parsed['totalRows'],
                     canProceed: false,
                 );
@@ -158,7 +160,7 @@ class TeacherImportService
 
             return new ImportResult(
                 success: true,
-                message: implode(', ', $importSummary['parts']) . '.',
+                message: implode(', ', $importSummary['parts']).'.',
                 totalRows: $parsed['totalRows'],
                 imported: $totalProcessed,
                 skipped: $importSummary['skipped'],
@@ -180,12 +182,14 @@ class TeacherImportService
 
             if (count($row) !== count($headers)) {
                 $errors[] = ['row' => $rowNumber, 'errors' => ['csv' => ['Column count does not match header count.']]];
+
                 continue;
             }
 
             $data = array_combine($headers, $row);
             if (! is_array($data)) {
                 $errors[] = ['row' => $rowNumber, 'errors' => ['csv' => ['Could not parse row.']]];
+
                 continue;
             }
 
@@ -194,6 +198,7 @@ class TeacherImportService
             $validator = Validator::make($data, TeacherImportSchema::validatorRules());
             if ($validator->fails()) {
                 $errors[] = ['row' => $rowNumber, 'errors' => $validator->errors()->toArray()];
+
                 continue;
             }
 
@@ -259,6 +264,7 @@ class TeacherImportService
                     'staff_id' => $found->teacherProfile?->staff_id,
                     'user_id' => $found->id,
                 ];
+
                 continue;
             }
 
@@ -270,6 +276,7 @@ class TeacherImportService
                         'row' => $rn,
                         'message' => "Staff ID '{$staffId}' already assigned to another teacher ({$found->email}).",
                     ];
+
                     continue;
                 }
 
@@ -292,7 +299,7 @@ class TeacherImportService
             return [];
         }
 
-        return array_map(fn ($h) => strtolower(trim($h)), $headers);
+        return CsvHeaderNormalizer::normalizeHeaders($headers);
     }
 
     private function normalizeRow(array $data): array

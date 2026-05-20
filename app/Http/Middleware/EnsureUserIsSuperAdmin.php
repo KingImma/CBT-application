@@ -25,6 +25,7 @@ class EnsureUserIsSuperAdmin
             if ($user instanceof SuperAdmin) {
                 return $next($request);
             }
+
             return ApiResponse::error('Forbidden. Administrator access required.', 403);
         }
 

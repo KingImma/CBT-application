@@ -72,7 +72,7 @@ return [
             'block_for' => null,
             'after_commit' => false,
         ],
-        
+
         'horizon-redis' => [
             'driver' => 'redis',
             'connection' => 'queue',

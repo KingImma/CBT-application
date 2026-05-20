@@ -1,4 +1,5 @@
 <?php
+
 // - Adds Cache-Control headers to API responses that don't change frequently
 // - What: sets Cache-Control: private, max-age=<seconds> on successful GET responses
 // - Why: prevents browsers from re-fetching reference data on every navigation
@@ -22,8 +23,8 @@ class SetCacheHeaders
             $request->isMethod('GET')
             && $response->isSuccessful()
         ) {
-            $response->headers->set('Cache-Control', 'private, max-age=' . (int) $maxAge);
-            $response->headers->set('Expires', gmdate('D, d M Y H:i:s', time() + (int) $maxAge) . ' GMT');
+            $response->headers->set('Cache-Control', 'private, max-age='.(int) $maxAge);
+            $response->headers->set('Expires', gmdate('D, d M Y H:i:s', time() + (int) $maxAge).' GMT');
         }
 
         return $response;

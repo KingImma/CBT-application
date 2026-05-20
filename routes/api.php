@@ -9,7 +9,6 @@ use App\Http\Middleware\InitializeTenancyByHeader;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
-
 /*
  * 1. What it is: `routes/api.php` (Public routes).
  * 2. What it does in a nutshell: Holds ONLY routes that do not require an active user session.
@@ -26,7 +25,7 @@ Route::middleware([InitializeTenancyByHeader::class])->group(function () {
     });
 });
 
-Route::middleware([InitializeTenancyByHeader::class, 'auth:tenant',])->post('/broadcasting/auth', function () {
+Route::middleware([InitializeTenancyByHeader::class, 'auth:tenant'])->post('/broadcasting/auth', function () {
     return Broadcast::auth(request());
 });
 

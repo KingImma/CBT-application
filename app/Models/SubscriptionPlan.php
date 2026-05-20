@@ -12,32 +12,33 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubscriptionPlan extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     protected $guarded = ['id'];
 
     protected $casts = [
-        "features" => "array",
-        "is_active" => "boolean",
-        "price_monthly" => "decimal:2",
-        "price_yearly" => "decimal:2",
-        "max_students" => "integer",
-        "max_teachers" => "integer",
-        "max_exams_per_term" => "integer",
+        'features' => 'array',
+        'is_active' => 'boolean',
+        'price_monthly' => 'decimal:2',
+        'price_yearly' => 'decimal:2',
+        'max_students' => 'integer',
+        'max_teachers' => 'integer',
+        'max_exams_per_term' => 'integer',
     ];
 
     /**
      * @return HasMany<Tenant, SubscriptionPlan>
      */
-    public function tenants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function tenants(): HasMany
     {
-        return $this->hasMany(Tenant::class, 'plan_id');   
+        return $this->hasMany(Tenant::class, 'plan_id');
     }
+
     /**
-     * @param Builder<Model> $query
+     * @param  Builder<Model>  $query
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where("is_active", true);
+        return $query->where('is_active', true);
     }
 }

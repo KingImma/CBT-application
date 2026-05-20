@@ -22,7 +22,7 @@ class PasswordResetOtpMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your ' . $this->schoolName . ' password reset code',
+            subject: 'Your '.$this->schoolName.' password reset code',
         );
     }
 

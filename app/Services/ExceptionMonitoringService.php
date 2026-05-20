@@ -1,4 +1,5 @@
 <?php
+
 // app/Services/ExceptionMonitoringService.php
 // - What: Deepened ExceptionMonitoringService with full context interface
 // - Does: Accepts the complete structured context already computed in Handler::structuredLog(); stores or forwards it
@@ -17,7 +18,7 @@ class ExceptionMonitoringService
     /**
      * Record an exception with full structured context.
      *
-     * @param array<string, mixed> $context The same context array built in Handler::structuredLog()
+     * @param  array<string, mixed>  $context  The same context array built in Handler::structuredLog()
      */
     public function record(string $exceptionClass, array $context): void
     {

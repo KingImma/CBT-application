@@ -18,16 +18,16 @@ class ExamSessionEnded implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('school.' . tenant('id') . '.exam.' . $this->exam->id),
+            new PrivateChannel('school.'.tenant('id').'.exam.'.$this->exam->id),
         ];
     }
 
     public function broadcastWith(): array
     {
         return [
-            'exam_id'  => $this->exam->id,
+            'exam_id' => $this->exam->id,
             'ended_at' => now()->toIso8601String(),
-            'action'   => 'force_submit',
+            'action' => 'force_submit',
         ];
     }
 

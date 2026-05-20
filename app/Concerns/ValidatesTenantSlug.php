@@ -11,7 +11,7 @@ trait ValidatesTenantSlug
     protected function ensureSlugAvailable(string $slug): void
     {
         if (
-            Tenant::where('slug', $slug)->exists() || 
+            Tenant::where('slug', $slug)->exists() ||
             DB::table('domains')->where('domain', 'like', "{$slug}.%")->exists()
         ) {
             throw new TenantSlugAlreadyTakenException($slug);

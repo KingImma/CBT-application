@@ -33,7 +33,7 @@ return new class extends Migration
             $table->text('instructions')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['status', 'scheduled_start']);
         });
     }

@@ -18,16 +18,16 @@ class ExamSessionStarted implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('school.' . tenant('id') . '.exam.' . $this->exam->id),
+            new PrivateChannel('school.'.tenant('id').'.exam.'.$this->exam->id),
         ];
     }
 
     public function broadcastWith(): array
     {
         return [
-            'exam_id'            => $this->exam->id,
+            'exam_id' => $this->exam->id,
             'session_started_at' => $this->exam->session_started_at->toIso8601String(),
-            'duration_minutes'   => $this->exam->duration_minutes,
+            'duration_minutes' => $this->exam->duration_minutes,
         ];
     }
 

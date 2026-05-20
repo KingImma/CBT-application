@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Teacher;
 
-use App\Models\Tenant\User;
 use App\Models\Tenant\TeacherProfile;
+use App\Models\Tenant\User;
 use App\Services\TenantUserService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class TeacherAction
 {
@@ -82,6 +81,6 @@ class TeacherAction
             $next = (int) $m[1] + 1;
         }
 
-        return "TCH/{$year}/" . str_pad((string) $next, 3, '0', STR_PAD_LEFT);
+        return "TCH/{$year}/".str_pad((string) $next, 3, '0', STR_PAD_LEFT);
     }
 }

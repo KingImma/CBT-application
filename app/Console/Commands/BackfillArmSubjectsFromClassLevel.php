@@ -1,4 +1,5 @@
 <?php
+
 // - Backfill command for existing schools — populates class_arm_subject
 //   from the existing class_level_subject data
 // - What: for every arm in every class level, copies the level's subjects to the arm
@@ -11,19 +12,22 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Models\Tenant\ClassLevel;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class BackfillArmSubjectsFromClassLevel extends Command
 {
-    protected $signature   = 'tenants:backfill-arm-subjects
+    protected $signature = 'tenants:backfill-arm-subjects
                               {--tenant= : Backfill a single tenant by slug}
                               {--dry-run : Preview without writing}';
+
     protected $description = 'Copy class-level subject allocations down to each arm for existing tenants';
 
     public function handle(): int
     {
-        $isDryRun  = $this->option('dry-run');
+        $isDryRun = $this->option('dry-run');
         $tenantSlug = $this->option('tenant');
 
         $query = Tenant::query();
@@ -35,6 +39,7 @@ class BackfillArmSubjectsFromClassLevel extends Command
 
         if ($tenants->isEmpty()) {
             $this->error('No tenants found.');
+
             return self::FAILURE;
         }
 
@@ -47,7 +52,7 @@ class BackfillArmSubjectsFromClassLevel extends Command
             try {
                 tenancy()->initialize($tenant);
                 $count = $this->backfillTenant($isDryRun);
-                $this->info("  ✓ {$count} arm-subject record(s) " . ($isDryRun ? 'would be created' : 'created'));
+                $this->info("  ✓ {$count} arm-subject record(s) ".($isDryRun ? 'would be created' : 'created'));
             } catch (\Throwable $e) {
                 $this->error("  ✗ Failed: {$e->getMessage()}");
             } finally {
@@ -68,7 +73,7 @@ class BackfillArmSubjectsFromClassLevel extends Command
         $count = 0;
 
         // Get all class levels that have subjects and arms
-        $classLevels = \App\Models\Tenant\ClassLevel::with([
+        $classLevels = ClassLevel::with([
             'subjects',
             'classArms',
         ])->get();
@@ -80,12 +85,13 @@ class BackfillArmSubjectsFromClassLevel extends Command
 
             foreach ($level->classArms as $arm) {
                 // Skip arms that already have subjects assigned
-                $alreadyHasSubjects = \Illuminate\Support\Facades\DB::table('class_arm_subject')
+                $alreadyHasSubjects = DB::table('class_arm_subject')
                     ->where('class_arm_id', $arm->id)
                     ->exists();
 
                 if ($alreadyHasSubjects) {
                     $this->line("  → {$level->name} {$arm->name}: already has subjects, skipping.");
+
                     continue;
                 }
 
@@ -93,13 +99,13 @@ class BackfillArmSubjectsFromClassLevel extends Command
                     $this->line("  + {$level->name} {$arm->name} ← {$subject->name}");
 
                     if (! $isDryRun) {
-                        \Illuminate\Support\Facades\DB::table('class_arm_subject')->insertOrIgnore([
-                            'id'            => Str::uuid()->toString(),
-                            'class_arm_id'  => $arm->id,
-                            'subject_id'    => $subject->id,
+                        DB::table('class_arm_subject')->insertOrIgnore([
+                            'id' => Str::uuid()->toString(),
+                            'class_arm_id' => $arm->id,
+                            'subject_id' => $subject->id,
                             'is_compulsory' => (bool) $subject->pivot->is_compulsory,
-                            'created_at'    => now(),
-                            'updated_at'    => now(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
                         ]);
                         $count++;
                     } else {

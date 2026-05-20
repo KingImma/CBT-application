@@ -1,4 +1,5 @@
 <?php
+
 // - Artisan command to backfill handle column for existing tenants
 // - Reads slug, derives a unique handle, writes it back to the central DB
 // - Command chosen over raw SQL so you can dry-run and inspect before committing
@@ -15,7 +16,8 @@ use Illuminate\Support\Str;
 
 class BackfillTenantHandles extends Command
 {
-    protected $signature   = 'tenants:backfill-handles {--dry-run : Preview changes without writing to DB}';
+    protected $signature = 'tenants:backfill-handles {--dry-run : Preview changes without writing to DB}';
+
     protected $description = 'Generate handles for existing tenants that do not have one';
 
     public function handle(): int
@@ -28,6 +30,7 @@ class BackfillTenantHandles extends Command
 
         if ($tenants->isEmpty()) {
             $this->info('All tenants already have handles. Nothing to do.');
+
             return self::SUCCESS;
         }
 
@@ -41,9 +44,9 @@ class BackfillTenantHandles extends Command
 
             $rows[] = [
                 'tenant_id' => $tenant->id,
-                'slug'      => $tenant->slug,
-                'handle'    => $handle,
-                'action'    => $isDryRun ? 'would set' : 'set',
+                'slug' => $tenant->slug,
+                'handle' => $handle,
+                'action' => $isDryRun ? 'would set' : 'set',
             ];
 
             if (! $isDryRun) {
@@ -69,15 +72,15 @@ class BackfillTenantHandles extends Command
         $base = Str::lower(Str::substr($slug, 0, 3)); // "kcl", "abc"
         $handle = $base;
         $counter = 1;
-    
+
         while (
             Tenant::where('handle', $handle)
                 ->where('id', '!=', $excludeId)
                 ->exists()
         ) {
-            $handle = $base . $counter++; // "kcl1", "kcl2"
+            $handle = $base.$counter++; // "kcl1", "kcl2"
         }
-    
+
         return $handle;
     }
 }

@@ -11,6 +11,7 @@ use Spatie\Multitenancy\Models\Tenant;
 class PruneTenantTokens extends Command
 {
     protected $signature = 'tenants:prune-expired-tokens {--hours=24 : Minimum hours since expiration before pruning}';
+
     protected $description = 'Prune expired Sanctum tokens from all tenant databases';
 
     public function handle(): int

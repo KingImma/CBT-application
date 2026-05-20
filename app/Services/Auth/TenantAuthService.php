@@ -36,11 +36,11 @@ class TenantAuthService
             })->first();
         }
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (! $user || ! Hash::check($password, $user->password)) {
             $this->throwFailedAuthException();
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             abort(403, 'Your account has been deactivated. Contact your school admin.');
         }
 
@@ -48,24 +48,24 @@ class TenantAuthService
         $user->tokens()->where('name', 'tenant-token')->delete();
 
         $role = $user->getRoleNames()->first();
-        
+
         $expiresAt = match ($role) {
             'student' => now()->addHours(4),
-            default   => now()->addHours(8),
+            default => now()->addHours(8),
         };
 
         $token = $user->createToken(
-            'tenant-token', 
-            ['*'], 
+            'tenant-token',
+            ['*'],
             $expiresAt
         )->plainTextToken;
 
         return [
-            'token'       => $token,
-            'expires_in'  => (int) now()->diffInSeconds($expiresAt),
+            'token' => $token,
+            'expires_in' => (int) now()->diffInSeconds($expiresAt),
             'tenant_slug' => tenant('slug'),
-            'user'        => $user,
-            'role'        => $role,
+            'user' => $user,
+            'role' => $role,
         ];
     }
 

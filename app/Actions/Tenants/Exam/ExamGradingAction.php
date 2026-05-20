@@ -175,6 +175,7 @@ class ExamGradingAction
         }
 
         $correctOption = $question->options()->where('is_correct', true)->first();
+
         return $correctOption && $selected[0] === $correctOption->id;
     }
 

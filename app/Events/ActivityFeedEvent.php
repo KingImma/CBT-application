@@ -5,34 +5,33 @@ namespace App\Events;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class ActivityFeedEvent implements ShouldBroadcast
 {
     use SerializesModels;
-    
+
     /**
-     * @param array<int,mixed> $meta
+     * @param  array<int,mixed>  $meta
      */
     public function __construct(
         public readonly string $channelType,
         public readonly string $channelId,
         public readonly string $action,
         public readonly string $description,
-        public readonly array  $meta = [],
+        public readonly array $meta = [],
     ) {}
-    
+
     public function broadcastOn()
     {
         return match ($this->channelType) {
-            'super_admin'  => [new PrivateChannel('super-admin.activity')],
+            'super_admin' => [new PrivateChannel('super-admin.activity')],
             'school_admin' => [new PrivateChannel("school-admin.{$this->channelId}.activity")],
-            'teacher'      => [new PrivateChannel("teacher.{$this->channelId}.activity")],
-            default        => [],
+            'teacher' => [new PrivateChannel("teacher.{$this->channelId}.activity")],
+            default => [],
         };
     }
-    
+
     /**
      * @return string
      */
@@ -40,7 +39,7 @@ class ActivityFeedEvent implements ShouldBroadcast
     {
         return 'activity.update';
     }
-    
+
     /**
      * @return array<string,mixed>
      */
@@ -48,17 +47,18 @@ class ActivityFeedEvent implements ShouldBroadcast
     {
         Log::info('Activity Event Feed Broadcasted', [
             'channel_type' => $this->channelType,
-            'channel_id'   => $this->channelId,
-            'action'      => $this->action,
+            'channel_id' => $this->channelId,
+            'action' => $this->action,
             'description' => $this->description,
-            'timestamp'   => now()->toIso8601String(),
-            'meta'        => $this->meta,
+            'timestamp' => now()->toIso8601String(),
+            'meta' => $this->meta,
         ]);
+
         return [
-            'action'      => $this->action,
+            'action' => $this->action,
             'description' => $this->description,
-            'timestamp'   => now()->toIso8601String(),
-            'meta'        => $this->meta,
+            'timestamp' => now()->toIso8601String(),
+            'meta' => $this->meta,
         ];
     }
 }

@@ -4,7 +4,7 @@ namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PasswordResetToken extends Model      
+class PasswordResetToken extends Model
 {
     public $timestamps = false;
 

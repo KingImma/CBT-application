@@ -1,4 +1,5 @@
 <?php
+
 // - What: mailable for password reset emails to school admins and teachers
 // - Does: passes name, reset URL, and role label to Blade template
 // - Why role param: the template renders role-specific context ("your teacher account")

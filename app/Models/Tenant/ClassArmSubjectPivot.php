@@ -12,8 +12,10 @@ class ClassArmSubjectPivot extends Pivot
     use HasUuids;
 
     protected $table = 'class_arm_subject';
-    public    $incrementing = false;
-    protected $keyType      = 'string';
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
 
     protected $casts = [
         'is_compulsory' => 'boolean',

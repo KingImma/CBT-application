@@ -1,4 +1,5 @@
 <?php
+
 // - Eloquent model matching the full questions schema
 // - metadata cast as array (JSONB), default_marks as decimal string-safe cast
 // - scopeForBank(): chainable scope used by exam builder to filter question pool
@@ -13,6 +14,8 @@ use App\Models\Tenant\Concerns\BelongsToSessionTerm;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Question extends Model
@@ -22,39 +25,39 @@ class Question extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'metadata'             => 'array',
-        'is_active'            => 'boolean',
-        'default_marks'        => 'decimal:2',
-        'time_estimate_seconds'=> 'integer',
-        'usage_count'          => 'integer',
+        'metadata' => 'array',
+        'is_active' => 'boolean',
+        'default_marks' => 'decimal:2',
+        'time_estimate_seconds' => 'integer',
+        'usage_count' => 'integer',
     ];
 
-    public function subject(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
     }
 
-    public function topic(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function topic(): BelongsTo
     {
         return $this->belongsTo(Topic::class);
     }
 
-    public function classLevel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
     }
 
-    public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function options(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function options(): HasMany
     {
         return $this->hasMany(QuestionOption::class)->orderBy('order');
     }
 
-    public function fillBlankAnswers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function fillBlankAnswers(): HasMany
     {
         return $this->hasMany(FillBlankAnswer::class);
     }
@@ -66,7 +69,7 @@ class Question extends Model
         string $classLevelId
     ): Builder {
         return $q->where('subject_id', $subjectId)
-                 ->where('class_level_id', $classLevelId)
-                 ->where('is_active', true);
+            ->where('class_level_id', $classLevelId)
+            ->where('is_active', true);
     }
 }

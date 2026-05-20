@@ -1,4 +1,5 @@
 <?php
+
 // - Adds HTTP security headers to every API response
 // - What: HSTS, content-type options, XSS protection, frame options
 // - Why: these headers prevent a class of browser-based attacks at zero cost

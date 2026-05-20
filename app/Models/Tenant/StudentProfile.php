@@ -3,38 +3,40 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 
 class StudentProfile extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     protected $guarded = ['id'];
-    
+
     protected $casts = [
         'date_of_birth' => 'date',
     ];
+
     /**
      * @return BelongsTo<User,StudentProfile>
      */
-    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
+
     /**
      * @return BelongsTo<ClassLevel,StudentProfile>
      */
-    public function classLevel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-       {
-           return $this->belongsTo(ClassLevel::class);
-       }
+    public function classLevel(): BelongsTo
+    {
+        return $this->belongsTo(ClassLevel::class);
+    }
+
     /**
      * @return BelongsTo<ClassArm,StudentProfile>
      */
-    public function classArm(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function classArm(): BelongsTo
     {
         return $this->belongsTo(ClassArm::class);
     }

@@ -11,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 class ApiResponse
 {
     /**
-     * @param array<int,mixed> $meta
+     * @param  array<int,mixed>  $meta
      */
     public static function success(
         mixed $data = null,
@@ -41,9 +41,10 @@ class ApiResponse
     {
         return self::success(null, $message, $status);
     }
+
     /**
-     * @param array<int,mixed> $errors
-     * @param array<int,mixed> $meta
+     * @param  array<int,mixed>  $errors
+     * @param  array<int,mixed>  $meta
      */
     public static function error(
         string $message,
@@ -67,8 +68,9 @@ class ApiResponse
 
         return response()->json($payload, $status);
     }
+
     /**
-     * @param LengthAwarePaginator<array-key,mixed> $paginator
+     * @param  LengthAwarePaginator<array-key,mixed>  $paginator
      */
     public static function paginated(
         LengthAwarePaginator $paginator,

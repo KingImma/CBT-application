@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * Generates fake SuperAdmin records for testing.
  * Password defaults to 'password' to keep test setup simple and consistent.
+ *
  * @extends Factory<Model>
  */
 class SuperAdminFactory extends Factory
@@ -19,9 +20,9 @@ class SuperAdminFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'      => fake()->name(),
-            'email'     => fake()->unique()->safeEmail(),
-            'password'  => 'password', // cast to hashed automatically via model casts
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'password' => 'password', // cast to hashed automatically via model casts
             'is_active' => true,
         ];
     }

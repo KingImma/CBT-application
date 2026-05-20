@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Queue;
 
+use App\Jobs\ExampleDefaultJob;
+use App\Jobs\ExampleProvisioningJob;
 use App\Models\SuperAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class HorizonQueueTest extends TestCase
 {
     use RefreshDatabase;
-    
+
     protected SuperAdmin $superAdmin;
 
     // -------------------------------------------------------------------------
@@ -69,11 +73,11 @@ class HorizonQueueTest extends TestCase
         Queue::fake();
 
         // Dispatch a fake job to each queue and verify routing
-        dispatch(new \App\Jobs\ExampleDefaultJob())->onQueue('default');
-        dispatch(new \App\Jobs\ExampleProvisioningJob())->onQueue('tenant-provisioning');
+        dispatch(new ExampleDefaultJob)->onQueue('default');
+        dispatch(new ExampleProvisioningJob)->onQueue('tenant-provisioning');
 
-        Queue::assertPushedOn('default', \App\Jobs\ExampleDefaultJob::class);
-        Queue::assertPushedOn('tenant-provisioning', \App\Jobs\ExampleProvisioningJob::class);
+        Queue::assertPushedOn('default', ExampleDefaultJob::class);
+        Queue::assertPushedOn('tenant-provisioning', ExampleProvisioningJob::class);
     }
 
     #[Test]
@@ -85,13 +89,13 @@ class HorizonQueueTest extends TestCase
         $this->assertDatabaseEmpty('failed_jobs');
 
         // Simulate a failed job record
-        \Illuminate\Support\Facades\DB::table('failed_jobs')->insert([
-            'uuid'       => \Illuminate\Support\Str::uuid(),
+        DB::table('failed_jobs')->insert([
+            'uuid' => Str::uuid(),
             'connection' => 'redis',
-            'queue'      => 'default',
-            'payload'    => json_encode(['job' => 'TestJob']),
-            'exception'  => 'RuntimeException: Something went wrong',
-            'failed_at'  => now(),
+            'queue' => 'default',
+            'payload' => json_encode(['job' => 'TestJob']),
+            'exception' => 'RuntimeException: Something went wrong',
+            'failed_at' => now(),
         ]);
 
         $this->assertDatabaseCount('failed_jobs', 1);

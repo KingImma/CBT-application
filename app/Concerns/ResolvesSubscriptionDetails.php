@@ -8,7 +8,7 @@ use App\Models\SubscriptionPlan;
 trait ResolvesSubscriptionDetails
 {
     private const TRIAL_DAYS = 30;
-    
+
     /**
      * @return array<string,mixed>
      */
@@ -36,7 +36,7 @@ trait ResolvesSubscriptionDetails
     {
         return config('app.central_domain')
             ?? collect(config('tenancy.central_domains', []))
-                ->reject(fn($d) => in_array($d, ['127.0.0.1', 'localhost'], true))
+                ->reject(fn ($d) => in_array($d, ['127.0.0.1', 'localhost'], true))
                 ->first()
             ?? 'localhost';
     }

@@ -98,6 +98,7 @@ class ClassLevelController extends Controller
             ->get()
             ->map(function ($subject) {
                 $teacher = $subject->teacherAssignments->first()?->user;
+
                 return [
                     'id' => $subject->id,
                     'name' => $subject->name,

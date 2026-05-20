@@ -7,8 +7,8 @@ namespace App\Data\Results;
 class BulkOperationResult
 {
     public function __construct(
-        public readonly int   $succeeded,
-        public readonly int   $failed,
+        public readonly int $succeeded,
+        public readonly int $failed,
         public readonly array $failures = [],
         public readonly ?string $message = null,
     ) {}
@@ -16,14 +16,18 @@ class BulkOperationResult
     public static function fromLoop(int $succeeded, int $failed, array $failures = []): self
     {
         $parts = [];
-        if ($succeeded > 0) $parts[] = "{$succeeded} succeeded";
-        if ($failed > 0)    $parts[] = "{$failed} failed";
+        if ($succeeded > 0) {
+            $parts[] = "{$succeeded} succeeded";
+        }
+        if ($failed > 0) {
+            $parts[] = "{$failed} failed";
+        }
 
         return new self(
             succeeded: $succeeded,
-            failed:    $failed,
-            failures:  $failures,
-            message:   implode(', ', $parts) . '.',
+            failed: $failed,
+            failures: $failures,
+            message: implode(', ', $parts).'.',
         );
     }
 
@@ -41,7 +45,7 @@ class BulkOperationResult
     {
         $data = [
             'succeeded' => $this->succeeded,
-            'failed'    => $this->failed,
+            'failed' => $this->failed,
         ];
 
         if ($this->failures !== []) {

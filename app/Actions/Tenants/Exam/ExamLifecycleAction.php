@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Data\Values\ExamSettings;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\ExamType;
@@ -32,6 +33,7 @@ class ExamLifecycleAction
 
         return DB::transaction(function () use ($exam) {
             $exam->update(['status' => 'submitted']);
+
             return $exam->fresh();
         });
     }
@@ -56,6 +58,7 @@ class ExamLifecycleAction
 
         return DB::transaction(function () use ($exam) {
             $exam->update(['status' => 'active']);
+
             return $exam->fresh();
         });
     }
@@ -68,6 +71,7 @@ class ExamLifecycleAction
 
         return DB::transaction(function () use ($exam) {
             $exam->update(['status' => 'locked']);
+
             return $exam->fresh();
         });
     }
@@ -105,7 +109,7 @@ class ExamLifecycleAction
         return DB::transaction(function () use ($exam) {
             $settings = $exam->settings;
             if ($exam->type === ExamType::Exam->value) {
-                $settings = new \App\Data\Values\ExamSettings(
+                $settings = new ExamSettings(
                     randomizeQuestions: $settings->randomizeQuestions,
                     showResultImmediately: false,
                     resultsReleaseDate: $settings->resultsReleaseDate,

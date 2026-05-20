@@ -38,7 +38,7 @@ class ExamMonitoringController extends Controller
 
             return [
                 'attempt_id' => $attempt->id,
-                'student_name' => $attempt->student->first_name . ' ' . $attempt->student->last_name,
+                'student_name' => $attempt->student->first_name.' '.$attempt->student->last_name,
                 'progress' => $answeredCount,
                 'total_questions' => $totalQuestions,
                 'time_remaining_seconds' => $timeRemaining,

@@ -7,12 +7,11 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Data\Results\BulkOperationResult;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
-use App\Models\Tenant\User;
 use App\Models\Tenant\ExamAttendance;
+use App\Models\Tenant\User;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
 
 /**
  * @group Exam Administration
@@ -42,9 +41,10 @@ class ExamAttendanceController extends Controller
 
         $data = $students->getCollection()->map(function ($student) use ($attendanceRecords) {
             $record = $attendanceRecords->get($student->id);
+
             return [
                 'student_id' => $student->id,
-                'student_name' => $student->first_name . ' ' . $student->last_name,
+                'student_name' => $student->first_name.' '.$student->last_name,
                 'status' => $record?->status ?? null,
                 'marked_at' => $record?->marked_at?->toIso8601String(),
             ];

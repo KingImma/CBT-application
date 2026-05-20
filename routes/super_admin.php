@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SuperAdmin\AnalyticsController;
-use App\Http\Controllers\Api\SuperAdmin\TenantController;
 use App\Http\Controllers\Api\SuperAdmin\SubscriptionPlanController;
+use App\Http\Controllers\Api\SuperAdmin\TenantController;
+use Illuminate\Support\Facades\Route;
 
 /*
  * 1. What it is: `routes/super_admin.php`.

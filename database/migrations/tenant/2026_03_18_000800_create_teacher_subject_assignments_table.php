@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('teacher_subject_assignments', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();;
+            $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();
             $table->foreignUuid('class_arm_id')->nullable()->constrained('class_arms')->nullOnDelete();
             $table->foreignUuid('academic_session_id')->constrained('academic_sessions')->restrictOnDelete();

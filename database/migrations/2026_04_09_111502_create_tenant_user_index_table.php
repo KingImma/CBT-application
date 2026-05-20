@@ -17,9 +17,9 @@ return new class extends Migration
 
             $table->unique(['email', 'tenant_id']);
             $table->foreign('tenant_id')
-                  ->references('id')
-                  ->on('tenants')
-                  ->cascadeOnDelete();
+                ->references('id')
+                ->on('tenants')
+                ->cascadeOnDelete();
         });
     }
 

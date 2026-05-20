@@ -1,4 +1,5 @@
 <?php
+
 // app/Console/Commands/PruneOrphanedTenantDatabases.php
 // - What: Artisan command to detect and drop tenant databases with no matching tenant record
 // - Does: Queries all databases matching the 'tenant_' prefix, cross-references tenants table, drops orphans on confirmation
@@ -10,13 +11,14 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use App\Models\Tenant;
 
 class PruneOrphanedTenantDatabases extends Command
 {
     protected $signature = 'tenants:prune-orphaned-databases {--dry-run : List without dropping}';
+
     protected $description = 'Drop tenant databases that have no matching tenant record';
 
     public function handle(): int
@@ -34,23 +36,25 @@ class PruneOrphanedTenantDatabases extends Command
 
         $orphans = collect($allDatabases)
             ->pluck('datname')
-            ->filter(fn($db) => !in_array($db, $knownDatabases))
+            ->filter(fn ($db) => ! in_array($db, $knownDatabases))
             ->values();
 
         if ($orphans->isEmpty()) {
             $this->info('No orphaned databases found.');
+
             return self::SUCCESS;
         }
 
         $this->warn("Found {$orphans->count()} orphaned database(s):");
-        $orphans->each(fn($db) => $this->line("  - {$db}"));
+        $orphans->each(fn ($db) => $this->line("  - {$db}"));
 
         if ($isDryRun) {
             $this->warn('Dry run — no databases dropped.');
+
             return self::SUCCESS;
         }
 
-        if (!$this->confirm('Drop these databases? This is irreversible.')) {
+        if (! $this->confirm('Drop these databases? This is irreversible.')) {
             return self::SUCCESS;
         }
 

@@ -19,6 +19,7 @@ class SuspiciousActivityDetected implements ShouldBroadcast
     public function broadcastOn(): array
     {
         $exam = $this->attempt->exam;
+
         return [
             new PrivateChannel("teacher.{$exam->created_by}.exam.{$exam->id}"),
         ];
@@ -28,7 +29,7 @@ class SuspiciousActivityDetected implements ShouldBroadcast
     {
         return [
             'attempt_id' => $this->attempt->id,
-            'student_name' => $this->attempt->student->first_name . ' ' . $this->attempt->student->last_name,
+            'student_name' => $this->attempt->student->first_name.' '.$this->attempt->student->last_name,
             'event_type' => $this->eventType,
             'timestamp' => now()->toIso8601String(),
             'metadata' => $this->metadata,

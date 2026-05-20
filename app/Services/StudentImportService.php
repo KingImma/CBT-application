@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Actions\Tenants\Student\StudentAction;
+use App\Data\Results\ImportResult;
 use App\Data\Schemas\StudentImportSchema;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
-use App\Data\Results\ImportResult;
+use App\Support\CsvHeaderNormalizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -45,7 +46,7 @@ class StudentImportService
             if ($missing !== []) {
                 return new ImportResult(
                     success: false,
-                    message: 'CSV is missing required column(s): ' . implode(', ', $missing),
+                    message: 'CSV is missing required column(s): '.implode(', ', $missing),
                     missingHeaders: $missing,
                 );
             }
@@ -55,7 +56,7 @@ class StudentImportService
                 fn ($level) => strtolower(trim($level->name))
             );
             $classArms = ClassArm::query()->get()->keyBy(
-                fn ($arm) => $arm->class_level_id . ':' . strtolower(trim($arm->name))
+                fn ($arm) => $arm->class_level_id.':'.strtolower(trim($arm->name))
             );
 
             $parsed = $this->parseAndValidateRows($handle, $headers, $classLevels, $classArms, $overrideClassLevelId);
@@ -63,7 +64,7 @@ class StudentImportService
             if ($parsed['errors'] !== []) {
                 return new ImportResult(
                     success: false,
-                    message: count($parsed['errors']) . ' row(s) have errors. Import cannot proceed.',
+                    message: count($parsed['errors']).' row(s) have errors. Import cannot proceed.',
                     totalRows: $parsed['totalRows'],
                     errors: $parsed['errors'],
                     canProceed: false,
@@ -76,7 +77,7 @@ class StudentImportService
             if ($conflictErrors !== []) {
                 return new ImportResult(
                     success: false,
-                    message: count($conflictErrors) . ' row(s) have data conflicts. Import cannot proceed.',
+                    message: count($conflictErrors).' row(s) have data conflicts. Import cannot proceed.',
                     totalRows: $parsed['totalRows'],
                     errors: $conflictErrors,
                     canProceed: false,
@@ -93,8 +94,8 @@ class StudentImportService
 
             if ($dryRun) {
                 $msg = $duplicates !== []
-                    ? 'Preview complete. ' . count($duplicates) . ' duplicate record(s) found.'
-                    : 'Preview complete. ' . count($parsed['rows']) . ' rows ready for import.';
+                    ? 'Preview complete. '.count($duplicates).' duplicate record(s) found.'
+                    : 'Preview complete. '.count($parsed['rows']).' rows ready for import.';
 
                 return new ImportResult(
                     success: true,
@@ -138,6 +139,7 @@ class StudentImportService
                             } else {
                                 $skipped++;
                             }
+
                             continue;
                         }
 
@@ -171,7 +173,7 @@ class StudentImportService
             } catch (\Throwable $e) {
                 return new ImportResult(
                     success: false,
-                    message: 'Import failed: ' . $e->getMessage(),
+                    message: 'Import failed: '.$e->getMessage(),
                     totalRows: $parsed['totalRows'],
                     canProceed: false,
                 );
@@ -181,7 +183,7 @@ class StudentImportService
 
             return new ImportResult(
                 success: true,
-                message: implode(', ', $importSummary['parts']) . '.',
+                message: implode(', ', $importSummary['parts']).'.',
                 totalRows: $parsed['totalRows'],
                 imported: $totalProcessed,
                 skipped: $importSummary['skipped'],
@@ -208,12 +210,14 @@ class StudentImportService
 
             if (count($row) !== count($headers)) {
                 $errors[] = ['row' => $rowNumber, 'errors' => ['csv' => ['Column count does not match header count.']]];
+
                 continue;
             }
 
             $data = array_combine($headers, $row);
             if (! is_array($data)) {
                 $errors[] = ['row' => $rowNumber, 'errors' => ['csv' => ['Could not parse row.']]];
+
                 continue;
             }
 
@@ -222,6 +226,7 @@ class StudentImportService
             $validator = Validator::make($data, StudentImportSchema::validatorRules($overrideClassLevelId));
             if ($validator->fails()) {
                 $errors[] = ['row' => $rowNumber, 'errors' => $validator->errors()->toArray()];
+
                 continue;
             }
 
@@ -233,6 +238,7 @@ class StudentImportService
                     'row' => $rowNumber,
                     'errors' => ['class_level' => ["Class level '{$data['class_level']}' not found."]],
                 ];
+
                 continue;
             }
 
@@ -247,6 +253,7 @@ class StudentImportService
                     'row' => $rowNumber,
                     'errors' => ['class_arm' => ["Class arm '{$data['class_arm']}' not found for the specified class level."]],
                 ];
+
                 continue;
             }
 
@@ -316,6 +323,7 @@ class StudentImportService
                     'admission_number' => $found->studentProfile?->admission_number,
                     'user_id' => $found->id,
                 ];
+
                 continue;
             }
 
@@ -328,6 +336,7 @@ class StudentImportService
                         'row' => $rn,
                         'message' => "Admission number '{$admissionNumber}' already assigned to another student ({$found->email}).",
                     ];
+
                     continue;
                 }
 
@@ -353,11 +362,11 @@ class StudentImportService
         $occupied = array_unique($occupied);
 
         $candidate = 1;
-        $number = "STU/{$year}/" . str_pad((string) $candidate, 4, '0', STR_PAD_LEFT);
+        $number = "STU/{$year}/".str_pad((string) $candidate, 4, '0', STR_PAD_LEFT);
 
         while (in_array(strtoupper($number), $occupied, true)) {
             $candidate++;
-            $number = "STU/{$year}/" . str_pad((string) $candidate, 4, '0', STR_PAD_LEFT);
+            $number = "STU/{$year}/".str_pad((string) $candidate, 4, '0', STR_PAD_LEFT);
         }
 
         return $number;
@@ -370,7 +379,7 @@ class StudentImportService
             return [];
         }
 
-        return array_map(fn ($h) => strtolower(trim($h)), $headers);
+        return CsvHeaderNormalizer::normalizeHeaders($headers);
     }
 
     private function normalizeRow(array $data): array
@@ -393,7 +402,7 @@ class StudentImportService
             return null;
         }
 
-        return $classArms->get($classLevelId . ':' . strtolower(trim($name)))?->id;
+        return $classArms->get($classLevelId.':'.strtolower(trim($name)))?->id;
     }
 
     private function buildPayload(array $data, ?string $classLevelId, ?string $classArmId, string $admissionNumber, string $email): array

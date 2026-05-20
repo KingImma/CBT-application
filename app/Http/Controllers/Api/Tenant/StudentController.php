@@ -5,23 +5,22 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Student\StudentAction;
+use App\Data\Results\ImportResult;
+use App\Data\Schemas\StudentImportSchema;
+use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Api\Tenant\Concerns\TogglesUserActive;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\StudentResource;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
-use App\Models\Tenant\StudentProfile;
+use App\Http\Resources\StudentResource;
 use App\Models\Tenant\User;
 use App\Services\PasswordService;
-use App\Services\TenantUserService;
-use App\Data\Schemas\StudentImportSchema;
 use App\Services\StudentImportService;
+use App\Services\TenantUserService;
 use App\Support\ApiResponse;
-use App\Data\Results\ImportResult;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Events\ActivityFeedEvent;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -79,13 +78,13 @@ class StudentController extends Controller
     public function store(StoreStudentRequest $request, StudentAction $action): JsonResponse
     {
         $result = $action->create($request->validated());
-        
+
         broadcast(new ActivityFeedEvent(
             channelType: 'school_admin',
-            channelId:   tenant('id'),
-            action:      'student.created',
+            channelId: tenant('id'),
+            action: 'student.created',
             description: "Student {$result['user']->first_name} {$result['user']->last_name} added.",
-            meta:        ['student_id' => $result['user']->id],
+            meta: ['student_id' => $result['user']->id],
         ))->toOthers();
 
         return ApiResponse::created([

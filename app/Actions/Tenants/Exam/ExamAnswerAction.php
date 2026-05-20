@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
-use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Support\Facades\DB;

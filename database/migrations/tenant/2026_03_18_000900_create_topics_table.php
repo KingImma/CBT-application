@@ -17,10 +17,10 @@ return new class extends Migration
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();
             $table->string('name');
-            
+
             // Define the column, but DO NOT add the constraint here
             $table->uuid('parent_id')->nullable();
-            
+
             $table->integer('order')->nullable();
             $table->timestamps();
         });
@@ -28,9 +28,9 @@ return new class extends Migration
         // 2. Open a NEW block to add the self-referencing constraint
         Schema::table('topics', function (Blueprint $table) {
             $table->foreign('parent_id')
-                  ->references('id')
-                  ->on('topics')
-                  ->nullOnDelete();
+                ->references('id')
+                ->on('topics')
+                ->nullOnDelete();
         });
     }
 

@@ -7,12 +7,14 @@ namespace App\Console\Commands;
 use App\Models\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class BackfillClassLevelSubjectsFromAssignments extends Command
 {
     protected $signature = 'tenants:backfill-class-level-subjects
                            {--tenant= : Backfill a single tenant by slug}
                            {--dry-run : Preview without writing}';
+
     protected $description = 'Populate class_level_subject from existing teacher_subject_assignments for each tenant';
 
     public function handle(): int
@@ -29,6 +31,7 @@ class BackfillClassLevelSubjectsFromAssignments extends Command
 
         if ($tenants->isEmpty()) {
             $this->error('No tenants found.');
+
             return self::FAILURE;
         }
 
@@ -41,7 +44,7 @@ class BackfillClassLevelSubjectsFromAssignments extends Command
             try {
                 tenancy()->initialize($tenant);
                 $count = $this->backfillTenant($isDryRun);
-                $this->info("  ✓ {$count} class_level_subject record(s) " . ($isDryRun ? 'would be created' : 'created'));
+                $this->info("  ✓ {$count} class_level_subject record(s) ".($isDryRun ? 'would be created' : 'created'));
             } catch (\Throwable $e) {
                 $this->error("  ✗ Failed: {$e->getMessage()}");
             } finally {
@@ -66,6 +69,7 @@ class BackfillClassLevelSubjectsFromAssignments extends Command
 
         if ($pairs->isEmpty()) {
             $this->line('  → No teacher subject assignments found.');
+
             return 0;
         }
 
@@ -85,7 +89,7 @@ class BackfillClassLevelSubjectsFromAssignments extends Command
 
             if (! $isDryRun) {
                 DB::table('class_level_subject')->insert([
-                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                    'id' => Str::uuid()->toString(),
                     'class_level_id' => $pair->class_level_id,
                     'subject_id' => $pair->subject_id,
                     'is_compulsory' => false,

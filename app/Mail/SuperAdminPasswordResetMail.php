@@ -1,4 +1,5 @@
 <?php
+
 // - What: password reset mailable specifically for super admins
 // - Does: passes name and reset URL — URL points to central admin panel, not a school subdomain
 // - Why separate: super admin reset URL structure differs from tenant user reset URLs

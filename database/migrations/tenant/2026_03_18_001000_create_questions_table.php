@@ -22,15 +22,15 @@ return new class extends Migration
             $table->text('content');
             $table->text('explanation')->nullable();
             $table->decimal('default_marks', 5, 2);
-            $table->integer('time_estimate_seconds')->nullable(); 
+            $table->integer('time_estimate_seconds')->nullable();
             $table->string('image_url', 500)->nullable();
             $table->jsonb('metadata')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->integer('usage_count')->default(0); 
-            
+            $table->integer('usage_count')->default(0);
+
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['subject_id', 'class_level_id']);
             $table->index(['type', 'is_active']);
         });

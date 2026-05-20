@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\User;
 use App\Models\SuperAdmin;
 use App\Models\Tenant\User as TenantUser;
+use App\Models\User;
 
 return [
 
@@ -44,12 +44,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        
+
         'super_admin' => [
             'driver' => 'sanctum',
-            'provider' => 'super_admins'
+            'provider' => 'super_admins',
         ],
-        
+
         'tenant' => [
             'driver' => 'sanctum',
             'provider' => 'tenant_users',
@@ -83,15 +83,15 @@ return [
         //     'driver' => 'database',
         //     'table' => 'users',
         // ],
-        
+
         'super_admins' => [
             'driver' => 'eloquent',
-            'model' =>  SuperAdmin::class,
+            'model' => SuperAdmin::class,
         ],
 
         'tenant_users' => [
             'driver' => 'eloquent',
-            'model' =>  TenantUser::class,
+            'model' => TenantUser::class,
         ],
     ],
 

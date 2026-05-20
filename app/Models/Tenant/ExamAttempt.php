@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Data\Values\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
-use App\Data\Values\ExamAttemptSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 class ExamAttempt extends Model
 {
@@ -98,9 +97,9 @@ class ExamAttempt extends Model
     {
         $events = $this->suspicious_events ?? [];
         $events[] = [
-            'type'      => $type,
+            'type' => $type,
             'timestamp' => now()->toIso8601String(),
-            'metadata'  => $metadata,
+            'metadata' => $metadata,
         ];
         $this->suspicious_events = $events;
 

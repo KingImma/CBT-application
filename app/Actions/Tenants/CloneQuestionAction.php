@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 class CloneQuestionAction
 {
     /**
-     * @param array<string,string> $topicMap old topic ID => new topic ID
+     * @param  array<string,string>  $topicMap  old topic ID => new topic ID
      */
     public function cloneToTerm(
         string $sourceSessionId,

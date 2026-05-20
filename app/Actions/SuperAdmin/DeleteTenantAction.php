@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace App\Actions\SuperAdmin;
 
@@ -10,8 +10,6 @@ class DeleteTenantAction
 {
     /**
      * Delete a tenant.
-     *
-     * @param Tenant $tenant
      */
     public function handle(Tenant $tenant): void
     {

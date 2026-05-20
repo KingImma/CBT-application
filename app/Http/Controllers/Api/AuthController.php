@@ -23,6 +23,7 @@ class AuthController extends Controller
 
     /**
      * Authenticate a user and return a token.
+     *
      * @subgroup Login & Session
      */
     public function login(Request $request): JsonResponse
@@ -57,6 +58,7 @@ class AuthController extends Controller
 
     /**
      * Logout the user and invalidate the token.
+     *
      * @subgroup Login & Session
      */
     public function logout(Request $request): JsonResponse
@@ -73,6 +75,7 @@ class AuthController extends Controller
 
     /**
      * Get the authenticated user's profile.
+     *
      * @subgroup Login & Session
      */
     public function me(Request $request): JsonResponse

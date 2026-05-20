@@ -8,6 +8,7 @@ use App\Actions\Tenants\Exam\ExamLifecycleAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Models\Tenant\Exam;
 use Illuminate\Console\Command;
+use Spatie\Multitenancy\Models\Tenant;
 
 class EndExpiredExamSessions extends Command
 {
@@ -24,25 +25,34 @@ class EndExpiredExamSessions extends Command
 
     public function handle(): int
     {
-        $this->info('Checking for expired exam sessions...');
+        $tenants = Tenant::where('is_active', true)->get();
 
-        $expiredSessions = Exam::where('status', 'active')
-            ->whereNotNull('scheduled_end')
-            ->where('scheduled_end', '<=', now())
-            ->get();
+        if ($tenants->isEmpty()) {
+            $this->warn('No active tenants found.');
 
-        $this->info("Found {$expiredSessions->count()} expired exam sessions.");
-
-        foreach ($expiredSessions as $exam) {
-            try {
-                $this->lifecycleAction->endSession($exam, $this->sessionAction);
-                $this->info("Ended session for exam '{$exam->title}' ({$exam->id})");
-            } catch (\Exception $e) {
-                $this->error("Failed to end session for exam {$exam->id}: {$e->getMessage()}");
-            }
+            return self::SUCCESS;
         }
 
-        $this->info('Expired session check completed.');
+        foreach ($tenants as $tenant) {
+            $tenant->makeCurrent();
+            $this->info("Checking tenant: {$tenant->id}");
+
+            $expiredSessions = Exam::where('status', 'active')
+                ->whereNotNull('scheduled_end')
+                ->where('scheduled_end', '<=', now())
+                ->get();
+
+            foreach ($expiredSessions as $exam) {
+                try {
+                    $this->lifecycleAction->endSession($exam, $this->sessionAction);
+                    $this->info("  Ended session for exam '{$exam->title}' ({$exam->id})");
+                } catch (\Exception $e) {
+                    $this->error("  Failed to end session for exam {$exam->id}: {$e->getMessage()}");
+                }
+            }
+
+            $tenant->forgetCurrent();
+        }
 
         return self::SUCCESS;
     }

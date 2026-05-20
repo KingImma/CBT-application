@@ -7,25 +7,27 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Term extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     protected $guarded = ['id'];
 
     protected $casts = [
         'is_current' => 'boolean',
         'start_date' => 'date',
-        'end_date'   => 'date',
+        'end_date' => 'date',
     ];
 
-    public function academicSession(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function academicSession(): BelongsTo
     {
         return $this->belongsTo(AcademicSession::class);
     }
 
-    public function exams(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function exams(): HasMany
     {
         return $this->hasMany(Exam::class);
     }

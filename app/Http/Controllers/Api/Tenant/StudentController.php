@@ -186,7 +186,7 @@ class StudentController extends Controller
 
         $newPassword = config('app.student_default_password');
 
-        $query->chunk(200, function ($students) use ($passwordService, &$reset, $newPassword) {
+        $query->chunkById(200, function ($students) use ($passwordService, &$reset, $newPassword) {
             foreach ($students as $student) {
                 $passwordService->resetPasswordForUser($student, $newPassword);
                 $reset++;

@@ -12,10 +12,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/**
- * @group Exam Administration
- * * APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.
- */
 class ExamQuestionController extends Controller
 {
     public function __construct(
@@ -49,29 +45,27 @@ class ExamQuestionController extends Controller
         );
     }
 
-    public function autoGenerate(Request $request, string $examId): JsonResponse
+    public function randomize(Request $request, string $examId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
         $validated = $request->validate([
-            'rules' => ['required', 'array', 'min:1'],
-            'rules.*.type' => ['nullable', 'in:mcq_single,mcq_multi,true_false,fill_blank,short_answer,essay,matching,ordering'],
-            'rules.*.count' => ['required', 'integer', 'min:1'],
+            'count' => ['required', 'integer', 'min:1'],
         ]);
 
         try {
-            $this->questionAction->autoGenerate($exam, $validated['rules']);
+            $this->questionAction->randomizeQuestions($exam, $validated['count']);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
 
         $exam->refresh();
-        $questions = $exam->examQuestions()->with('question.options', 'question.topic')->get();
+        $questions = $exam->examQuestions()->with('question.options')->get();
 
         return ApiResponse::success(
             ['total_marks' => $exam->total_marks, 'questions' => $questions],
-            'Questions auto-generated successfully.'
+            'Questions randomized successfully.'
         );
     }
 

@@ -17,7 +17,6 @@ class ExamModelTest extends TestCase
         $this->assertTrue(method_exists(Exam::class, 'examQuestions'));
         $this->assertTrue(method_exists(Exam::class, 'attempts'));
         $this->assertTrue(method_exists(Exam::class, 'attendanceRecords'));
-        $this->assertTrue(method_exists(Exam::class, 'topics'));
     }
 
     public function test_exam_attempt_model_has_relationships(): void

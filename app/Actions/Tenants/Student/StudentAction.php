@@ -18,7 +18,7 @@ class StudentAction
     {
         return DB::transaction(function () use ($data) {
             $admissionNumber = $data['admission_number'] ?? $this->generateAdmissionNumber();
-            $password = $admissionNumber;
+            $password = config('app.student_default_password');
 
             $user = User::create([
                 'first_name' => $data['first_name'],

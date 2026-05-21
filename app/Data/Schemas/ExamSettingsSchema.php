@@ -14,9 +14,6 @@ class ExamSettingsSchema
             "{$prefix}.show_result_immediately" => ['sometimes', 'boolean'],
             "{$prefix}.results_release_date" => ['sometimes', 'nullable', 'date'],
             "{$prefix}.require_attendance" => ['sometimes', 'boolean'],
-            "{$prefix}.distribution" => ['sometimes', 'in:pooled,by_topic'],
-            "{$prefix}.topic_weights" => ['sometimes', 'nullable', 'array'],
-            "{$prefix}.topic_weights.*" => ['numeric', 'min:0', 'max:100'],
         ];
     }
 }

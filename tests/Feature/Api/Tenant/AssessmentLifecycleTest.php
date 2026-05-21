@@ -823,6 +823,111 @@ class AssessmentLifecycleTest extends TestCase
         $this->assertContains($response->status(), [403, 422]);
     }
 
+    #[Test]
+    public function full_end_to_end_exam_flow_with_timing_and_grading(): void
+    {
+        // 1. Teacher creates exam with MVP settings (teacher=creator for policy)
+        $exam = $this->createDraftExam($this->teacher, [
+            'pass_mark' => 5.00,
+            'max_attempts' => 1,
+            'settings' => [
+                'require_attendance' => false,
+                'show_result_immediately' => true,
+            ],
+        ]);
+        $examId = $exam->id;
+
+        // 2. Teacher creates 3 mcq_single questions with options
+        $q1 = $this->createMcqQuestion('What is 2+2?', ['1', '2', '3', '4'], 1);
+        $q2 = $this->createMcqQuestion('What is the capital of France?', ['London', 'Paris', 'Berlin', 'Madrid'], 1);
+        $q3 = $this->createMcqQuestion('Which planet is closest to the sun?', ['Venus', 'Mars', 'Mercury', 'Earth'], 2);
+
+        // 3. Add questions to exam
+        $exam->examQuestions()->createMany([
+            ['question_id' => $q1->id, 'order' => 1, 'marks' => 5.00],
+            ['question_id' => $q2->id, 'order' => 2, 'marks' => 5.00],
+            ['question_id' => $q3->id, 'order' => 3, 'marks' => 5.00],
+        ]);
+        $exam->update(['total_marks' => $exam->examQuestions()->sum('marks')]);
+        $this->assertEquals(15.00, $exam->fresh()->total_marks);
+
+        // 4. Teacher submits for review
+        $response = $this->postJson("/api/exams/{$examId}/submit-for-review");
+        $response->assertStatus(200);
+        $this->assertEquals('submitted', $response->json('data.status'));
+
+        // 5. Admin activates with session timing
+        $this->actingAsTenant($this->admin);
+        $response = $this->postJson("/api/exams/{$examId}/activate");
+        $response->assertStatus(200);
+        $this->assertEquals('active', $response->json('data.status'));
+
+        $exam->fresh()->update([
+            'session_started_at' => now()->subMinutes(5),
+            'session_duration_minutes' => 30,
+        ]);
+
+        // 6. Student starts attempt
+        $this->actingAsTenant($this->student);
+        $response = $this->postJson("/student/exams/{$examId}/start");
+        $response->assertStatus(201);
+        $attemptId = $response->json('data.attempt.id');
+        $this->assertNotNull($attemptId);
+        $this->assertEquals('in_progress', $response->json('data.attempt.status'));
+
+        $questions = $response->json('data.questions');
+        $this->assertCount(3, $questions);
+
+        // 7. Verify timer is running
+        $response = $this->getJson("/student/exams/attempts/{$attemptId}/time-remaining");
+        $response->assertStatus(200);
+        $remaining = $response->json('data.remaining_seconds');
+        $this->assertGreaterThan(0, $remaining);
+        $this->assertLessThanOrEqual(30 * 60, $remaining);
+
+        // 8. Save answers: Q1 correct, Q2 correct, Q3 wrong
+        $q1Correct = $q1->options()->where('is_correct', true)->first();
+        $q2Correct = $q2->options()->where('is_correct', true)->first();
+        $q3Wrong = $q3->options()->where('is_correct', false)->first();
+
+        $this->putJson("/student/exams/attempts/{$attemptId}/answers/{$q1->id}", [
+            'selected_option_ids' => [$q1Correct->id],
+            'time_spent_seconds' => 30,
+        ])->assertStatus(200);
+
+        $this->putJson("/student/exams/attempts/{$attemptId}/answers/{$q2->id}", [
+            'selected_option_ids' => [$q2Correct->id],
+            'time_spent_seconds' => 45,
+        ])->assertStatus(200);
+
+        $this->putJson("/student/exams/attempts/{$attemptId}/answers/{$q3->id}", [
+            'selected_option_ids' => [$q3Wrong->id],
+            'time_spent_seconds' => 20,
+        ])->assertStatus(200);
+
+        // 9. Submit
+        $response = $this->postJson("/student/exams/attempts/{$attemptId}/submit");
+        $response->assertStatus(200);
+        $attemptData = $response->json('data.attempt');
+
+        // 10. Verify auto-grading
+        $this->assertEquals('graded', $attemptData['status']);
+        $this->assertEquals(10.00, (float) $attemptData['total_score']);
+        $this->assertEquals(66.67, round((float) $attemptData['percentage_score'], 2));
+        $this->assertNotNull($attemptData['time_spent_seconds']);
+        $this->assertGreaterThan(0, (int) $attemptData['time_spent_seconds']);
+
+        // 11. Result accessible (show_result_immediately)
+        $response = $this->getJson("/student/exams/attempts/{$attemptId}/result");
+        $response->assertStatus(200);
+        $this->assertArrayHasKey('total_score', $response->json('data'));
+
+        // 12. Max attempts enforced
+        $response = $this->postJson("/student/exams/{$examId}/start");
+        $response->assertStatus(422);
+        $this->assertStringContainsString('attempt', strtolower($response->json('message')));
+    }
+
     protected function createDraftExam(?User $asUser = null, array $overrides = []): Exam
     {
         $user = $asUser ?? $this->admin;
@@ -864,6 +969,32 @@ class AssessmentLifecycleTest extends TestCase
         ]);
 
         $exam->update(['total_marks' => $exam->examQuestions()->sum('marks')]);
+
+        return $question;
+    }
+
+    protected function createMcqQuestion(string $content, array $optionContents, int $correctIndex): Question
+    {
+        $question = Question::create([
+            'content' => $content,
+            'type' => 'mcq_single',
+            'default_marks' => 5,
+            'subject_id' => $this->subject->id,
+            'class_level_id' => $this->classLevel->id,
+            'created_by' => $this->teacher->id,
+            'is_active' => true,
+            'academic_session_id' => $this->academicSession->id,
+            'term_id' => $this->term->id,
+        ]);
+
+        foreach ($optionContents as $index => $optionContent) {
+            $question->options()->create([
+                'content' => $optionContent,
+                'is_correct' => $index === $correctIndex,
+                'order' => $index + 1,
+                'label' => chr(65 + $index),
+            ]);
+        }
 
         return $question;
     }

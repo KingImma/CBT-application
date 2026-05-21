@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -32,81 +31,45 @@ class Exam extends Model
         'max_attempts' => 'integer',
     ];
 
-    /**
-     * @return BelongsTo<Term,Exam>
-     */
     public function term(): BelongsTo
     {
         return $this->belongsTo(Term::class);
     }
 
-    /**
-     * @return BelongsTo<Subject,Exam>
-     */
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
     }
 
-    /**
-     * @return BelongsTo<ClassLevel,Exam>
-     */
     public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
     }
 
-    /**
-     * @return BelongsTo<ClassArm,Exam>
-     */
     public function classArm(): BelongsTo
     {
         return $this->belongsTo(ClassArm::class);
     }
 
-    /**
-     * @return BelongsTo<User,Exam>
-     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * @return HasMany<ExamQuestion>
-     */
     public function examQuestions(): HasMany
     {
         return $this->hasMany(ExamQuestion::class);
     }
 
-    /**
-     * @return HasMany<ExamAttempt>
-     */
     public function attempts(): HasMany
     {
         return $this->hasMany(ExamAttempt::class);
     }
 
-    /**
-     * @return HasMany<ExamAttendance>
-     */
     public function attendanceRecords(): HasMany
     {
         return $this->hasMany(ExamAttendance::class);
     }
-
-    /**
-     * @return BelongsToMany<Topic>
-     */
-    public function topics(): BelongsToMany
-    {
-        return $this->belongsToMany(Topic::class, 'exam_topics')
-            ->withPivot('weight')
-            ->withTimestamps();
-    }
-
-    // Scopes
 
     public function scopeByStatus(Builder $query, string $status): Builder
     {

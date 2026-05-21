@@ -41,7 +41,6 @@ class ExamSessionAction
             }
         }
 
-        // Prevent concurrent in-progress attempts
         $hasInProgress = $exam->attempts()
             ->forStudent($student->id)
             ->inProgress()
@@ -81,7 +80,7 @@ class ExamSessionAction
     {
         $exam = $attempt->exam;
         $questions = ExamQuestion::where('exam_id', $exam->id)
-            ->with('question.options', 'question.fillBlankAnswers', 'question.topic')
+            ->with('question.options')
             ->orderBy('order')
             ->get();
 
@@ -124,16 +123,12 @@ class ExamSessionAction
                 $this->gradingAction->autoGrade($answer);
             }
 
-            $hasTheory = $attempt->answers()
-                ->whereHas('question', fn ($q) => $q->whereIn('type', ['essay', 'short_answer']))
-                ->exists();
-
             $timeSpentSeconds = ExamAnswer::where('attempt_id', $attempt->id)
                 ->whereNotNull('time_spent_seconds')
                 ->max('time_spent_seconds');
 
             $attempt->update([
-                'status' => $hasTheory ? ExamAttemptStatus::Grading->value : ExamAttemptStatus::Graded->value,
+                'status' => ExamAttemptStatus::Graded->value,
                 'submitted_at' => now(),
                 'time_spent_seconds' => $timeSpentSeconds ?? now()->diffInSeconds($attempt->started_at),
             ]);

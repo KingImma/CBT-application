@@ -30,8 +30,6 @@ class ExamAnswerAction
                 [
                     'selected_option_ids' => $data['selected_option_ids'] ?? null,
                     'text_answer' => $data['text_answer'] ?? null,
-                    'ordering_answer' => $data['ordering_answer'] ?? null,
-                    'matching_answer' => $data['matching_answer'] ?? null,
                     'answered_at' => now(),
                     'time_spent_seconds' => $data['time_spent_seconds'] ?? null,
                 ]

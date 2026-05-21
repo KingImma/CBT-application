@@ -1,11 +1,5 @@
 <?php
 
-// - Eloquent model matching the full questions schema
-// - metadata cast as array (JSONB), default_marks as decimal string-safe cast
-// - scopeForBank(): chainable scope used by exam builder to filter question pool
-// - Deliverable: full ORM surface for question bank queries
-// - Alternative: raw DB::table queries — faster but loses relationship loading
-
 declare(strict_types=1);
 
 namespace App\Models\Tenant;
@@ -25,21 +19,14 @@ class Question extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'metadata' => 'array',
         'is_active' => 'boolean',
         'default_marks' => 'decimal:2',
-        'time_estimate_seconds' => 'integer',
         'usage_count' => 'integer',
     ];
 
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
-    }
-
-    public function topic(): BelongsTo
-    {
-        return $this->belongsTo(Topic::class);
     }
 
     public function classLevel(): BelongsTo
@@ -57,12 +44,6 @@ class Question extends Model
         return $this->hasMany(QuestionOption::class)->orderBy('order');
     }
 
-    public function fillBlankAnswers(): HasMany
-    {
-        return $this->hasMany(FillBlankAnswer::class);
-    }
-
-    // Reusable scope for exam builder filtering
     public function scopeForBank(
         Builder $q,
         string $subjectId,

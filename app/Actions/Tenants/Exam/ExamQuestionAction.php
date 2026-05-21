@@ -90,59 +90,44 @@ class ExamQuestionAction
         });
     }
 
-    public function autoGenerate(Exam $exam, array $rules): void
+    public function randomizeQuestions(Exam $exam, int $count): void
     {
         if (! in_array($exam->status, ['draft', 'scheduled'])) {
             throw new \RuntimeException('Questions can only be added to draft or scheduled exams.');
         }
 
-        $topicIds = $exam->topics()->pluck('topics.id')->toArray();
+        $availableCount = Question::where('subject_id', $exam->subject_id)
+            ->where('class_level_id', $exam->class_level_id)
+            ->where('is_active', true)
+            ->count();
 
-        if (empty($topicIds)) {
-            throw new \RuntimeException('Exam must have at least one topic in the pool.');
+        if ($availableCount < $count) {
+            throw new \RuntimeException(
+                "Only {$availableCount} questions available, but {$count} requested."
+            );
         }
 
-        $distribution = $exam->settings->distribution;
-        $topicWeights = $exam->settings->topicWeights;
+        DB::transaction(function () use ($exam, $count) {
+            $questions = Question::where('subject_id', $exam->subject_id)
+                ->where('class_level_id', $exam->class_level_id)
+                ->where('is_active', true)
+                ->inRandomOrder()
+                ->limit($count)
+                ->get();
 
-        DB::transaction(function () use ($exam, $rules, $topicIds, $distribution, $topicWeights) {
-            foreach ($rules as $rule) {
-                $this->processRule($exam, $rule, $topicIds, $distribution, $topicWeights);
+            $maxOrder = $exam->examQuestions()->max('order') ?? 0;
+
+            foreach ($questions as $index => $question) {
+                ExamQuestion::create([
+                    'exam_id' => $exam->id,
+                    'question_id' => $question->id,
+                    'order' => $maxOrder + $index + 1,
+                    'marks' => $question->default_marks,
+                ]);
             }
 
             $this->recomputeTotalMarks($exam);
         });
-    }
-
-    private function processRule(Exam $exam, array $rule, array $topicIds, string $distribution, array $topicWeights): void
-    {
-        $query = Question::whereIn('topic_id', $topicIds)
-            ->where('is_active', true);
-
-        if (! empty($rule['type'])) {
-            $query->where('type', $rule['type']);
-        }
-
-        $availableCount = $query->count();
-        $requestedCount = $rule['count'];
-
-        if ($availableCount < $requestedCount) {
-            throw new \RuntimeException(
-                "Only {$availableCount} questions found for the given filters, but {$requestedCount} requested."
-            );
-        }
-
-        $questions = $query->inRandomOrder()->limit($requestedCount)->get();
-        $maxOrder = $exam->examQuestions()->max('order') ?? 0;
-
-        foreach ($questions as $index => $question) {
-            ExamQuestion::create([
-                'exam_id' => $exam->id,
-                'question_id' => $question->id,
-                'order' => $maxOrder + $index + 1,
-                'marks' => $question->default_marks,
-            ]);
-        }
     }
 
     private function recomputeTotalMarks(Exam $exam): void

@@ -30,7 +30,6 @@ class TenantAuthService
         // Admission number branch — normalize only here
         elseif (preg_match(self::ADMISSION_REGEX, strtoupper($identifier))) {
             $admissionNumber = strtoupper($identifier);
-            $password = strtoupper($password); // normalize for case-insensitive password check
             $user = User::whereHas('studentProfile', function ($q) use ($admissionNumber) {
                 $q->where('admission_number', $admissionNumber);
             })->first();

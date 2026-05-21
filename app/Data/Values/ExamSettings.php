@@ -15,8 +15,6 @@ class ExamSettings implements Castable
         public readonly bool $showResultImmediately = false,
         public readonly ?Carbon $resultsReleaseDate = null,
         public readonly bool $requireAttendance = true,
-        public readonly string $distribution = 'pooled',
-        public readonly array $topicWeights = [],
         public readonly int $maxSuspiciousEvents = 5,
     ) {}
 
@@ -31,8 +29,6 @@ class ExamSettings implements Castable
             showResultImmediately: (bool) ($data['show_result_immediately'] ?? false),
             resultsReleaseDate: isset($data['results_release_date']) ? Carbon::parse($data['results_release_date']) : null,
             requireAttendance: (bool) ($data['require_attendance'] ?? true),
-            distribution: (string) ($data['distribution'] ?? 'pooled'),
-            topicWeights: (array) ($data['topic_weights'] ?? []),
             maxSuspiciousEvents: (int) ($data['max_suspicious_events'] ?? 5),
         );
     }
@@ -44,8 +40,6 @@ class ExamSettings implements Castable
             'show_result_immediately' => $this->showResultImmediately,
             'results_release_date' => $this->resultsReleaseDate?->toDateTimeString(),
             'require_attendance' => $this->requireAttendance,
-            'distribution' => $this->distribution,
-            'topic_weights' => $this->topicWeights,
             'max_suspicious_events' => $this->maxSuspiciousEvents,
         ];
     }

@@ -16,10 +16,6 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/**
- * @group Exam Administration
- * * APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.
- */
 class ExamController extends Controller
 {
     public function __construct(
@@ -63,20 +59,14 @@ class ExamController extends Controller
             'scheduled_start' => ['nullable', 'date'],
             'scheduled_end' => ['nullable', 'date', 'after:scheduled_start'],
             'instructions' => ['nullable', 'string'],
-            'topic_ids' => ['sometimes', 'array'],
-            'topic_ids.*' => ['uuid', 'exists:topics,id'],
         ], ExamSettingsSchema::validatorRules('settings')));
 
         $exam = $this->crudAction->create(array_merge($validated, [
             'created_by' => $request->user('tenant')->id,
         ]));
 
-        if (! empty($validated['topic_ids'])) {
-            $this->lifecycleAction->syncTopics($exam, $validated['topic_ids']);
-        }
-
         return ApiResponse::created(
-            $exam->load(['subject', 'classLevel', 'topics']),
+            $exam->load(['subject', 'classLevel']),
             'Exam created.'
         );
     }
@@ -85,7 +75,7 @@ class ExamController extends Controller
     {
         $exam = Exam::with([
             'subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name',
-            'examQuestions.question.options', 'examQuestions.question.topic', 'topics',
+            'examQuestions.question.options',
         ])->findOrFail($id);
 
         $this->authorize('view', $exam);

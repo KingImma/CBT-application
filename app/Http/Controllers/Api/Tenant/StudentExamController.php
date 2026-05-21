@@ -17,10 +17,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-/**
- * @group Student Exam Execution
- * * APIs consumed by the student interface to fetch active questions, submit answers, and finalize attempts.
- */
 class StudentExamController extends Controller
 {
     public function __construct(
@@ -48,7 +44,7 @@ class StudentExamController extends Controller
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $exam = Exam::with(['subject', 'classLevel', 'topics'])->findOrFail($id);
+        $exam = Exam::with(['subject', 'classLevel'])->findOrFail($id);
 
         $lastAttempt = ExamAttempt::forExam($exam->id)
             ->forStudent($request->user('tenant')->id)
@@ -133,8 +129,6 @@ class StudentExamController extends Controller
         $validated = $request->validate([
             'selected_option_ids' => ['sometimes', 'array'],
             'text_answer' => ['sometimes', 'string'],
-            'ordering_answer' => ['sometimes', 'array'],
-            'matching_answer' => ['sometimes', 'array'],
             'time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
@@ -153,8 +147,6 @@ class StudentExamController extends Controller
             'answers.*.question_id' => ['required', 'uuid'],
             'answers.*.selected_option_ids' => ['sometimes', 'array'],
             'answers.*.text_answer' => ['sometimes', 'string'],
-            'answers.*.ordering_answer' => ['sometimes', 'array'],
-            'answers.*.matching_answer' => ['sometimes', 'array'],
             'answers.*.time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
@@ -191,7 +183,6 @@ class StudentExamController extends Controller
             return ApiResponse::error($e->getMessage(), 422);
         }
 
-        // Check if results can be shown
         $exam = $attempt->exam;
         $examSettings = $exam->settings;
         $canShowResult = false;

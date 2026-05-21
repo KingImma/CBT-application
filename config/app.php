@@ -124,4 +124,6 @@ return [
     ],
 
     'central_domain' => env('CENTRAL_DOMAIN', 'localhost'),
+
+    'student_default_password' => env('STUDENT_DEFAULT_PASSWORD', 'Cbt@2026'),
 ];

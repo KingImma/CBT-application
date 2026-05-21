@@ -12,7 +12,6 @@ use App\Events\ExamSessionEnded;
 use App\Events\ExamSessionStarted;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
-use App\Models\Tenant\Topic;
 use Illuminate\Support\Facades\DB;
 
 class ExamLifecycleAction
@@ -102,10 +101,6 @@ class ExamLifecycleAction
             throw new \RuntimeException('Pass mark cannot exceed total marks.');
         }
 
-        if ($exam->topics()->count() === 0) {
-            throw new \RuntimeException('Exam must have at least one topic in the pool.');
-        }
-
         return DB::transaction(function () use ($exam) {
             $settings = $exam->settings;
             if ($exam->type === ExamType::Exam->value) {
@@ -114,8 +109,7 @@ class ExamLifecycleAction
                     showResultImmediately: false,
                     resultsReleaseDate: $settings->resultsReleaseDate,
                     requireAttendance: $settings->requireAttendance,
-                    distribution: $settings->distribution,
-                    topicWeights: $settings->topicWeights,
+                    maxSuspiciousEvents: $settings->maxSuspiciousEvents,
                 );
             }
 
@@ -177,20 +171,6 @@ class ExamLifecycleAction
             broadcast(new ExamSessionEnded($exam));
 
             return $exam;
-        });
-    }
-
-    public function syncTopics(Exam $exam, array $topicIds, array $weights = []): void
-    {
-        DB::transaction(function () use ($exam, $topicIds, $weights) {
-            $exam->topics()->detach();
-
-            foreach ($topicIds as $topicId) {
-                $topic = Topic::findOrFail($topicId);
-                $exam->topics()->attach($topic->id, [
-                    'weight' => $weights[$topicId] ?? null,
-                ]);
-            }
         });
     }
 }

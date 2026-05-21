@@ -17,22 +17,14 @@ use Illuminate\Validation\ValidationException;
 
 class TenantAuthService
 {
-    private const ADMISSION_REGEX = '/^STU\/\d{4}\/\d+$/';
-
     public function authenticate(string $identifier, string $password): array
     {
         $user = null;
 
-        // Email branch — raw input, no normalization
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
             $user = User::where('email', $identifier)->first();
-        }
-        // Admission number branch — normalize only here
-        elseif (preg_match(self::ADMISSION_REGEX, strtoupper($identifier))) {
-            $admissionNumber = strtoupper($identifier);
-            $user = User::whereHas('studentProfile', function ($q) use ($admissionNumber) {
-                $q->where('admission_number', $admissionNumber);
-            })->first();
+        } else {
+            $user = User::whereHas('studentProfile', fn ($q) => $q->where('admission_number', strtoupper($identifier)))->first();
         }
 
         if (! $user || ! Hash::check($password, $user->password)) {

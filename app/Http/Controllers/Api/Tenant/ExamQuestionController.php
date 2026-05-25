@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamQuestionAction;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ExamQuestionResource;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\ExamQuestion;
 use App\Support\ApiResponse;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +19,22 @@ class ExamQuestionController extends Controller
     public function __construct(
         private ExamQuestionAction $questionAction,
     ) {}
+
+    public function index(string $examId): JsonResponse
+    {
+        $exam = Exam::findOrFail($examId);
+        $this->authorize('view', $exam);
+
+        $questions = ExamQuestion::where('exam_id', $exam->id)
+            ->with('question.options')
+            ->orderBy('order')
+            ->get();
+
+        return ApiResponse::success(
+            ExamQuestionResource::collection($questions),
+            'Exam questions retrieved.',
+        );
+    }
 
     public function store(Request $request, string $examId): JsonResponse
     {

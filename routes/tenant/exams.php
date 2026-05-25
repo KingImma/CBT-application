@@ -18,6 +18,7 @@ Route::post('exams/{id}/start-session', [ExamController::class, 'startSession'])
 Route::post('exams/{id}/end-session', [ExamController::class, 'endSession']);
 
 Route::prefix('exams/{examId}/questions')->controller(ExamQuestionController::class)->group(function () {
+    Route::get('/', 'index');
     Route::post('/', 'store');
     Route::post('/randomize', 'randomize');
     Route::patch('/{questionId}', 'update');

@@ -34,7 +34,8 @@ class ExamPolicy
 
     public function publish(User $user, Exam $exam): bool
     {
-        return $user->id === $exam->created_by && $exam->status === 'draft';
+        return ($user->id === $exam->created_by || $user->hasRole('school_admin'))
+            && $exam->status === 'draft';
     }
 
     public function submitForReview(User $user, Exam $exam): bool

@@ -8,6 +8,7 @@ use App\Actions\Tenants\Exam\ExamAnswerAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExamAttemptResource;
+use App\Http\Resources\StudentExamQuestionResource;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
@@ -81,7 +82,7 @@ class StudentExamController extends Controller
 
         return ApiResponse::created([
             'attempt' => $attempt,
-            'questions' => $questionsData['questions'],
+            'questions' => StudentExamQuestionResource::collection($questionsData['questions']),
             'order' => $questionsData['order'],
         ], 'Exam started.');
     }
@@ -101,11 +102,37 @@ class StudentExamController extends Controller
         }
 
         $data = $this->sessionAction->recover($attempt);
+        $data['questions'] = StudentExamQuestionResource::collection($data['questions']);
 
         return ApiResponse::success($data, 'Active attempt retrieved.');
     }
 
     public function getQuestions(Request $request, string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $student = $request->user('tenant');
+
+        $attempt = ExamAttempt::where('exam_id', $exam->id)
+            ->forStudent($student->id)
+            ->inProgress()
+            ->first();
+
+        if (! $attempt) {
+            return ApiResponse::error('No active attempt found for this exam.', 404);
+        }
+
+        $questionsData = $this->sessionAction->getQuestions($attempt);
+
+        return ApiResponse::success([
+            'exam_id' => $exam->id,
+            'attempt_id' => $attempt->id,
+            'questions' => StudentExamQuestionResource::collection($questionsData['questions']),
+            'order' => $questionsData['order'],
+            'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
+        ], 'Questions retrieved.');
+    }
+
+    public function getAttemptQuestions(Request $request, string $id): JsonResponse
     {
         $attempt = ExamAttempt::with('exam')->findOrFail($id);
         $student = $request->user('tenant');
@@ -114,9 +141,19 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
+        if ($attempt->status !== 'in_progress') {
+            return ApiResponse::error('Only in-progress attempts can retrieve questions.', 422);
+        }
+
         $questionsData = $this->sessionAction->getQuestions($attempt);
 
-        return ApiResponse::success($questionsData, 'Questions retrieved.');
+        return ApiResponse::success([
+            'exam_id' => $attempt->exam_id,
+            'attempt_id' => $attempt->id,
+            'questions' => StudentExamQuestionResource::collection($questionsData['questions']),
+            'order' => $questionsData['order'],
+            'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
+        ], 'Questions retrieved.');
     }
 
     public function saveAnswer(Request $request, string $attemptId, string $questionId): JsonResponse

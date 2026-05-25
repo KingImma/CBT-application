@@ -11,6 +11,7 @@ Route::prefix('student/exams')->controller(StudentExamController::class)->group(
     Route::post('/{id}/start', 'start');
     Route::get('/{id}/attempt', 'activeAttempt');
     Route::get('/{id}/questions', 'getQuestions');
+    Route::get('/attempts/{id}/questions', 'getAttemptQuestions');
     Route::put('/attempts/{id}/answers/{questionId}', 'saveAnswer');
     Route::post('/attempts/{id}/bulk-save', 'bulkSave');
     Route::get('/attempts/{id}/time-remaining', 'timeRemaining');

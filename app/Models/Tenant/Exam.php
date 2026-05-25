@@ -90,4 +90,30 @@ class Exam extends Model
     {
         return $query->where('class_arm_id', $classArmId);
     }
+
+    public function isOwnedBy(User $user): bool
+    {
+        return $this->created_by === $user->id;
+        // TODO: v2 — expand to team/department ownership via exam_collaborators pivot
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    public function isScheduled(): bool
+    {
+        return $this->status === 'scheduled';
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->status === 'submitted';
+    }
+
+    public function isActivatable(): bool
+    {
+        return in_array($this->status, ['active', 'submitted']);
+    }
 }

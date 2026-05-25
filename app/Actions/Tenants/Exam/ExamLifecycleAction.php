@@ -62,6 +62,19 @@ class ExamLifecycleAction
         });
     }
 
+    public function reject(Exam $exam): Exam
+    {
+        if ($exam->status !== 'submitted') {
+            throw new \RuntimeException('Only submitted exams can be rejected.');
+        }
+
+        return DB::transaction(function () use ($exam) {
+            $exam->update(['status' => 'draft']);
+
+            return $exam->fresh();
+        });
+    }
+
     public function lock(Exam $exam): Exam
     {
         if (! in_array($exam->status, ['active', 'submitted'])) {

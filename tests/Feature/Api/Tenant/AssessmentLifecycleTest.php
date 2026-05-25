@@ -933,18 +933,21 @@ class AssessmentLifecycleTest extends TestCase
         $user = $asUser ?? $this->admin;
         $this->actingAsTenant($user);
 
-        $response = $this->postJson('/api/exams', array_merge([
+        return Exam::create(array_merge([
             'title' => 'Test Exam',
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
             'class_arm_id' => $this->classArm->id,
             'term_id' => $this->term->id,
             'type' => 'exam',
+            'status' => 'draft',
             'duration_minutes' => 60,
             'pass_mark' => 50.00,
+            'total_marks' => 0,
+            'max_attempts' => 1,
+            'created_by' => $user->id,
+            'settings' => ['require_attendance' => false],
         ], $overrides));
-
-        return Exam::find($response->json('data.id'));
     }
 
     protected function addQuestionToExam(Exam $exam, ?User $owner = null): Question

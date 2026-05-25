@@ -13,6 +13,7 @@ Route::apiResource('exams', ExamController::class);
 Route::post('exams/{id}/submit-for-review', [ExamController::class, 'submitForReview']);
 Route::post('exams/{id}/activate', [ExamController::class, 'activate']);
 Route::post('exams/{id}/lock', [ExamController::class, 'lock']);
+Route::post('exams/{id}/reject', [ExamController::class, 'reject']);
 Route::post('exams/{id}/publish', [ExamController::class, 'publish']);
 Route::post('exams/{id}/start-session', [ExamController::class, 'startSession']);
 Route::post('exams/{id}/end-session', [ExamController::class, 'endSession']);

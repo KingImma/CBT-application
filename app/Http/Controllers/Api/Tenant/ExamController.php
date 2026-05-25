@@ -46,6 +46,8 @@ class ExamController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', Exam::class);
+
         $validated = $request->validate(array_merge([
             'title' => ['required', 'string', 'max:255'],
             'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
@@ -146,6 +148,20 @@ class ExamController extends Controller
         }
 
         return ApiResponse::success($exam, 'Exam activated.');
+    }
+
+    public function reject(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('reject', $exam);
+
+        try {
+            $exam = $this->lifecycleAction->reject($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam rejected and returned to draft.');
     }
 
     public function lock(string $id): JsonResponse

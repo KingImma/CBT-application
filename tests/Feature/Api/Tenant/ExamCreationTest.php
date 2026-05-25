@@ -31,14 +31,17 @@ class ExamCreationTest extends TestCase
 
     public function test_can_create_exam(): void
     {
-        $teacher = User::create([
-            'name' => 'John Doe',
-            'email' => 'john@test.com',
+        $admin = User::create([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'admin@test.com',
             'password' => bcrypt('password'),
+            'role' => 'school_admin',
+            'is_active' => true,
         ]);
-        $teacher->assignRole('teacher');
+        $admin->assignRole('school_admin');
 
-        $this->actingAs($teacher, 'tenant');
+        $this->actingAs($admin, 'tenant');
 
         // Create subject, class level, term first
         $subject = Subject::create([

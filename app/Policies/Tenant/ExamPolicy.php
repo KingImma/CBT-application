@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
+use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -12,71 +14,105 @@ class ExamPolicy
 {
     use HandlesAuthorization;
 
-    public function view(User $user, Exam $exam): bool
+    public function before(User $user, string $ability): ?bool
     {
-        return $user->id === $exam->created_by || $user->hasRole('school_admin');
-    }
-
-    public function create(User $user): bool
-    {
-        return $user->hasRole('teacher') || $user->hasRole('school_admin');
-    }
-
-    public function update(User $user, Exam $exam): bool
-    {
-        return $user->id === $exam->created_by && $exam->status === 'draft';
-    }
-
-    public function delete(User $user, Exam $exam): bool
-    {
-        return $user->id === $exam->created_by && $exam->status === 'draft';
-    }
-
-    public function publish(User $user, Exam $exam): bool
-    {
-        return ($user->id === $exam->created_by || $user->hasRole('school_admin'))
-            && $exam->status === 'draft';
-    }
-
-    public function submitForReview(User $user, Exam $exam): bool
-    {
-        return $user->id === $exam->created_by && $exam->status === 'draft';
-    }
-
-    public function activate(User $user, Exam $exam): bool
-    {
-        return $user->hasRole('school_admin') && $exam->status === 'submitted';
-    }
-
-    public function lock(User $user, Exam $exam): bool
-    {
-        return $user->hasRole('school_admin') && in_array($exam->status, ['active', 'submitted']);
-    }
-
-    public function startSession(User $user, Exam $exam): bool
-    {
-        return $user->id === $exam->created_by && $exam->status === 'scheduled';
-    }
-
-    public function viewMonitoring(User $user, Exam $exam): bool
-    {
-        return $user->id === $exam->created_by || $user->hasRole('school_admin');
-    }
-
-    public function manageQuestions(User $user, Exam $exam): bool
-    {
-        if ($exam->status !== 'draft') {
-            return false;
-        }
-
-        if ($user->id === $exam->created_by) {
-            return true;
-        }
-
         if ($user->hasRole('school_admin')) {
             return true;
         }
 
-        return $user->hasRole('teacher');
+        return null;
+    }
+
+    public function view(User $user, Exam $exam): bool
+    {
+        return $exam->isOwnedBy($user);
+    }
+
+    public function create(User $user): bool
+    {
+        return false;
+    }
+
+    public function update(User $user, Exam $exam): bool
+    {
+        return $exam->isOwnedBy($user) && $exam->isDraft();
+    }
+
+    public function delete(User $user, Exam $exam): bool
+    {
+        return $exam->isOwnedBy($user) && $exam->isDraft();
+    }
+
+    public function publish(User $user, Exam $exam): bool
+    {
+        return $exam->isOwnedBy($user) && $exam->isDraft();
+    }
+
+    public function submitForReview(User $user, Exam $exam): bool
+    {
+        return $exam->isDraft()
+            && ($exam->isOwnedBy($user) || $this->isAssignedTeacher($user, $exam));
+    }
+
+    public function reject(User $user, Exam $exam): bool
+    {
+        return $exam->isOwnedBy($user) && $exam->isSubmitted();
+    }
+
+    public function activate(User $user, Exam $exam): bool
+    {
+        return $exam->isSubmitted();
+    }
+
+    public function lock(User $user, Exam $exam): bool
+    {
+        return $exam->isActivatable();
+    }
+
+    public function startSession(User $user, Exam $exam): bool
+    {
+        return $exam->isOwnedBy($user) && $exam->isScheduled();
+    }
+
+    public function viewMonitoring(User $user, Exam $exam): bool
+    {
+        return $exam->isOwnedBy($user);
+    }
+
+    public function manageQuestions(User $user, Exam $exam): bool
+    {
+        return $exam->isDraft()
+            && ($exam->isOwnedBy($user) || $this->isAssignedTeacher($user, $exam));
+    }
+
+    private function isAssignedTeacher(User $user, Exam $exam): bool
+    {
+        if ($this->isSubjectTeacher($user, $exam)) {
+            return true;
+        }
+
+        if ($this->isClassTeacher($user, $exam)) {
+            return ! TeacherSubjectAssignment::where('subject_id', $exam->subject_id)
+                ->where('class_level_id', $exam->class_level_id)
+                ->where('user_id', '!=', $user->id)
+                ->exists();
+        }
+
+        return false;
+    }
+
+    private function isSubjectTeacher(User $user, Exam $exam): bool
+    {
+        return TeacherSubjectAssignment::where('user_id', $user->id)
+            ->where('subject_id', $exam->subject_id)
+            ->where('class_level_id', $exam->class_level_id)
+            ->exists();
+    }
+
+    private function isClassTeacher(User $user, Exam $exam): bool
+    {
+        return ClassArm::where('assigned_teacher_id', $user->id)
+            ->where('class_level_id', $exam->class_level_id)
+            ->exists();
     }
 }

@@ -31,14 +31,17 @@ class ExamFullFlowTest extends TestCase
 
     public function test_exam_creation_and_publishing_flow(): void
     {
-        // Create teacher
-        $teacher = User::create([
-            'name' => 'Teacher One',
-            'email' => 'teacher1@test.com',
+        // Create admin
+        $admin = User::create([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'admin@test.com',
             'password' => bcrypt('password'),
+            'role' => 'school_admin',
+            'is_active' => true,
         ]);
-        $teacher->assignRole('teacher');
-        $this->actingAs($teacher, 'tenant');
+        $admin->assignRole('school_admin');
+        $this->actingAs($admin, 'tenant');
 
         // Create required related models
         $subject = Subject::create([

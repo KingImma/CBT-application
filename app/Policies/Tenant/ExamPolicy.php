@@ -76,10 +76,6 @@ class ExamPolicy
             return true;
         }
 
-        return $user->hasRole('teacher')
-            && $user->teacherAssignments()
-                ->where('subject_id', $exam->subject_id)
-                ->where('class_level_id', $exam->class_level_id)
-                ->exists();
+        return $user->hasRole('teacher');
     }
 }

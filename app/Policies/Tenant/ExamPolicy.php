@@ -64,6 +64,22 @@ class ExamPolicy
 
     public function manageQuestions(User $user, Exam $exam): bool
     {
-        return $user->id === $exam->created_by && $exam->status === 'draft';
+        if ($exam->status !== 'draft') {
+            return false;
+        }
+
+        if ($user->id === $exam->created_by) {
+            return true;
+        }
+
+        if ($user->hasRole('school_admin')) {
+            return true;
+        }
+
+        return $user->hasRole('teacher')
+            && $user->teacherAssignments()
+                ->where('subject_id', $exam->subject_id)
+                ->where('class_level_id', $exam->class_level_id)
+                ->exists();
     }
 }

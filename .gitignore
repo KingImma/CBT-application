@@ -34,3 +34,6 @@ opencode.json
 boost.json
 AGENTS.md
 postman
+# Dev test harnesses — never committed
+/resources/views/dev/
+dev-notes.md

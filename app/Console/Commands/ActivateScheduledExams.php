@@ -5,20 +5,19 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Actions\Tenants\Exam\ExamLifecycleAction;
-use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Enums\ExamStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\Exam;
 use Illuminate\Console\Command;
 
-class EndExpiredExamSessions extends Command
+class ActivateScheduledExams extends Command
 {
-    protected $signature = 'exams:end-expired-sessions';
+    protected $signature = 'exams:activate-scheduled';
 
-    protected $description = 'End exam sessions that have passed their scheduled end time';
+    protected $description = 'Auto-activate exams whose scheduled_start has passed';
 
     public function __construct(
         private ExamLifecycleAction $lifecycleAction,
-        private ExamSessionAction $sessionAction,
     ) {
         parent::__construct();
     }
@@ -37,17 +36,17 @@ class EndExpiredExamSessions extends Command
             $tenant->run(function () use ($tenant) {
                 $this->info("Checking tenant: {$tenant->id}");
 
-                $expiredSessions = Exam::where('status', 'active')
-                    ->whereNotNull('scheduled_end')
-                    ->where('scheduled_end', '<=', now())
+                $scheduledExams = Exam::where('status', ExamStatus::Scheduled->value)
+                    ->whereNotNull('scheduled_start')
+                    ->where('scheduled_start', '<=', now())
                     ->get();
 
-                foreach ($expiredSessions as $exam) {
+                foreach ($scheduledExams as $exam) {
                     try {
-                        $this->lifecycleAction->endSession($exam, $this->sessionAction);
-                        $this->info("  Ended session for exam '{$exam->title}' ({$exam->id})");
+                        $this->lifecycleAction->startSession($exam);
+                        $this->info("  Activated exam '{$exam->title}' ({$exam->id})");
                     } catch (\Exception $e) {
-                        $this->error("  Failed to end session for exam {$exam->id}: {$e->getMessage()}");
+                        $this->error("  Failed to activate exam {$exam->id}: {$e->getMessage()}");
                     }
                 }
             });

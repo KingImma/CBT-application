@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Tenant;
 
 use App\Data\Values\ExamSettings;
+use App\Enums\ExamStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,9 +21,11 @@ class Exam extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
+        'status' => ExamStatus::class,
         'scheduled_start' => 'datetime',
         'scheduled_end' => 'datetime',
         'session_started_at' => 'datetime',
+        'approved_at' => 'datetime',
         'settings' => ExamSettings::class,
         'duration_minutes' => 'integer',
         'session_duration_minutes' => 'integer',
@@ -99,21 +102,36 @@ class Exam extends Model
 
     public function isDraft(): bool
     {
-        return $this->status === 'draft';
+        return $this->status === ExamStatus::Draft;
     }
 
     public function isScheduled(): bool
     {
-        return $this->status === 'scheduled';
+        return $this->status === ExamStatus::Scheduled;
     }
 
     public function isSubmitted(): bool
     {
-        return $this->status === 'submitted';
+        return $this->status === ExamStatus::Submitted;
     }
 
-    public function isActivatable(): bool
+    public function canBeLocked(): bool
     {
-        return in_array($this->status, ['active', 'submitted']);
+        return in_array($this->status, [ExamStatus::Active, ExamStatus::Submitted]);
+    }
+
+    public function isGrading(): bool
+    {
+        return $this->status === ExamStatus::Grading;
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === ExamStatus::Completed;
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === ExamStatus::Published;
     }
 }

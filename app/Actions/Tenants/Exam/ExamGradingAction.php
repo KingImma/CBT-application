@@ -71,7 +71,7 @@ class ExamGradingAction
                     ExamAttemptStatus::Disqualified->value,
                 ])->exists();
 
-            if (! $ungradedAttempts && $exam->status === ExamStatus::Grading->value) {
+            if (! $ungradedAttempts && $exam->status === ExamStatus::Grading) {
                 $exam->update(['status' => ExamStatus::Completed->value]);
             }
 

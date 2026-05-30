@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +21,7 @@ class ExamCrudAction
                 'term_id' => $data['term_id'],
                 'created_by' => $data['created_by'],
                 'type' => $data['type'],
-                'status' => 'draft',
+                'status' => ExamStatus::Draft->value,
                 'duration_minutes' => $data['duration_minutes'],
                 'total_marks' => $data['total_marks'] ?? 0,
                 'pass_mark' => $data['pass_mark'] ?? null,
@@ -35,7 +36,7 @@ class ExamCrudAction
 
     public function update(Exam $exam, array $data): Exam
     {
-        if ($exam->status !== 'draft') {
+        if ($exam->status !== ExamStatus::Draft) {
             throw new \RuntimeException('Only draft exams can be updated.');
         }
 
@@ -48,7 +49,7 @@ class ExamCrudAction
 
     public function delete(Exam $exam): void
     {
-        if ($exam->status !== 'draft') {
+        if ($exam->status !== ExamStatus::Draft) {
             throw new \RuntimeException('Only draft exams can be deleted.');
         }
 

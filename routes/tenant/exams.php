@@ -17,6 +17,9 @@ Route::post('exams/{id}/reject', [ExamController::class, 'reject']);
 Route::post('exams/{id}/publish', [ExamController::class, 'publish']);
 Route::post('exams/{id}/start-session', [ExamController::class, 'startSession']);
 Route::post('exams/{id}/end-session', [ExamController::class, 'endSession']);
+Route::post('exams/{id}/recall', [ExamController::class, 'recall']);
+Route::post('exams/{id}/emergency-revert', [ExamController::class, 'emergencyRevert']);
+Route::post('exams/{id}/unlock', [ExamController::class, 'unlock']);
 
 Route::prefix('exams/{examId}/questions')->controller(ExamQuestionController::class)->group(function () {
     Route::get('/', 'index');

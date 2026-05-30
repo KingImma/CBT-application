@@ -24,7 +24,7 @@ class ExamAttendanceController extends Controller
         $exam = Exam::findOrFail($examId);
         $this->authorize('viewMonitoring', $exam);
 
-        $students = User::select('id', 'first_name', 'last_name')
+        $students = User::select('id', 'email', 'first_name', 'last_name')
             ->whereHas('studentProfile', function ($q) use ($exam) {
                 $q->where('class_level_id', $exam->class_level_id);
                 if ($exam->class_arm_id) {
@@ -44,6 +44,7 @@ class ExamAttendanceController extends Controller
 
             return [
                 'student_id' => $student->id,
+                'email' => $student->email,
                 'student_name' => $student->first_name.' '.$student->last_name,
                 'status' => $record?->status ?? null,
                 'marked_at' => $record?->marked_at?->toIso8601String(),

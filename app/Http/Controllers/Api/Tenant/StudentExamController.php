@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamAnswerAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Actors\ActorRegistry;
+use App\Enums\ExamStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExamAttemptResource;
 use App\Http\Resources\StudentExamQuestionResource;
@@ -159,8 +161,6 @@ class StudentExamController extends Controller
     public function saveAnswer(Request $request, string $attemptId, string $questionId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
-        $student = $request->user('tenant');
-
         $this->authorize('saveAnswer', $attempt);
 
         $validated = $request->validate([
@@ -169,7 +169,7 @@ class StudentExamController extends Controller
             'time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $answer = $this->answerAction->save($attempt, $questionId, $validated);
+        $answer = ActorRegistry::examSession($attemptId)->handle('saveAnswer', array_merge($validated, ['question_id' => $questionId]));
 
         return ApiResponse::success($answer, 'Answer saved.');
     }
@@ -195,17 +195,16 @@ class StudentExamController extends Controller
     public function timeRemaining(Request $request, string $attemptId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
-        $student = $request->user('tenant');
 
-        if ($attempt->student_id !== $student->id) {
+        if ($attempt->student_id !== $request->user('tenant')->id) {
             return ApiResponse::error('Unauthorized.', 403);
         }
 
-        $remainingSeconds = $attempt->getTimeRemainingSeconds();
+        $remaining = ActorRegistry::examSession($attemptId)->handle('timeRemaining');
 
         return ApiResponse::success([
-            'remaining_seconds' => $remainingSeconds,
-            'expired' => $remainingSeconds <= 0,
+            'remaining_seconds' => $remaining,
+            'expired' => $remaining <= 0,
         ], 'Time remaining retrieved.');
     }
 
@@ -213,6 +212,10 @@ class StudentExamController extends Controller
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('submit', $attempt);
+
+        if ($attempt->status !== 'in_progress') {
+            return ApiResponse::error('Already submitted.', 409);
+        }
 
         try {
             $attempt = $this->sessionAction->submit($attempt);
@@ -293,7 +296,7 @@ class StudentExamController extends Controller
             return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
         }
 
-        if ($exam->status === 'published') {
+        if ($exam->status === ExamStatus::Published) {
             return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
         }
 

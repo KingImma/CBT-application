@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class ExamAnswerAction
 {
-    public function save(ExamAttempt $attempt, string $questionId, array $data): ExamAnswer
+    public function save(ExamAttempt $attempt, string $questionId, array $payload): ExamAnswer
     {
         if ($attempt->status !== 'in_progress') {
             throw new \RuntimeException('Attempt is no longer active.');
@@ -21,17 +21,17 @@ class ExamAnswerAction
             throw new \RuntimeException('Exam time has expired.');
         }
 
-        return DB::transaction(function () use ($attempt, $questionId, $data) {
+        return DB::transaction(function () use ($attempt, $questionId, $payload) {
             return ExamAnswer::updateOrCreate(
                 [
                     'attempt_id' => $attempt->id,
                     'question_id' => $questionId,
                 ],
                 [
-                    'selected_option_ids' => $data['selected_option_ids'] ?? null,
-                    'text_answer' => $data['text_answer'] ?? null,
+                    'selected_option_ids' => $payload['selected_option_ids'] ?? null,
+                    'text_answer' => $payload['text_answer'] ?? null,
                     'answered_at' => now(),
-                    'time_spent_seconds' => $data['time_spent_seconds'] ?? null,
+                    'time_spent_seconds' => $payload['time_spent_seconds'] ?? null,
                 ]
             );
         });

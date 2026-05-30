@@ -6,6 +6,7 @@ namespace App\Actions\Tenants\Exam;
 
 use App\Data\Values\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
+use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
@@ -21,7 +22,7 @@ class ExamSessionAction
 
     public function validateStart(Exam $exam, User $student): void
     {
-        if ($exam->status !== 'active') {
+        if ($exam->status !== ExamStatus::Active) {
             throw new \RuntimeException('Exam is not active.');
         }
 
@@ -130,7 +131,7 @@ class ExamSessionAction
             $attempt->update([
                 'status' => ExamAttemptStatus::Graded->value,
                 'submitted_at' => now(),
-                'time_spent_seconds' => $timeSpentSeconds ?? now()->diffInSeconds($attempt->started_at),
+                'time_spent_seconds' => max(0, (int) ($timeSpentSeconds ?? now()->diffInSeconds($attempt->started_at))),
             ]);
 
             $this->gradingAction->recomputeScore($attempt);

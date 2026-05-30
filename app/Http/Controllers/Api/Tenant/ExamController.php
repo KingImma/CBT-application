@@ -21,6 +21,7 @@ class ExamController extends Controller
     public function __construct(
         private ExamCrudAction $crudAction,
         private ExamLifecycleAction $lifecycleAction,
+        private ExamSessionAction $sessionAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -136,13 +137,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam submitted for review.');
     }
 
-    public function activate(string $id): JsonResponse
+    public function activate(string $id, Request $request): JsonResponse
     {
         $exam = Exam::findOrFail($id);
         $this->authorize('activate', $exam);
 
         try {
-            $exam = $this->lifecycleAction->activate($exam);
+            $exam = $this->lifecycleAction->activate($exam, $request->user('tenant')->id);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -150,18 +151,50 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam activated.');
     }
 
-    public function reject(string $id): JsonResponse
+    public function reject(Request $request, string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
         $this->authorize('reject', $exam);
 
+        $validated = $request->validate([
+            'rejection_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
         try {
-            $exam = $this->lifecycleAction->reject($exam);
+            $exam = $this->lifecycleAction->reject($exam, $validated['rejection_reason'] ?? null);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
 
         return ApiResponse::success($exam, 'Exam rejected and returned to draft.');
+    }
+
+    public function recall(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('recall', $exam);
+
+        try {
+            $exam = $this->lifecycleAction->recall($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam recalled to draft.');
+    }
+
+    public function emergencyRevert(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('emergencyRevert', $exam);
+
+        try {
+            $exam = $this->lifecycleAction->emergencyRevert($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam emergency-reverted to draft.');
     }
 
     public function lock(string $id): JsonResponse
@@ -176,6 +209,20 @@ class ExamController extends Controller
         }
 
         return ApiResponse::success($exam, 'Exam locked.');
+    }
+
+    public function unlock(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('unlock', $exam);
+
+        try {
+            $exam = $this->lifecycleAction->unlock($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam unlocked and returned to draft.');
     }
 
     public function publish(string $id): JsonResponse
@@ -209,10 +256,10 @@ class ExamController extends Controller
     public function endSession(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
-        $this->authorize('startSession', $exam);
+        $this->authorize('view', $exam);
 
         try {
-            $exam = $this->lifecycleAction->endSession($exam, app(ExamSessionAction::class));
+            $exam = $this->lifecycleAction->endSession($exam, $this->sessionAction);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }

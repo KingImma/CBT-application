@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
@@ -14,7 +15,7 @@ class ExamQuestionAction
 {
     public function add(Exam $exam, string $questionId, ?string $marksOverride = null, ?string $userId = null): ExamQuestion
     {
-        if (! in_array($exam->status, ['draft', 'scheduled'])) {
+        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
             throw new \RuntimeException('Questions can only be added to draft or scheduled exams.');
         }
 
@@ -43,7 +44,7 @@ class ExamQuestionAction
 
     public function updateMarks(Exam $exam, string $questionId, ?string $marksOverride): ExamQuestion
     {
-        if (! in_array($exam->status, ['draft', 'scheduled'])) {
+        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
             throw new \RuntimeException('Questions can only be modified in draft or scheduled exams.');
         }
 
@@ -61,7 +62,7 @@ class ExamQuestionAction
 
     public function remove(Exam $exam, string $questionId): void
     {
-        if (! in_array($exam->status, ['draft', 'scheduled'])) {
+        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
             throw new \RuntimeException('Questions can only be removed from draft or scheduled exams.');
         }
 
@@ -77,7 +78,7 @@ class ExamQuestionAction
 
     public function reorder(Exam $exam, array $orderMapping): void
     {
-        if ($exam->status !== 'draft') {
+        if ($exam->status !== ExamStatus::Draft) {
             throw new \RuntimeException('Questions can only be reordered in draft exams.');
         }
 
@@ -92,7 +93,7 @@ class ExamQuestionAction
 
     public function randomizeQuestions(Exam $exam, int $count): void
     {
-        if (! in_array($exam->status, ['draft', 'scheduled'])) {
+        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
             throw new \RuntimeException('Questions can only be added to draft or scheduled exams.');
         }
 

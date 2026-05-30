@@ -6,9 +6,9 @@ namespace App\Console\Commands;
 
 use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Enums\ExamAttemptStatus;
+use App\Models\Tenant;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Console\Command;
-use Spatie\Multitenancy\Models\Tenant;
 
 class AutoSubmitExpiredExams extends Command
 {
@@ -33,31 +33,30 @@ class AutoSubmitExpiredExams extends Command
         }
 
         foreach ($tenants as $tenant) {
-            $tenant->makeCurrent();
-            $this->info("Checking tenant: {$tenant->id}");
+            $tenant->run(function () use ($tenant) {
+                $this->info("Checking tenant: {$tenant->id}");
 
-            $individualExpired = ExamAttempt::where('status', ExamAttemptStatus::InProgress->value)
-                ->whereHas('exam', fn ($q) => $q->whereNotNull('duration_minutes'))
-                ->get()
-                ->filter(fn ($attempt) => now()->getTimestamp() >= $attempt->started_at->getTimestamp() + ($attempt->exam->duration_minutes * 60));
+                $individualExpired = ExamAttempt::where('status', ExamAttemptStatus::InProgress->value)
+                    ->whereHas('exam', fn ($q) => $q->whereNotNull('duration_minutes'))
+                    ->get()
+                    ->filter(fn ($attempt) => now()->getTimestamp() >= $attempt->started_at->getTimestamp() + ($attempt->exam->duration_minutes * 60));
 
-            $sessionExpired = ExamAttempt::where('status', ExamAttemptStatus::InProgress->value)
-                ->whereHas('exam', fn ($q) => $q->whereNotNull('session_started_at')->whereNotNull('session_duration_minutes'))
-                ->get()
-                ->filter(fn ($attempt) => now()->getTimestamp() >= $attempt->exam->session_started_at->getTimestamp() + ($attempt->exam->session_duration_minutes * 60));
+                $sessionExpired = ExamAttempt::where('status', ExamAttemptStatus::InProgress->value)
+                    ->whereHas('exam', fn ($q) => $q->whereNotNull('session_started_at')->whereNotNull('session_duration_minutes'))
+                    ->get()
+                    ->filter(fn ($attempt) => now()->getTimestamp() >= $attempt->exam->session_started_at->getTimestamp() + ($attempt->exam->session_duration_minutes * 60));
 
-            $allExpired = $individualExpired->merge($sessionExpired)->unique('id');
+                $allExpired = $individualExpired->merge($sessionExpired)->unique('id');
 
-            foreach ($allExpired as $attempt) {
-                try {
-                    $this->sessionAction->submit($attempt);
-                    $this->info("  Auto-submitted attempt {$attempt->id} for student {$attempt->student_id}");
-                } catch (\Exception $e) {
-                    $this->error("  Failed to submit attempt {$attempt->id}: {$e->getMessage()}");
+                foreach ($allExpired as $attempt) {
+                    try {
+                        $this->sessionAction->submit($attempt);
+                        $this->info("  Auto-submitted attempt {$attempt->id} for student {$attempt->student_id}");
+                    } catch (\Exception $e) {
+                        $this->error("  Failed to submit attempt {$attempt->id}: {$e->getMessage()}");
+                    }
                 }
-            }
-
-            $tenant->forgetCurrent();
+            });
         }
 
         return self::SUCCESS;

@@ -25,6 +25,13 @@ Schedule::command('tenants:prune-expired-tokens --hours=24')
         Log::channel('slack')->error('Tenant token pruning failed');
     });
 
+// Auto-activate scheduled exams whose scheduled_start has passed
+Schedule::command('exams:activate-scheduled')
+    ->everyMinute()
+    ->onFailure(function () {
+        Log::channel('slack')->error('Activate scheduled exams failed');
+    });
+
 // Auto-submit exam attempts whose individual or session timer has expired
 Schedule::command('exams:auto-submit-expired')
     ->everyMinute()

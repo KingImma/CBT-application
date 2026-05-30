@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\SuperAdmin;
+use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Broadcast;
@@ -24,19 +25,29 @@ Broadcast::channel('teacher.{teacherId}.activity', function ($user, $teacherId) 
         && (string) $user->id === (string) $teacherId;
 });
 
-// Exam session channel — single channel per exam, all subscribed students receive session.started / session.ended
-// Auth: must be a student with an in-progress attempt for this exam
+// Exam session channel — single channel per exam
+// Auth: students with an in-progress attempt, or school_admin/teacher who own the exam
 Broadcast::channel('school.{tenantId}.exam.{examId}', function ($user, $tenantId, $examId) {
     if ((string) tenant('id') !== (string) $tenantId) {
         return false;
     }
 
-    if (! ($user instanceof User) || ! $user->hasRole('student')) {
+    if (! ($user instanceof User)) {
         return false;
     }
 
-    return ExamAttempt::where('exam_id', $examId)
-        ->where('student_id', $user->id)
-        ->where('status', 'in_progress')
-        ->exists();
+    if ($user->hasRole('school_admin') || $user->hasRole('teacher')) {
+        $exam = Exam::find($examId);
+
+        return $exam && $exam->isOwnedBy($user);
+    }
+
+    if ($user->hasRole('student')) {
+        return ExamAttempt::where('exam_id', $examId)
+            ->where('student_id', $user->id)
+            ->whereIn('status', ['in_progress', 'graded', 'submitted'])
+            ->exists();
+    }
+
+    return false;
 });

@@ -12,6 +12,8 @@ class ExamAttendance extends Model
 {
     use HasUuids;
 
+    protected $table = 'exam_attendance';
+
     protected $guarded = ['id'];
 
     protected $casts = [

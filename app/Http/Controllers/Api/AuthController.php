@@ -9,6 +9,8 @@ use App\Services\Auth\TenantAuthService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Resources\StudentResource;
+use App\Http\Resources\TeacherResource;
 
 /**
  * @group Authentication & Onboarding
@@ -96,15 +98,35 @@ class AuthController extends Controller
             ], 'Profile retrieved successfully.');
         }
 
-        return ApiResponse::success([
+        $role = $user->getRoleNames()->first();
+
+        $sessionData = [
             'id' => $user->id,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'email' => $user->email,
-            'role' => $user->getRoleNames()->first(),
+            'role' => $role,
             'permissions' => $user->getAllPermissions()->pluck('name'),
             'type' => 'tenant_user',
             'tenant_handle' => tenant('handle'),
-        ], 'Profile retrieved successfully.');
+        ];
+
+        $roleData = match ($role) {
+            'teacher' => (new \App\Http\Resources\TeacherResource(
+                $user->loadMissing('teacherProfile.classLevel', 'teacherAssignments.subject')
+            ))->resolve(),
+            
+            'student' => (new \App\Http\Resources\StudentResource(
+                $user->loadMissing('studentProfile.classArm.classLevel')
+            ))->resolve(),
+            
+            // School Admins typically don't need a profile resource, 
+            // so they safely return an empty array to merge.
+            default => []
+        };
+
+        $finalPayload = array_merge($sessionData, $roleData);
+
+        return ApiResponse::success($finalPayload, 'Profile retrieved successfully.');
     }
 }

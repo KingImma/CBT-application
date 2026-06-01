@@ -18,11 +18,12 @@ class TeacherResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
-            'teacher_profile' => [
+            'teacher_profile' => $this->whenLoaded('teacherProfile', fn () => [
                 'staff_id' => $this->teacherProfile?->staff_id,
                 'qualification' => $this->teacherProfile?->qualification,
                 'department' => $this->teacherProfile?->department,
-            ],
+                'class_level' => new ClassLevelResource($this->teacherProfile?->classLevel),
+            ]),
             'assigned_classes' => ClassArmResource::collection($this->whenLoaded('assignedClasses')),
             'assigned_subjects' => $this->whenLoaded('teacherAssignments', function () {
                 return $this->teacherAssignments->map(fn ($assignment) => [

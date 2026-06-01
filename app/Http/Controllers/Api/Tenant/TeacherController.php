@@ -64,6 +64,7 @@ class TeacherController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
             'qualification' => ['nullable', 'string', 'max:255'],
             'staff_id' => ['nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id'],
+            'class_level_id' => ['nullable', 'uuid', 'exists:class_levels,id'],
         ]);
 
         $result = $action->create($validated);
@@ -153,6 +154,7 @@ class TeacherController extends Controller
             'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
             'qualification' => ['sometimes', 'nullable', 'string', 'max:255'],
             'staff_id' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id,'.$id],
+            'class_level_id' => ['sometimes', 'nullable', 'uuid', 'exists:class_levels,id'],
         ]);
 
         $teacher = $action->update($validated, $id);

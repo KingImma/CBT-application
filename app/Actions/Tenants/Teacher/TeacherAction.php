@@ -31,6 +31,7 @@ class TeacherAction
             $this->createProfile($user, 'teacherProfile', [
                 'qualification' => $data['qualification'] ?? null,
                 'staff_id' => $data['staff_id'] ?? $this->generateStaffId(),
+                'class_level_id' => $data['class_level_id'] ?? null,
             ]);
 
             $this->assignRoleAndSyncIndex($user, 'teacher', $this->tenantUserService);
@@ -47,7 +48,7 @@ class TeacherAction
         $user = User::role('teacher')->findOrFail($userId);
 
         DB::transaction(function () use ($user, $data) {
-            $this->updateUserAndProfile($user, $data, ['qualification', 'staff_id']);
+            $this->updateUserAndProfile($user, $data, ['qualification', 'staff_id', 'class_level_id']);
         });
 
         return $user->fresh('teacherProfile');

@@ -1,11 +1,15 @@
 <?php
 
+// routes/tenant/classes.php
+
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\Tenant\ClassArmController;
 use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
 use App\Http\Controllers\Api\Tenant\ClassLevelController;
 use Illuminate\Support\Facades\Route;
+
+Route::patch('class-levels/{id}/assign-teachers', [ClassLevelController::class, 'assignTeachers']);
 
 Route::apiResource('class-levels', ClassLevelController::class);
 

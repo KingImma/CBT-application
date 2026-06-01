@@ -10,6 +10,7 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\Tenant\User;
 
 /**
  * @group Classes & Arms
@@ -170,5 +171,26 @@ class ClassLevelController extends Controller
         return ApiResponse::success([
             'is_compulsory' => $newStatus,
         ], 'Subject compulsory status updated.');
+    }
+
+    public function assignTeacher(Request $request, string $id, string $subjectId): JsonResponse
+    {
+        
+        $level = ClassLevel::findOrFail($id);
+
+        $validated = $request->validate([
+            'teacher_id' => ['required', 'uuid', 'exists:users,id'],
+        ]);
+
+        $teacher = User::role('teacher')->findOrFail($validated['teacher_id']);
+
+        $teacher->teacherProfile()->update(
+            ['class_level_id' => $level->id]
+        );
+
+        return ApiResponse::success(
+            $level->load(['classArms.assignedTeacher', 'subjects']),
+            "Teacher assigned to class level {$level->name} successfully."
+        );
     }
 }

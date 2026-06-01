@@ -10,7 +10,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\PasswordService;
+use App\Services\Auth\OtpService;
+use App\Services\Auth\PasswordResetService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,8 @@ use Illuminate\Validation\Rules\Password;
 class PasswordController extends Controller
 {
     public function __construct(
-        private readonly PasswordService $passwordService
+        private readonly OtpService $otpService,
+        private readonly PasswordResetService $passwordResetService,
     ) {}
 
     // ────────────────────────────
@@ -39,15 +41,10 @@ class PasswordController extends Controller
         // Resolve school name from tenant config for the email template
         $schoolName = config('tenant.school_name', 'EduCBT');
 
-        $this->passwordService->sendOtp($validated['email'], $schoolName);
+        $this->otpService->sendOtp($validated['email'], $schoolName);
 
         // Always return 200 — never reveal whether the email exists
         return ApiResponse::message('If that email is registered, you will receive a reset code.');
-    }
-
-    public function forgotPassword(Request $request): JsonResponse
-    {
-        return $this->forgot($request);
     }
 
     // ────────────────────────────
@@ -61,7 +58,7 @@ class PasswordController extends Controller
             'otp' => ['bail', 'required', 'string', 'size:6'],
         ]);
 
-        $resetToken = $this->passwordService->verifyOtp(
+        $resetToken = $this->otpService->verifyOtp(
             $validated['email'],
             $validated['otp']
         );
@@ -82,17 +79,12 @@ class PasswordController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
         ]);
 
-        $this->passwordService->resetPassword(
+        $this->passwordResetService->resetPassword(
             $validated['reset_token'],
             $validated['password']
         );
 
         return ApiResponse::message('Password reset successfully. Please log in.');
-    }
-
-    public function resetPassword(Request $request): JsonResponse
-    {
-        return $this->reset($request);
     }
 
     public function change(Request $request): JsonResponse
@@ -108,7 +100,7 @@ class PasswordController extends Controller
             abort(401);
         }
 
-        $this->passwordService->changePassword(
+        $this->passwordResetService->changePassword(
             $user,
             $validated['current_password'],
             $validated['password']

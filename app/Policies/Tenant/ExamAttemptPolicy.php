@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
+use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -21,17 +22,17 @@ class ExamAttemptPolicy
 
     public function start(User $user, ExamAttempt $attempt): bool
     {
-        return $user->id === $attempt->student_id && $attempt->status === 'in_progress';
+        return $user->id === $attempt->student_id && $attempt->status === ExamAttemptStatus::InProgress->value;
     }
 
     public function submit(User $user, ExamAttempt $attempt): bool
     {
-        return $user->id === $attempt->student_id && $attempt->status === 'in_progress';
+        return $user->id === $attempt->student_id && $attempt->status === ExamAttemptStatus::InProgress->value;
     }
 
     public function saveAnswer(User $user, ExamAttempt $attempt): bool
     {
-        return $user->id === $attempt->student_id && $attempt->status === 'in_progress';
+        return $user->id === $attempt->student_id && $attempt->status === ExamAttemptStatus::InProgress->value;
     }
 
     public function grade(User $user, ExamAttempt $attempt): bool

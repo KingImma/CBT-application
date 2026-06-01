@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,7 @@ class ExamAnswerAction
 {
     public function save(ExamAttempt $attempt, string $questionId, array $payload): ExamAnswer
     {
-        if ($attempt->status !== 'in_progress') {
+        if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
             throw new \RuntimeException('Attempt is no longer active.');
         }
 

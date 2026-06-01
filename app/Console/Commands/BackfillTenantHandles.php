@@ -1,5 +1,6 @@
 <?php
 
+// @deprecated One-time data migration. Keep only if re-run is needed.
 // - Artisan command to backfill handle column for existing tenants
 // - Reads slug, derives a unique handle, writes it back to the central DB
 // - Command chosen over raw SQL so you can dry-run and inspect before committing

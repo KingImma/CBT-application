@@ -4,39 +4,36 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Teacher;
 
+use App\Actions\Tenants\Concerns\CreatesTenantUser;
 use App\Models\Tenant\TeacherProfile;
 use App\Models\Tenant\User;
 use App\Services\TenantUserService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class TeacherAction
 {
+    use CreatesTenantUser;
+
     public function __construct(private TenantUserService $tenantUserService) {}
+
+    protected function profileRelation(): string
+    {
+        return 'teacherProfile';
+    }
 
     public function create(array $data): array
     {
         return DB::transaction(function () use ($data) {
-            $password = $data['password'] ?? 'teach12345';
+            $password = $data['password'] ?? config('app.teacher_default_password', 'teach12345');
 
-            $user = User::create([
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'password' => Hash::make($password),
-                'phone' => $data['phone'] ?? null,
-                'role' => 'teacher',
-                'is_active' => true,
-            ]);
+            $user = $this->createUser($data, 'teacher', $password);
 
-            $user->assignRole('teacher');
-
-            $this->tenantUserService->updateCentralIndex($user->email, 'teacher');
-
-            $user->teacherProfile()->create([
+            $this->createProfile($user, 'teacherProfile', [
                 'qualification' => $data['qualification'] ?? null,
                 'staff_id' => $data['staff_id'] ?? $this->generateStaffId(),
             ]);
+
+            $this->assignRoleAndSyncIndex($user, 'teacher', $this->tenantUserService);
 
             return [
                 'user' => $user,
@@ -50,18 +47,7 @@ class TeacherAction
         $user = User::role('teacher')->findOrFail($userId);
 
         DB::transaction(function () use ($user, $data) {
-            $userData = collect($data)->only(['first_name', 'last_name', 'email', 'phone'])->toArray();
-            if (! empty($userData)) {
-                $user->update($userData);
-            }
-
-            $profileData = collect($data)->only(['qualification', 'staff_id'])->toArray();
-            if (! empty($profileData)) {
-                $user->teacherProfile()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    $profileData
-                );
-            }
+            $this->updateUserAndProfile($user, $data, ['qualification', 'staff_id']);
         });
 
         return $user->fresh('teacherProfile');

@@ -6,7 +6,8 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamAnswerAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
-use App\Actors\ActorRegistry;
+use App\Actors\ExamSessionActor;
+use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExamAttemptResource;
@@ -31,7 +32,7 @@ class StudentExamController extends Controller
     {
         $perPage = (int) $request->get('per_page', 20);
 
-        $exams = Exam::where('status', 'active')
+        $exams = Exam::where('status', ExamStatus::Active->value)
             ->where(function ($q) use ($request) {
                 $q->where('class_level_id', $request->user('tenant')->studentProfile?->class_level_id)
                     ->where(function ($q2) use ($request) {
@@ -143,7 +144,7 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
-        if ($attempt->status !== 'in_progress') {
+        if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
             return ApiResponse::error('Only in-progress attempts can retrieve questions.', 422);
         }
 
@@ -169,7 +170,7 @@ class StudentExamController extends Controller
             'time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $answer = ActorRegistry::examSession($attemptId)->handle('saveAnswer', array_merge($validated, ['question_id' => $questionId]));
+        $answer = (new ExamSessionActor($attemptId))->handle('saveAnswer', array_merge($validated, ['question_id' => $questionId]));
 
         return ApiResponse::success($answer, 'Answer saved.');
     }
@@ -200,7 +201,7 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
-        $remaining = ActorRegistry::examSession($attemptId)->handle('timeRemaining');
+        $remaining = (new ExamSessionActor($attemptId))->handle('timeRemaining');
 
         return ApiResponse::success([
             'remaining_seconds' => $remaining,
@@ -213,7 +214,7 @@ class StudentExamController extends Controller
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('submit', $attempt);
 
-        if ($attempt->status !== 'in_progress') {
+        if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
             return ApiResponse::error('Already submitted.', 409);
         }
 
@@ -228,7 +229,7 @@ class StudentExamController extends Controller
         $canShowResult = false;
         $result = null;
 
-        if ($examSettings->showResultImmediately && $attempt->status === 'graded') {
+        if ($examSettings->showResultImmediately && $attempt->status === ExamAttemptStatus::Graded->value) {
             $canShowResult = true;
             $result = $attempt;
         }
@@ -287,7 +288,7 @@ class StudentExamController extends Controller
         $exam = $attempt->exam;
         $examSettings = $exam->settings;
 
-        if ($examSettings->showResultImmediately && $attempt->status === 'graded') {
+        if ($examSettings->showResultImmediately && $attempt->status === ExamAttemptStatus::Graded->value) {
             return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
         }
 
@@ -300,6 +301,6 @@ class StudentExamController extends Controller
             return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
         }
 
-        return ApiResponse::error('Results not yet released.', 403);
+        return ApiResponse::error('Results are not yet available.', 403);
     }
 }

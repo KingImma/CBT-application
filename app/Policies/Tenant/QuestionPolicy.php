@@ -30,7 +30,14 @@ class QuestionPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('teacher') || $user->hasAnyRole(['admin', 'school_admin']);
+        return $user->hasAnyRole(['admin', 'school_admin']);
+    }
+
+    public function createForClass(User $user, string $classLevelId): bool
+    {
+        return ClassArm::where('assigned_teacher_id', $user->id)
+            ->where('class_level_id', $classLevelId)
+            ->exists();
     }
 
     public function view(User $user, Question $question): bool

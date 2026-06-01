@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ExamQuestionAction;
+use App\Actions\Tenants\Exam\ExamQuestionManagementAction;
+use App\Actions\Tenants\Exam\ExamRandomizationAction;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExamQuestionResource;
 use App\Models\Tenant\Exam;
@@ -17,7 +18,8 @@ use Illuminate\Http\Request;
 class ExamQuestionController extends Controller
 {
     public function __construct(
-        private ExamQuestionAction $questionAction,
+        private ExamQuestionManagementAction $managementAction,
+        private ExamRandomizationAction $randomizationAction,
     ) {}
 
     public function index(string $examId): JsonResponse
@@ -47,7 +49,7 @@ class ExamQuestionController extends Controller
         ]);
 
         try {
-            $examQuestion = $this->questionAction->add($exam, $validated['question_id'], $validated['marks_override'] ?? null, auth()->id());
+            $examQuestion = $this->managementAction->add($exam, $validated['question_id'], $validated['marks_override'] ?? null, auth()->id());
         } catch (QueryException $e) {
             if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'duplicate') || str_contains($e->getMessage(), 'UNIQUE')) {
                 return ApiResponse::error('This question has already been added to the exam.', 422);
@@ -73,7 +75,7 @@ class ExamQuestionController extends Controller
         ]);
 
         try {
-            $this->questionAction->randomizeQuestions($exam, $validated['count']);
+            $this->randomizationAction->randomizeQuestions($exam, $validated['count']);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -97,7 +99,7 @@ class ExamQuestionController extends Controller
         ]);
 
         try {
-            $examQuestion = $this->questionAction->updateMarks($exam, $questionId, $validated['marks_override'] ?? null);
+            $examQuestion = $this->managementAction->updateMarks($exam, $questionId, $validated['marks_override'] ?? null);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -113,7 +115,7 @@ class ExamQuestionController extends Controller
         $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
-        $this->questionAction->remove($exam, $questionId);
+        $this->managementAction->remove($exam, $questionId);
 
         return ApiResponse::message('Question removed from exam.');
     }
@@ -128,7 +130,7 @@ class ExamQuestionController extends Controller
             'order.*' => ['required', 'integer', 'min:1'],
         ]);
 
-        $this->questionAction->reorder($exam, $validated['order']);
+        $this->managementAction->reorder($exam, $validated['order']);
 
         return ApiResponse::message('Questions reordered.');
     }

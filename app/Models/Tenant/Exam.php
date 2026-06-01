@@ -94,6 +94,17 @@ class Exam extends Model
         return $query->where('class_arm_id', $classArmId);
     }
 
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', ExamStatus::Active->value);
+    }
+
+    public function scopeScheduledAndDue(Builder $query): Builder
+    {
+        return $query->where('status', ExamStatus::Scheduled->value)
+            ->where('scheduled_start', '<=', now());
+    }
+
     public function isOwnedBy(User $user): bool
     {
         return $this->created_by === $user->id;

@@ -1,5 +1,6 @@
 <?php
 
+// @deprecated One-time data migration for existing tenants. Keep only if re-run is needed.
 declare(strict_types=1);
 
 namespace App\Console\Commands;

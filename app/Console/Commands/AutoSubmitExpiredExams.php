@@ -9,6 +9,7 @@ use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 
 class AutoSubmitExpiredExams extends Command
 {
@@ -36,16 +37,8 @@ class AutoSubmitExpiredExams extends Command
             $tenant->run(function () use ($tenant) {
                 $this->info("Checking tenant: {$tenant->id}");
 
-                $individualExpired = ExamAttempt::where('status', ExamAttemptStatus::InProgress->value)
-                    ->whereHas('exam', fn ($q) => $q->whereNotNull('duration_minutes'))
-                    ->get()
-                    ->filter(fn ($attempt) => now()->getTimestamp() >= $attempt->started_at->getTimestamp() + ($attempt->exam->duration_minutes * 60));
-
-                $sessionExpired = ExamAttempt::where('status', ExamAttemptStatus::InProgress->value)
-                    ->whereHas('exam', fn ($q) => $q->whereNotNull('session_started_at')->whereNotNull('session_duration_minutes'))
-                    ->get()
-                    ->filter(fn ($attempt) => now()->getTimestamp() >= $attempt->exam->session_started_at->getTimestamp() + ($attempt->exam->session_duration_minutes * 60));
-
+                $individualExpired = $this->expiredByTimer();
+                $sessionExpired = $this->expiredBySession();
                 $allExpired = $individualExpired->merge($sessionExpired)->unique('id');
 
                 foreach ($allExpired as $attempt) {
@@ -60,5 +53,28 @@ class AutoSubmitExpiredExams extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function expiredByTimer(): Collection
+    {
+        return ExamAttempt::with('exam')
+            ->where('status', ExamAttemptStatus::InProgress->value)
+            ->whereHas('exam', fn ($q) => $q->whereNotNull('duration_minutes'))
+            ->get()
+            ->filter(fn ($attempt) => $attempt->isExpired());
+    }
+
+    private function expiredBySession(): Collection
+    {
+        return ExamAttempt::with('exam')
+            ->where('status', ExamAttemptStatus::InProgress->value)
+            ->whereHas('exam', fn ($q) => $q->whereNotNull('session_started_at')->whereNotNull('session_duration_minutes'))
+            ->get()
+            ->filter(function ($attempt) {
+                $exam = $attempt->exam;
+                $sessionDeadline = $exam->session_started_at->getTimestamp() + ($exam->session_duration_minutes * 60);
+
+                return now()->getTimestamp() >= $sessionDeadline;
+            });
     }
 }

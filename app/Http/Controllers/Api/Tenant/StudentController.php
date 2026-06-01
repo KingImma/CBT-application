@@ -8,13 +8,12 @@ use App\Actions\Tenants\Student\StudentAction;
 use App\Data\Results\ImportResult;
 use App\Data\Schemas\StudentImportSchema;
 use App\Events\ActivityFeedEvent;
-use App\Http\Controllers\Api\Tenant\Concerns\TogglesUserActive;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
 use App\Models\Tenant\User;
-use App\Services\PasswordService;
+use App\Services\Auth\PasswordResetService;
 use App\Services\StudentImportService;
 use App\Services\TenantUserService;
 use App\Support\ApiResponse;
@@ -29,8 +28,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class StudentController extends Controller
 {
-    use TogglesUserActive;
-
     public function index(Request $request): JsonResponse
     {
         $status = $request->query('status', 'active');
@@ -169,7 +166,7 @@ class StudentController extends Controller
         return ApiResponse::message('Student permanently deleted.');
     }
 
-    public function bulkResetPasswords(PasswordService $passwordService, Request $request): JsonResponse
+    public function bulkResetPasswords(PasswordResetService $passwordResetService, Request $request): JsonResponse
     {
         $validated = $request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
@@ -186,9 +183,9 @@ class StudentController extends Controller
 
         $newPassword = config('app.student_default_password');
 
-        $query->chunkById(200, function ($students) use ($passwordService, &$reset, $newPassword) {
+        $query->chunkById(200, function ($students) use ($passwordResetService, &$reset, $newPassword) {
             foreach ($students as $student) {
-                $passwordService->resetPasswordForUser($student, $newPassword);
+                $passwordResetService->resetPasswordForUser($student, $newPassword);
                 $reset++;
             }
         });
@@ -294,31 +291,12 @@ class StudentController extends Controller
             );
         }
 
-        if ($dryRun) {
-            $data = [
-                'dry_run' => true,
-                'total_rows' => $result->totalRows,
-                'can_proceed' => true,
-            ];
+        $status = $dryRun ? 200 : 201;
 
-            if ($result->duplicates !== []) {
-                $data['duplicates'] = $result->duplicates;
-            }
-
-            return ApiResponse::success($data, $result->message ?? 'Preview complete.');
-        }
-
-        $data = [
-            'imported' => $result->imported,
-        ];
-
-        if ($result->skipped > 0) {
-            $data['skipped'] = $result->skipped;
-        }
-        if ($result->updated > 0) {
-            $data['updated'] = $result->updated;
-        }
-
-        return ApiResponse::success($data, $result->message ?? 'Import complete.', 201);
+        return ApiResponse::success(
+            $result->toResponseData($dryRun),
+            $result->message ?? ($dryRun ? 'Preview complete.' : 'Import complete.'),
+            $status,
+        );
     }
 }

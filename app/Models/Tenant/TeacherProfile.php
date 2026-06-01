@@ -2,6 +2,7 @@
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\ClassLevel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,8 @@ class TeacherProfile extends Model
 
     protected $guarded = ['id'];
 
+    protected $with = ['classLevel'];
+
     protected $casts = [
         'date_of_birth' => 'date',
     ];
@@ -20,6 +23,11 @@ class TeacherProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function classLevel(): BelongsTo
+    {
+        return $this->belongsTo(ClassLevel::class);
     }
 
     // Note: The subjectAssignments relationship was removed from here.

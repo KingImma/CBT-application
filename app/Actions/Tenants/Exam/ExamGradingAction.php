@@ -6,9 +6,11 @@ namespace App\Actions\Tenants\Exam;
 
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
+use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\GradingScale;
+use App\Models\Tenant\Question;
 use Illuminate\Support\Facades\DB;
 
 class ExamGradingAction
@@ -37,22 +39,9 @@ class ExamGradingAction
     public function recomputeScore(ExamAttempt $attempt): ExamAttempt
     {
         return DB::transaction(function () use ($attempt) {
-            $totalScore = $attempt->answers()->sum('marks_awarded') ?? 0;
-            $exam = $attempt->exam;
-            $percentageScore = $exam->total_marks > 0
-                ? ($totalScore / $exam->total_marks) * 100
-                : 0;
-
-            $grade = null;
-            $defaultScale = GradingScale::where('is_default', true)->first();
-            if ($defaultScale) {
-                foreach ($defaultScale->grades as $g) {
-                    if ($percentageScore >= $g['min_score'] && $percentageScore <= $g['max_score']) {
-                        $grade = $g['label'];
-                        break;
-                    }
-                }
-            }
+            $totalScore = $this->calculateTotalScore($attempt);
+            $percentageScore = $this->calculatePercentageScore($attempt->exam, $totalScore);
+            $grade = $this->resolveGrade($percentageScore);
 
             $attempt->update([
                 'total_score' => $totalScore,
@@ -62,24 +51,56 @@ class ExamGradingAction
                 'grade' => $grade,
             ]);
 
-            $exam = $attempt->exam;
-            $ungradedAttempts = $exam->attempts()
-                ->whereIn('status', [
-                    ExamAttemptStatus::Submitted->value,
-                    ExamAttemptStatus::Timed_out->value,
-                    ExamAttemptStatus::Grading->value,
-                    ExamAttemptStatus::Disqualified->value,
-                ])->exists();
-
-            if (! $ungradedAttempts && $exam->status === ExamStatus::Grading) {
-                $exam->update(['status' => ExamStatus::Completed->value]);
-            }
+            $this->promoteExamIfFullyGraded($attempt->exam);
 
             return $attempt->fresh();
         });
     }
 
-    private function gradeSingleChoice(ExamAnswer $answer, $question): bool
+    private function calculateTotalScore(ExamAttempt $attempt): float
+    {
+        return $attempt->answers()->sum('marks_awarded') ?? 0;
+    }
+
+    private function calculatePercentageScore(Exam $exam, float $totalScore): float
+    {
+        return $exam->total_marks > 0
+            ? ($totalScore / $exam->total_marks) * 100
+            : 0;
+    }
+
+    private function resolveGrade(float $percentageScore): ?string
+    {
+        $defaultScale = GradingScale::where('is_default', true)->first();
+        if (! $defaultScale) {
+            return null;
+        }
+
+        foreach ($defaultScale->grades as $grade) {
+            if ($percentageScore >= $grade['min_score'] && $percentageScore <= $grade['max_score']) {
+                return $grade['label'];
+            }
+        }
+
+        return null;
+    }
+
+    private function promoteExamIfFullyGraded(Exam $exam): void
+    {
+        $hasUngradedAttempts = $exam->attempts()
+            ->whereIn('status', [
+                ExamAttemptStatus::Submitted->value,
+                ExamAttemptStatus::Timed_out->value,
+                ExamAttemptStatus::Grading->value,
+                ExamAttemptStatus::Disqualified->value,
+            ])->exists();
+
+        if (! $hasUngradedAttempts && $exam->status === ExamStatus::Grading) {
+            $exam->update(['status' => ExamStatus::Completed->value]);
+        }
+    }
+
+    private function gradeSingleChoice(ExamAnswer $answer, Question $question): bool
     {
         $selected = $answer->selected_option_ids ?? [];
         if (count($selected) !== 1) {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Data\Schemas;
 
-class StudentImportSchema
+class StudentImportSchema extends ImportSchema
 {
     public const COLUMNS = [
         'first_name' => ['required' => true, 'rules' => ['required', 'string', 'max:100']],
@@ -21,25 +21,10 @@ class StudentImportSchema
 
     public const IDENTITY = ['email', 'admission_number'];
 
-    public static function requiredHeaders(): array
-    {
-        return array_keys(array_filter(self::COLUMNS, fn ($c) => $c['required']));
-    }
-
-    public static function allHeaders(): array
-    {
-        return array_keys(self::COLUMNS);
-    }
-
-    public static function missingRequiredHeaders(array $headers): array
-    {
-        return array_values(array_diff(self::requiredHeaders(), $headers));
-    }
-
     public static function validatorRules(?string $overrideClassLevelId = null): array
     {
         $rules = [];
-        foreach (self::COLUMNS as $name => $config) {
+        foreach (static::COLUMNS as $name => $config) {
             if ($name === 'class_level' && $overrideClassLevelId) {
                 $rules[$name] = ['nullable', 'string'];
             } else {

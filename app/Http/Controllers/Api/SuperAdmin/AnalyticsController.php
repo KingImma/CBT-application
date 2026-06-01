@@ -25,8 +25,6 @@ class AnalyticsController extends Controller
      */
     public function overview(): JsonResponse
     {
-        $tenants = Tenant::withTrashed();
-
         return ApiResponse::success([
             'schools' => [
                 'total' => Tenant::count(),

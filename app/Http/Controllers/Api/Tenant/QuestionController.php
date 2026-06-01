@@ -42,7 +42,7 @@ class QuestionController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', Question::class);
+        $this->authorize('createForClass', [Question::class, $request->input('class_level_id')]);
 
         $validated = $request->validate([
             'subject_id' => [

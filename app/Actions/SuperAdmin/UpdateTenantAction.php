@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\SuperAdmin;
 
 use App\Models\Tenant;
@@ -11,7 +13,7 @@ class UpdateTenantAction
      *
      * @param  array<int,mixed>  $data
      */
-    public function handle(array $data, Tenant $tenant): Tenant
+    public function execute(array $data, Tenant $tenant): Tenant
     {
         $tenant->update($data);
 

@@ -6,4 +6,10 @@ namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ExampleDefaultJob implements ShouldQueue {}
+class ExampleDefaultJob implements ShouldQueue
+{
+    public function handle(): void
+    {
+        //
+    }
+}

@@ -68,17 +68,21 @@ class ExamAttempt extends Model
 
     public function scopeInProgress(Builder $query): Builder
     {
-        return $query->where('status', 'in_progress');
+        return $query->where('status', ExamAttemptStatus::InProgress->value);
     }
 
     public function scopeSubmitted(Builder $query): Builder
     {
-        return $query->whereIn('status', ['submitted', 'timed_out', 'disqualified']);
+        return $query->whereIn('status', [
+            ExamAttemptStatus::Submitted->value,
+            ExamAttemptStatus::TimedOut->value,
+            ExamAttemptStatus::Disqualified->value,
+        ]);
     }
 
     public function scopeNeedsGrading(Builder $query): Builder
     {
-        return $query->where('status', 'grading');
+        return $query->where('status', ExamAttemptStatus::Grading->value);
     }
 
     public function scopeForExam(Builder $query, string $examId): Builder
@@ -103,14 +107,12 @@ class ExamAttempt extends Model
         ];
         $this->suspicious_events = $events;
 
-        $maxEvents = $this->exam->settings->maxSuspiciousEvents;
-        if (count($events) >= $maxEvents) {
-            $this->status = ExamAttemptStatus::Disqualified->value;
-            $this->submitted_at = now();
-            $this->time_spent_seconds = now()->diffInSeconds($this->started_at);
-        }
-
         $this->save();
+    }
+
+    public function isExpired(): bool
+    {
+        return now()->getTimestamp() >= $this->started_at->getTimestamp() + ($this->exam->duration_minutes * 60);
     }
 
     public function getTimeRemainingSeconds(): int

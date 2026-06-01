@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Actions\Tenants\Exam\ExamLifecycleAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Actions\Tenants\Exam\ExamSessionLifecycleAction;
 use App\Models\Tenant;
 use App\Models\Tenant\Exam;
 use Illuminate\Console\Command;
@@ -17,7 +17,7 @@ class EndExpiredExamSessions extends Command
     protected $description = 'End exam sessions that have passed their scheduled end time';
 
     public function __construct(
-        private ExamLifecycleAction $lifecycleAction,
+        private ExamSessionLifecycleAction $sessionLifecycleAction,
         private ExamSessionAction $sessionAction,
     ) {
         parent::__construct();
@@ -37,14 +37,14 @@ class EndExpiredExamSessions extends Command
             $tenant->run(function () use ($tenant) {
                 $this->info("Checking tenant: {$tenant->id}");
 
-                $expiredSessions = Exam::where('status', 'active')
+                $expiredSessions = Exam::active()
                     ->whereNotNull('scheduled_end')
                     ->where('scheduled_end', '<=', now())
                     ->get();
 
                 foreach ($expiredSessions as $exam) {
                     try {
-                        $this->lifecycleAction->endSession($exam, $this->sessionAction);
+                        $this->sessionLifecycleAction->endSession($exam, $this->sessionAction);
                         $this->info("  Ended session for exam '{$exam->title}' ({$exam->id})");
                     } catch (\Exception $e) {
                         $this->error("  Failed to end session for exam {$exam->id}: {$e->getMessage()}");

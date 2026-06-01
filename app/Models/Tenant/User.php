@@ -20,6 +20,8 @@ class User extends Authenticatable
 
     protected $guarded = ['id'];
 
+    protected $with = ['teacherProfile.classLevel'];
+
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [

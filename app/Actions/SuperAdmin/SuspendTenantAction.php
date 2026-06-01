@@ -10,6 +10,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class SuspendTenantAction
 {
+    use Concerns\ResolvesTenantStatus;
+
     /**
      * Suspend a tenant.
      *
@@ -17,11 +19,7 @@ class SuspendTenantAction
      */
     public function handle(Tenant $tenant): void
     {
-        $currentStatus = $tenant->subscription_status instanceof StatusType
-            ? $tenant->subscription_status->value
-            : $tenant->subscription_status;
-
-        if ($currentStatus === StatusType::Suspended->value) {
+        if ($this->resolveStatusValue($tenant) === StatusType::Suspended->value) {
             throw new HttpResponseException(
                 response()->json(['message' => 'Tenant is already suspended'], 422)
             );

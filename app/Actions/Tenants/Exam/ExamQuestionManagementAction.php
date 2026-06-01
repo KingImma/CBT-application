@@ -11,13 +11,11 @@ use App\Models\Tenant\Question;
 use App\Models\Tenant\SchoolSetting;
 use Illuminate\Support\Facades\DB;
 
-class ExamQuestionAction
+class ExamQuestionManagementAction
 {
     public function add(Exam $exam, string $questionId, ?string $marksOverride = null, ?string $userId = null): ExamQuestion
     {
-        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
-            throw new \RuntimeException('Questions can only be added to draft or scheduled exams.');
-        }
+        $this->ensureDraftOrScheduled($exam, 'added');
 
         $question = Question::findOrFail($questionId);
 
@@ -44,9 +42,7 @@ class ExamQuestionAction
 
     public function updateMarks(Exam $exam, string $questionId, ?string $marksOverride): ExamQuestion
     {
-        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
-            throw new \RuntimeException('Questions can only be modified in draft or scheduled exams.');
-        }
+        $this->ensureDraftOrScheduled($exam, 'modified');
 
         return DB::transaction(function () use ($exam, $questionId, $marksOverride) {
             $examQuestion = ExamQuestion::where('exam_id', $exam->id)
@@ -62,9 +58,7 @@ class ExamQuestionAction
 
     public function remove(Exam $exam, string $questionId): void
     {
-        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
-            throw new \RuntimeException('Questions can only be removed from draft or scheduled exams.');
-        }
+        $this->ensureDraftOrScheduled($exam, 'removed');
 
         DB::transaction(function () use ($exam, $questionId) {
             $examQuestion = ExamQuestion::where('exam_id', $exam->id)
@@ -91,47 +85,14 @@ class ExamQuestionAction
         });
     }
 
-    public function randomizeQuestions(Exam $exam, int $count): void
+    private function ensureDraftOrScheduled(Exam $exam, string $action): void
     {
         if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
-            throw new \RuntimeException('Questions can only be added to draft or scheduled exams.');
+            throw new \RuntimeException("Questions can only be {$action} to draft or scheduled exams.");
         }
-
-        $availableCount = Question::where('subject_id', $exam->subject_id)
-            ->where('class_level_id', $exam->class_level_id)
-            ->where('is_active', true)
-            ->count();
-
-        if ($availableCount < $count) {
-            throw new \RuntimeException(
-                "Only {$availableCount} questions available, but {$count} requested."
-            );
-        }
-
-        DB::transaction(function () use ($exam, $count) {
-            $questions = Question::where('subject_id', $exam->subject_id)
-                ->where('class_level_id', $exam->class_level_id)
-                ->where('is_active', true)
-                ->inRandomOrder()
-                ->limit($count)
-                ->get();
-
-            $maxOrder = $exam->examQuestions()->max('order') ?? 0;
-
-            foreach ($questions as $index => $question) {
-                ExamQuestion::create([
-                    'exam_id' => $exam->id,
-                    'question_id' => $question->id,
-                    'order' => $maxOrder + $index + 1,
-                    'marks' => $question->default_marks,
-                ]);
-            }
-
-            $this->recomputeTotalMarks($exam);
-        });
     }
 
-    private function recomputeTotalMarks(Exam $exam): void
+    public function recomputeTotalMarks(Exam $exam): void
     {
         $total = $exam->examQuestions()->get()->sum(fn ($eq) => $eq->getEffectiveMarks());
         $this->ensureWithinSchoolMaximum($exam, (float) $total);

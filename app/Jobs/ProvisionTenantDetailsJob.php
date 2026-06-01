@@ -16,13 +16,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-/*
- * 1. What it is: The finalized `ProvisionTenantResourcesJob`.
- * 2. What it does in a nutshell: It provisions the admin user and elegantly loops through an array of dynamic settings (like the actual school name, chosen term system, and grading scale) to overwrite the generic defaults created by the Seeder.
- * 3. Why this was chosen: It isolates all dynamic database mutations into a single background process. The Seeder remains a pure "factory reset" tool, and the Job acts as the "customizer."
- * 4. Expected deliverables and alternatives: A perfectly tailored school environment based on frontend input. The alternative is writing individual `update()` queries for every single setting, which is repetitive and harder to maintain.
- */
-
 class ProvisionTenantDetailsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -40,94 +33,110 @@ class ProvisionTenantDetailsJob implements ShouldQueue
     public function handle(): void
     {
         $this->tenant->run(function () {
-            // ── 1. Create the Admin User & Sync to Central Index ──────────────
-            $admin = User::firstOrCreate(
-                ['email' => $this->adminData['email']],
+            $admin = $this->createAdminUser();
+            $this->applyCustomClassLevels();
+            $this->applyGradingScale();
+            $this->applySettings();
+        });
+    }
+
+    private function createAdminUser(): User
+    {
+        $admin = User::firstOrCreate(
+            ['email' => $this->adminData['email']],
+            [
+                'id' => Str::uuid()->toString(),
+                'first_name' => $this->adminData['first_name'],
+                'last_name' => $this->adminData['last_name'],
+                'email' => $this->adminData['email'],
+                'phone' => $this->adminData['phone'] ?? null,
+                'password' => Hash::make($this->adminData['password']),
+                'role' => 'school_admin',
+                'is_active' => true,
+            ],
+        );
+
+        $admin->assignRole('school_admin');
+
+        DB::connection(config('tenancy.database.central_connection'))
+            ->table('tenant_user_index')
+            ->updateOrInsert(
                 [
-                    'id' => Str::uuid()->toString(),
-                    'first_name' => $this->adminData['first_name'],
-                    'last_name' => $this->adminData['last_name'],
-                    'email' => $this->adminData['email'],
-                    'phone' => $this->adminData['phone'] ?? null,
-                    'password' => Hash::make($this->adminData['password']),
+                    'email' => $admin->email,
+                    'tenant_id' => $this->tenant->id,
+                ],
+                [
                     'role' => 'school_admin',
-                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ],
             );
 
-            $admin->assignRole('school_admin');
+        return $admin;
+    }
 
-            DB::connection(config('tenancy.database.central_connection'))
-                ->table('tenant_user_index')
-                ->updateOrInsert(
-                    [
-                        'email' => $admin->email,
-                        'tenant_id' => $this->tenant->id,
-                    ],
-                    [
-                        'role' => 'school_admin',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ],
-                );
+    private function applyCustomClassLevels(): void
+    {
+        if (empty($this->curriculumData['grades'])) {
+            return;
+        }
 
-            // ── 2. Apply Custom Class Levels ──────────────────────────────────
-            if (! empty($this->curriculumData['grades'])) {
-                ClassLevel::truncate();
+        ClassLevel::truncate();
 
-                foreach ($this->curriculumData['grades'] as $gradeName) {
-                    ClassLevel::create([
-                        'name' => $gradeName,
-                        'slug' => Str::slug($gradeName, ''),
-                    ]);
-                }
-            }
+        foreach ($this->curriculumData['grades'] as $gradeName) {
+            ClassLevel::create([
+                'name' => $gradeName,
+                'slug' => Str::slug($gradeName, ''),
+            ]);
+        }
+    }
 
-            // ── 3. Handle Relational Grading Scales ───────────────────────────
-            if (! empty($this->curriculumData['gradingScale'])) {
-                // First, remove the default flag from all existing scales seeded by the DB
-                DB::table('grading_scales')->update(['is_default' => false]);
+    private function applyGradingScale(): void
+    {
+        if (empty($this->curriculumData['gradingScale'])) {
+            return;
+        }
 
-                // Assuming the frontend sends a name like "WAEC Standard" or "GPA"
-                $scaleName = $this->curriculumData['gradingScale'];
+        DB::table('grading_scales')->update(['is_default' => false]);
 
-                // Check if this scale exists in the database
-                $exists = DB::table('grading_scales')->where('name', $scaleName)->exists();
+        $scaleName = $this->curriculumData['gradingScale'];
+        $exists = DB::table('grading_scales')->where('name', $scaleName)->exists();
 
-                if ($exists) {
-                    // Make the selected existing scale the default
-                    DB::table('grading_scales')
-                        ->where('name', $scaleName)
-                        ->update(['is_default' => true]);
-                } else {
-                    DB::table('grading_scales')->insert([
-                        'id' => Str::uuid()->toString(),
-                        'name' => $scaleName,
-                        'is_default' => true,
-                        'grades' => json_encode([]),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
+        if ($exists) {
+            DB::table('grading_scales')
+                ->where('name', $scaleName)
+                ->update(['is_default' => true]);
 
-            // ── 4. Batch Update Key-Value Settings ────────────────────────────
-            $settingsToUpdate = [
-                'school_name' => $this->tenant->name,
-            ];
+            return;
+        }
 
-            if (! empty($this->curriculumData['term_system'])) {
-                $settingsToUpdate['terms_per_session'] = (string) filter_var(
-                    $this->curriculumData['term_system'],
-                    FILTER_SANITIZE_NUMBER_INT,
-                );
-            }
+        DB::table('grading_scales')->insert([
+            'id' => Str::uuid()->toString(),
+            'name' => $scaleName,
+            'is_default' => true,
+            'grades' => json_encode([]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
 
-            foreach ($settingsToUpdate as $key => $value) {
-                DB::table('school_settings')
-                    ->where('key', $key)
-                    ->update(['value' => $value]);
-            }
-        });
+    private function applySettings(): void
+    {
+        $settingsToUpdate = [
+            'school_name' => $this->tenant->name,
+        ];
+
+        if (! empty($this->curriculumData['term_system'])) {
+            $settingsToUpdate['terms_per_session'] = (string) filter_var(
+                $this->curriculumData['term_system'],
+                FILTER_SANITIZE_NUMBER_INT,
+            );
+        }
+
+        foreach ($settingsToUpdate as $key => $value) {
+            DB::table('school_settings')
+                ->where('key', $key)
+                ->update(['value' => $value]);
+        }
     }
 }

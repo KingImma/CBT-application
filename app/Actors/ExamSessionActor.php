@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actors;
 
 use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Support\Facades\Cache;
@@ -71,7 +72,7 @@ class ExamSessionActor
 
     private function saveAnswer(array $payload): ExamAnswer
     {
-        if ($this->state['status'] !== 'in_progress') {
+        if ($this->state['status'] !== ExamAttemptStatus::InProgress->value) {
             throw new \RuntimeException('Attempt is no longer active.');
         }
 
@@ -119,7 +120,7 @@ class ExamSessionActor
         $count = count($this->state['suspicious_events']);
 
         if ($count >= $this->state['max_suspicious']) {
-            $this->state['status'] = 'disqualified';
+            $this->state['status'] = ExamAttemptStatus::Disqualified->value;
         }
 
         $this->flush();
@@ -130,7 +131,7 @@ class ExamSessionActor
 
     private function submit(): void
     {
-        $this->state['status'] = 'submitted';
+        $this->state['status'] = ExamAttemptStatus::Submitted->value;
         $this->flush();
         Cache::forget($this->cacheKey()); // Evict — actor lifecycle ends
     }

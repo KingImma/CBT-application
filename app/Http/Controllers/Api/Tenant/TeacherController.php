@@ -8,13 +8,12 @@ use App\Actions\Tenants\Teacher\TeacherAction;
 use App\Data\Results\ImportResult;
 use App\Data\Schemas\TeacherImportSchema;
 use App\Events\ActivityFeedEvent;
-use App\Http\Controllers\Api\Tenant\Concerns\TogglesUserActive;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TeacherResource;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
-use App\Services\PasswordService;
+use App\Services\Auth\PasswordResetService;
 use App\Services\TeacherImportService;
 use App\Services\TenantUserService;
 use App\Support\ApiResponse;
@@ -30,8 +29,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class TeacherController extends Controller
 {
-    use TogglesUserActive;
-
     public function index(Request $request): JsonResponse
     {
         $status = $request->query('status', 'active');
@@ -77,8 +74,6 @@ class TeacherController extends Controller
             action: 'teacher.created',
             description: "Teacher {$result['user']->first_name} {$result['user']->last_name} added.",
         ))->toOthers();
-
-        // TODO: dispatch SendTeacherWelcomeEmail job with $result['password']
 
         return ApiResponse::created([
             'teacher' => new TeacherResource($result['user']->load('teacherProfile')),
@@ -213,7 +208,7 @@ class TeacherController extends Controller
         ], "Teacher '{$teacher->first_name} {$teacher->last_name}' has been restored.");
     }
 
-    public function resetPassword(PasswordService $passwordService, Request $request, string $id): JsonResponse
+    public function resetPassword(PasswordResetService $passwordResetService, Request $request, string $id): JsonResponse
     {
         $teacher = User::role('teacher')->findOrFail($id);
 
@@ -221,7 +216,7 @@ class TeacherController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
         ]);
 
-        $passwordService->resetPasswordForUser($teacher, $validated['password']);
+        $passwordResetService->resetPasswordForUser($teacher, $validated['password']);
 
         return ApiResponse::message('Password reset successfully.');
     }
@@ -278,31 +273,12 @@ class TeacherController extends Controller
             );
         }
 
-        if ($dryRun) {
-            $data = [
-                'dry_run' => true,
-                'total_rows' => $result->totalRows,
-                'can_proceed' => true,
-            ];
+        $status = $dryRun ? 200 : 201;
 
-            if ($result->duplicates !== []) {
-                $data['duplicates'] = $result->duplicates;
-            }
-
-            return ApiResponse::success($data, $result->message ?? 'Preview complete.');
-        }
-
-        $data = [
-            'imported' => $result->imported,
-        ];
-
-        if ($result->skipped > 0) {
-            $data['skipped'] = $result->skipped;
-        }
-        if ($result->updated > 0) {
-            $data['updated'] = $result->updated;
-        }
-
-        return ApiResponse::success($data, $result->message ?? 'Import complete.', 201);
+        return ApiResponse::success(
+            $result->toResponseData($dryRun),
+            $result->message ?? ($dryRun ? 'Preview complete.' : 'Import complete.'),
+            $status,
+        );
     }
 }

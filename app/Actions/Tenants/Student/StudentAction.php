@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Student;
 
+use App\Actions\Tenants\Concerns\CreatesTenantUser;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
 use App\Services\TenantUserService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class StudentAction
 {
+    use CreatesTenantUser;
+
     public function __construct(private TenantUserService $tenantUserService) {}
+
+    protected function profileRelation(): string
+    {
+        return 'studentProfile';
+    }
 
     public function create(array $data): array
     {
@@ -20,19 +27,9 @@ class StudentAction
             $admissionNumber = $data['admission_number'] ?? $this->generateAdmissionNumber();
             $password = config('app.student_default_password');
 
-            $user = User::create([
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'password' => Hash::make($password),
-                'phone' => $data['phone'] ?? null,
-                'role' => 'student',
-                'is_active' => true,
-            ]);
+            $user = $this->createUser($data, 'student', $password);
 
-            $user->assignRole('student');
-
-            $user->studentProfile()->create([
+            $this->createProfile($user, 'studentProfile', [
                 'class_level_id' => $data['class_level_id'],
                 'class_arm_id' => $data['class_arm_id'],
                 'admission_number' => strtoupper($admissionNumber),
@@ -41,7 +38,7 @@ class StudentAction
                 'guardian_email' => $data['guardian_email'] ?? null,
             ]);
 
-            $this->tenantUserService->updateCentralIndex($data['email'], 'student');
+            $this->assignRoleAndSyncIndex($user, 'student', $this->tenantUserService);
 
             return [
                 'user' => $user,
@@ -55,26 +52,10 @@ class StudentAction
         $user = User::role('student')->findOrFail($userId);
 
         DB::transaction(function () use ($user, $data) {
-            $userData = collect($data)->only(['first_name', 'last_name', 'email', 'phone'])->toArray();
-            if (! empty($userData)) {
-                $user->update($userData);
-            }
-
-            $profileData = collect($data)->only([
+            $this->updateUserAndProfile($user, $data, [
                 'class_level_id', 'class_arm_id', 'admission_number',
                 'date_of_birth', 'gender', 'guardian_email',
-            ])->toArray();
-
-            if (isset($profileData['admission_number'])) {
-                $profileData['admission_number'] = strtoupper($profileData['admission_number']);
-            }
-
-            if (! empty($profileData)) {
-                $user->studentProfile()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    $profileData
-                );
-            }
+            ]);
         });
 
         return $user->fresh();

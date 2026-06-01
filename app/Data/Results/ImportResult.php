@@ -23,4 +23,40 @@ class ImportResult
     {
         return $this->missingHeaders !== [] || $this->errors !== [];
     }
+
+    /**
+     * Build a response data array suitable for API responses.
+     *
+     * @return array<string, mixed>
+     */
+    public function toResponseData(bool $dryRun): array
+    {
+        if ($dryRun) {
+            $data = [
+                'dry_run' => true,
+                'total_rows' => $this->totalRows,
+                'can_proceed' => true,
+            ];
+
+            if ($this->duplicates !== []) {
+                $data['duplicates'] = $this->duplicates;
+            }
+
+            return $data;
+        }
+
+        $data = [
+            'imported' => $this->imported,
+        ];
+
+        if ($this->skipped > 0) {
+            $data['skipped'] = $this->skipped;
+        }
+
+        if ($this->updated > 0) {
+            $data['updated'] = $this->updated;
+        }
+
+        return $data;
+    }
 }

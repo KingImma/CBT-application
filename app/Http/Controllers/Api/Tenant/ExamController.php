@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamCrudAction;
-use App\Actions\Tenants\Exam\ExamLifecycleAction;
+use App\Actions\Tenants\Exam\ExamPublishingAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Actions\Tenants\Exam\ExamSessionLifecycleAction;
+use App\Actions\Tenants\Exam\ExamStatusAction;
 use App\Data\Schemas\ExamSettingsSchema;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
@@ -20,7 +22,9 @@ class ExamController extends Controller
 {
     public function __construct(
         private ExamCrudAction $crudAction,
-        private ExamLifecycleAction $lifecycleAction,
+        private ExamStatusAction $statusAction,
+        private ExamPublishingAction $publishingAction,
+        private ExamSessionLifecycleAction $sessionLifecycleAction,
         private ExamSessionAction $sessionAction,
     ) {}
 
@@ -129,7 +133,7 @@ class ExamController extends Controller
         $this->authorize('submitForReview', $exam);
 
         try {
-            $exam = $this->lifecycleAction->submitForReview($exam);
+            $exam = $this->statusAction->submitForReview($exam);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -143,7 +147,7 @@ class ExamController extends Controller
         $this->authorize('activate', $exam);
 
         try {
-            $exam = $this->lifecycleAction->activate($exam, $request->user('tenant')->id);
+            $exam = $this->statusAction->activate($exam, $request->user('tenant')->id);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -161,7 +165,7 @@ class ExamController extends Controller
         ]);
 
         try {
-            $exam = $this->lifecycleAction->reject($exam, $validated['rejection_reason'] ?? null);
+            $exam = $this->statusAction->reject($exam, $validated['rejection_reason'] ?? null);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -175,7 +179,7 @@ class ExamController extends Controller
         $this->authorize('recall', $exam);
 
         try {
-            $exam = $this->lifecycleAction->recall($exam);
+            $exam = $this->statusAction->recall($exam);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -189,7 +193,7 @@ class ExamController extends Controller
         $this->authorize('emergencyRevert', $exam);
 
         try {
-            $exam = $this->lifecycleAction->emergencyRevert($exam);
+            $exam = $this->statusAction->emergencyRevert($exam);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -203,7 +207,7 @@ class ExamController extends Controller
         $this->authorize('lock', $exam);
 
         try {
-            $exam = $this->lifecycleAction->lock($exam);
+            $exam = $this->statusAction->lock($exam);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -217,7 +221,7 @@ class ExamController extends Controller
         $this->authorize('unlock', $exam);
 
         try {
-            $exam = $this->lifecycleAction->unlock($exam);
+            $exam = $this->statusAction->unlock($exam);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -230,7 +234,7 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('publish', $exam);
 
-        $exam = $this->lifecycleAction->publish($exam);
+        $exam = $this->publishingAction->publish($exam);
 
         broadcast(new ActivityFeedEvent(
             channelType: 'school_admin',
@@ -248,7 +252,7 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('startSession', $exam);
 
-        $exam = $this->lifecycleAction->startSession($exam);
+        $exam = $this->sessionLifecycleAction->startSession($exam);
 
         return ApiResponse::success($exam, 'Exam session started.');
     }
@@ -259,7 +263,7 @@ class ExamController extends Controller
         $this->authorize('view', $exam);
 
         try {
-            $exam = $this->lifecycleAction->endSession($exam, $this->sessionAction);
+            $exam = $this->sessionLifecycleAction->endSession($exam, $this->sessionAction);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }

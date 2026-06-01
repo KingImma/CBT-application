@@ -130,7 +130,7 @@ class Handler extends ExceptionHandler
             return ApiResponse::error(
                 $e->getMessage(),
                 422,
-                meta: ['results' => $e->getResults()]
+                meta: ['results' => ['succeeded' => $e->succeeded, 'failed' => $e->failed, 'failures' => $e->failures]]
             );
         }
 

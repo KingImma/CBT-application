@@ -6,6 +6,7 @@
 // - Why: existing tenants provisioned before this feature have no arm-subject records
 // - Expected: run once per tenant (or all tenants) after deploying the migration
 // - Alternative: let admins set it manually — worse UX, they'd have to redo everything
+// @deprecated This is a one-time data migration command. Keep only if re-run is needed.
 
 declare(strict_types=1);
 

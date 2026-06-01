@@ -1,5 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
+// @deprecated This trait is defined but never used in any controller.
+// Remove in a future cleanup pass if still unused.
+
 namespace App\Http\Controllers\Api\Tenant\Concerns;
 
 use App\Models\Tenant\User;

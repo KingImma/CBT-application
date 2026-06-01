@@ -173,7 +173,7 @@ class ClassLevelController extends Controller
         ], 'Subject compulsory status updated.');
     }
 
-    public function assignTeacher(Request $request, string $id, string $subjectId): JsonResponse
+    public function assignTeacher(Request $request, string $id): JsonResponse
     {
         
         $level = ClassLevel::findOrFail($id);

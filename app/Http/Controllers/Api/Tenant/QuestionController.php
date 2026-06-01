@@ -161,7 +161,7 @@ class QuestionController extends Controller
 
     public function cloneFromTerm(Request $request): JsonResponse
     {
-        $this->authorize('create', Question::class);
+        $this->authorize('createFromClass', [Question::class, $request->input('class_level_id')]);
 
         $validated = $request->validate([
             'source_session_id' => ['required', 'uuid', 'exists:academic_sessions,id'],

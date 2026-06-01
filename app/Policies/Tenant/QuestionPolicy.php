@@ -35,9 +35,13 @@ class QuestionPolicy
 
     public function createForClass(User $user, string $classLevelId): bool
     {
-        return ClassArm::where('assigned_teacher_id', $user->id)
-            ->where('class_level_id', $classLevelId)
-            ->exists();
+        return $user->teacherProfile?->class_level_id === $classLevelId
+            || ClassArm::where('assigned_teacher_id', $user->id)
+                ->where('class_level_id', $classLevelId)
+                ->exists()
+            || TeacherSubjectAssignment::where('user_id', $user->id)
+                ->where('class_level_id', $classLevelId)
+                ->exists();
     }
 
     public function view(User $user, Question $question): bool
@@ -76,9 +80,12 @@ class QuestionPolicy
 
     private function isClassTeacher(User $user, Question $question): bool
     {
-        return ClassArm::where('assigned_teacher_id', $user->id)
-            ->where('class_level_id', $question->class_level_id)
-            ->exists();
+        // 1. In-memory check: Are they the overseer of this level?
+        return $user->teacherProfile?->class_level_id === $question->class_level_id
+        // 2. Database check: Do they manage a specific arm in this level?
+            || ClassArm::where('assigned_teacher_id', $user->id)
+                ->where('class_level_id', $question->class_level_id)
+                ->exists();
     }
 
     private function isSubjectTeacher(User $user, Question $question): bool

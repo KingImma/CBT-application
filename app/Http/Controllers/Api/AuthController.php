@@ -124,11 +124,6 @@ class AuthController extends Controller
                         'staff_id' => $user->teacherProfile->staff_id,
                         'qualification' => $user->teacherProfile->qualification,
                         'department' => $user->teacherProfile->department,
-                        'class_level' => $user->teacherProfile->classLevel ? [
-                            'id' => $user->teacherProfile->classLevel->id,
-                            'name' => $user->teacherProfile->classLevel->name,
-                            'slug' => $user->teacherProfile->classLevel->slug,
-                        ] : null,
                     ] : null,
                 ];
 

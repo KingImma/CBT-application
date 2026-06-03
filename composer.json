@@ -17,6 +17,7 @@
         "lorisleiva/laravel-actions": "^2.10",
         "predis/predis": "^3.4",
         "pusher/pusher-php-server": "^7.2",
+        "spatie/laravel-data": "^4.23",
         "spatie/laravel-permission": "^7.3",
         "stancl/tenancy": "^3.10",
         "symfony/http-client": "^7.4"

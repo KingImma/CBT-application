@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Data\ClassArm\ClassArmData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
@@ -24,7 +25,7 @@ class ClassArmController extends Controller
         $level = ClassLevel::findOrFail($classLevelId);
 
         return ApiResponse::success(
-            $level->classArms()->with('assignedTeacher')->withCount('students')->get(),
+            ClassArmData::collection($level->classArms()->with('assignedTeacher')->withCount('students')->get()),
             'Class arms retrieved successfully.'
         );
     }
@@ -54,7 +55,7 @@ class ClassArmController extends Controller
             ]);
         });
 
-        return ApiResponse::created($arm, "Class arm '{$arm->name}' created.");
+        return ApiResponse::created(ClassArmData::from($arm), "Class arm '{$arm->name}' created.");
     }
 
     public function update(Request $request, string $classLevelId, string $id): JsonResponse
@@ -70,7 +71,7 @@ class ClassArmController extends Controller
 
         $arm->update($validated);
 
-        return ApiResponse::success($arm->fresh(), 'Class arm updated.');
+        return ApiResponse::success(ClassArmData::from($arm->fresh()), 'Class arm updated.');
     }
 
     /**
@@ -86,7 +87,7 @@ class ClassArmController extends Controller
         $arm->update(['assigned_teacher_id' => $validated['assigned_teacher_id']]);
 
         return ApiResponse::success(
-            $arm->load('assignedTeacher'),
+            ClassArmData::from($arm->load('assignedTeacher')),
             'Teacher assigned to class.'
         );
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Data\GradingScale\GradingScaleData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\GradingScale;
 use App\Support\ApiResponse;
@@ -19,7 +20,7 @@ class GradingScaleController extends Controller
     public function index(): JsonResponse
     {
         return ApiResponse::success(
-            GradingScale::orderByDesc('is_default')->get(),
+            GradingScaleData::collection(GradingScale::orderByDesc('is_default')->get()),
             'Grading scales retrieved successfully.'
         );
     }
@@ -47,14 +48,14 @@ class GradingScaleController extends Controller
 
         $scale = GradingScale::create($validated);
 
-        return ApiResponse::created($scale, 'Grading scale created.');
+        return ApiResponse::created(GradingScaleData::from($scale), 'Grading scale created.');
     }
 
     public function show(string $id): JsonResponse
     {
         $scale = GradingScale::findOrFail($id);
 
-        return ApiResponse::success($scale, 'Grading scale retrieved successfully.');
+        return ApiResponse::success(GradingScaleData::from($scale), 'Grading scale retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -86,7 +87,7 @@ class GradingScaleController extends Controller
 
         $scale->update($validated);
 
-        return ApiResponse::success($scale->fresh(), 'Grading scale updated.');
+        return ApiResponse::success(GradingScaleData::from($scale->fresh()), 'Grading scale updated.');
     }
 
     public function destroy(string $id): JsonResponse

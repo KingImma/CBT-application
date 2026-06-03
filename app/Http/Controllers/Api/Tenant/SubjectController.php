@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Data\Subject\SubjectData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\TeacherSubjectAssignment;
@@ -29,7 +30,7 @@ class SubjectController extends Controller
             ->orderBy('name')
             ->get();
 
-        return ApiResponse::success($subjects, 'Subjects retrieved successfully.');
+        return ApiResponse::success(SubjectData::collection($subjects), 'Subjects retrieved successfully.');
     }
 
     public function store(Request $request): JsonResponse
@@ -51,7 +52,7 @@ class SubjectController extends Controller
             $subject->classLevels()->sync($validated['class_level_ids']);
         }
 
-        return ApiResponse::created($subject->load('classLevels'), 'Subject created.');
+        return ApiResponse::created(SubjectData::from($subject->load('classLevels')), 'Subject created.');
     }
 
     public function show(string $id): JsonResponse
@@ -61,7 +62,7 @@ class SubjectController extends Controller
             'teacherAssignments.user:id,first_name,last_name',
         ])->findOrFail($id);
 
-        return ApiResponse::success($subject, 'Subject retrieved successfully.');
+        return ApiResponse::success(SubjectData::from($subject), 'Subject retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -90,7 +91,7 @@ class SubjectController extends Controller
             $subject->classLevels()->sync($validated['class_level_ids']);
         }
 
-        return ApiResponse::success($subject->fresh(['classLevels']), 'Subject updated.');
+        return ApiResponse::success(SubjectData::from($subject->fresh(['classLevels'])), 'Subject updated.');
     }
 
     public function destroy(string $id): JsonResponse

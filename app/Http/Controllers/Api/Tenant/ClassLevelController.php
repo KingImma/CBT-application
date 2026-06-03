@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Data\ClassLevel\ClassLevelData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
@@ -24,7 +25,7 @@ class ClassLevelController extends Controller
             ->orderBy('name')
             ->get();
 
-        return ApiResponse::success($levels, 'Class levels retrieved successfully.');
+        return ApiResponse::success(ClassLevelData::collection($levels), 'Class levels retrieved successfully.');
     }
 
     public function store(Request $request): JsonResponse
@@ -38,7 +39,7 @@ class ClassLevelController extends Controller
 
         $level = ClassLevel::create($validated);
 
-        return ApiResponse::created($level, 'Class level created.');
+        return ApiResponse::created(ClassLevelData::from($level), 'Class level created.');
     }
 
     public function show(string $id): JsonResponse
@@ -47,7 +48,7 @@ class ClassLevelController extends Controller
             ->with(['classArms.assignedTeacher', 'subjects'])
             ->findOrFail($id);
 
-        return ApiResponse::success($level, 'Class level retrieved successfully.');
+        return ApiResponse::success(ClassLevelData::from($level), 'Class level retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -69,7 +70,7 @@ class ClassLevelController extends Controller
 
         $level->update($validated);
 
-        return ApiResponse::success($level->fresh(), 'Class level updated.');
+        return ApiResponse::success(ClassLevelData::from($level->fresh()), 'Class level updated.');
     }
 
     public function destroy(string $id): JsonResponse
@@ -189,7 +190,7 @@ class ClassLevelController extends Controller
         );
 
         return ApiResponse::success(
-            $level->load(['classArms.assignedTeacher', 'subjects']),
+            ClassLevelData::from($level->load(['classArms.assignedTeacher', 'subjects'])),
             "Teacher assigned to class level {$level->name} successfully."
         );
     }

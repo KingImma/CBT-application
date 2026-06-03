@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Data\Term\TermData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Term;
@@ -23,7 +24,7 @@ class TermController extends Controller
         $session = AcademicSession::findOrFail($sessionId);
 
         return ApiResponse::success(
-            $session->terms()->orderBy('name')->get(),
+            TermData::collection($session->terms()->orderBy('name')->get()),
             'Terms retrieved successfully.'
         );
     }
@@ -41,7 +42,7 @@ class TermController extends Controller
 
         $term = $session->terms()->create($validated);
 
-        return ApiResponse::created($term, 'Term created.');
+        return ApiResponse::created(TermData::from($term), 'Term created.');
     }
 
     public function update(Request $request, string $sessionId, string $id): JsonResponse
@@ -57,7 +58,7 @@ class TermController extends Controller
 
         $term->update($validated);
 
-        return ApiResponse::success($term->fresh(), 'Term updated.');
+        return ApiResponse::success(TermData::from($term->fresh()), 'Term updated.');
     }
 
     public function destroy(string $sessionId, string $id): JsonResponse
@@ -85,7 +86,7 @@ class TermController extends Controller
         // 1. Prevent unnecessary database calls if it is already current
         if ($term->is_current) {
             return ApiResponse::success([
-                'term' => $term,
+                'term' => TermData::from($term),
             ], "'{$term->name}' is already the current term.");
         }
 
@@ -100,7 +101,7 @@ class TermController extends Controller
         });
 
         return ApiResponse::success([
-            'term' => $term->fresh(),
+            'term' => TermData::from($term->fresh()),
         ], "'{$term->name}' is now the current term.");
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant;
 
-use App\Schemas\Concerns\HasSchemaValidation;
-use App\Schemas\Requests\Exam\CreateExamRequestData;
+use App\Data\Concerns\HasSchemaValidation;
+use App\Data\Exam\CreateExamData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreExamRequest extends FormRequest
@@ -14,7 +14,7 @@ class StoreExamRequest extends FormRequest
 
     protected function schemaClass(): string
     {
-        return CreateExamRequestData::class;
+        return CreateExamData::class;
     }
 
     public function authorize(): bool

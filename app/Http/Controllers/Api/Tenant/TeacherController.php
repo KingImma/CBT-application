@@ -5,17 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Teacher\TeacherAction;
-use App\Data\Results\ImportResult;
-use App\Data\Schemas\TeacherImportSchema;
+use App\Data\Teacher\TeacherData;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\TeacherResource;
-use App\Models\Tenant\ClassArm;
-use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
-use App\Services\Auth\PasswordResetService;
-use App\Services\TeacherImportService;
-use App\Services\TenantUserService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,7 +44,7 @@ class TeacherController extends Controller
         return ApiResponse::paginated(
             $teachers,
             'Teachers retrieved successfully.',
-            TeacherResource::collection($teachers->getCollection())->resolve($request)
+            TeacherData::collection($teachers->getCollection())
         );
     }
 
@@ -77,7 +70,7 @@ class TeacherController extends Controller
         ))->toOthers();
 
         return ApiResponse::created([
-            'teacher' => new TeacherResource($result['user']->load('teacherProfile')),
+            'teacher' => TeacherData::from($result['user']->load('teacherProfile')),
             'temporary_password' => $result['password'],
         ], 'Teacher created.');
     }
@@ -94,7 +87,7 @@ class TeacherController extends Controller
             'teacherAssignments.classLevel',
         ])->findOrFail($id);
 
-        return ApiResponse::success(new TeacherResource($teacher), 'Teacher retrieved successfully.');
+        return ApiResponse::success(TeacherData::from($teacher), 'Teacher retrieved successfully.');
     }
 
     public function classes(string $id): JsonResponse
@@ -159,7 +152,7 @@ class TeacherController extends Controller
 
         $teacher = $action->update($validated, $id);
 
-        return ApiResponse::success(new TeacherResource($teacher), 'Teacher updated successfully.');
+        return ApiResponse::success(TeacherData::from($teacher), 'Teacher updated successfully.');
     }
 
     public function revoke(TenantUserService $tenantUserService, string $id): JsonResponse
@@ -206,7 +199,7 @@ class TeacherController extends Controller
         $tenantUserService->updateCentralIndex($teacher->email, 'teacher');
 
         return ApiResponse::success([
-            'teacher' => new TeacherResource($teacher->fresh('teacherProfile')),
+            'teacher' => TeacherData::from($teacher->fresh('teacherProfile')),
         ], "Teacher '{$teacher->first_name} {$teacher->last_name}' has been restored.");
     }
 

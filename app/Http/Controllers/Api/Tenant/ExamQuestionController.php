@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamQuestionManagementAction;
 use App\Actions\Tenants\Exam\ExamRandomizationAction;
+use App\Data\Exam\ExamQuestionData;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ExamQuestionResource;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamQuestion;
 use App\Support\ApiResponse;
@@ -33,7 +33,7 @@ class ExamQuestionController extends Controller
             ->get();
 
         return ApiResponse::success(
-            ExamQuestionResource::collection($questions),
+            ExamQuestionData::collection($questions),
             'Exam questions retrieved.',
         );
     }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Data\Question\QuestionOptionData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
@@ -46,7 +47,7 @@ class QuestionOptionController extends Controller
             'order' => $validated['order'] ?? $question->options()->count(),
         ]));
 
-        return ApiResponse::created($option, 'Option added.');
+        return ApiResponse::created(QuestionOptionData::from($option), 'Option added.');
     }
 
     public function update(Request $request, string $questionId, string $id): JsonResponse
@@ -69,7 +70,7 @@ class QuestionOptionController extends Controller
 
         $option->update($validated);
 
-        return ApiResponse::success($option->fresh(), 'Option updated.');
+        return ApiResponse::success(QuestionOptionData::from($option->fresh()), 'Option updated.');
     }
 
     public function destroy(string $questionId, string $id): JsonResponse

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\CloneQuestionAction;
+use App\Data\Question\QuestionData;
 use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\QuestionResource;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
@@ -36,7 +36,7 @@ class QuestionController extends Controller
         return ApiResponse::paginated(
             $questions,
             'Questions retrieved successfully.',
-            QuestionResource::collection($questions->getCollection())->resolve($request)
+            QuestionData::collection($questions->getCollection())
         );
     }
 
@@ -118,7 +118,7 @@ class QuestionController extends Controller
 
         $this->authorize('view', $question);
 
-        return ApiResponse::success(new QuestionResource($question), 'Question retrieved successfully.');
+        return ApiResponse::success(QuestionData::from($question), 'Question retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse

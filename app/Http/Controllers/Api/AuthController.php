@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Data\Student\StudentData;
+use App\Data\Teacher\TeacherData;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\StudentResource;
-use App\Http\Resources\TeacherResource;
 use App\Models\SuperAdmin;
 use App\Services\Auth\SuperAdminAuthService;
 use App\Services\Auth\TenantAuthService;
@@ -112,13 +112,13 @@ class AuthController extends Controller
         ];
 
         $roleData = match ($role) {
-            'teacher' => (new TeacherResource(
+            'teacher' => TeacherData::from(
                 $user->loadMissing('teacherProfile.classLevel', 'teacherAssignments.subject')
-            ))->resolve(),
+            ),
 
-            'student' => (new StudentResource(
+            'student' => StudentData::from(
                 $user->loadMissing('studentProfile.classArm.classLevel')
-            ))->resolve(),
+            ),
 
             // School Admins typically don't need a profile resource,
             // so they safely return an empty array to merge.

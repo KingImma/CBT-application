@@ -7,11 +7,11 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Student\StudentAction;
 use App\Data\Results\ImportResult;
 use App\Data\Schemas\StudentImportSchema;
+use App\Data\Student\StudentData;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
-use App\Http\Resources\StudentResource;
 use App\Models\Tenant\User;
 use App\Services\Auth\PasswordResetService;
 use App\Services\StudentImportService;
@@ -59,7 +59,7 @@ class StudentController extends Controller
         return ApiResponse::paginated(
             $students,
             'Students retrieved successfully.',
-            StudentResource::collection($students->getCollection())->resolve($request)
+            StudentData::collection($students->getCollection())
         );
     }
 
@@ -69,7 +69,7 @@ class StudentController extends Controller
             ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
             ->findOrFail($id);
 
-        return ApiResponse::success(new StudentResource($student), 'Student retrieved successfully.');
+        return ApiResponse::success(StudentData::from($student), 'Student retrieved successfully.');
     }
 
     public function store(StoreStudentRequest $request, StudentAction $action): JsonResponse
@@ -85,7 +85,7 @@ class StudentController extends Controller
         ))->toOthers();
 
         return ApiResponse::created([
-            'student' => new StudentResource($result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
+            'student' => StudentData::from($result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
             'login_credentials' => [
                 'admission_number' => $result['user']->studentProfile->admission_number,
                 'default_password' => $result['password'],
@@ -98,7 +98,7 @@ class StudentController extends Controller
         $result = $action->update($request->validated(), $id);
 
         return ApiResponse::success(
-            new StudentResource($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
+            StudentData::from($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
             'Student updated successfully.'
         );
     }
@@ -113,7 +113,7 @@ class StudentController extends Controller
         $result = $action->update($validated, $id);
 
         return ApiResponse::success([
-            'student' => new StudentResource($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
+            'student' => StudentData::from($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
         ], 'Student reassigned.');
     }
 
@@ -148,7 +148,7 @@ class StudentController extends Controller
         $tenantUserService->updateCentralIndex($student->email, 'student');
 
         return ApiResponse::success([
-            'student' => new StudentResource($student->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
+            'student' => StudentData::from($student->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
         ], "Student '{$student->first_name} {$student->last_name}' has been restored.");
     }
 

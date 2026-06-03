@@ -9,11 +9,10 @@ use App\Actions\Tenants\Exam\ExamPublishingAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Actions\Tenants\Exam\ExamSessionLifecycleAction;
 use App\Actions\Tenants\Exam\ExamStatusAction;
-use App\Data\Schemas\ExamSettingsSchema;
+use App\Data\Exam\ExamData;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreExamRequest;
-use App\Http\Resources\ExamResource;
 use App\Models\Tenant\Exam;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -46,7 +45,7 @@ class ExamController extends Controller
         return ApiResponse::paginated(
             $exams,
             'Exams retrieved successfully.',
-            ExamResource::collection($exams->getCollection())->resolve($request)
+            ExamData::collection($exams->getCollection())
         );
     }
 
@@ -74,7 +73,7 @@ class ExamController extends Controller
 
         $this->authorize('view', $exam);
 
-        return ApiResponse::success(new ExamResource($exam), 'Exam retrieved successfully.');
+        return ApiResponse::success(ExamData::from($exam), 'Exam retrieved successfully.');
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -82,7 +81,7 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('update', $exam);
 
-        $validated = $request->validate(array_merge([
+        $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
             'subject_id' => ['sometimes', 'uuid', 'exists:subjects,id'],
             'class_level_id' => ['sometimes', 'uuid', 'exists:class_levels,id'],
@@ -94,7 +93,12 @@ class ExamController extends Controller
             'scheduled_start' => ['sometimes', 'nullable', 'date'],
             'scheduled_end' => ['sometimes', 'nullable', 'date', 'after:scheduled_start'],
             'instructions' => ['sometimes', 'nullable', 'string'],
-        ], ExamSettingsSchema::validatorRules('settings')));
+            'settings' => ['nullable', 'array'],
+            'settings.randomize_questions' => ['sometimes', 'boolean'],
+            'settings.show_result_immediately' => ['sometimes', 'boolean'],
+            'settings.results_release_date' => ['sometimes', 'nullable', 'date'],
+            'settings.require_attendance' => ['sometimes', 'boolean'],
+        ]);
 
         $exam = $this->crudAction->update($exam, $validated);
 

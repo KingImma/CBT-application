@@ -7,11 +7,11 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Exam\ExamAnswerAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Actors\ExamSessionActor;
+use App\Data\Exam\ExamAttemptData;
+use App\Data\Exam\StudentExamQuestionData;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ExamAttemptResource;
-use App\Http\Resources\StudentExamQuestionResource;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
@@ -85,7 +85,7 @@ class StudentExamController extends Controller
 
         return ApiResponse::created([
             'attempt' => $attempt,
-            'questions' => StudentExamQuestionResource::collection($questionsData['questions']),
+            'questions' => StudentExamQuestionData::collection($questionsData['questions']),
             'order' => $questionsData['order'],
         ], 'Exam started.');
     }
@@ -105,7 +105,7 @@ class StudentExamController extends Controller
         }
 
         $data = $this->sessionAction->recover($attempt);
-        $data['questions'] = StudentExamQuestionResource::collection($data['questions']);
+        $data['questions'] = StudentExamQuestionData::collection($data['questions']);
 
         return ApiResponse::success($data, 'Active attempt retrieved.');
     }
@@ -129,7 +129,7 @@ class StudentExamController extends Controller
         return ApiResponse::success([
             'exam_id' => $exam->id,
             'attempt_id' => $attempt->id,
-            'questions' => StudentExamQuestionResource::collection($questionsData['questions']),
+            'questions' => StudentExamQuestionData::collection($questionsData['questions']),
             'order' => $questionsData['order'],
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
         ], 'Questions retrieved.');
@@ -153,7 +153,7 @@ class StudentExamController extends Controller
         return ApiResponse::success([
             'exam_id' => $attempt->exam_id,
             'attempt_id' => $attempt->id,
-            'questions' => StudentExamQuestionResource::collection($questionsData['questions']),
+            'questions' => StudentExamQuestionData::collection($questionsData['questions']),
             'order' => $questionsData['order'],
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
         ], 'Questions retrieved.');
@@ -289,16 +289,16 @@ class StudentExamController extends Controller
         $examSettings = $exam->settings;
 
         if ($examSettings->showResultImmediately && $attempt->status === ExamAttemptStatus::Graded->value) {
-            return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
+            return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
         }
 
         $releaseDate = $examSettings->resultsReleaseDate;
         if ($releaseDate && now()->greaterThanOrEqualTo($releaseDate)) {
-            return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
+            return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
         }
 
         if ($exam->status === ExamStatus::Published) {
-            return ApiResponse::success(new ExamAttemptResource($attempt), 'Result retrieved.');
+            return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
         }
 
         return ApiResponse::error('Results are not yet available.', 403);

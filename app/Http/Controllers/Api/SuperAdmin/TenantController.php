@@ -9,11 +9,9 @@ use App\Actions\SuperAdmin\DeleteTenantAction;
 use App\Actions\SuperAdmin\ReinstateTenantAction;
 use App\Actions\SuperAdmin\SuspendTenantAction;
 use App\Actions\SuperAdmin\UpdateTenantAction;
+use App\Data\Tenant\TenantData;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SuperAdmin\StoreTenantRequest;
-use App\Http\Requests\SuperAdmin\UpdateTenantRequest;
-use App\Http\Resources\TenantResource;
 use App\Models\Tenant;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +40,7 @@ class TenantController extends Controller
         return ApiResponse::paginated(
             $tenants,
             'Tenants retrieved successfully.',
-            TenantResource::collection($tenants->getCollection())->resolve()
+            TenantData::collection($tenants->getCollection())
         );
     }
 
@@ -59,7 +57,7 @@ class TenantController extends Controller
         ));
 
         return ApiResponse::created(
-            (new TenantResource($tenant))->resolve(),
+            TenantData::from($tenant),
             'School registered successfully.'
         );
     }
@@ -68,7 +66,7 @@ class TenantController extends Controller
     {
         $tenant = Tenant::with('domains')->findOrFail($id);
 
-        return ApiResponse::success((new TenantResource($tenant))->resolve(), 'Tenant retrieved successfully.');
+        return ApiResponse::success(TenantData::from($tenant), 'Tenant retrieved successfully.');
     }
 
     public function update(UpdateTenantRequest $request, string $id, UpdateTenantAction $action): JsonResponse
@@ -77,7 +75,7 @@ class TenantController extends Controller
         $updatedTenant = $action->handle($request->validated(), $tenant);
 
         return ApiResponse::success(
-            (new TenantResource($updatedTenant->load('domains')))->resolve(),
+            TenantData::from($updatedTenant->load('domains')),
             'Tenant updated successfully.'
         );
     }
@@ -88,7 +86,7 @@ class TenantController extends Controller
         $action->handle($tenant);
 
         return ApiResponse::success(
-            (new TenantResource($tenant))->resolve(),
+            TenantData::from($tenant),
             'Tenant suspended successfully.'
         );
     }
@@ -99,7 +97,7 @@ class TenantController extends Controller
         $action->handle($tenant);
 
         return ApiResponse::success(
-            (new TenantResource($tenant))->resolve(),
+            TenantData::from($tenant),
             'Tenant reinstated successfully.'
         );
     }

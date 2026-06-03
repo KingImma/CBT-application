@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\SuperAdmin;
 
+use App\Data\SubscriptionPlan\SubscriptionPlanData;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\SubscriptionPlanResource;
 use App\Models\SubscriptionPlan;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -44,7 +44,7 @@ class SubscriptionPlanController extends Controller
         $plans = $query->get();
 
         return ApiResponse::success(
-            SubscriptionPlanResource::collection($plans)->resolve(),
+            SubscriptionPlanData::collection($plans),
             'Subscription plans retrieved successfully.',
             meta: ['total' => $plans->count()]
         );
@@ -67,7 +67,7 @@ class SubscriptionPlanController extends Controller
         $plan = SubscriptionPlan::create(array_merge($validated, ['is_active' => true]));
 
         return ApiResponse::created(
-            (new SubscriptionPlanResource($plan))->resolve(),
+            SubscriptionPlanData::from($plan),
             'Subscription plan created successfully.'
         );
     }
@@ -93,7 +93,7 @@ class SubscriptionPlanController extends Controller
         $plan->update($validated);
 
         return ApiResponse::success(
-            (new SubscriptionPlanResource($plan->fresh()))->resolve(),
+            SubscriptionPlanData::from($plan->fresh()),
             'Subscription plan updated successfully.'
         );
     }
@@ -171,7 +171,7 @@ class SubscriptionPlanController extends Controller
         $plan = SubscriptionPlan::active()->findOrFail($id);
 
         return ApiResponse::success(
-            (new SubscriptionPlanResource($plan))->resolve(),
+            SubscriptionPlanData::from($plan),
             'Subscription plan retrieved successfully.'
         );
     }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class TeacherSubjectAssignment extends Model
+class TeacherLevelAssignment extends Model
 {
     use HasUuids;
 
@@ -19,19 +19,9 @@ class TeacherSubjectAssignment extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function subject(): BelongsTo
-    {
-        return $this->belongsTo(Subject::class);
-    }
-
     public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
-    }
-
-    public function classArm(): BelongsTo
-    {
-        return $this->belongsTo(ClassArm::class, 'class_arm_id');
     }
 
     public function academicSession(): BelongsTo

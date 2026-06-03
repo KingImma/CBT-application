@@ -96,6 +96,14 @@ class AuthController extends Controller
             ], 'Profile retrieved successfully.');
         }
 
+        $user->loadMissing([
+            'teacherAssignments.subject',
+            'teacherAssignments.classLevel',
+            'teacherAssignments.classArm',
+            'assignedClasses.classLevel',
+            'assignedLevels.classLevel',
+        ]);
+
         $role = $user->getRoleNames()->first();
 
         $sessionData = [
@@ -110,27 +118,63 @@ class AuthController extends Controller
         ];
 
         $roleData = match ($role) {
-            'teacher' => [
-                'teacher_profile' => $user->teacherProfile ? [
-                    'staff_id' => $user->teacherProfile->staff_id,
-                    'qualification' => $user->teacherProfile->qualification,
-                    'department' => $user->teacherProfile->department,
-                    'class_level' => $user->teacherProfile->classLevel ? [
-                        'id' => $user->teacherProfile->classLevel->id,
-                        'name' => $user->teacherProfile->classLevel->name,
-                        'slug' => $user->teacherProfile->classLevel->slug,
+            'teacher' => (function () use ($user): array {
+                $data = [
+                    'teacher_profile' => $user->teacherProfile ? [
+                        'staff_id' => $user->teacherProfile->staff_id,
+                        'qualification' => $user->teacherProfile->qualification,
+                        'department' => $user->teacherProfile->department,
+                        'class_level' => $user->teacherProfile->classLevel ? [
+                            'id' => $user->teacherProfile->classLevel->id,
+                            'name' => $user->teacherProfile->classLevel->name,
+                            'slug' => $user->teacherProfile->classLevel->slug,
+                        ] : null,
                     ] : null,
-                ] : null,
-                'assigned_classes' => [],
-                'assigned_subjects' => $user->teacherAssignments?->map(fn ($assignment) => [
-                    'subject' => $assignment->subject ? [
-                        'id' => $assignment->subject->id,
-                        'name' => $assignment->subject->name,
-                        'code' => $assignment->subject->code,
-                    ] : null,
-                    'class_level' => null,
-                ])->toArray() ?? [],
-            ],
+                ];
+
+                if ($user->assignedLevels->isNotEmpty()) {
+                    $data['assigned_levels'] = $user->assignedLevels->map(fn ($l) => [
+                        'class_level' => $l->classLevel ? [
+                            'id' => $l->classLevel->id,
+                            'name' => $l->classLevel->name,
+                            'slug' => $l->classLevel->slug,
+                        ] : null,
+                    ])->toArray();
+                }
+
+                if ($user->assignedClasses->isNotEmpty()) {
+                    $data['assigned_classes'] = $user->assignedClasses->map(fn ($arm) => [
+                        'id' => $arm->id,
+                        'name' => $arm->name,
+                        'class_level' => $arm->classLevel ? [
+                            'id' => $arm->classLevel->id,
+                            'name' => $arm->classLevel->name,
+                            'slug' => $arm->classLevel->slug,
+                        ] : null,
+                    ])->toArray();
+                }
+
+                if ($user->teacherAssignments->isNotEmpty()) {
+                    $data['assigned_subjects'] = $user->teacherAssignments->map(fn ($a) => [
+                        'subject' => $a->subject ? [
+                            'id' => $a->subject->id,
+                            'name' => $a->subject->name,
+                            'code' => $a->subject->code,
+                        ] : null,
+                        'scope' => $a->class_arm_id ? 'class_arm' : 'level',
+                        'class_level' => $a->classLevel ? [
+                            'id' => $a->classLevel->id,
+                            'name' => $a->classLevel->name,
+                            'slug' => $a->classLevel->slug,
+                        ] : null,
+                        'classes' => $a->classArm ? [
+                            ['id' => $a->classArm->id, 'name' => $a->classArm->name],
+                        ] : null,
+                    ])->toArray();
+                }
+
+                return $data;
+            })(),
 
             'student' => [
                 'student_profile' => $user->studentProfile ? [

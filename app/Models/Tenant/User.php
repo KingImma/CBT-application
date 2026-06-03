@@ -65,6 +65,11 @@ class User extends Authenticatable
         return $this->hasMany(ClassArm::class, 'assigned_teacher_id');
     }
 
+    public function assignedLevels(): HasMany
+    {
+        return $this->hasMany(TeacherLevelAssignment::class, 'user_id');
+    }
+
     /**
      * Scope to filter users by status (active, inactive, archived, all).
      */

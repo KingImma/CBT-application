@@ -114,11 +114,11 @@ class AuthController extends Controller
         $roleData = match ($role) {
             'teacher' => TeacherData::from(
                 $user->loadMissing('teacherProfile.classLevel', 'teacherAssignments.subject')
-            ),
+            )->toArray(),
 
             'student' => StudentData::from(
                 $user->loadMissing('studentProfile.classArm.classLevel')
-            ),
+            )->toArray(),
 
             // School Admins typically don't need a profile resource,
             // so they safely return an empty array to merge.

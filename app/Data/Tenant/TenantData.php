@@ -29,8 +29,8 @@ class TenantData extends Resource
         public readonly ?string $onboarding_completed_at,
         public readonly ?string $created_at,
         #[WhenLoaded('plan')]
-        public readonly Optional|array $plan,
+        public readonly Optional $plan,
         #[WhenLoaded('domains')]
-        public readonly Optional|array $domains,
+        public readonly Optional $domains,
     ) {}
 }

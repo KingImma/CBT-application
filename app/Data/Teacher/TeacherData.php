@@ -18,10 +18,10 @@ class TeacherData extends Resource
         public readonly ?string $phone,
         public readonly bool $is_active,
         #[WhenLoaded('teacherProfile')]
-        public readonly Optional|array $teacherProfile,
+        public readonly Optional $teacherProfile,
         #[WhenLoaded('assignedClasses')]
-        public readonly Optional|array $assignedClasses,
+        public readonly Optional $assignedClasses,
         #[WhenLoaded('teacherAssignments')]
-        public readonly Optional|array $teacherAssignments,
+        public readonly Optional $teacherAssignments,
     ) {}
 }

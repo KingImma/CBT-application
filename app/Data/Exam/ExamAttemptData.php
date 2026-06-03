@@ -22,8 +22,8 @@ class ExamAttemptData extends Resource
         public readonly ?string $submitted_at,
         public readonly ?int $time_spent_seconds,
         #[WhenLoaded('student')]
-        public readonly Optional|array $student,
+        public readonly Optional $student,
         #[WhenLoaded('exam')]
-        public readonly Optional|array $exam,
+        public readonly Optional $exam,
     ) {}
 }

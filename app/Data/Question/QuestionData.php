@@ -18,12 +18,12 @@ class QuestionData extends Resource
         public readonly ?string $image_url,
         public readonly bool $is_active,
         #[WhenLoaded('options')]
-        public readonly Optional|array $options,
+        public readonly Optional $options,
         #[WhenLoaded('subject')]
-        public readonly Optional|array $subject,
+        public readonly Optional $subject,
         #[WhenLoaded('classLevel')]
-        public readonly Optional|array $classLevel,
+        public readonly Optional $classLevel,
         #[WhenLoaded('creator')]
-        public readonly Optional|array $creator,
+        public readonly Optional $creator,
     ) {}
 }

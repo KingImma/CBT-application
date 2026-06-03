@@ -18,6 +18,6 @@ class StudentData extends Resource
         public readonly ?string $phone,
         public readonly bool $is_active,
         #[WhenLoaded('studentProfile')]
-        public readonly Optional|array $studentProfile,
+        public readonly Optional $studentProfile,
     ) {}
 }

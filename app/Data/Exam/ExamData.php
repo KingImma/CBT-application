@@ -17,13 +17,13 @@ class ExamData extends Resource
         public readonly string $type,
         public readonly string $status,
         #[WhenLoaded('subject')]
-        public readonly Optional|array $subject,
+        public readonly Optional $subject,
         #[WhenLoaded('classLevel')]
-        public readonly Optional|array $classLevel,
+        public readonly Optional $classLevel,
         #[WhenLoaded('classArm')]
-        public readonly Optional|array $classArm,
+        public readonly Optional $classArm,
         #[WhenLoaded('term')]
-        public readonly Optional|array $term,
+        public readonly Optional $term,
         public readonly ?float $total_marks,
         public readonly ?float $pass_mark,
         public readonly int $duration_minutes,
@@ -34,6 +34,6 @@ class ExamData extends Resource
         public readonly ?string $scheduled_end,
         public readonly ?string $instructions,
         #[WhenLoaded('creator')]
-        public readonly Optional|array $creator,
+        public readonly Optional $creator,
     ) {}
 }

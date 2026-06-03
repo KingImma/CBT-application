@@ -26,6 +26,6 @@ class ExamQuestionData extends Resource
         public readonly int $order,
         public readonly ?float $marks,
         #[WhenLoaded('question')]
-        public readonly Optional|array $question,
+        public readonly Optional $question,
     ) {}
 }

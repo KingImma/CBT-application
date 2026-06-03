@@ -17,6 +17,6 @@ class AcademicSessionData extends Resource
         public readonly ?string $start_date,
         public readonly ?string $end_date,
         #[WhenLoaded('terms')]
-        public readonly Optional|array $terms,
+        public readonly Optional $terms,
     ) {}
 }

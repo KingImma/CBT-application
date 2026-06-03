@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Data\Tenant;
 
 use Spatie\LaravelData\Attributes\WhenLoaded;
-use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Resource;
 
 class TenantData extends Resource
@@ -29,8 +28,8 @@ class TenantData extends Resource
         public readonly ?string $onboarding_completed_at,
         public readonly ?string $created_at,
         #[WhenLoaded('plan')]
-        public readonly Optional $plan,
+        public readonly mixed $plan,
         #[WhenLoaded('domains')]
-        public readonly Optional $domains,
+        public readonly mixed $domains,
     ) {}
 }

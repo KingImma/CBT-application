@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Data\AcademicSession;
 
 use Spatie\LaravelData\Attributes\WhenLoaded;
-use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Resource;
 
 class AcademicSessionData extends Resource
@@ -17,6 +16,6 @@ class AcademicSessionData extends Resource
         public readonly ?string $start_date,
         public readonly ?string $end_date,
         #[WhenLoaded('terms')]
-        public readonly Optional $terms,
+        public readonly mixed $terms,
     ) {}
 }

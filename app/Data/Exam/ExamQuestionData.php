@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Data\Exam;
 
 use Spatie\LaravelData\Attributes\WhenLoaded;
-use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Resource;
 
 class ExamQuestionData extends Resource
@@ -26,6 +25,6 @@ class ExamQuestionData extends Resource
         public readonly int $order,
         public readonly ?float $marks,
         #[WhenLoaded('question')]
-        public readonly Optional $question,
+        public readonly mixed $question,
     ) {}
 }

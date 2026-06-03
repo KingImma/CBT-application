@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Data\Teacher;
 
 use Spatie\LaravelData\Attributes\WhenLoaded;
-use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Resource;
 
 class TeacherData extends Resource
@@ -18,10 +17,10 @@ class TeacherData extends Resource
         public readonly ?string $phone,
         public readonly bool $is_active,
         #[WhenLoaded('teacherProfile')]
-        public readonly Optional $teacherProfile,
+        public readonly mixed $teacherProfile,
         #[WhenLoaded('assignedClasses')]
-        public readonly Optional $assignedClasses,
+        public readonly mixed $assignedClasses,
         #[WhenLoaded('teacherAssignments')]
-        public readonly Optional $teacherAssignments,
+        public readonly mixed $teacherAssignments,
     ) {}
 }

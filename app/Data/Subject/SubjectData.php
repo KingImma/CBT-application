@@ -21,8 +21,8 @@ class SubjectData extends Resource
         public readonly Optional|string $department,
         public readonly bool $is_active,
         #[WhenLoaded('classLevels')]
-        public readonly Optional $classLevels,
+        public readonly mixed $classLevels,
         #[WhenLoaded('teacherAssignments')]
-        public readonly Optional $teacherAssignments,
+        public readonly mixed $teacherAssignments,
     ) {}
 }

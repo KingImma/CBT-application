@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Data\Exam;
 
 use Spatie\LaravelData\Attributes\WhenLoaded;
-use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Resource;
 
 class ExamAttemptData extends Resource
@@ -22,8 +21,8 @@ class ExamAttemptData extends Resource
         public readonly ?string $submitted_at,
         public readonly ?int $time_spent_seconds,
         #[WhenLoaded('student')]
-        public readonly Optional $student,
+        public readonly mixed $student,
         #[WhenLoaded('exam')]
-        public readonly Optional $exam,
+        public readonly mixed $exam,
     ) {}
 }

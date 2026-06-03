@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Data\Question;
 
 use Spatie\LaravelData\Attributes\WhenLoaded;
-use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Resource;
 
 class QuestionData extends Resource
@@ -18,12 +17,12 @@ class QuestionData extends Resource
         public readonly ?string $image_url,
         public readonly bool $is_active,
         #[WhenLoaded('options')]
-        public readonly Optional $options,
+        public readonly mixed $options,
         #[WhenLoaded('subject')]
-        public readonly Optional $subject,
+        public readonly mixed $subject,
         #[WhenLoaded('classLevel')]
-        public readonly Optional $classLevel,
+        public readonly mixed $classLevel,
         #[WhenLoaded('creator')]
-        public readonly Optional $creator,
+        public readonly mixed $creator,
     ) {}
 }

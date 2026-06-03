@@ -20,10 +20,10 @@ class ClassArmData extends Resource
         #[Computed]
         public readonly Optional|int $students_count,
         #[WhenLoaded('classLevel')]
-        public readonly Optional $classLevel,
+        public readonly mixed $classLevel,
         #[WhenLoaded('assignedTeacher')]
-        public readonly Optional $assignedTeacher,
+        public readonly mixed $assignedTeacher,
         #[WhenLoaded('subjects')]
-        public readonly Optional $subjects,
+        public readonly mixed $subjects,
     ) {}
 }

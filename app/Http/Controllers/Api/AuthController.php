@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Data\Student\StudentData;
-use App\Data\Teacher\TeacherData;
 use App\Http\Controllers\Controller;
 use App\Models\SuperAdmin;
 use App\Services\Auth\SuperAdminAuthService;
@@ -112,13 +110,44 @@ class AuthController extends Controller
         ];
 
         $roleData = match ($role) {
-            'teacher' => TeacherData::from(
-                $user->loadMissing('teacherProfile.classLevel', 'teacherAssignments.subject')
-            )->toArray(),
+            'teacher' => [
+                'teacher_profile' => $user->teacherProfile ? [
+                    'staff_id' => $user->teacherProfile->staff_id,
+                    'qualification' => $user->teacherProfile->qualification,
+                    'department' => $user->teacherProfile->department,
+                    'class_level' => $user->teacherProfile->classLevel ? [
+                        'id' => $user->teacherProfile->classLevel->id,
+                        'name' => $user->teacherProfile->classLevel->name,
+                        'slug' => $user->teacherProfile->classLevel->slug,
+                    ] : null,
+                ] : null,
+                'assigned_classes' => [],
+                'assigned_subjects' => $user->teacherAssignments?->map(fn ($assignment) => [
+                    'subject' => $assignment->subject ? [
+                        'id' => $assignment->subject->id,
+                        'name' => $assignment->subject->name,
+                        'code' => $assignment->subject->code,
+                    ] : null,
+                    'class_level' => null,
+                ])->toArray() ?? [],
+            ],
 
-            'student' => StudentData::from(
-                $user->loadMissing('studentProfile.classArm.classLevel')
-            )->toArray(),
+            'student' => [
+                'student_profile' => $user->studentProfile ? [
+                    'admission_number' => $user->studentProfile->admission_number,
+                    'gender' => $user->studentProfile->gender,
+                    'date_of_birth' => $user->studentProfile->date_of_birth,
+                    'class_level' => $user->studentProfile->classLevel ? [
+                        'id' => $user->studentProfile->classLevel->id,
+                        'name' => $user->studentProfile->classLevel->name,
+                        'slug' => $user->studentProfile->classLevel->slug,
+                    ] : null,
+                    'class_arm' => $user->studentProfile->classArm ? [
+                        'id' => $user->studentProfile->classArm->id,
+                        'name' => $user->studentProfile->classArm->name,
+                    ] : null,
+                ] : null,
+            ],
 
             // School Admins typically don't need a profile resource,
             // so they safely return an empty array to merge.

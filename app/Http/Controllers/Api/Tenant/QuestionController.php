@@ -47,7 +47,7 @@ class QuestionController extends Controller
         $validated = $request->validate([
             'subject_id' => [
                 'required', 'uuid', 'exists:subjects,id',
-                function ($value, $fail) use ($request) {
+                function ($attribute, $value, $fail) use ($request) {
                     $classLevelId = $request->input('class_level_id');
                     if ($classLevelId) {
                         $exists = ClassLevel::where('id', $classLevelId)

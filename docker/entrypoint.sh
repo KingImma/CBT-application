@@ -7,8 +7,8 @@ php artisan migrate --force
 echo "==> Running tenant migrations..."
 php artisan tenants:migrate --force
 
-
-echo "==> Seeding subscription plans..."
+echo "==> Seeding central DB..."
+php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=SubscriptionPlanSeeder --force
 
 echo "==> Generating API documentation (Scribe)..."

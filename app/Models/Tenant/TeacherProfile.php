@@ -2,7 +2,6 @@
 
 namespace App\Models\Tenant;
 
-use App\Models\Tenant\ClassLevel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

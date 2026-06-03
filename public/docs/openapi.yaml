@@ -20,6 +20,9 @@ tags:
     name: 'Curriculum & Subjects'
     description: '* APIs for managing the academic curriculum and subject topics.'
   -
+    name: Endpoints
+    description: ''
+  -
     name: 'Exam Administration'
     description: '* APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.'
   -
@@ -31,9 +34,6 @@ tags:
   -
     name: 'Staff Directory'
     description: '* APIs for managing teachers, roles, and subject assignments.'
-  -
-    name: 'Student Exam Execution'
-    description: '* APIs consumed by the student interface to fetch active questions, submit answers, and finalize attempts.'
   -
     name: 'Student Roster'
     description: '* APIs for managing student enrollments, profiles, and class placements.'
@@ -91,15 +91,15 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:30'
+                  example: '2026-06-02T12:19:21'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-                  example: '2052-05-30'
+                  example: '2052-06-25'
                 is_current:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
               required:
                 - name
                 - start_date
@@ -127,9 +127,9 @@ paths:
       tags:
         - 'Academic Calendar'
       security: []
-    patch:
+    put:
       summary: ''
-      operationId: patchApiAcademicSessionsId
+      operationId: putApiAcademicSessionsId
       description: ''
       parameters: []
       responses: {  }
@@ -149,15 +149,15 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:30'
+                  example: '2026-06-02T12:19:21'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-                  example: '2052-05-30'
+                  example: '2052-06-25'
                 is_current:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
       security: []
     delete:
       summary: ''
@@ -196,37 +196,10 @@ paths:
         required: true
         schema:
           type: string
-  '/api/academic-sessions/{sessionId}/terms/{id}/set-current':
-    post:
-      summary: 'Set a term as current within its session.'
-      operationId: setATermAsCurrentWithinItsSession
-      description: 'The session must already be current.'
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Academic Calendar'
-      security: []
-    parameters:
-      -
-        in: path
-        name: sessionId
-        description: ''
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: id
-        description: 'The ID of the term.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/academic-sessions/{sessionId}/terms':
+  '/api/academic-sessions/{academic_session_id}/terms':
     get:
       summary: ''
-      operationId: getApiAcademicSessionsSessionIdTerms
+      operationId: getApiAcademicSessionsAcademic_session_idTerms
       description: ''
       parameters: []
       responses:
@@ -247,7 +220,7 @@ paths:
       security: []
     post:
       summary: ''
-      operationId: postApiAcademicSessionsSessionIdTerms
+      operationId: postApiAcademicSessionsAcademic_session_idTerms
       description: ''
       parameters: []
       responses: {  }
@@ -267,15 +240,15 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:30'
+                  example: '2026-06-02T12:19:21'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-                  example: '2052-05-30'
+                  example: '2052-06-25'
                 is_current:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
               required:
                 - name
                 - start_date
@@ -284,16 +257,16 @@ paths:
     parameters:
       -
         in: path
-        name: sessionId
-        description: ''
+        name: academic_session_id
+        description: 'The ID of the academic session.'
         example: architecto
         required: true
         schema:
           type: string
-  '/api/academic-sessions/{sessionId}/terms/{id}':
-    patch:
+  '/api/academic-sessions/{academic_session_id}/terms/{id}':
+    put:
       summary: ''
-      operationId: patchApiAcademicSessionsSessionIdTermsId
+      operationId: putApiAcademicSessionsAcademic_session_idTermsId
       description: ''
       parameters: []
       responses: {  }
@@ -313,20 +286,47 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:30'
+                  example: '2026-06-02T12:19:21'
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>start_date</code>.'
-                  example: '2052-05-30'
+                  example: '2052-06-25'
                 is_current:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
       security: []
     delete:
       summary: ''
-      operationId: deleteApiAcademicSessionsSessionIdTermsId
+      operationId: deleteApiAcademicSessionsAcademic_session_idTermsId
       description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Academic Calendar'
+      security: []
+    parameters:
+      -
+        in: path
+        name: academic_session_id
+        description: 'The ID of the academic session.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: id
+        description: 'The ID of the term.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/academic-sessions/{sessionId}/terms/{id}/set-current':
+    post:
+      summary: 'Set a term as current within its session.'
+      operationId: setATermAsCurrentWithinItsSession
+      description: 'The session must already be current.'
       parameters: []
       responses: {  }
       tags:
@@ -376,26 +376,6 @@ paths:
               required:
                 - identifier
                 - password
-      security: []
-  /api/auth/forgot-password:
-    post:
-      summary: ''
-      operationId: postApiAuthForgotPassword
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Authentication & Onboarding'
-      security: []
-  /api/auth/reset-password:
-    post:
-      summary: ''
-      operationId: postApiAuthResetPassword
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Authentication & Onboarding'
       security: []
   /api/onboarding/check-handle:
     get:
@@ -628,7 +608,7 @@ paths:
                 - current_password
                 - password
       security: []
-  /api/super-admin/auth/logout:
+  /api/super-admin/logout:
     post:
       summary: 'Logout the user and invalidate the token.'
       operationId: logoutTheUserAndInvalidateTheToken
@@ -638,7 +618,7 @@ paths:
       tags:
         - 'Authentication & Onboarding'
       security: []
-  /api/super-admin/auth/me:
+  /api/super-admin/me:
     get:
       summary: "Get the authenticated user's profile."
       operationId: getTheAuthenticatedUsersProfile
@@ -692,6 +672,38 @@ paths:
       tags:
         - 'Authentication & Onboarding'
       security: []
+  '/api/class-levels/{id}/assign-teacher':
+    patch:
+      summary: ''
+      operationId: patchApiClassLevelsIdAssignTeacher
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Classes & Arms'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teacher_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the users table.'
+                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
+              required:
+                - teacher_id
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the class level.'
+        example: architecto
+        required: true
+        schema:
+          type: string
   /api/class-levels:
     get:
       summary: ''
@@ -758,9 +770,9 @@ paths:
       tags:
         - 'Classes & Arms'
       security: []
-    patch:
+    put:
       summary: ''
-      operationId: patchApiClassLevelsId
+      operationId: putApiClassLevelsId
       description: ''
       parameters: []
       responses: {  }
@@ -797,96 +809,6 @@ paths:
         in: path
         name: id
         description: 'The ID of the class level.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/class-levels/{id}/subjects':
-    get:
-      summary: ''
-      operationId: getApiClassLevelsIdSubjects
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Classes & Arms'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the class level.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/class-levels/{id}/subjects/sync':
-    post:
-      summary: ''
-      operationId: postApiClassLevelsIdSubjectsSync
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Classes & Arms'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                subject_ids:
-                  type: array
-                  description: 'The <code>id</code> of an existing record in the subjects table.'
-                  example: null
-                  items:
-                    type: string
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the class level.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/class-levels/{id}/subjects/{subjectId}/toggle-compulsory':
-    patch:
-      summary: ''
-      operationId: patchApiClassLevelsIdSubjectsSubjectIdToggleCompulsory
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Classes & Arms'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the class level.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: subjectId
-        description: ''
         example: architecto
         required: true
         schema:
@@ -944,6 +866,46 @@ paths:
         required: true
         schema:
           type: string
+  '/api/class-levels/{classLevelId}/arms/{id}/assign-teacher':
+    patch:
+      summary: 'Assign a teacher to a class arm.'
+      operationId: assignATeacherToAClassArm
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Classes & Arms'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assigned_teacher_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the users table.'
+                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
+              required:
+                - assigned_teacher_id
+      security: []
+    parameters:
+      -
+        in: path
+        name: classLevelId
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: id
+        description: 'The ID of the arm.'
+        example: architecto
+        required: true
+        schema:
+          type: string
   '/api/class-levels/{classLevelId}/arms/{id}':
     patch:
       summary: ''
@@ -989,6 +951,102 @@ paths:
         in: path
         name: id
         description: 'The ID of the arm.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/class-levels/{classLevelId}/subjects':
+    get:
+      summary: ''
+      operationId: getApiClassLevelsClassLevelIdSubjects
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Classes & Arms'
+      security: []
+    parameters:
+      -
+        in: path
+        name: classLevelId
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/class-levels/{classLevelId}/subjects/sync':
+    post:
+      summary: ''
+      operationId: postApiClassLevelsClassLevelIdSubjectsSync
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Classes & Arms'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_ids:
+                  type: array
+                  description: 'The <code>id</code> of an existing record in the subjects table.'
+                  example: null
+                  items:
+                    type: string
+                compulsory_ids:
+                  type: array
+                  description: 'The <code>id</code> of an existing record in the subjects table.'
+                  example: null
+                  items:
+                    type: string
+      security: []
+    parameters:
+      -
+        in: path
+        name: classLevelId
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/class-levels/{classLevelId}/subjects/{subjectId}/toggle-compulsory':
+    patch:
+      summary: ''
+      operationId: patchApiClassLevelsClassLevelIdSubjectsSubjectIdToggleCompulsory
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Classes & Arms'
+      security: []
+    parameters:
+      -
+        in: path
+        name: classLevelId
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: subjectId
+        description: ''
         example: architecto
         required: true
         schema:
@@ -1282,9 +1340,9 @@ paths:
       tags:
         - 'Curriculum & Subjects'
       security: []
-    patch:
+    put:
       summary: ''
-      operationId: patchApiSubjectsId
+      operationId: putApiSubjectsId
       description: ''
       parameters: []
       responses: {  }
@@ -1309,7 +1367,7 @@ paths:
                 is_active:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
                 class_level_ids:
                   type: array
                   description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
@@ -1405,158 +1463,16 @@ paths:
         required: true
         schema:
           type: string
-  /api/topics:
-    get:
-      summary: ''
-      operationId: getApiTopics
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Curriculum & Subjects'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                subject_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the subjects table.'
-                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
-                class_level_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
-                  example: 6b72fe4a-5b40-307c-bc24-f79acf9a1bb9
-              required:
-                - subject_id
-                - class_level_id
-      security: []
+  /api/broadcasting/auth:
     post:
       summary: ''
-      operationId: postApiTopics
+      operationId: postApiBroadcastingAuth
       description: ''
       parameters: []
       responses: {  }
       tags:
-        - 'Curriculum & Subjects'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                subject_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the subjects table.'
-                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
-                class_level_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
-                  example: 6b72fe4a-5b40-307c-bc24-f79acf9a1bb9
-                parent_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the topics table.'
-                  example: 977e5426-8d13-3824-86aa-b092f8ae52c5
-                  nullable: true
-                name:
-                  type: string
-                  description: 'Must not be greater than 255 characters.'
-                  example: 'y'
-                order:
-                  type: integer
-                  description: ''
-                  example: 16
-                  nullable: true
-              required:
-                - subject_id
-                - class_level_id
-                - name
+        - Endpoints
       security: []
-  '/api/topics/{id}':
-    get:
-      summary: ''
-      operationId: getApiTopicsId
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Curriculum & Subjects'
-      security: []
-    patch:
-      summary: ''
-      operationId: patchApiTopicsId
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Curriculum & Subjects'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                parent_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the topics table.'
-                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
-                  nullable: true
-                name:
-                  type: string
-                  description: 'Must not be greater than 255 characters.'
-                  example: g
-                order:
-                  type: integer
-                  description: ''
-                  example: 16
-                  nullable: true
-      security: []
-    delete:
-      summary: ''
-      operationId: deleteApiTopicsId
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Curriculum & Subjects'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the topic.'
-        example: architecto
-        required: true
-        schema:
-          type: string
   /api/exams:
     get:
       summary: ''
@@ -1577,7 +1493,7 @@ paths:
                     type: string
                     example: Unauthenticated.
       tags:
-        - 'Exam Administration'
+        - Endpoints
       security: []
     post:
       summary: ''
@@ -1586,7 +1502,7 @@ paths:
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
       requestBody:
         required: true
         content:
@@ -1618,7 +1534,7 @@ paths:
                 type:
                   type: string
                   description: ''
-                  example: quiz
+                  example: exam
                   enum:
                     - exam
                     - test
@@ -1642,12 +1558,17 @@ paths:
                 scheduled_start:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:30'
+                  example: '2026-06-02T12:19:22'
                   nullable: true
                 scheduled_end:
                   type: string
                   description: 'Must be a valid date. Must be a date after <code>scheduled_start</code>.'
-                  example: '2052-05-30'
+                  example: '2052-06-25'
+                  nullable: true
+                instructions:
+                  type: string
+                  description: ''
+                  example: architecto
                   nullable: true
                 settings:
                   type: object
@@ -1655,18 +1576,6 @@ paths:
                   example: null
                   properties: {  }
                   nullable: true
-                instructions:
-                  type: string
-                  description: ''
-                  example: architecto
-                  nullable: true
-                topic_ids:
-                  type: array
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the topics table.'
-                  example:
-                    - a4855dc5-0acb-33c3-b921-f4291f719ca0
-                  items:
-                    type: string
               required:
                 - title
                 - subject_id
@@ -1695,78 +1604,16 @@ paths:
                     type: string
                     example: Unauthenticated.
       tags:
-        - 'Exam Administration'
+        - Endpoints
       security: []
-    patch:
+    put:
       summary: ''
-      operationId: patchApiExamsId
+      operationId: putApiExamsId
       description: ''
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                  description: 'Must not be greater than 255 characters.'
-                  example: b
-                subject_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the subjects table.'
-                  example: a4855dc5-0acb-33c3-b921-f4291f719ca0
-                class_level_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
-                  example: c90237e9-ced5-3af6-88ea-84aeaa148878
-                class_arm_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_arms table.'
-                  example: a1a0a47d-e8c3-3cf0-8e6e-c1ff9dca5d1f
-                  nullable: true
-                term_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the terms table.'
-                  example: 21c4122b-d554-3723-966c-6d723ea5293f
-                duration_minutes:
-                  type: integer
-                  description: 'Must be at least 1.'
-                  example: 40
-                pass_mark:
-                  type: number
-                  description: 'Must be at least 0.'
-                  example: 9
-                  nullable: true
-                max_attempts:
-                  type: integer
-                  description: 'Must be at least 1.'
-                  example: 2
-                scheduled_start:
-                  type: string
-                  description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:31'
-                  nullable: true
-                scheduled_end:
-                  type: string
-                  description: 'Must be a valid date. Must be a date after <code>scheduled_start</code>.'
-                  example: '2052-05-30'
-                  nullable: true
-                settings:
-                  type: object
-                  description: ''
-                  example: null
-                  properties: {  }
-                  nullable: true
-                instructions:
-                  type: string
-                  description: ''
-                  example: architecto
-                  nullable: true
+        - Endpoints
       security: []
     delete:
       summary: ''
@@ -1775,7 +1622,95 @@ paths:
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/submit-for-review':
+    post:
+      summary: ''
+      operationId: postApiExamsIdSubmitForReview
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/activate':
+    post:
+      summary: ''
+      operationId: postApiExamsIdActivate
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/lock':
+    post:
+      summary: ''
+      operationId: postApiExamsIdLock
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/reject':
+    post:
+      summary: ''
+      operationId: postApiExamsIdReject
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rejection_reason:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: b
+                  nullable: true
       security: []
     parameters:
       -
@@ -1794,7 +1729,7 @@ paths:
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
       security: []
     parameters:
       -
@@ -1813,7 +1748,83 @@ paths:
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/end-session':
+    post:
+      summary: ''
+      operationId: postApiExamsIdEndSession
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/recall':
+    post:
+      summary: ''
+      operationId: postApiExamsIdRecall
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/emergency-revert':
+    post:
+      summary: ''
+      operationId: postApiExamsIdEmergencyRevert
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/unlock':
+    post:
+      summary: ''
+      operationId: postApiExamsIdUnlock
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
       security: []
     parameters:
       -
@@ -1825,6 +1836,27 @@ paths:
         schema:
           type: string
   '/api/exams/{examId}/questions':
+    get:
+      summary: ''
+      operationId: getApiExamsExamIdQuestions
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
     post:
       summary: ''
       operationId: postApiExamsExamIdQuestions
@@ -1832,7 +1864,7 @@ paths:
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
       requestBody:
         required: true
         content:
@@ -1861,15 +1893,15 @@ paths:
         required: true
         schema:
           type: string
-  '/api/exams/{examId}/questions/auto-generate':
+  '/api/exams/{examId}/questions/randomize':
     post:
       summary: ''
-      operationId: postApiExamsExamIdQuestionsAutoGenerate
+      operationId: postApiExamsExamIdQuestionsRandomize
       description: ''
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
       requestBody:
         required: true
         content:
@@ -1877,45 +1909,12 @@ paths:
             schema:
               type: object
               properties:
-                rules:
-                  type: array
-                  description: 'Must have at least 1 items.'
-                  example:
-                    - []
-                  items:
-                    type: object
-                    properties:
-                      type:
-                        type: string
-                        description: ''
-                        example: fill_blank
-                        enum:
-                          - mcq_single
-                          - mcq_multi
-                          - true_false
-                          - fill_blank
-                          - short_answer
-                          - essay
-                          - matching
-                          - ordering
-                        nullable: true
-                      difficulty:
-                        type: string
-                        description: ''
-                        example: hard
-                        enum:
-                          - easy
-                          - medium
-                          - hard
-                        nullable: true
-                      count:
-                        type: integer
-                        description: 'Must be at least 1.'
-                        example: 16
-                    required:
-                      - count
+                count:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 16
               required:
-                - rules
+                - count
       security: []
     parameters:
       -
@@ -1927,6 +1926,27 @@ paths:
         schema:
           type: string
   '/api/exams/{examId}/questions/{questionId}':
+    patch:
+      summary: ''
+      operationId: patchApiExamsExamIdQuestionsQuestionId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marks_override:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 27
+                  nullable: true
+      security: []
     delete:
       summary: ''
       operationId: deleteApiExamsExamIdQuestionsQuestionId
@@ -1934,7 +1954,7 @@ paths:
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
       security: []
     parameters:
       -
@@ -1961,7 +1981,7 @@ paths:
       parameters: []
       responses: {  }
       tags:
-        - 'Exam Administration'
+        - Endpoints
       requestBody:
         required: true
         content:
@@ -1984,6 +2004,679 @@ paths:
         in: path
         name: examId
         description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/exams/{id}/grading/attempts/{attemptId}/recompute-score':
+    post:
+      summary: ''
+      operationId: postApiExamsIdGradingAttemptsAttemptIdRecomputeScore
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: attemptId
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+  /api/questions:
+    get:
+      summary: ''
+      operationId: getApiQuestions
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    post:
+      summary: ''
+      operationId: postApiQuestions
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the subjects table.'
+                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
+                class_level_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
+                  example: 6b72fe4a-5b40-307c-bc24-f79acf9a1bb9
+                content:
+                  type: string
+                  description: ''
+                  example: architecto
+                default_marks:
+                  type: number
+                  description: 'Must be at least 0.5. Must not be greater than 100.'
+                  example: 22
+                image_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'http://crooks.biz/et-fugiat-sunt-nihil-accusantium'
+                  nullable: true
+                options:
+                  type: array
+                  description: 'Must have at least 2 items.'
+                  example:
+                    - []
+                  items:
+                    type: object
+                    properties:
+                      content:
+                        type: string
+                        description: ''
+                        example: architecto
+                      is_correct:
+                        type: boolean
+                        description: ''
+                        example: true
+                      order:
+                        type: integer
+                        description: ''
+                        example: 16
+                        nullable: true
+                      label:
+                        type: string
+                        description: 'Must not be greater than 10 characters.'
+                        example: ngzmiy
+                        nullable: true
+                    required:
+                      - content
+                      - is_correct
+              required:
+                - subject_id
+                - class_level_id
+                - content
+                - default_marks
+                - options
+      security: []
+  '/api/questions/{id}':
+    get:
+      summary: ''
+      operationId: getApiQuestionsId
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    put:
+      summary: ''
+      operationId: putApiQuestionsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: ''
+                  example: architecto
+                default_marks:
+                  type: number
+                  description: 'Must be at least 0.5. Must not be greater than 100.'
+                  example: 22
+                image_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'http://crooks.biz/et-fugiat-sunt-nihil-accusantium'
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+      security: []
+    delete:
+      summary: ''
+      operationId: deleteApiQuestionsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the question.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  /api/questions/clone-from-term:
+    post:
+      summary: ''
+      operationId: postApiQuestionsCloneFromTerm
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_session_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the academic_sessions table.'
+                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
+                source_term_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the terms table.'
+                  example: 6b72fe4a-5b40-307c-bc24-f79acf9a1bb9
+                target_session_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the academic_sessions table.'
+                  example: 977e5426-8d13-3824-86aa-b092f8ae52c5
+                target_term_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the terms table.'
+                  example: d6fa562b-acd5-35ff-babb-d11194d3737b
+                subject_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the subjects table.'
+                  example: 5707ca55-f609-3528-be8b-1baeaee1567e
+                class_level_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
+                  example: 947170af-7488-3f30-a16d-723355a9502f
+              required:
+                - source_session_id
+                - source_term_id
+                - target_session_id
+                - target_term_id
+                - subject_id
+                - class_level_id
+      security: []
+  '/api/questions/{id}/restore':
+    post:
+      summary: ''
+      operationId: postApiQuestionsIdRestore
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the question.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  /api/student/exams/available:
+    get:
+      summary: ''
+      operationId: getApiStudentExamsAvailable
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+  '/api/student/exams/{id}':
+    get:
+      summary: ''
+      operationId: getApiStudentExamsId
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/{id}/start':
+    post:
+      summary: ''
+      operationId: postApiStudentExamsIdStart
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/{id}/attempt':
+    get:
+      summary: ''
+      operationId: getApiStudentExamsIdAttempt
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/{id}/questions':
+    get:
+      summary: ''
+      operationId: getApiStudentExamsIdQuestions
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the exam.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/questions':
+    get:
+      summary: ''
+      operationId: getApiStudentExamsAttemptsIdQuestions
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/answers/{questionId}':
+    put:
+      summary: ''
+      operationId: putApiStudentExamsAttemptsIdAnswersQuestionId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                selected_option_ids:
+                  type: object
+                  description: ''
+                  example: null
+                  properties: {  }
+                text_answer:
+                  type: string
+                  description: ''
+                  example: architecto
+                time_spent_seconds:
+                  type: integer
+                  description: 'Must be at least 0.'
+                  example: 39
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: questionId
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/bulk-save':
+    post:
+      summary: ''
+      operationId: postApiStudentExamsAttemptsIdBulkSave
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: array
+                  description: ''
+                  example:
+                    - []
+                  items:
+                    type: object
+                    properties:
+                      question_id:
+                        type: string
+                        description: 'Must be a valid UUID.'
+                        example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
+                      selected_option_ids:
+                        type: object
+                        description: ''
+                        example: null
+                        properties: {  }
+                      text_answer:
+                        type: string
+                        description: ''
+                        example: architecto
+                      time_spent_seconds:
+                        type: integer
+                        description: 'Must be at least 0.'
+                        example: 39
+                    required:
+                      - question_id
+              required:
+                - answers
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/time-remaining':
+    get:
+      summary: ''
+      operationId: getApiStudentExamsAttemptsIdTimeRemaining
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/submit':
+    post:
+      summary: ''
+      operationId: postApiStudentExamsAttemptsIdSubmit
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/flag/{questionId}':
+    post:
+      summary: ''
+      operationId: postApiStudentExamsAttemptsIdFlagQuestionId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: questionId
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/suspicious-event':
+    post:
+      summary: ''
+      operationId: postApiStudentExamsAttemptsIdSuspiciousEvent
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  description: ''
+                  example: architecto
+                metadata:
+                  type: object
+                  description: ''
+                  example: null
+                  properties: {  }
+              required:
+                - type
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/student/exams/attempts/{id}/result':
+    get:
+      summary: ''
+      operationId: getApiStudentExamsAttemptsIdResult
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the attempt.'
         example: architecto
         required: true
         schema:
@@ -2050,7 +2743,7 @@ paths:
                       status:
                         type: string
                         description: ''
-                        example: absent
+                        example: awp
                         enum:
                           - present
                           - absent
@@ -2089,7 +2782,7 @@ paths:
                 status:
                   type: string
                   description: ''
-                  example: awp
+                  example: present
                   enum:
                     - present
                     - absent
@@ -2145,471 +2838,6 @@ paths:
         required: true
         schema:
           type: string
-  '/api/exams/{id}/grading/ungraded-attempts':
-    get:
-      summary: ''
-      operationId: getApiExamsIdGradingUngradedAttempts
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Exam Administration'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/grading/attempts/{attemptId}/theory-answers':
-    get:
-      summary: ''
-      operationId: getApiExamsIdGradingAttemptsAttemptIdTheoryAnswers
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Exam Administration'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: attemptId
-        description: ''
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/grading/answers/{answerId}/grade':
-    put:
-      summary: ''
-      operationId: putApiExamsIdGradingAnswersAnswerIdGrade
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                marks:
-                  type: number
-                  description: 'Must be at least 0.'
-                  example: 27
-                feedback:
-                  type: string
-                  description: ''
-                  example: architecto
-                  nullable: true
-              required:
-                - marks
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: answerId
-        description: ''
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/grading/attempts/{attemptId}/mark-fully-graded':
-    put:
-      summary: ''
-      operationId: putApiExamsIdGradingAttemptsAttemptIdMarkFullyGraded
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: attemptId
-        description: ''
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/grading/attempts/{attemptId}/recompute-score':
-    post:
-      summary: ''
-      operationId: postApiExamsIdGradingAttemptsAttemptIdRecomputeScore
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: attemptId
-        description: ''
-        example: architecto
-        required: true
-        schema:
-          type: string
-  /api/questions:
-    get:
-      summary: ''
-      operationId: getApiQuestions
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Question Bank'
-      security: []
-    post:
-      summary: ''
-      operationId: postApiQuestions
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Question Bank'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                subject_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the subjects table.'
-                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
-                class_level_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
-                  example: 6b72fe4a-5b40-307c-bc24-f79acf9a1bb9
-                topic_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the topics table.'
-                  example: 977e5426-8d13-3824-86aa-b092f8ae52c5
-                  nullable: true
-                type:
-                  type: string
-                  description: ''
-                  example: fill_blank
-                  enum:
-                    - mcq_single
-                    - mcq_multi
-                    - true_false
-                    - fill_blank
-                    - short_answer
-                    - essay
-                    - matching
-                    - ordering
-                difficulty:
-                  type: string
-                  description: ''
-                  example: medium
-                  enum:
-                    - easy
-                    - medium
-                    - hard
-                content:
-                  type: string
-                  description: ''
-                  example: architecto
-                explanation:
-                  type: string
-                  description: ''
-                  example: architecto
-                  nullable: true
-                default_marks:
-                  type: number
-                  description: 'Must be at least 0.5. Must not be greater than 100.'
-                  example: 22
-                time_estimate_seconds:
-                  type: integer
-                  description: 'Must be at least 10.'
-                  example: 22
-                  nullable: true
-                image_url:
-                  type: string
-                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
-                  example: 'http://www.okuneva.com/fugiat-sunt-nihil-accusantium-harum-mollitia.html'
-                  nullable: true
-                metadata:
-                  type: object
-                  description: ''
-                  example: null
-                  properties:
-                    tags:
-                      type: object
-                      description: ''
-                      example: null
-                      properties: {  }
-                      nullable: true
-                    source:
-                      type: string
-                      description: ''
-                      example: architecto
-                      nullable: true
-                    year:
-                      type: integer
-                      description: ''
-                      example: 16
-                      nullable: true
-                  nullable: true
-                options:
-                  type: array
-                  description: 'Options: required for choice-based types. This field is required when <code>type</code> is <code>mcq_single</code>, <code>mcq_multi</code>, <code>true_false</code>, <code>matching</code>, or <code>ordering</code>. Must have at least 2 items.'
-                  example: null
-                  items:
-                    type: object
-                    properties:
-                      label:
-                        type: string
-                        description: 'Must not be greater than 10 characters.'
-                        example: ngzmiy
-                        nullable: true
-                      content:
-                        type: string
-                        description: 'This field is required when <code>options</code> is present.'
-                        example: architecto
-                      image_url:
-                        type: string
-                        description: 'Must be a valid URL. Must not be greater than 500 characters.'
-                        example: 'http://bailey.com/'
-                        nullable: true
-                      is_correct:
-                        type: boolean
-                        description: 'This field is required when <code>options</code> is present.'
-                        example: true
-                      order:
-                        type: integer
-                        description: ''
-                        example: 16
-                        nullable: true
-                      match_pair:
-                        type: string
-                        description: 'Must not be greater than 255 characters.'
-                        example: 'n'
-                        nullable: true
-                fill_blank_answers:
-                  type: array
-                  description: 'Fill-blank answers: required for fill_blank type. This field is required when <code>type</code> is <code>fill_blank</code>. Must have at least 1 items.'
-                  example: null
-                  items:
-                    type: object
-                    properties:
-                      answer_text:
-                        type: string
-                        description: 'This field is required when <code>fill_blank_answers</code> is present. Must not be greater than 255 characters.'
-                        example: g
-                      is_primary:
-                        type: boolean
-                        description: ''
-                        example: false
-                        nullable: true
-              required:
-                - subject_id
-                - class_level_id
-                - type
-                - difficulty
-                - content
-                - default_marks
-      security: []
-  '/api/questions/{id}':
-    get:
-      summary: ''
-      operationId: getApiQuestionsId
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Question Bank'
-      security: []
-    patch:
-      summary: ''
-      operationId: patchApiQuestionsId
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Question Bank'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                topic_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the topics table.'
-                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
-                  nullable: true
-                difficulty:
-                  type: string
-                  description: ''
-                  example: hard
-                  enum:
-                    - easy
-                    - medium
-                    - hard
-                content:
-                  type: string
-                  description: ''
-                  example: architecto
-                explanation:
-                  type: string
-                  description: ''
-                  example: architecto
-                  nullable: true
-                default_marks:
-                  type: number
-                  description: 'Must be at least 0.5. Must not be greater than 100.'
-                  example: 22
-                time_estimate_seconds:
-                  type: integer
-                  description: ''
-                  example: 16
-                  nullable: true
-                image_url:
-                  type: string
-                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
-                  example: 'http://bailey.com/'
-                  nullable: true
-                metadata:
-                  type: object
-                  description: ''
-                  example: null
-                  properties: {  }
-                  nullable: true
-                is_active:
-                  type: boolean
-                  description: ''
-                  example: false
-      security: []
-    delete:
-      summary: ''
-      operationId: deleteApiQuestionsId
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Question Bank'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the question.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/questions/{id}/restore':
-    post:
-      summary: ''
-      operationId: postApiQuestionsIdRestore
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Question Bank'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the question.'
-        example: architecto
-        required: true
-        schema:
-          type: string
   '/api/questions/{questionId}/options':
     post:
       summary: ''
@@ -2643,7 +2871,7 @@ paths:
                 is_correct:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
                 order:
                   type: integer
                   description: ''
@@ -2700,7 +2928,7 @@ paths:
                 is_correct:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
                 order:
                   type: integer
                   description: ''
@@ -2848,10 +3076,10 @@ paths:
                 - name
                 - grades
       security: []
-  '/api/grading-scales/{gradingScale}':
+  '/api/grading-scales/{id}':
     get:
       summary: ''
-      operationId: getApiGradingScalesGradingScale
+      operationId: getApiGradingScalesId
       description: ''
       parameters: []
       responses:
@@ -2870,9 +3098,9 @@ paths:
       tags:
         - 'School Configuration'
       security: []
-    patch:
+    put:
       summary: ''
-      operationId: patchApiGradingScalesGradingScale
+      operationId: putApiGradingScalesId
       description: ''
       parameters: []
       responses: {  }
@@ -2892,7 +3120,7 @@ paths:
                 is_default:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
                 grades:
                   type: array
                   description: 'Must have at least 1 items.'
@@ -2920,7 +3148,7 @@ paths:
       security: []
     delete:
       summary: ''
-      operationId: deleteApiGradingScalesGradingScale
+      operationId: deleteApiGradingScalesId
       description: ''
       parameters: []
       responses: {  }
@@ -2930,8 +3158,8 @@ paths:
     parameters:
       -
         in: path
-        name: gradingScale
-        description: ''
+        name: id
+        description: 'The ID of the grading scale.'
         example: architecto
         required: true
         schema:
@@ -2982,6 +3210,109 @@ paths:
                     type: string
                     nullable: true
       security: []
+  /api/school-settings/assessments:
+    get:
+      summary: ''
+      operationId: getApiSchoolSettingsAssessments
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'School Configuration'
+      security: []
+    patch:
+      summary: ''
+      operationId: patchApiSchoolSettingsAssessments
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'School Configuration'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assessment_max_score:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 100.'
+                  example: 1
+                exam_max_score:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 100.'
+                  example: 22
+              required:
+                - assessment_max_score
+                - exam_max_score
+      security: []
+  /api/school-settings/assessment-defaults:
+    get:
+      summary: ''
+      operationId: getApiSchoolSettingsAssessmentDefaults
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'School Configuration'
+      security: []
+    patch:
+      summary: ''
+      operationId: patchApiSchoolSettingsAssessmentDefaults
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'School Configuration'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration_minutes:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 1440.'
+                  example: 1
+                max_attempts:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 10.'
+                  example: 2
+                show_result_immediately:
+                  type: boolean
+                  description: ''
+                  example: false
+                pass_mark:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 7
+      security: []
   '/api/teachers/{id}/reset-password-otp':
     post:
       summary: ''
@@ -3014,6 +3345,69 @@ paths:
         required: true
         schema:
           type: string
+  /api/teachers/import-template:
+    get:
+      summary: ''
+      operationId: getApiTeachersImportTemplate
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Staff Directory'
+      security: []
+  /api/teachers/import:
+    post:
+      summary: ''
+      operationId: postApiTeachersImport
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Staff Directory'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 'Must be a file. Must not be greater than 5120 kilobytes.'
+                dry_run:
+                  type: string
+                  description: ''
+                  example: '0'
+                  enum:
+                    - 'true'
+                    - 'false'
+                    - '1'
+                    - '0'
+                overwrite_existing:
+                  type: string
+                  description: ''
+                  example: update
+                  enum:
+                    - skip
+                    - update
+                  nullable: true
+              required:
+                - file
+                - dry_run
+      security: []
   /api/teachers:
     get:
       summary: ''
@@ -3078,6 +3472,11 @@ paths:
                   description: 'Must not be greater than 50 characters.'
                   example: p
                   nullable: true
+                class_level_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
+                  example: 7212c28d-f9ab-3dd7-af8a-06584a0d4cb7
+                  nullable: true
               required:
                 - first_name
                 - last_name
@@ -3105,9 +3504,9 @@ paths:
       tags:
         - 'Staff Directory'
       security: []
-    patch:
+    put:
       summary: ''
-      operationId: patchApiTeachersId
+      operationId: putApiTeachersId
       description: ''
       parameters: []
       responses: {  }
@@ -3147,6 +3546,11 @@ paths:
                   description: 'Must not be greater than 50 characters.'
                   example: p
                   nullable: true
+                class_level_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
+                  example: 7212c28d-f9ab-3dd7-af8a-06584a0d4cb7
+                  nullable: true
       security: []
     delete:
       summary: ''
@@ -3166,13 +3570,56 @@ paths:
         required: true
         schema:
           type: string
-  '/api/teachers/{id}/toggle-active':
-    post:
+  '/api/teachers/{id}/classes':
+    get:
       summary: ''
-      operationId: postApiTeachersIdToggleActive
+      operationId: getApiTeachersIdClasses
       description: ''
       parameters: []
-      responses: {  }
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Staff Directory'
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the teacher.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/teachers/{id}/subjects':
+    get:
+      summary: ''
+      operationId: getApiTeachersIdSubjects
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
       tags:
         - 'Staff Directory'
       security: []
@@ -3236,647 +3683,21 @@ paths:
         required: true
         schema:
           type: string
-  /api/student/exams/available:
-    get:
-      summary: ''
-      operationId: getApiStudentExamsAvailable
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Exam Execution'
-      security: []
-  '/api/student/exams/{id}':
-    get:
-      summary: ''
-      operationId: getApiStudentExamsId
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Exam Execution'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/{id}/start':
+  '/api/teachers/{id}/revoke':
     post:
       summary: ''
-      operationId: postApiStudentExamsIdStart
+      operationId: postApiTeachersIdRevoke
       description: ''
       parameters: []
       responses: {  }
       tags:
-        - 'Student Exam Execution'
+        - 'Staff Directory'
       security: []
     parameters:
       -
         in: path
         name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/{id}/attempt':
-    get:
-      summary: ''
-      operationId: getApiStudentExamsIdAttempt
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Exam Execution'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/{id}/questions':
-    get:
-      summary: ''
-      operationId: getApiStudentExamsIdQuestions
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Exam Execution'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/attempts/{id}/answers/{questionId}':
-    put:
-      summary: ''
-      operationId: putApiStudentExamsAttemptsIdAnswersQuestionId
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Exam Execution'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                selected_option_ids:
-                  type: object
-                  description: ''
-                  example: null
-                  properties: {  }
-                text_answer:
-                  type: string
-                  description: ''
-                  example: architecto
-                ordering_answer:
-                  type: object
-                  description: ''
-                  example: null
-                  properties: {  }
-                matching_answer:
-                  type: object
-                  description: ''
-                  example: null
-                  properties: {  }
-                time_spent_seconds:
-                  type: integer
-                  description: 'Must be at least 0.'
-                  example: 39
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the attempt.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: questionId
-        description: ''
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/attempts/{id}/bulk-save':
-    post:
-      summary: ''
-      operationId: postApiStudentExamsAttemptsIdBulkSave
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Exam Execution'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                answers:
-                  type: array
-                  description: ''
-                  example:
-                    - []
-                  items:
-                    type: object
-                    properties:
-                      question_id:
-                        type: string
-                        description: 'Must be a valid UUID.'
-                        example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
-                      selected_option_ids:
-                        type: object
-                        description: ''
-                        example: null
-                        properties: {  }
-                      text_answer:
-                        type: string
-                        description: ''
-                        example: architecto
-                      ordering_answer:
-                        type: object
-                        description: ''
-                        example: null
-                        properties: {  }
-                      matching_answer:
-                        type: object
-                        description: ''
-                        example: null
-                        properties: {  }
-                      time_spent_seconds:
-                        type: integer
-                        description: 'Must be at least 0.'
-                        example: 39
-                    required:
-                      - question_id
-              required:
-                - answers
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the attempt.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/attempts/{id}/time-remaining':
-    get:
-      summary: ''
-      operationId: getApiStudentExamsAttemptsIdTimeRemaining
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Exam Execution'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the attempt.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/attempts/{id}/submit':
-    post:
-      summary: ''
-      operationId: postApiStudentExamsAttemptsIdSubmit
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Exam Execution'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the attempt.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/attempts/{id}/flag/{questionId}':
-    post:
-      summary: ''
-      operationId: postApiStudentExamsAttemptsIdFlagQuestionId
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Exam Execution'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the attempt.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: questionId
-        description: ''
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/attempts/{id}/suspicious-event':
-    post:
-      summary: ''
-      operationId: postApiStudentExamsAttemptsIdSuspiciousEvent
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Exam Execution'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                type:
-                  type: string
-                  description: ''
-                  example: architecto
-                metadata:
-                  type: object
-                  description: ''
-                  example: null
-                  properties: {  }
-              required:
-                - type
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the attempt.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/student/exams/attempts/{id}/result':
-    get:
-      summary: ''
-      operationId: getApiStudentExamsAttemptsIdResult
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Exam Execution'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the attempt.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  /api/students/import/template:
-    get:
-      summary: ''
-      operationId: getApiStudentsImportTemplate
-      description: ''
-      parameters: []
-      responses:
-        200:
-          description: ''
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "first_name,last_name,email,admission_number,class_level,class_arm,date_of_birth,gender,guardian_email\nJohn,Doe,john.doe@example.com,STU/2026/0001,\"JSS 1\",A,2010-03-15,male\nJane,Smith,,,\"SSS 2\",B,2008-07-22,female\n"
-      tags:
-        - 'Student Roster'
-      security: []
-  /api/students:
-    get:
-      summary: ''
-      operationId: getApiStudents
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Roster'
-      security: []
-    post:
-      summary: ''
-      operationId: postApiStudents
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Roster'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                first_name:
-                  type: string
-                  description: 'Must not be greater than 100 characters.'
-                  example: b
-                last_name:
-                  type: string
-                  description: 'Must not be greater than 100 characters.'
-                  example: 'n'
-                email:
-                  type: string
-                  description: 'Must be a valid email address.'
-                  example: ashly64@example.com
-                  nullable: true
-                class_level_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
-                  example: 21c4122b-d554-3723-966c-6d723ea5293f
-                class_arm_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_arms table.'
-                  example: add3503c-ebff-3875-93af-b8c6a695762b
-                  nullable: true
-                admission_number:
-                  type: string
-                  description: 'Must not be greater than 50 characters.'
-                  example: 'n'
-                  nullable: true
-                date_of_birth:
-                  type: string
-                  description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:30'
-                  nullable: true
-                gender:
-                  type: string
-                  description: ''
-                  example: other
-                  enum:
-                    - male
-                    - female
-                    - other
-                  nullable: true
-                guardian_email:
-                  type: string
-                  description: 'Must be a valid email address. Must not be greater than 255 characters.'
-                  example: cecil42@example.com
-                  nullable: true
-              required:
-                - first_name
-                - last_name
-                - class_level_id
-      security: []
-  '/api/students/{id}':
-    get:
-      summary: ''
-      operationId: getApiStudentsId
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Student Roster'
-      security: []
-    patch:
-      summary: ''
-      operationId: patchApiStudentsId
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Roster'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                first_name:
-                  type: string
-                  description: 'Must not be greater than 100 characters.'
-                  example: b
-                last_name:
-                  type: string
-                  description: 'Must not be greater than 100 characters.'
-                  example: 'n'
-                email:
-                  type: string
-                  description: 'Must be a valid email address.'
-                  example: ashly64@example.com
-                  nullable: true
-                date_of_birth:
-                  type: string
-                  description: 'Must be a valid date.'
-                  example: '2026-05-07T14:11:30'
-                  nullable: true
-                gender:
-                  type: string
-                  description: ''
-                  example: other
-                  enum:
-                    - male
-                    - female
-                    - other
-                  nullable: true
-                guardian_email:
-                  type: string
-                  description: 'Must be a valid email address. Must not be greater than 255 characters.'
-                  example: justina.gaylord@example.org
-                  nullable: true
-                admission_number:
-                  type: string
-                  description: 'Must not be greater than 50 characters.'
-                  example: i
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the student.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/students/{id}/toggle-active':
-    post:
-      summary: ''
-      operationId: postApiStudentsIdToggleActive
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Roster'
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the student.'
-        example: architecto
-        required: true
-        schema:
-          type: string
-  '/api/students/{id}/reassign-class':
-    post:
-      summary: ''
-      operationId: postApiStudentsIdReassignClass
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Student Roster'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                class_level_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
-                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
-                class_arm_id:
-                  type: string
-                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_arms table.'
-                  example: 6b72fe4a-5b40-307c-bc24-f79acf9a1bb9
-                  nullable: true
-              required:
-                - class_level_id
-      security: []
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the student.'
+        description: 'The ID of the teacher.'
         example: architecto
         required: true
         schema:
@@ -3945,13 +3766,22 @@ paths:
                   type: string
                   format: binary
                   description: 'Must be a file. Must not be greater than 5120 kilobytes.'
+                dry_run:
+                  type: string
+                  description: ''
+                  example: 'false'
+                  enum:
+                    - 'true'
+                    - 'false'
+                    - '1'
+                    - '0'
                 overwrite_existing:
                   type: string
                   description: ''
-                  example: update
+                  example: skip
                   enum:
-                    - update
                     - skip
+                    - update
                   nullable: true
                 class_level_id:
                   type: string
@@ -3960,6 +3790,7 @@ paths:
                   nullable: true
               required:
                 - file
+                - dry_run
       security: []
   /api/students/bulk-reset-passwords:
     post:
@@ -3989,6 +3820,271 @@ paths:
               required:
                 - class_level_id
       security: []
+  /api/students:
+    get:
+      summary: ''
+      operationId: getApiStudents
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Student Roster'
+      security: []
+    post:
+      summary: ''
+      operationId: postApiStudents
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Student Roster'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: b
+                last_name:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: 'n'
+                email:
+                  type: string
+                  description: 'Must be a valid email address.'
+                  example: ashly64@example.com
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: vdljnikhwaykcmyu
+                  nullable: true
+                class_level_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
+                  example: d03cceb8-0e59-3c26-8133-808072ac8a4c
+                class_arm_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_arms table.'
+                  example: 7212c28d-f9ab-3dd7-af8a-06584a0d4cb7
+                admission_number:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: v
+                  nullable: true
+                date_of_birth:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-06-02T12:19:22'
+                  nullable: true
+                gender:
+                  type: string
+                  description: ''
+                  example: female
+                  enum:
+                    - male
+                    - female
+                    - other
+                  nullable: true
+                guardian_email:
+                  type: string
+                  description: 'Must be a valid email address. Must not be greater than 255 characters.'
+                  example: leo34@example.net
+                  nullable: true
+              required:
+                - first_name
+                - last_name
+                - class_level_id
+                - class_arm_id
+      security: []
+  '/api/students/{id}':
+    get:
+      summary: ''
+      operationId: getApiStudentsId
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Student Roster'
+      security: []
+    put:
+      summary: ''
+      operationId: putApiStudentsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Student Roster'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: b
+                last_name:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: 'n'
+                email:
+                  type: string
+                  description: 'Must be a valid email address.'
+                  example: ashly64@example.com
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: vdljnikhwaykcmyu
+                  nullable: true
+                date_of_birth:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-06-02T12:19:22'
+                  nullable: true
+                gender:
+                  type: string
+                  description: ''
+                  example: female
+                  enum:
+                    - male
+                    - female
+                    - other
+                  nullable: true
+                guardian_email:
+                  type: string
+                  description: 'Must be a valid email address. Must not be greater than 255 characters.'
+                  example: hirthe.theo@example.com
+                  nullable: true
+                admission_number:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: q
+      security: []
+    delete:
+      summary: ''
+      operationId: deleteApiStudentsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Student Roster'
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the student.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/students/{id}/reassign-class':
+    post:
+      summary: ''
+      operationId: postApiStudentsIdReassignClass
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Student Roster'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                class_level_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_levels table.'
+                  example: 6ff8f7f6-1eb3-3525-be4a-3932c805afed
+                class_arm_id:
+                  type: string
+                  description: 'Must be a valid UUID. The <code>id</code> of an existing record in the class_arms table.'
+                  example: 6b72fe4a-5b40-307c-bc24-f79acf9a1bb9
+                  nullable: true
+              required:
+                - class_level_id
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the student.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/students/{id}/restore':
+    post:
+      summary: ''
+      operationId: postApiStudentsIdRestore
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Student Roster'
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the student.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/students/{id}/revoke':
+    post:
+      summary: ''
+      operationId: postApiStudentsIdRevoke
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Student Roster'
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the student.'
+        example: architecto
+        required: true
+        schema:
+          type: string
   /api/super-admin/plans:
     get:
       summary: 'List all active plans.'
@@ -4417,7 +4513,7 @@ paths:
                 is_active:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
       security: []
     delete:
       summary: ''

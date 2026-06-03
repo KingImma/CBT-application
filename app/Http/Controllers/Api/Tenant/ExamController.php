@@ -12,6 +12,7 @@ use App\Actions\Tenants\Exam\ExamStatusAction;
 use App\Data\Schemas\ExamSettingsSchema;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\StoreExamRequest;
 use App\Http\Resources\ExamResource;
 use App\Models\Tenant\Exam;
 use App\Support\ApiResponse;
@@ -49,28 +50,14 @@ class ExamController extends Controller
         );
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreExamRequest $request): JsonResponse
     {
         $this->authorize('create', Exam::class);
 
-        $validated = $request->validate(array_merge([
-            'title' => ['required', 'string', 'max:255'],
-            'subject_id' => ['required', 'uuid', 'exists:subjects,id'],
-            'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
-            'class_arm_id' => ['nullable', 'uuid', 'exists:class_arms,id'],
-            'term_id' => ['required', 'uuid', 'exists:terms,id'],
-            'type' => ['required', 'in:exam,test,quiz,mock,ca'],
-            'duration_minutes' => ['required', 'integer', 'min:1'],
-            'pass_mark' => ['nullable', 'numeric', 'min:0'],
-            'max_attempts' => ['nullable', 'integer', 'min:1'],
-            'scheduled_start' => ['nullable', 'date'],
-            'scheduled_end' => ['nullable', 'date', 'after:scheduled_start'],
-            'instructions' => ['nullable', 'string'],
-        ], ExamSettingsSchema::validatorRules('settings')));
-
-        $exam = $this->crudAction->create(array_merge($validated, [
-            'created_by' => $request->user('tenant')->id,
-        ]));
+        $exam = $this->crudAction->create(array_merge(
+            $request->validatedData()->toArray(),
+            ['created_by' => $request->user('tenant')->id],
+        ));
 
         return ApiResponse::created(
             $exam->load(['subject', 'classLevel']),

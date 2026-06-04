@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Data\Exam;
 
+use App\Enums\ExamStatus; 
+use App\Enums\ExamType;   
 use Spatie\LaravelData\Attributes\Computed;
 use Spatie\LaravelData\Attributes\WhenLoaded;
 use Spatie\LaravelData\Optional;
@@ -14,8 +16,8 @@ class ExamData extends Resource
     public function __construct(
         public readonly string $id,
         public readonly string $title,
-        public readonly string $type,
-        public readonly string $status,
+        public readonly ExamType $type,   
+        public readonly ExamStatus $status, 
         #[WhenLoaded('subject')]
         public readonly mixed $subject,
         #[WhenLoaded('classLevel')]

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
-use App\Enums\ExamAttemptStatus;
-use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
@@ -51,8 +49,6 @@ class ExamGradingAction
                 'grade' => $grade,
             ]);
 
-            $this->promoteExamIfFullyGraded($attempt->exam);
-
             return $attempt->fresh();
         });
     }
@@ -83,21 +79,6 @@ class ExamGradingAction
         }
 
         return null;
-    }
-
-    private function promoteExamIfFullyGraded(Exam $exam): void
-    {
-        $hasUngradedAttempts = $exam->attempts()
-            ->whereIn('status', [
-                ExamAttemptStatus::Submitted->value,
-                ExamAttemptStatus::Timed_out->value,
-                ExamAttemptStatus::Grading->value,
-                ExamAttemptStatus::Disqualified->value,
-            ])->exists();
-
-        if (! $hasUngradedAttempts && $exam->status === ExamStatus::Grading) {
-            $exam->update(['status' => ExamStatus::Completed->value]);
-        }
     }
 
     private function gradeSingleChoice(ExamAnswer $answer, Question $question): bool

@@ -15,7 +15,7 @@ class ExamQuestionManagementAction
 {
     public function add(Exam $exam, string $questionId, ?string $marksOverride = null, ?string $userId = null): ExamQuestion
     {
-        $this->ensureDraftOrScheduled($exam, 'added');
+        $this->ensureDraft($exam, 'added');
 
         $question = Question::findOrFail($questionId);
 
@@ -42,7 +42,7 @@ class ExamQuestionManagementAction
 
     public function updateMarks(Exam $exam, string $questionId, ?string $marksOverride): ExamQuestion
     {
-        $this->ensureDraftOrScheduled($exam, 'modified');
+        $this->ensureDraft($exam, 'modified');
 
         return DB::transaction(function () use ($exam, $questionId, $marksOverride) {
             $examQuestion = ExamQuestion::where('exam_id', $exam->id)
@@ -58,7 +58,7 @@ class ExamQuestionManagementAction
 
     public function remove(Exam $exam, string $questionId): void
     {
-        $this->ensureDraftOrScheduled($exam, 'removed');
+        $this->ensureDraft($exam, 'removed');
 
         DB::transaction(function () use ($exam, $questionId) {
             $examQuestion = ExamQuestion::where('exam_id', $exam->id)
@@ -85,10 +85,10 @@ class ExamQuestionManagementAction
         });
     }
 
-    private function ensureDraftOrScheduled(Exam $exam, string $action): void
+    private function ensureDraft(Exam $exam, string $action): void
     {
-        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
-            throw new \RuntimeException("Questions can only be {$action} to draft or scheduled exams.");
+        if (! $exam->isDraft()) {
+            throw new \RuntimeException("Questions can only be {$action} to draft exams.");
         }
     }
 

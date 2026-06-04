@@ -27,7 +27,6 @@ class ExamCrudAction
                 'pass_mark' => $data['pass_mark'] ?? null,
                 'max_attempts' => $data['max_attempts'] ?? 1,
                 'scheduled_start' => $data['scheduled_start'] ?? null,
-                'scheduled_end' => $data['scheduled_end'] ?? null,
                 'settings' => $data['settings'] ?? [],
                 'instructions' => $data['instructions'] ?? null,
             ]);

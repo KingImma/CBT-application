@@ -6,6 +6,7 @@ namespace App\Actions\Tenants\Exam;
 
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\User;
 use Illuminate\Support\Facades\DB;
 
 class ExamStatusAction
@@ -27,7 +28,7 @@ class ExamStatusAction
         return $this->transition($exam, ['status' => ExamStatus::Submitted->value]);
     }
 
-    public function activate(Exam $exam, string $approvedBy): Exam
+    public function activate(Exam $exam, string $activatedBy): Exam
     {
         if ($exam->status !== ExamStatus::Submitted) {
             throw new \RuntimeException('Only submitted exams can be activated.');
@@ -45,59 +46,43 @@ class ExamStatusAction
             throw new \RuntimeException('Pass mark cannot exceed total marks.');
         }
 
+        if ($exam->scheduled_start === null) {
+            throw new \RuntimeException('Scheduled start time must be set before activation.');
+        }
+
+        $windowEnd = $exam->scheduled_start->copy()->addMinutes($exam->duration_minutes * 2);
+
+        $expectedAttempts = User::role('student')
+            ->whereHas('studentProfile', function ($q) use ($exam) {
+                $q->where('class_level_id', $exam->class_level_id);
+                if ($exam->class_arm_id) {
+                    $q->where('class_arm_id', $exam->class_arm_id);
+                }
+            })
+            ->count();
+
         return $this->transition($exam, [
-            'status' => ExamStatus::Scheduled->value,
-            'approved_by' => $approvedBy,
+            'status' => ExamStatus::Active->value,
+            'approved_by' => $activatedBy,
             'approved_at' => now(),
+            'window_end' => $windowEnd,
+            'expected_attempts' => $expectedAttempts,
         ]);
     }
 
-    public function reject(Exam $exam, ?string $rejectionReason = null): Exam
+    /**
+     * Dormant — reserved for future use. No route/UI exposed.
+     */
+    public function revertToDraft(Exam $exam, ?string $reason = null): Exam
     {
-        if ($exam->status !== ExamStatus::Submitted) {
-            throw new \RuntimeException('Only submitted exams can be rejected.');
+        if (! in_array($exam->status, [ExamStatus::Submitted, ExamStatus::Active])) {
+            throw new \RuntimeException('Only submitted or active exams can be reverted to draft.');
         }
 
         return $this->transition($exam, [
             'status' => ExamStatus::Draft->value,
-            'rejection_reason' => $rejectionReason,
+            'rejection_reason' => $reason,
         ]);
-    }
-
-    public function recall(Exam $exam): Exam
-    {
-        if ($exam->status !== ExamStatus::Scheduled) {
-            throw new \RuntimeException('Only scheduled exams can be recalled to draft.');
-        }
-
-        return $this->transition($exam, ['status' => ExamStatus::Draft->value]);
-    }
-
-    public function emergencyRevert(Exam $exam): Exam
-    {
-        if ($exam->status !== ExamStatus::Grading) {
-            throw new \RuntimeException('Only grading exams can be emergency-reverted to draft.');
-        }
-
-        return $this->transition($exam, ['status' => ExamStatus::Draft->value]);
-    }
-
-    public function lock(Exam $exam): Exam
-    {
-        if (! $exam->canBeLocked()) {
-            throw new \RuntimeException('Only active or submitted exams can be locked.');
-        }
-
-        return $this->transition($exam, ['status' => ExamStatus::Locked->value]);
-    }
-
-    public function unlock(Exam $exam): Exam
-    {
-        if ($exam->status !== ExamStatus::Locked) {
-            throw new \RuntimeException('Only locked exams can be unlocked.');
-        }
-
-        return $this->transition($exam, ['status' => ExamStatus::Draft->value]);
     }
 
     private function transition(Exam $exam, array $data): Exam

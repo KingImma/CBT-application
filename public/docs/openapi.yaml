@@ -1528,12 +1528,12 @@ paths:
         -
           in: query
           name: status
-          description: 'Filter by status (draft, pending, active, locked, published, archived).'
+          description: 'Filter by status (draft, submitted, active, completed).'
           example: null
           required: false
           schema:
             type: string
-            description: 'Filter by status (draft, pending, active, locked, published, archived).'
+            description: 'Filter by status (draft, submitted, active, completed).'
             example: null
         -
           in: query
@@ -1629,7 +1629,7 @@ paths:
                 type:
                   type: string
                   description: ''
-                  example: quiz
+                  example: mock
                   enum:
                     - exam
                     - test
@@ -1657,8 +1657,8 @@ paths:
                   nullable: true
                 scheduled_end:
                   type: string
-                  description: 'nullable ISO 8601 scheduled end datetime.'
-                  example: null
+                  description: 'Must be a valid date. Must be a date after <code>scheduled_start</code>.'
+                  example: '2077-05-25'
                   nullable: true
                 instructions:
                   type: string
@@ -1752,11 +1752,6 @@ paths:
                   description: 'nullable ISO 8601 scheduled start.'
                   example: null
                   nullable: true
-                scheduled_end:
-                  type: string
-                  description: 'nullable ISO 8601 scheduled end.'
-                  example: null
-                  nullable: true
                 instructions:
                   type: string
                   description: 'nullable Exam instructions.'
@@ -1778,12 +1773,8 @@ paths:
                     results_release_date:
                       type: string
                       description: 'Must be a valid date.'
-                      example: '2026-06-04T08:26:35'
+                      example: '2026-06-04T11:16:57'
                       nullable: true
-                    require_attendance:
-                      type: boolean
-                      description: ''
-                      example: false
                   nullable: true
     delete:
       summary: 'Delete an exam.'
@@ -1822,165 +1813,9 @@ paths:
           type: string
   '/api/exams/{id}/activate':
     post:
-      summary: 'Activate an exam, making it available to students.'
-      operationId: activateAnExamMakingItAvailableToStudents
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/lock':
-    post:
-      summary: 'Lock an exam to prevent further modifications.'
-      operationId: lockAnExamToPreventFurtherModifications
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/reject':
-    post:
-      summary: 'Reject an exam and return it to draft status.'
-      operationId: rejectAnExamAndReturnItToDraftStatus
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                rejection_reason:
-                  type: string
-                  description: 'nullable Reason for rejection.'
-                  example: null
-                  nullable: true
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/publish':
-    post:
-      summary: 'Publish an exam and schedule it for students.'
-      operationId: publishAnExamAndScheduleItForStudents
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/start-session':
-    post:
-      summary: 'Start a live exam session.'
-      operationId: startALiveExamSession
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/end-session':
-    post:
-      summary: 'End a live exam session.'
-      operationId: endALiveExamSession
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/recall':
-    post:
-      summary: 'Recall an exam back to draft status.'
-      operationId: recallAnExamBackToDraftStatus
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/emergency-revert':
-    post:
-      summary: 'Emergency-revert an exam to draft status regardless of state.'
-      operationId: emergencyRevertAnExamToDraftStatusRegardlessOfState
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/unlock':
-    post:
-      summary: 'Unlock an exam to allow modifications again.'
-      operationId: unlockAnExamToAllowModificationsAgain
-      description: ''
+      summary: 'Activate an exam, making it visible to students.'
+      operationId: activateAnExamMakingItVisibleToStudents
+      description: 'Students can start the exam when scheduled_start is reached.'
       parameters: []
       responses: {  }
       tags:
@@ -2152,180 +1987,6 @@ paths:
               required:
                 - order
     parameters:
-      -
-        in: path
-        name: examId
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/attendance/class-students':
-    get:
-      summary: "List students in the exam's class with their attendance status."
-      operationId: listStudentsInTheExamsClassWithTheirAttendanceStatus
-      description: ''
-      parameters: []
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: id
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: examId
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/attendance/batch':
-    post:
-      summary: 'Mark attendance for multiple students at once.'
-      operationId: markAttendanceForMultipleStudentsAtOnce
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                attendance:
-                  type: array
-                  description: 'Array of attendance records.'
-                  example: null
-                  items:
-                    type: string
-              required:
-                - attendance
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: id
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: examId
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/attendance/{studentId}':
-    put:
-      summary: 'Update attendance for a single student.'
-      operationId: updateAttendanceForASingleStudent
-      description: ''
-      parameters: []
-      responses: {  }
-      tags:
-        - 'Exam Administration'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  description: 'Attendance status: present, absent, or awp.'
-                  example: '"present"'
-              required:
-                - status
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: id
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: studentId
-        description: 'The student UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: examId
-        description: 'The exam UUID.'
-        example: id
-        required: true
-        schema:
-          type: string
-  '/api/exams/{id}/monitor':
-    get:
-      summary: 'Get live monitoring data for active exam attempts.'
-      operationId: getLiveMonitoringDataForActiveExamAttempts
-      description: ''
-      parameters:
-        -
-          in: query
-          name: per_page
-          description: 'Results per page (default: 50).'
-          example: null
-          required: false
-          schema:
-            type: integer
-            description: 'Results per page (default: 50).'
-            example: null
-      responses:
-        401:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: Unauthenticated.
-                properties:
-                  message:
-                    type: string
-                    example: Unauthenticated.
-      tags:
-        - 'Exam Administration'
-    parameters:
-      -
-        in: path
-        name: id
-        description: 'The ID of the exam.'
-        example: id
-        required: true
-        schema:
-          type: string
       -
         in: path
         name: examId

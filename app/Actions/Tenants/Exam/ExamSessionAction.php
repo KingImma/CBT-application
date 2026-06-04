@@ -26,20 +26,16 @@ class ExamSessionAction
             throw new \RuntimeException('Exam is not active.');
         }
 
-        if ($exam->session_started_at === null) {
-            throw new \RuntimeException('Exam session has not started.');
+        if ($exam->scheduled_start === null) {
+            throw new \RuntimeException('Exam has no scheduled start time.');
         }
 
-        $sessionDeadline = $exam->session_started_at->copy()->addMinutes($exam->session_duration_minutes ?? 120);
-        if (now() > $sessionDeadline) {
-            throw new \RuntimeException('Exam session has ended.');
+        if (now()->lt($exam->scheduled_start)) {
+            throw new \RuntimeException('Exam has not yet started. It will be available at '.$exam->scheduled_start->toIso8601String().'.');
         }
 
-        if ($exam->settings->requireAttendance) {
-            $attendance = $exam->attendanceRecords()->where('student_id', $student->id)->first();
-            if (! $attendance || $attendance->status !== 'present') {
-                throw new \RuntimeException('Attendance not marked as present.');
-            }
+        if ($exam->window_end !== null && now()->gte($exam->window_end)) {
+            throw new \RuntimeException('The exam window has closed.');
         }
 
         $hasInProgress = $exam->attempts()
@@ -135,6 +131,8 @@ class ExamSessionAction
             ]);
 
             $this->gradingAction->recomputeScore($attempt);
+
+            $attempt->exam()->increment('completed_attempts');
 
             return $attempt->fresh();
         });

@@ -24,14 +24,15 @@ class Exam extends Model
         'status' => ExamStatus::class,
         'scheduled_start' => 'datetime',
         'scheduled_end' => 'datetime',
-        'session_started_at' => 'datetime',
         'approved_at' => 'datetime',
         'settings' => ExamSettings::class,
         'duration_minutes' => 'integer',
-        'session_duration_minutes' => 'integer',
         'total_marks' => 'decimal:2',
         'pass_mark' => 'decimal:2',
         'max_attempts' => 'integer',
+        'expected_attempts' => 'integer',
+        'completed_attempts' => 'integer',
+        'window_end' => 'datetime',
     ];
 
     public function term(): BelongsTo
@@ -69,11 +70,6 @@ class Exam extends Model
         return $this->hasMany(ExamAttempt::class);
     }
 
-    public function attendanceRecords(): HasMany
-    {
-        return $this->hasMany(ExamAttendance::class);
-    }
-
     public function scopeByStatus(Builder $query, string $status): Builder
     {
         return $query->where('status', $status);
@@ -99,10 +95,16 @@ class Exam extends Model
         return $query->where('status', ExamStatus::Active->value);
     }
 
-    public function scopeScheduledAndDue(Builder $query): Builder
+    public function scopeActiveAndStarted(Builder $query): Builder
     {
-        return $query->where('status', ExamStatus::Scheduled->value)
+        return $query->where('status', ExamStatus::Active->value)
             ->where('scheduled_start', '<=', now());
+    }
+
+    public function scopeWindowExpired(Builder $query): Builder
+    {
+        return $query->where('status', ExamStatus::Active->value)
+            ->where('window_end', '<', now());
     }
 
     public function isOwnedBy(User $user): bool
@@ -116,33 +118,18 @@ class Exam extends Model
         return $this->status === ExamStatus::Draft;
     }
 
-    public function isScheduled(): bool
-    {
-        return $this->status === ExamStatus::Scheduled;
-    }
-
     public function isSubmitted(): bool
     {
         return $this->status === ExamStatus::Submitted;
     }
 
-    public function canBeLocked(): bool
+    public function isActive(): bool
     {
-        return in_array($this->status, [ExamStatus::Active, ExamStatus::Submitted]);
-    }
-
-    public function isGrading(): bool
-    {
-        return $this->status === ExamStatus::Grading;
+        return $this->status === ExamStatus::Active;
     }
 
     public function isCompleted(): bool
     {
         return $this->status === ExamStatus::Completed;
-    }
-
-    public function isPublished(): bool
-    {
-        return $this->status === ExamStatus::Published;
     }
 }

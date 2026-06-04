@@ -5,7 +5,6 @@ namespace Tests\Feature\Api\Tenant;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
-use App\Models\Tenant\ExamAttendance;
 use App\Models\Tenant\ExamQuestion;
 use Tests\TestCase;
 
@@ -16,7 +15,6 @@ class ExamModelTest extends TestCase
         $this->assertTrue(class_exists(Exam::class));
         $this->assertTrue(method_exists(Exam::class, 'examQuestions'));
         $this->assertTrue(method_exists(Exam::class, 'attempts'));
-        $this->assertTrue(method_exists(Exam::class, 'attendanceRecords'));
     }
 
     public function test_exam_attempt_model_has_relationships(): void
@@ -41,13 +39,5 @@ class ExamModelTest extends TestCase
         $this->assertTrue(method_exists(ExamQuestion::class, 'exam'));
         $this->assertTrue(method_exists(ExamQuestion::class, 'question'));
         $this->assertTrue(method_exists(ExamQuestion::class, 'getEffectiveMarks'));
-    }
-
-    public function test_exam_attendance_model_has_relationships(): void
-    {
-        $this->assertTrue(class_exists(ExamAttendance::class));
-        $this->assertTrue(method_exists(ExamAttendance::class, 'exam'));
-        $this->assertTrue(method_exists(ExamAttendance::class, 'student'));
-        $this->assertTrue(method_exists(ExamAttendance::class, 'markedBy'));
     }
 }

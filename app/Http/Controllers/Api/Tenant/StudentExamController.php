@@ -408,7 +408,7 @@ class StudentExamController extends Controller
             return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
         }
 
-        if ($exam->status === ExamStatus::Published) {
+        if ($exam->status === ExamStatus::Completed) {
             return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
         }
 

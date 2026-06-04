@@ -25,6 +25,7 @@ class GradingScaleController extends Controller
     public function index(): JsonResponse
     {
         $perPage = (int) $request->get('per_page', 20);
+
         return ApiResponse::success(
             GradingScaleData::collect(GradingScale::orderByDesc('is_default')->paginate($perPage)),
             'Grading scales retrieved successfully.'

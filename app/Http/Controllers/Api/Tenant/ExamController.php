@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamCrudAction;
-use App\Actions\Tenants\Exam\ExamPublishingAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
-use App\Actions\Tenants\Exam\ExamSessionLifecycleAction;
 use App\Actions\Tenants\Exam\ExamStatusAction;
 use App\Data\Exam\ExamData;
-use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreExamRequest;
 use App\Models\Tenant\Exam;
@@ -27,8 +24,6 @@ class ExamController extends Controller
     public function __construct(
         private ExamCrudAction $crudAction,
         private ExamStatusAction $statusAction,
-        private ExamPublishingAction $publishingAction,
-        private ExamSessionLifecycleAction $sessionLifecycleAction,
         private ExamSessionAction $sessionAction,
     ) {}
 
@@ -37,7 +32,7 @@ class ExamController extends Controller
      *
      * @subgroup Exam Management
      *
-     * @queryParam status string Filter by status (draft, pending, active, locked, published, archived). No-example
+     * @queryParam status string Filter by status (draft, submitted, active, completed). No-example
      * @queryParam subject_id string Filter by subject UUID. No-example
      * @queryParam class_level_id string Filter by class level UUID. No-example
      * @queryParam class_arm_id string Filter by class arm UUID. No-example
@@ -47,7 +42,7 @@ class ExamController extends Controller
     {
         $perPage = (int) $request->get('per_page', 20);
 
-        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'created_by', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'scheduled_end', 'instructions', 'created_at')
+        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'created_by', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'scheduled_end', 'instructions', 'created_at', 'expected_attempts', 'completed_attempts')
             ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
             ->withCount('examQuestions')
             ->when($request->status, fn ($q, $status) => $q->byStatus($status))
@@ -78,7 +73,6 @@ class ExamController extends Controller
      * @bodyParam pass_mark numeric Pass mark percentage. Example: 50
      * @bodyParam max_attempts int Maximum attempts per student. Example: 1
      * @bodyParam scheduled_start string nullable ISO 8601 scheduled start datetime. No-example
-     * @bodyParam scheduled_end string nullable ISO 8601 scheduled end datetime. No-example
      * @bodyParam instructions string nullable Exam instructions for students. No-example
      */
     public function store(StoreExamRequest $request): JsonResponse
@@ -131,7 +125,6 @@ class ExamController extends Controller
      * @bodyParam pass_mark numeric nullable Pass mark percentage. No-example
      * @bodyParam max_attempts int Maximum attempts per student. No-example
      * @bodyParam scheduled_start string nullable ISO 8601 scheduled start. No-example
-     * @bodyParam scheduled_end string nullable ISO 8601 scheduled end. No-example
      * @bodyParam instructions string nullable Exam instructions. No-example
      */
     public function update(Request $request, string $id): JsonResponse
@@ -149,13 +142,11 @@ class ExamController extends Controller
             'pass_mark' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'max_attempts' => ['sometimes', 'integer', 'min:1'],
             'scheduled_start' => ['sometimes', 'nullable', 'date'],
-            'scheduled_end' => ['sometimes', 'nullable', 'date', 'after:scheduled_start'],
             'instructions' => ['sometimes', 'nullable', 'string'],
             'settings' => ['nullable', 'array'],
             'settings.randomize_questions' => ['sometimes', 'boolean'],
             'settings.show_result_immediately' => ['sometimes', 'boolean'],
             'settings.results_release_date' => ['sometimes', 'nullable', 'date'],
-            'settings.require_attendance' => ['sometimes', 'boolean'],
         ]);
 
         $exam = $this->crudAction->update($exam, $validated);
@@ -205,7 +196,8 @@ class ExamController extends Controller
     }
 
     /**
-     * Activate an exam, making it available to students.
+     * Activate an exam, making it visible to students.
+     * Students can start the exam when scheduled_start is reached.
      *
      * @subgroup Exam Workflow
      *
@@ -223,179 +215,5 @@ class ExamController extends Controller
         }
 
         return ApiResponse::success($exam, 'Exam activated.');
-    }
-
-    /**
-     * Reject an exam and return it to draft status.
-     *
-     * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
-     *
-     * @bodyParam rejection_reason string nullable Reason for rejection. No-example
-     */
-    public function reject(Request $request, string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('reject', $exam);
-
-        $validated = $request->validate([
-            'rejection_reason' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        try {
-            $exam = $this->statusAction->reject($exam, $validated['rejection_reason'] ?? null);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
-
-        return ApiResponse::success($exam, 'Exam rejected and returned to draft.');
-    }
-
-    /**
-     * Recall an exam back to draft status.
-     *
-     * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
-     */
-    public function recall(string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('recall', $exam);
-
-        try {
-            $exam = $this->statusAction->recall($exam);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
-
-        return ApiResponse::success($exam, 'Exam recalled to draft.');
-    }
-
-    /**
-     * Emergency-revert an exam to draft status regardless of state.
-     *
-     * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
-     */
-    public function emergencyRevert(string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('emergencyRevert', $exam);
-
-        try {
-            $exam = $this->statusAction->emergencyRevert($exam);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
-
-        return ApiResponse::success($exam, 'Exam emergency-reverted to draft.');
-    }
-
-    /**
-     * Lock an exam to prevent further modifications.
-     *
-     * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
-     */
-    public function lock(string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('lock', $exam);
-
-        try {
-            $exam = $this->statusAction->lock($exam);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
-
-        return ApiResponse::success($exam, 'Exam locked.');
-    }
-
-    /**
-     * Unlock an exam to allow modifications again.
-     *
-     * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
-     */
-    public function unlock(string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('unlock', $exam);
-
-        try {
-            $exam = $this->statusAction->unlock($exam);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
-
-        return ApiResponse::success($exam, 'Exam unlocked and returned to draft.');
-    }
-
-    /**
-     * Publish an exam and schedule it for students.
-     *
-     * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
-     */
-    public function publish(string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('publish', $exam);
-
-        $exam = $this->publishingAction->publish($exam);
-
-        broadcast(new ActivityFeedEvent(
-            channelType: 'school_admin',
-            channelId: tenant('id'),
-            action: 'exam.published',
-            description: "Exam '{$exam->title}' published.",
-            meta: ['exam_id' => $exam->id],
-        ))->toOthers();
-
-        return ApiResponse::success($exam, 'Exam published and scheduled.');
-    }
-
-    /**
-     * Start a live exam session.
-     *
-     * @subgroup Exam Sessions
-     *
-     * @urlParam id string required The exam UUID.
-     */
-    public function startSession(string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('startSession', $exam);
-
-        $exam = $this->sessionLifecycleAction->startSession($exam);
-
-        return ApiResponse::success($exam, 'Exam session started.');
-    }
-
-    /**
-     * End a live exam session.
-     *
-     * @subgroup Exam Sessions
-     *
-     * @urlParam id string required The exam UUID.
-     */
-    public function endSession(string $id): JsonResponse
-    {
-        $exam = Exam::findOrFail($id);
-        $this->authorize('view', $exam);
-
-        try {
-            $exam = $this->sessionLifecycleAction->endSession($exam, $this->sessionAction);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
-
-        return ApiResponse::success($exam, 'Exam session ended.');
     }
 }

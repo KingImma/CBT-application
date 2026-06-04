@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
-use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\Question;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,8 +17,8 @@ class ExamRandomizationAction
 
     public function randomizeQuestions(Exam $exam, int $count): void
     {
-        if (! in_array($exam->status, [ExamStatus::Draft, ExamStatus::Scheduled])) {
-            throw new \RuntimeException('Questions can only be added to draft or scheduled exams.');
+        if (! $exam->isDraft()) {
+            throw new \RuntimeException('Questions can only be randomized for draft exams.');
         }
 
         $availableCount = $this->getAvailableQuestionsQuery($exam)->count();

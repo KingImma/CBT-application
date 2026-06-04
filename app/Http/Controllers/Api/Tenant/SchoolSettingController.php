@@ -18,6 +18,8 @@ class SchoolSettingController extends Controller
 {
     /**
      * Return all settings as a flat key-value map.
+     *
+     * @subgroup School Settings
      */
     public function index(): JsonResponse
     {
@@ -29,6 +31,10 @@ class SchoolSettingController extends Controller
 
     /**
      * Get a single setting by key.
+     *
+     * @subgroup School Settings
+     *
+     * @urlParam key string required The setting key. Example: "school_name"
      */
     public function show(string $key): JsonResponse
     {
@@ -41,7 +47,12 @@ class SchoolSettingController extends Controller
     }
 
     /**
-     * Bulk update — accepts key-value object.
+     * Bulk update settings.
+     *
+     * @subgroup School Settings
+     *
+     * @bodyParam settings object required Key-value object of settings to update. No-example
+     * @bodyParam settings.* string nullable Setting value (max 500 chars). No-example
      */
     public function update(Request $request): JsonResponse
     {
@@ -63,6 +74,11 @@ class SchoolSettingController extends Controller
         );
     }
 
+    /**
+     * Get assessment score configuration.
+     *
+     * @subgroup Assessment Configuration
+     */
     public function assessments(): JsonResponse
     {
         $settings = SchoolSetting::whereIn('key', [
@@ -76,6 +92,14 @@ class SchoolSettingController extends Controller
         ], 'Assessment configuration retrieved.');
     }
 
+    /**
+     * Update assessment score configuration.
+     *
+     * @subgroup Assessment Configuration
+     *
+     * @bodyParam assessment_max_score int required Max score for assessments (1-100). Example: 50
+     * @bodyParam exam_max_score int required Max score for exams (1-100). Example: 100
+     */
     public function updateAssessments(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -97,6 +121,11 @@ class SchoolSettingController extends Controller
         return ApiResponse::success($validated, 'Assessment configuration updated.');
     }
 
+    /**
+     * Get assessment default values.
+     *
+     * @subgroup Assessment Defaults
+     */
     public function assessmentDefaults(): JsonResponse
     {
         return ApiResponse::success([
@@ -107,6 +136,16 @@ class SchoolSettingController extends Controller
         ], 'Assessment defaults retrieved.');
     }
 
+    /**
+     * Update assessment default values.
+     *
+     * @subgroup Assessment Defaults
+     *
+     * @bodyParam duration_minutes int Default exam duration (1-1440 minutes). No-example
+     * @bodyParam max_attempts int Default max attempts (1-10). No-example
+     * @bodyParam show_result_immediately boolean Show results immediately after submission. No-example
+     * @bodyParam pass_mark numeric Default pass mark (0-100). No-example
+     */
     public function updateAssessmentDefaults(Request $request): JsonResponse
     {
         $validated = $request->validate([

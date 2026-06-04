@@ -22,6 +22,8 @@ class AnalyticsController extends Controller
     /**
      * Platform-wide dashboard overview.
      * All counts come from the central DB — no tenant DB switching needed.
+     *
+     * @subgroup Metrics
      */
     public function overview(): JsonResponse
     {
@@ -52,6 +54,10 @@ class AnalyticsController extends Controller
     /**
      * Usage trends — school signups over time.
      * Grouped by month for the last 12 months.
+     *
+     * @subgroup Metrics
+     *
+     * @queryParam months int Number of months to analyze (default: 12). No-example
      */
     public function usage(Request $request): JsonResponse
     {
@@ -85,6 +91,11 @@ class AnalyticsController extends Controller
 
     /**
      * Paginated platform audit logs.
+     *
+     * @subgroup Metrics
+     *
+     * @queryParam tenant_id string Filter by tenant UUID. No-example
+     * @queryParam action string Filter by action name. No-example
      */
     public function auditLogs(Request $request): JsonResponse
     {

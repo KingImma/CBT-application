@@ -23,6 +23,15 @@ use Illuminate\Http\Request;
  */
 class TenantController extends Controller
 {
+    /**
+     * List all tenants with optional filters.
+     *
+     * @subgroup Tenant CRUD
+     *
+     * @queryParam search string Search by name or slug. No-example
+     * @queryParam status string Filter by subscription status. No-example
+     * @queryParam is_active bool Filter by active status. No-example
+     */
     public function index(Request $request): JsonResponse
     {
         $tenants = Tenant::query()
@@ -40,10 +49,20 @@ class TenantController extends Controller
         return ApiResponse::paginated(
             $tenants,
             'Tenants retrieved successfully.',
-            TenantData::collection($tenants->getCollection())
+            TenantData::collect($tenants->getCollection())
         );
     }
 
+    /**
+     * Create a new tenant (school).
+     *
+     * @subgroup Tenant CRUD
+     *
+     * @bodyParam name string required School name. No-example
+     * @bodyParam slug string required School slug/handle. No-example
+     * @bodyParam domain string required School domain. No-example
+     * @bodyParam plan_id string nullable Subscription plan UUID. No-example
+     */
     public function store(StoreTenantRequest $request, CreateTenantAction $action): JsonResponse
     {
         $tenant = $action->execute($request->validated());
@@ -62,6 +81,13 @@ class TenantController extends Controller
         );
     }
 
+    /**
+     * Get a single tenant with its domains.
+     *
+     * @subgroup Tenant CRUD
+     *
+     * @urlParam id string required The tenant UUID.
+     */
     public function show(string $id): JsonResponse
     {
         $tenant = Tenant::with('domains')->findOrFail($id);
@@ -69,6 +95,13 @@ class TenantController extends Controller
         return ApiResponse::success(TenantData::from($tenant), 'Tenant retrieved successfully.');
     }
 
+    /**
+     * Update a tenant.
+     *
+     * @subgroup Tenant CRUD
+     *
+     * @urlParam id string required The tenant UUID.
+     */
     public function update(UpdateTenantRequest $request, string $id, UpdateTenantAction $action): JsonResponse
     {
         $tenant = Tenant::with('domains')->findOrFail($id);
@@ -80,6 +113,13 @@ class TenantController extends Controller
         );
     }
 
+    /**
+     * Suspend a tenant's access.
+     *
+     * @subgroup Tenant Status
+     *
+     * @urlParam id string required The tenant UUID.
+     */
     public function suspend(string $id, SuspendTenantAction $action): JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
@@ -91,6 +131,13 @@ class TenantController extends Controller
         );
     }
 
+    /**
+     * Reinstate a suspended tenant.
+     *
+     * @subgroup Tenant Status
+     *
+     * @urlParam id string required The tenant UUID.
+     */
     public function reinstate(string $id, ReinstateTenantAction $action): JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
@@ -102,6 +149,13 @@ class TenantController extends Controller
         );
     }
 
+    /**
+     * Permanently delete a tenant.
+     *
+     * @subgroup Tenant Status
+     *
+     * @urlParam id string required The tenant UUID.
+     */
     public function destroy(string $id, DeleteTenantAction $action): JsonResponse
     {
         $tenant = Tenant::findOrFail($id);

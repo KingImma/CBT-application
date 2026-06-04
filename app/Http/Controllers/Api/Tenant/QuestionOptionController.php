@@ -24,6 +24,20 @@ use Illuminate\Http\Request;
  */
 class QuestionOptionController extends Controller
 {
+    /**
+     * Add an option to a question.
+     *
+     * @subgroup Question Options
+     *
+     * @urlParam questionId string required The question UUID.
+     *
+     * @bodyParam label string nullable Short label (max 10 chars). Example: "A"
+     * @bodyParam content string required Option text. Example: "Lagos"
+     * @bodyParam image_url string nullable Image URL. No-example
+     * @bodyParam is_correct boolean required Whether this is the correct option. No-example
+     * @bodyParam order int nullable Display order. No-example
+     * @bodyParam match_pair string nullable Matching pair text for matching questions. No-example
+     */
     public function store(Request $request, string $questionId): JsonResponse
     {
         $question = Question::findOrFail($questionId);
@@ -50,6 +64,21 @@ class QuestionOptionController extends Controller
         return ApiResponse::created(QuestionOptionData::from($option), 'Option added.');
     }
 
+    /**
+     * Update a question option.
+     *
+     * @subgroup Question Options
+     *
+     * @urlParam questionId string required The question UUID.
+     * @urlParam id string required The option UUID.
+     *
+     * @bodyParam label string nullable Short label. No-example
+     * @bodyParam content string Option text. No-example
+     * @bodyParam image_url string nullable Image URL. No-example
+     * @bodyParam is_correct boolean Whether correct. No-example
+     * @bodyParam order int Display order. No-example
+     * @bodyParam match_pair string nullable Match pair text. No-example
+     */
     public function update(Request $request, string $questionId, string $id): JsonResponse
     {
         $question = Question::findOrFail($questionId);
@@ -73,6 +102,14 @@ class QuestionOptionController extends Controller
         return ApiResponse::success(QuestionOptionData::from($option->fresh()), 'Option updated.');
     }
 
+    /**
+     * Delete a question option.
+     *
+     * @subgroup Question Options
+     *
+     * @urlParam questionId string required The question UUID.
+     * @urlParam id string required The option UUID.
+     */
     public function destroy(string $questionId, string $id): JsonResponse
     {
         $option = QuestionOption::where('question_id', $questionId)->findOrFail($id);
@@ -81,6 +118,16 @@ class QuestionOptionController extends Controller
         return ApiResponse::message('Option removed.');
     }
 
+    /**
+     * Reorder options for a question.
+     *
+     * @subgroup Question Options
+     *
+     * @urlParam questionId string required The question UUID.
+     *
+     * @bodyParam order array required Array of option UUIDs in the desired order. No-example
+     * @bodyParam order.* string Option UUID. No-example
+     */
     public function reorder(Request $request, string $questionId): JsonResponse
     {
         // - Bulk updates order column by position in submitted ID array

@@ -45,7 +45,7 @@ return [
 
             // Exclude these routes even if they matched the rules above.
             'exclude' => [
-                // 'GET /health', 'admin.*'
+                'POST /broadcasting/auth',
             ],
         ],
     ],
@@ -103,29 +103,29 @@ return [
 
     // How is your API authenticated? This information will be used in the displayed docs, generated examples and response calls.
     'auth' => [
-        // Set this to true if ANY endpoints in your API use authentication.
-        'enabled' => false,
+        'enabled' => true,
 
-        // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
-        // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
-        'default' => false,
+        'default' => true,
 
-        // Where is the auth value meant to be sent in a request?
         'in' => 'bearer',
 
-        // The name of the auth parameter (e.g. token, key, apiKey) or header (e.g. Authorization, Api-Key).
-        'name' => 'key',
+        'name' => 'Authorization',
 
-        // The value of the parameter to be used by Scribe to authenticate response calls.
-        // This will NOT be included in the generated documentation. If empty, Scribe will use a random value.
         'use_value' => env('SCRIBE_AUTH_KEY'),
 
-        // Placeholder your users will see for the auth parameter in the example requests.
-        // Set this to null if you want Scribe to use a random value as placeholder instead.
-        'placeholder' => '{YOUR_AUTH_KEY}',
+        'placeholder' => 'Bearer {your-santum-token}',
 
-        // Any extra authentication-related info for your users. Markdown and HTML are supported.
-        'extra_info' => 'You can retrieve your token by visiting your dashboard and clicking <b>Generate API token</b>.',
+        'extra_info' => <<<'AUTH'
+            All endpoints (except authentication & onboarding) require a Sanctum Bearer token.
+            
+            **How to authenticate:**
+            1. Call `POST /api/auth/login` with your `identifier` and `password`.
+            2. The response will include an `access_token`.
+            3. Pass this token as a Bearer token in the `Authorization` header for all subsequent requests.
+            
+            **For tenants (schools):** Use the tenant's subdomain URL and a tenant user's credentials (admin, teacher, or student).
+            **For super admins:** Use the central domain URL and super admin credentials.
+            AUTH,
     ],
 
     // Example requests for each endpoint will be shown in each of these languages.
@@ -135,6 +135,8 @@ return [
     'example_languages' => [
         'bash',
         'javascript',
+        'php',
+        'python',
     ],
 
     // Generate a Postman collection (v2.1.0) in addition to HTML docs.
@@ -200,7 +202,7 @@ return [
 
     'examples' => [
         // Set this to any number to generate the same example values for parameters on each run,
-        'faker_seed' => 1234,
+        'faker_seed' => 42,
 
         // With API resources and transformers, Scribe tries to generate example models to use in your API responses.
         // By default, Scribe will try the model's factory, and if that fails, try fetching the first from the database.

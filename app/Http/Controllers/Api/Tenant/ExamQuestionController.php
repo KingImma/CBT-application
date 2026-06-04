@@ -15,6 +15,10 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Exam Administration
+ * * APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.
+ */
 class ExamQuestionController extends Controller
 {
     public function __construct(
@@ -22,6 +26,13 @@ class ExamQuestionController extends Controller
         private ExamRandomizationAction $randomizationAction,
     ) {}
 
+    /**
+     * List questions attached to an exam.
+     *
+     * @subgroup Exam Questions
+     *
+     * @urlParam examId string required The exam UUID.
+     */
     public function index(string $examId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
@@ -33,11 +44,21 @@ class ExamQuestionController extends Controller
             ->get();
 
         return ApiResponse::success(
-            ExamQuestionData::collection($questions),
+            ExamQuestionData::collect($questions),
             'Exam questions retrieved.',
         );
     }
 
+    /**
+     * Attach a question to an exam.
+     *
+     * @subgroup Exam Questions
+     *
+     * @urlParam examId string required The exam UUID.
+     *
+     * @bodyParam question_id string required The question UUID. No-example
+     * @bodyParam marks_override numeric nullable Override the default marks for this question. No-example
+     */
     public function store(Request $request, string $examId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
@@ -65,6 +86,15 @@ class ExamQuestionController extends Controller
         );
     }
 
+    /**
+     * Randomly select questions from the question bank for this exam.
+     *
+     * @subgroup Exam Questions
+     *
+     * @urlParam examId string required The exam UUID.
+     *
+     * @bodyParam count int required Number of questions to randomly select. Example: 10
+     */
     public function randomize(Request $request, string $examId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
@@ -89,6 +119,16 @@ class ExamQuestionController extends Controller
         );
     }
 
+    /**
+     * Update marks override for a question in an exam.
+     *
+     * @subgroup Exam Questions
+     *
+     * @urlParam examId string required The exam UUID.
+     * @urlParam questionId string required The question UUID.
+     *
+     * @bodyParam marks_override numeric nullable Override marks. No-example
+     */
     public function update(Request $request, string $examId, string $questionId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
@@ -110,6 +150,14 @@ class ExamQuestionController extends Controller
         );
     }
 
+    /**
+     * Remove a question from an exam.
+     *
+     * @subgroup Exam Questions
+     *
+     * @urlParam examId string required The exam UUID.
+     * @urlParam questionId string required The question UUID.
+     */
     public function destroy(string $examId, string $questionId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
@@ -120,6 +168,15 @@ class ExamQuestionController extends Controller
         return ApiResponse::message('Question removed from exam.');
     }
 
+    /**
+     * Reorder questions in an exam.
+     *
+     * @subgroup Exam Questions
+     *
+     * @urlParam examId string required The exam UUID.
+     *
+     * @bodyParam order array required Array of question orders (position => question_index). No-example
+     */
     public function reorder(Request $request, string $examId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);

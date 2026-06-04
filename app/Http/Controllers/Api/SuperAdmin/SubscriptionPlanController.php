@@ -25,6 +25,8 @@ class SubscriptionPlanController extends Controller
      * List all active plans.
      * Frontend uses this to render plan selection UI
      * before creating a tenant.
+     *
+     * @subgroup Plans
      */
     public function index(Request $request): JsonResponse
     {
@@ -44,12 +46,25 @@ class SubscriptionPlanController extends Controller
         $plans = $query->get();
 
         return ApiResponse::success(
-            SubscriptionPlanData::collection($plans),
+            SubscriptionPlanData::collect($plans),
             'Subscription plans retrieved successfully.',
             meta: ['total' => $plans->count()]
         );
     }
 
+    /**
+     * Create a new subscription plan.
+     *
+     * @subgroup Plans
+     *
+     * @bodyParam name string required Plan name. Example: "Basic"
+     * @bodyParam max_students int required Maximum students allowed. Example: 100
+     * @bodyParam max_teachers int required Maximum teachers allowed. Example: 10
+     * @bodyParam max_exams_per_term int required Maximum exams per term. Example: 20
+     * @bodyParam price_monthly int required Monthly price in cents. Example: 2900
+     * @bodyParam price_yearly int required Yearly price in cents. Example: 29000
+     * @bodyParam features array Plan features list. No-example
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -72,6 +87,21 @@ class SubscriptionPlanController extends Controller
         );
     }
 
+    /**
+     * Update a subscription plan.
+     *
+     * @subgroup Plans
+     *
+     * @urlParam id string required The plan UUID.
+     *
+     * @bodyParam name string Plan name. No-example
+     * @bodyParam max_students int Max students. No-example
+     * @bodyParam max_teachers int Max teachers. No-example
+     * @bodyParam max_exams_per_term int Max exams per term. No-example
+     * @bodyParam price_monthly int Monthly price. No-example
+     * @bodyParam price_yearly int Yearly price. No-example
+     * @bodyParam features array Features list. No-example
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $plan = SubscriptionPlan::findOrFail($id);
@@ -98,6 +128,13 @@ class SubscriptionPlanController extends Controller
         );
     }
 
+    /**
+     * Delete a subscription plan.
+     *
+     * @subgroup Plans
+     *
+     * @urlParam id string required The plan UUID.
+     */
     public function destroy(string $id): JsonResponse
     {
         $plan = SubscriptionPlan::findOrFail($id);
@@ -165,6 +202,10 @@ class SubscriptionPlanController extends Controller
 
     /**
      * Get a single plan's details.
+     *
+     * @subgroup Plans
+     *
+     * @urlParam id string required The plan UUID.
      */
     public function show(string $id): JsonResponse
     {

@@ -19,16 +19,35 @@ use Illuminate\Support\Facades\DB;
  */
 class TermController extends Controller
 {
+    /**
+     * List all terms for an academic session.
+     *
+     * @subgroup Terms
+     *
+     * @urlParam sessionId string required The academic session UUID.
+     */
     public function index(string $sessionId): JsonResponse
     {
         $session = AcademicSession::findOrFail($sessionId);
 
         return ApiResponse::success(
-            TermData::collection($session->terms()->orderBy('name')->get()),
+            TermData::collect($session->terms()->orderBy('name')->get()),
             'Terms retrieved successfully.'
         );
     }
 
+    /**
+     * Create a new term within an academic session.
+     *
+     * @subgroup Terms
+     *
+     * @urlParam sessionId string required The academic session UUID.
+     *
+     * @bodyParam name string required Term name. Example: "First Term"
+     * @bodyParam start_date string required Start date (Y-m-d). No-example
+     * @bodyParam end_date string required End date (Y-m-d), must be after start_date. No-example
+     * @bodyParam is_current boolean Set as the current term. No-example
+     */
     public function store(Request $request, string $sessionId): JsonResponse
     {
         $session = AcademicSession::findOrFail($sessionId);
@@ -45,6 +64,19 @@ class TermController extends Controller
         return ApiResponse::created(TermData::from($term), 'Term created.');
     }
 
+    /**
+     * Update a term.
+     *
+     * @subgroup Terms
+     *
+     * @urlParam sessionId string required The academic session UUID.
+     * @urlParam id string required The term UUID.
+     *
+     * @bodyParam name string Term name. No-example
+     * @bodyParam start_date string Start date. No-example
+     * @bodyParam end_date string End date. No-example
+     * @bodyParam is_current boolean Set as current. No-example
+     */
     public function update(Request $request, string $sessionId, string $id): JsonResponse
     {
         $term = Term::where('academic_session_id', $sessionId)->findOrFail($id);
@@ -61,6 +93,14 @@ class TermController extends Controller
         return ApiResponse::success(TermData::from($term->fresh()), 'Term updated.');
     }
 
+    /**
+     * Delete a term.
+     *
+     * @subgroup Terms
+     *
+     * @urlParam sessionId string required The academic session UUID.
+     * @urlParam id string required The term UUID.
+     */
     public function destroy(string $sessionId, string $id): JsonResponse
     {
         $term = Term::where('academic_session_id', $sessionId)->findOrFail($id);
@@ -72,6 +112,8 @@ class TermController extends Controller
     /**
      * Set a term as current within its session.
      * The session must already be current.
+     *
+     * @subgroup Terms
      */
     public function setCurrent(string $sessionId, string $id): JsonResponse
     {

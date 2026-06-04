@@ -21,6 +21,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * @group Student Portal
+ *
+ * APIs for students to access and take exams.
+ */
 class StudentExamController extends Controller
 {
     public function __construct(
@@ -28,6 +33,13 @@ class StudentExamController extends Controller
         private ExamAnswerAction $answerAction,
     ) {}
 
+    /**
+     * List available exams for the authenticated student.
+     *
+     * @subgroup Available Exams
+     *
+     * @queryParam per_page int Results per page (default: 20). No-example
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->get('per_page', 20);
@@ -46,6 +58,13 @@ class StudentExamController extends Controller
         return ApiResponse::paginated($exams, 'Available exams retrieved.');
     }
 
+    /**
+     * Get details for a specific exam.
+     *
+     * @subgroup Available Exams
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function show(Request $request, string $id): JsonResponse
     {
         $exam = Exam::with(['subject', 'classLevel'])->findOrFail($id);
@@ -61,6 +80,13 @@ class StudentExamController extends Controller
         ], 'Exam details retrieved.');
     }
 
+    /**
+     * Start a new exam attempt.
+     *
+     * @subgroup Exam Attempts
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function start(Request $request, string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -85,11 +111,18 @@ class StudentExamController extends Controller
 
         return ApiResponse::created([
             'attempt' => $attempt,
-            'questions' => StudentExamQuestionData::collection($questionsData['questions']),
+            'questions' => StudentExamQuestionData::collect($questionsData['questions']),
             'order' => $questionsData['order'],
         ], 'Exam started.');
     }
 
+    /**
+     * Get the student's active attempt for an exam.
+     *
+     * @subgroup Exam Attempts
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function activeAttempt(Request $request, string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -105,11 +138,18 @@ class StudentExamController extends Controller
         }
 
         $data = $this->sessionAction->recover($attempt);
-        $data['questions'] = StudentExamQuestionData::collection($data['questions']);
+        $data['questions'] = StudentExamQuestionData::collect($data['questions']);
 
         return ApiResponse::success($data, 'Active attempt retrieved.');
     }
 
+    /**
+     * Get questions for an active exam attempt.
+     *
+     * @subgroup Answering
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function getQuestions(Request $request, string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -129,12 +169,19 @@ class StudentExamController extends Controller
         return ApiResponse::success([
             'exam_id' => $exam->id,
             'attempt_id' => $attempt->id,
-            'questions' => StudentExamQuestionData::collection($questionsData['questions']),
+            'questions' => StudentExamQuestionData::collect($questionsData['questions']),
             'order' => $questionsData['order'],
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
         ], 'Questions retrieved.');
     }
 
+    /**
+     * Get questions for a specific attempt.
+     *
+     * @subgroup Answering
+     *
+     * @urlParam id string required The attempt UUID.
+     */
     public function getAttemptQuestions(Request $request, string $id): JsonResponse
     {
         $attempt = ExamAttempt::with('exam')->findOrFail($id);
@@ -153,12 +200,24 @@ class StudentExamController extends Controller
         return ApiResponse::success([
             'exam_id' => $attempt->exam_id,
             'attempt_id' => $attempt->id,
-            'questions' => StudentExamQuestionData::collection($questionsData['questions']),
+            'questions' => StudentExamQuestionData::collect($questionsData['questions']),
             'order' => $questionsData['order'],
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
         ], 'Questions retrieved.');
     }
 
+    /**
+     * Save an answer for a question in an attempt.
+     *
+     * @subgroup Answering
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     * @urlParam questionId string required The question UUID.
+     *
+     * @bodyParam selected_option_ids array Selected option UUIDs for MCQ questions. No-example
+     * @bodyParam text_answer string Text answer for theory questions. No-example
+     * @bodyParam time_spent_seconds int Time spent on this question. No-example
+     */
     public function saveAnswer(Request $request, string $attemptId, string $questionId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
@@ -175,6 +234,19 @@ class StudentExamController extends Controller
         return ApiResponse::success($answer, 'Answer saved.');
     }
 
+    /**
+     * Bulk save answers for an attempt.
+     *
+     * @subgroup Answering
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     *
+     * @bodyParam answers array required Array of answers. No-example
+     * @bodyParam answers.*.question_id string required The question UUID. No-example
+     * @bodyParam answers.*.selected_option_ids array Selected option UUIDs. No-example
+     * @bodyParam answers.*.text_answer string Text answer. No-example
+     * @bodyParam answers.*.time_spent_seconds int Time spent on this question. No-example
+     */
     public function bulkSave(Request $request, string $attemptId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
@@ -193,6 +265,13 @@ class StudentExamController extends Controller
         return ApiResponse::message('Answers saved.');
     }
 
+    /**
+     * Get remaining time for an attempt.
+     *
+     * @subgroup Exam Progress
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     */
     public function timeRemaining(Request $request, string $attemptId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
@@ -209,6 +288,13 @@ class StudentExamController extends Controller
         ], 'Time remaining retrieved.');
     }
 
+    /**
+     * Submit an exam attempt for grading.
+     *
+     * @subgroup Exam Attempts
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     */
     public function submit(Request $request, string $attemptId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
@@ -241,6 +327,14 @@ class StudentExamController extends Controller
         ], 'Exam submitted.');
     }
 
+    /**
+     * Toggle a flag on a question for review.
+     *
+     * @subgroup Answering
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     * @urlParam questionId string required The question UUID.
+     */
     public function toggleFlag(Request $request, string $attemptId, string $questionId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
@@ -255,6 +349,16 @@ class StudentExamController extends Controller
         return ApiResponse::success(['is_flagged' => $isFlagged], 'Flag toggled.');
     }
 
+    /**
+     * Log a suspicious event during an exam.
+     *
+     * @subgroup Integrity
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     *
+     * @bodyParam type string required Event type. Must be one of: tab_switch, visibility_change, fullscreen_exit, copy_attempt, paste_detected. Example: "tab_switch"
+     * @bodyParam metadata array Additional event metadata. No-example
+     */
     public function logSuspiciousEvent(Request $request, string $attemptId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
@@ -276,6 +380,13 @@ class StudentExamController extends Controller
         return ApiResponse::message('Suspicious event logged.');
     }
 
+    /**
+     * Get the result for a completed exam attempt.
+     *
+     * @subgroup Results
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     */
     public function result(Request $request, string $attemptId): JsonResponse
     {
         $attempt = ExamAttempt::with('exam')->findOrFail($attemptId);

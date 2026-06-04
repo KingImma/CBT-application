@@ -19,6 +19,13 @@ use Illuminate\Http\Request;
  */
 class SubjectController extends Controller
 {
+    /**
+     * List all active subjects with their class levels and teacher assignments.
+     *
+     * @subgroup Subject Management
+     *
+     * @queryParam class_level_id string Filter by class level UUID. No-example
+     */
     public function index(Request $request): JsonResponse
     {
         $subjects = Subject::with([
@@ -30,9 +37,19 @@ class SubjectController extends Controller
             ->orderBy('name')
             ->get();
 
-        return ApiResponse::success(SubjectData::collection($subjects), 'Subjects retrieved successfully.');
+        return ApiResponse::success(SubjectData::collect($subjects), 'Subjects retrieved successfully.');
     }
 
+    /**
+     * Create a new subject.
+     *
+     * @subgroup Subject Management
+     *
+     * @bodyParam name string required Subject name. Example: "Mathematics"
+     * @bodyParam code string nullable Subject code (unique). Example: "MTH101"
+     * @bodyParam class_level_ids array Array of class level UUIDs to assign this subject to. No-example
+     * @bodyParam class_level_ids.* string Class level UUID. No-example
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -55,6 +72,13 @@ class SubjectController extends Controller
         return ApiResponse::created(SubjectData::from($subject->load('classLevels')), 'Subject created.');
     }
 
+    /**
+     * Get a single subject with its class levels and teacher assignments.
+     *
+     * @subgroup Subject Management
+     *
+     * @urlParam id string required The subject UUID.
+     */
     public function show(string $id): JsonResponse
     {
         $subject = Subject::with([
@@ -65,6 +89,19 @@ class SubjectController extends Controller
         return ApiResponse::success(SubjectData::from($subject), 'Subject retrieved successfully.');
     }
 
+    /**
+     * Update a subject.
+     *
+     * @subgroup Subject Management
+     *
+     * @urlParam id string required The subject UUID.
+     *
+     * @bodyParam name string Subject name. No-example
+     * @bodyParam code string nullable Subject code. No-example
+     * @bodyParam is_active boolean Whether the subject is active. No-example
+     * @bodyParam class_level_ids array Class level UUIDs to assign. No-example
+     * @bodyParam class_level_ids.* string Class level UUID. No-example
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $subject = Subject::findOrFail($id);
@@ -94,6 +131,13 @@ class SubjectController extends Controller
         return ApiResponse::success(SubjectData::from($subject->fresh(['classLevels'])), 'Subject updated.');
     }
 
+    /**
+     * Deactivate a subject (soft delete).
+     *
+     * @subgroup Subject Management
+     *
+     * @urlParam id string required The subject UUID.
+     */
     public function destroy(string $id): JsonResponse
     {
         $subject = Subject::findOrFail($id);

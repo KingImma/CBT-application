@@ -18,6 +18,13 @@ use Illuminate\Http\Request;
  */
 class OnboardingController extends Controller
 {
+    /**
+     * Check if a school handle is available.
+     *
+     * @subgroup School Onboarding
+     *
+     * @bodyParam handle string required Desired school handle (subdomain). Example: "greenwood-high"
+     */
     public function checkHandle(Request $request): JsonResponse
     {
         $request->validate([
@@ -31,6 +38,19 @@ class OnboardingController extends Controller
         ], 'Handle availability checked.');
     }
 
+    /**
+     * Register a new school (tenant).
+     *
+     * @subgroup School Onboarding
+     *
+     * @bodyParam school_name string required School name. Example: "Greenwood High School"
+     * @bodyParam admin_email string required Admin email address. No-example
+     * @bodyParam admin_first_name string required Admin first name. No-example
+     * @bodyParam admin_last_name string required Admin last name. No-example
+     * @bodyParam admin_phone string nullable Admin phone number. No-example
+     * @bodyParam handle string required Unique school handle for subdomain. No-example
+     * @bodyParam plan_id string nullable Subscription plan UUID. No-example
+     */
     public function register(OnboardingRequest $request, CreateTenantAction $action): JsonResponse
     {
         $data = $request->mappedData();

@@ -17,14 +17,33 @@ use Illuminate\Http\Request;
  */
 class GradingScaleController extends Controller
 {
+    /**
+     * List all grading scales.
+     *
+     * @subgroup Grading Scales
+     */
     public function index(): JsonResponse
     {
+        $perPage = (int) $request->get('per_page', 20);
         return ApiResponse::success(
-            GradingScaleData::collection(GradingScale::orderByDesc('is_default')->get()),
+            GradingScaleData::collect(GradingScale::orderByDesc('is_default')->paginate($perPage)),
             'Grading scales retrieved successfully.'
         );
     }
 
+    /**
+     * Create a new grading scale with grade ranges.
+     *
+     * @subgroup Grading Scales
+     *
+     * @bodyParam name string required Scale name. Example: "Standard A-F"
+     * @bodyParam is_default boolean Set as the default scale. No-example
+     * @bodyParam grades array required Array of grade definitions (min 1). No-example
+     * @bodyParam grades.*.label string required Grade label. Example: "A"
+     * @bodyParam grades.*.min_score numeric required Minimum score (0-100). Example: 70
+     * @bodyParam grades.*.max_score numeric required Maximum score (0-100). Example: 100
+     * @bodyParam grades.*.remark string nullable Remark for this grade. Example: "Excellent"
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -51,6 +70,13 @@ class GradingScaleController extends Controller
         return ApiResponse::created(GradingScaleData::from($scale), 'Grading scale created.');
     }
 
+    /**
+     * Get a single grading scale.
+     *
+     * @subgroup Grading Scales
+     *
+     * @urlParam id string required The grading scale UUID.
+     */
     public function show(string $id): JsonResponse
     {
         $scale = GradingScale::findOrFail($id);
@@ -58,6 +84,21 @@ class GradingScaleController extends Controller
         return ApiResponse::success(GradingScaleData::from($scale), 'Grading scale retrieved successfully.');
     }
 
+    /**
+     * Update a grading scale.
+     *
+     * @subgroup Grading Scales
+     *
+     * @urlParam id string required The grading scale UUID.
+     *
+     * @bodyParam name string Scale name. No-example
+     * @bodyParam is_default boolean Set as default. No-example
+     * @bodyParam grades array Grade definitions. No-example
+     * @bodyParam grades.*.label string Grade label. No-example
+     * @bodyParam grades.*.min_score numeric Minimum score. No-example
+     * @bodyParam grades.*.max_score numeric Maximum score. No-example
+     * @bodyParam grades.*.remark string nullable Remark. No-example
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $scale = GradingScale::findOrFail($id);
@@ -90,6 +131,13 @@ class GradingScaleController extends Controller
         return ApiResponse::success(GradingScaleData::from($scale->fresh()), 'Grading scale updated.');
     }
 
+    /**
+     * Delete a grading scale.
+     *
+     * @subgroup Grading Scales
+     *
+     * @urlParam id string required The grading scale UUID.
+     */
     public function destroy(string $id): JsonResponse
     {
         $scale = GradingScale::findOrFail($id);

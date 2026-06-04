@@ -19,15 +19,27 @@ use Illuminate\Support\Str;
  */
 class ClassLevelController extends Controller
 {
+    /**
+     * List all class levels with arm and student counts.
+     *
+     * @subgroup Class Levels
+     */
     public function index(): JsonResponse
     {
         $levels = ClassLevel::withCount(['classArms', 'students'])
             ->orderBy('name')
             ->get();
 
-        return ApiResponse::success(ClassLevelData::collection($levels), 'Class levels retrieved successfully.');
+        return ApiResponse::success(ClassLevelData::collect($levels), 'Class levels retrieved successfully.');
     }
 
+    /**
+     * Create a new class level.
+     *
+     * @subgroup Class Levels
+     *
+     * @bodyParam name string required Class level name. Example: "JSS 1"
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -42,6 +54,13 @@ class ClassLevelController extends Controller
         return ApiResponse::created(ClassLevelData::from($level), 'Class level created.');
     }
 
+    /**
+     * Get a single class level with its arms and subjects.
+     *
+     * @subgroup Class Levels
+     *
+     * @urlParam id string required The class level UUID.
+     */
     public function show(string $id): JsonResponse
     {
         $level = ClassLevel::withCount(['classArms', 'students'])
@@ -51,6 +70,16 @@ class ClassLevelController extends Controller
         return ApiResponse::success(ClassLevelData::from($level), 'Class level retrieved successfully.');
     }
 
+    /**
+     * Update a class level.
+     *
+     * @subgroup Class Levels
+     *
+     * @urlParam id string required The class level UUID.
+     *
+     * @bodyParam name string Class level name. No-example
+     * @bodyParam order int Display order. No-example
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $level = ClassLevel::findOrFail($id);
@@ -73,6 +102,13 @@ class ClassLevelController extends Controller
         return ApiResponse::success(ClassLevelData::from($level->fresh()), 'Class level updated.');
     }
 
+    /**
+     * Delete a class level (must have no students assigned).
+     *
+     * @subgroup Class Levels
+     *
+     * @urlParam id string required The class level UUID.
+     */
     public function destroy(string $id): JsonResponse
     {
         $level = ClassLevel::withCount('students')->findOrFail($id);
@@ -87,6 +123,13 @@ class ClassLevelController extends Controller
         return ApiResponse::message('Class level deleted.');
     }
 
+    /**
+     * Get subjects available for a class level with teacher assignments.
+     *
+     * @subgroup Class Levels
+     *
+     * @urlParam id string required The class level UUID.
+     */
     public function availableSubjects(string $id): JsonResponse
     {
         $level = ClassLevel::findOrFail($id);
@@ -117,6 +160,18 @@ class ClassLevelController extends Controller
         return ApiResponse::success($subjects, 'Available subjects retrieved successfully.');
     }
 
+    /**
+     * Sync subjects assigned to a class level.
+     *
+     * @subgroup Class Levels
+     *
+     * @urlParam id string required The class level UUID.
+     *
+     * @bodyParam subject_ids array required Array of subject UUIDs to assign. No-example
+     * @bodyParam subject_ids.* string Subject UUID. No-example
+     * @bodyParam compulsory_ids array Array of subject UUIDs to mark as compulsory. No-example
+     * @bodyParam compulsory_ids.* string Subject UUID. No-example
+     */
     public function sync(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
@@ -146,6 +201,14 @@ class ClassLevelController extends Controller
         return ApiResponse::message('Subjects synced successfully.');
     }
 
+    /**
+     * Toggle whether a subject is compulsory at this class level.
+     *
+     * @subgroup Class Levels
+     *
+     * @urlParam id string required The class level UUID.
+     * @urlParam subjectId string required The subject UUID.
+     */
     public function toggleCompulsory(string $id, string $subjectId): JsonResponse
     {
         $level = ClassLevel::findOrFail($id);
@@ -174,6 +237,15 @@ class ClassLevelController extends Controller
         ], 'Subject compulsory status updated.');
     }
 
+    /**
+     * Assign a teacher to a class level.
+     *
+     * @subgroup Class Levels
+     *
+     * @urlParam id string required The class level UUID.
+     *
+     * @bodyParam teacher_id string required The teacher UUID. No-example
+     */
     public function assignTeacher(Request $request, string $id): JsonResponse
     {
 

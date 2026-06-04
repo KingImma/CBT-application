@@ -31,6 +31,11 @@ class ClassArmSubjectController extends Controller
      * List subjects assigned to a specific arm.
      * Also returns unassigned subjects from the parent class level
      * so the frontend can render the "add subject" options without extra calls.
+     *
+     * @subgroup Subject Mapping
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam armId string required The arm UUID.
      */
     public function index(string $classLevelId, string $armId): JsonResponse
     {
@@ -77,6 +82,16 @@ class ClassArmSubjectController extends Controller
      * Sync — replace the arm's entire subject list atomically.
      * Best for a "save curriculum" UI where the admin sets all subjects at once.
      * Subjects not in the list are detached, new ones are attached.
+     *
+     * @subgroup Subject Mapping
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam armId string required The arm UUID.
+     *
+     * @bodyParam subject_ids array required Array of subject UUIDs. No-example
+     * @bodyParam subject_ids.* string Subject UUID. No-example
+     * @bodyParam compulsory_ids array Array of compulsory subject UUIDs. No-example
+     * @bodyParam compulsory_ids.* string Subject UUID. No-example
      */
     public function sync(Request $request, string $classLevelId, string $armId): JsonResponse
     {
@@ -125,6 +140,14 @@ class ClassArmSubjectController extends Controller
     /**
      * Attach a single subject to an arm.
      * Best for "add one subject" UI interactions.
+     *
+     * @subgroup Subject Mapping
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam armId string required The arm UUID.
+     *
+     * @bodyParam subject_id string required The subject UUID. No-example
+     * @bodyParam is_compulsory boolean Whether the subject is compulsory. No-example
      */
     public function attach(Request $request, string $classLevelId, string $armId): JsonResponse
     {
@@ -168,6 +191,12 @@ class ClassArmSubjectController extends Controller
 
     /**
      * Detach a subject from an arm.
+     *
+     * @subgroup Subject Mapping
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam armId string required The arm UUID.
+     * @urlParam subjectId string required The subject UUID.
      */
     public function detach(string $classLevelId, string $armId, string $subjectId): JsonResponse
     {
@@ -185,6 +214,12 @@ class ClassArmSubjectController extends Controller
 
     /**
      * Toggle is_compulsory for a subject within an arm.
+     *
+     * @subgroup Subject Mapping
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam armId string required The arm UUID.
+     * @urlParam subjectId string required The subject UUID.
      */
     public function toggleCompulsory(string $classLevelId, string $armId, string $subjectId): JsonResponse
     {
@@ -214,6 +249,11 @@ class ClassArmSubjectController extends Controller
      * Copy the class level's full subject list to an arm.
      * Shortcut for "inherit everything from the level" — useful when
      * the arm only differs from the level in one or two subjects.
+     *
+     * @subgroup Subject Mapping
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam armId string required The arm UUID.
      */
     public function inheritFromLevel(string $classLevelId, string $armId): JsonResponse
     {

@@ -16,8 +16,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @group Question Bank
+ *
+ * APIs for creating and managing objective and theory questions.
+ */
 class QuestionController extends Controller
 {
+    /**
+     * List questions with optional filters.
+     *
+     * @subgroup Questions
+     *
+     * @queryParam subject_id string Filter by subject UUID. No-example
+     * @queryParam class_level_id string Filter by class level UUID. No-example
+     * @queryParam search string Search question content. No-example
+     * @queryParam include_inactive bool Include inactive questions (default: false). No-example
+     * @queryParam per_page int Results per page (default: 20). No-example
+     */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user('tenant');
@@ -36,10 +52,26 @@ class QuestionController extends Controller
         return ApiResponse::paginated(
             $questions,
             'Questions retrieved successfully.',
-            QuestionData::collection($questions->getCollection())
+            QuestionData::collect($questions->getCollection())
         );
     }
 
+    /**
+     * Create a new question with options.
+     *
+     * @subgroup Questions
+     *
+     * @bodyParam subject_id string required The subject UUID. Must be assigned to the class level. No-example
+     * @bodyParam class_level_id string required The class level UUID. No-example
+     * @bodyParam content string required The question text. Example: "What is the capital of Nigeria?"
+     * @bodyParam default_marks numeric required Default mark for the question (0.5 - 100). Example: 2
+     * @bodyParam image_url string nullable URL to an image for the question. No-example
+     * @bodyParam options array required Array of answer options (minimum 2). No-example
+     * @bodyParam options.*.content string required Option text. No-example
+     * @bodyParam options.*.is_correct boolean required Whether this is the correct option (exactly one must be true). No-example
+     * @bodyParam options.*.order int nullable Display order. No-example
+     * @bodyParam options.*.label string nullable Short label (max 10 chars). No-example
+     */
     public function store(Request $request): JsonResponse
     {
         $this->authorize('createForClass', [Question::class, $request->input('class_level_id')]);
@@ -107,6 +139,13 @@ class QuestionController extends Controller
         );
     }
 
+    /**
+     * Get a single question with its options.
+     *
+     * @subgroup Questions
+     *
+     * @urlParam id string required The question UUID.
+     */
     public function show(string $id): JsonResponse
     {
         $question = Question::with([
@@ -121,6 +160,18 @@ class QuestionController extends Controller
         return ApiResponse::success(QuestionData::from($question), 'Question retrieved successfully.');
     }
 
+    /**
+     * Update a question.
+     *
+     * @subgroup Questions
+     *
+     * @urlParam id string required The question UUID.
+     *
+     * @bodyParam content string Question text. No-example
+     * @bodyParam default_marks numeric Default mark (0.5 - 100). No-example
+     * @bodyParam image_url string nullable Image URL. No-example
+     * @bodyParam is_active boolean Whether the question is active. No-example
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $question = Question::findOrFail($id);
@@ -141,6 +192,13 @@ class QuestionController extends Controller
         );
     }
 
+    /**
+     * Archive a question (soft delete).
+     *
+     * @subgroup Questions
+     *
+     * @urlParam id string required The question UUID.
+     */
     public function destroy(string $id): JsonResponse
     {
         $question = Question::findOrFail($id);
@@ -150,6 +208,13 @@ class QuestionController extends Controller
         return ApiResponse::message('Question archived.');
     }
 
+    /**
+     * Restore an archived question.
+     *
+     * @subgroup Questions
+     *
+     * @urlParam id string required The question UUID.
+     */
     public function restore(string $id): JsonResponse
     {
         $question = Question::withTrashed()->findOrFail($id);
@@ -159,6 +224,18 @@ class QuestionController extends Controller
         return ApiResponse::message('Question restored.');
     }
 
+    /**
+     * Clone questions from a previous term.
+     *
+     * @subgroup Term Operations
+     *
+     * @bodyParam source_session_id string required Source academic session UUID. No-example
+     * @bodyParam source_term_id string required Source term UUID. No-example
+     * @bodyParam target_session_id string required Target academic session UUID. No-example
+     * @bodyParam target_term_id string required Target term UUID. No-example
+     * @bodyParam subject_id string required Subject UUID. No-example
+     * @bodyParam class_level_id string required Class level UUID. No-example
+     */
     public function cloneFromTerm(Request $request): JsonResponse
     {
         $this->authorize('createFromClass', [Question::class, $request->input('class_level_id')]);

@@ -19,6 +19,13 @@ use Illuminate\Http\Request;
  */
 class ExamAttendanceController extends Controller
 {
+    /**
+     * List students in the exam's class with their attendance status.
+     *
+     * @subgroup Exam Attendance
+     *
+     * @urlParam examId string required The exam UUID.
+     */
     public function classStudents(string $examId, Request $request): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
@@ -54,6 +61,17 @@ class ExamAttendanceController extends Controller
         return ApiResponse::paginated($students, 'Class students retrieved.', $data);
     }
 
+    /**
+     * Mark attendance for multiple students at once.
+     *
+     * @subgroup Exam Attendance
+     *
+     * @urlParam examId string required The exam UUID.
+     *
+     * @bodyParam attendance array required Array of attendance records. No-example
+     * @bodyParam attendance.*.student_id string required The student UUID. No-example
+     * @bodyParam attendance.*.status string required Attendance status: present, absent, or awp. No-example
+     */
     public function batchStore(Request $request, string $examId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);
@@ -92,6 +110,16 @@ class ExamAttendanceController extends Controller
         );
     }
 
+    /**
+     * Update attendance for a single student.
+     *
+     * @subgroup Exam Attendance
+     *
+     * @urlParam examId string required The exam UUID.
+     * @urlParam studentId string required The student UUID.
+     *
+     * @bodyParam status string required Attendance status: present, absent, or awp. Example: "present"
+     */
     public function update(Request $request, string $examId, string $studentId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);

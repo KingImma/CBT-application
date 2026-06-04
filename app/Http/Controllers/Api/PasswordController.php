@@ -32,6 +32,13 @@ class PasswordController extends Controller
     // POST /api/password/forgot
     // ────────────────────────────
 
+    /**
+     * Send a password reset OTP to the user's email.
+     *
+     * @subgroup Password Management
+     *
+     * @bodyParam email string required User's email address. No-example
+     */
     public function forgot(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -51,6 +58,14 @@ class PasswordController extends Controller
     // POST /api/password/verify-otp
     // ────────────────────────────
 
+    /**
+     * Verify the OTP and receive a reset token.
+     *
+     * @subgroup Password Management
+     *
+     * @bodyParam email string required User's email address. No-example
+     * @bodyParam otp string required The 6-digit OTP code. Example: "123456"
+     */
     public function verifyOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -72,6 +87,15 @@ class PasswordController extends Controller
     // POST /api/password/reset
     // ────────────────────────────
 
+    /**
+     * Reset the password using a verified reset token.
+     *
+     * @subgroup Password Management
+     *
+     * @bodyParam reset_token string required The reset token from OTP verification. No-example
+     * @bodyParam password string required New password (min 8 chars, must contain number). No-example
+     * @bodyParam password_confirmation string required Confirm the new password. No-example
+     */
     public function reset(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -87,6 +111,15 @@ class PasswordController extends Controller
         return ApiResponse::message('Password reset successfully. Please log in.');
     }
 
+    /**
+     * Change password for an authenticated user.
+     *
+     * @subgroup Password Management
+     *
+     * @bodyParam current_password string required Current password. No-example
+     * @bodyParam password string required New password (min 8 chars, must contain number). No-example
+     * @bodyParam password_confirmation string required Confirm the new password. No-example
+     */
     public function change(Request $request): JsonResponse
     {
         $validated = $request->validate([

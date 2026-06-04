@@ -18,6 +18,10 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Exam Administration
+ * * APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.
+ */
 class ExamController extends Controller
 {
     public function __construct(
@@ -28,6 +32,17 @@ class ExamController extends Controller
         private ExamSessionAction $sessionAction,
     ) {}
 
+    /**
+     * List all exams with optional filters.
+     *
+     * @subgroup Exam Management
+     *
+     * @queryParam status string Filter by status (draft, pending, active, locked, published, archived). No-example
+     * @queryParam subject_id string Filter by subject UUID. No-example
+     * @queryParam class_level_id string Filter by class level UUID. No-example
+     * @queryParam class_arm_id string Filter by class arm UUID. No-example
+     * @queryParam per_page int Results per page (default: 20). No-example
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->get('per_page', 20);
@@ -45,10 +60,27 @@ class ExamController extends Controller
         return ApiResponse::paginated(
             $exams,
             'Exams retrieved successfully.',
-            ExamData::collection($exams->getCollection())
+            ExamData::collect($exams->getCollection())
         );
     }
 
+    /**
+     * Create a new exam.
+     *
+     * @subgroup Exam Management
+     *
+     * @bodyParam title string required The exam title. Example: "Mid-Term Mathematics"
+     * @bodyParam subject_id string required The subject UUID. No-example
+     * @bodyParam class_level_id string required The class level UUID. No-example
+     * @bodyParam class_arm_id string nullable The class arm UUID. No-example
+     * @bodyParam term_id string required The term UUID. No-example
+     * @bodyParam duration_minutes int Exam duration in minutes. Example: 120
+     * @bodyParam pass_mark numeric Pass mark percentage. Example: 50
+     * @bodyParam max_attempts int Maximum attempts per student. Example: 1
+     * @bodyParam scheduled_start string nullable ISO 8601 scheduled start datetime. No-example
+     * @bodyParam scheduled_end string nullable ISO 8601 scheduled end datetime. No-example
+     * @bodyParam instructions string nullable Exam instructions for students. No-example
+     */
     public function store(StoreExamRequest $request): JsonResponse
     {
         $this->authorize('create', Exam::class);
@@ -64,6 +96,13 @@ class ExamController extends Controller
         );
     }
 
+    /**
+     * Get a single exam with its questions.
+     *
+     * @subgroup Exam Management
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function show(string $id): JsonResponse
     {
         $exam = Exam::with([
@@ -76,6 +115,25 @@ class ExamController extends Controller
         return ApiResponse::success(ExamData::from($exam), 'Exam retrieved successfully.');
     }
 
+    /**
+     * Update an existing exam.
+     *
+     * @subgroup Exam Management
+     *
+     * @urlParam id string required The exam UUID.
+     *
+     * @bodyParam title string The exam title. No-example
+     * @bodyParam subject_id string The subject UUID. No-example
+     * @bodyParam class_level_id string The class level UUID. No-example
+     * @bodyParam class_arm_id string nullable The class arm UUID. No-example
+     * @bodyParam term_id string The term UUID. No-example
+     * @bodyParam duration_minutes int Exam duration in minutes. No-example
+     * @bodyParam pass_mark numeric nullable Pass mark percentage. No-example
+     * @bodyParam max_attempts int Maximum attempts per student. No-example
+     * @bodyParam scheduled_start string nullable ISO 8601 scheduled start. No-example
+     * @bodyParam scheduled_end string nullable ISO 8601 scheduled end. No-example
+     * @bodyParam instructions string nullable Exam instructions. No-example
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -108,6 +166,13 @@ class ExamController extends Controller
         );
     }
 
+    /**
+     * Delete an exam.
+     *
+     * @subgroup Exam Management
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function destroy(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -118,6 +183,13 @@ class ExamController extends Controller
         return ApiResponse::message('Exam deleted.');
     }
 
+    /**
+     * Submit an exam for review by an administrator.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function submitForReview(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -132,6 +204,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam submitted for review.');
     }
 
+    /**
+     * Activate an exam, making it available to students.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function activate(string $id, Request $request): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -146,6 +225,15 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam activated.');
     }
 
+    /**
+     * Reject an exam and return it to draft status.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     *
+     * @bodyParam rejection_reason string nullable Reason for rejection. No-example
+     */
     public function reject(Request $request, string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -164,6 +252,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam rejected and returned to draft.');
     }
 
+    /**
+     * Recall an exam back to draft status.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function recall(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -178,6 +273,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam recalled to draft.');
     }
 
+    /**
+     * Emergency-revert an exam to draft status regardless of state.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function emergencyRevert(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -192,6 +294,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam emergency-reverted to draft.');
     }
 
+    /**
+     * Lock an exam to prevent further modifications.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function lock(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -206,6 +315,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam locked.');
     }
 
+    /**
+     * Unlock an exam to allow modifications again.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function unlock(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -220,6 +336,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam unlocked and returned to draft.');
     }
 
+    /**
+     * Publish an exam and schedule it for students.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function publish(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -238,6 +361,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam published and scheduled.');
     }
 
+    /**
+     * Start a live exam session.
+     *
+     * @subgroup Exam Sessions
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function startSession(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
@@ -248,6 +378,13 @@ class ExamController extends Controller
         return ApiResponse::success($exam, 'Exam session started.');
     }
 
+    /**
+     * End a live exam session.
+     *
+     * @subgroup Exam Sessions
+     *
+     * @urlParam id string required The exam UUID.
+     */
     public function endSession(string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);

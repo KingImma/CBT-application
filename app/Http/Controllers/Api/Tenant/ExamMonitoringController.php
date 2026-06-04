@@ -17,6 +17,15 @@ use Illuminate\Http\Request;
  */
 class ExamMonitoringController extends Controller
 {
+    /**
+     * Get live monitoring data for active exam attempts.
+     *
+     * @subgroup Exam Monitoring
+     *
+     * @urlParam examId string required The exam UUID.
+     *
+     * @queryParam per_page int Results per page (default: 50). No-example
+     */
     public function index(Request $request, string $examId): JsonResponse
     {
         $exam = Exam::findOrFail($examId);

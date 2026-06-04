@@ -22,6 +22,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class TeacherController extends Controller
 {
+    /**
+     * List teachers with optional filters.
+     *
+     * @subgroup Teacher Management
+     *
+     * @queryParam status string Filter by status: active, inactive, all (default: active). No-example
+     * @queryParam search string Search by name or email. No-example
+     */
     public function index(Request $request): JsonResponse
     {
         $status = $request->query('status', 'active');
@@ -44,10 +52,23 @@ class TeacherController extends Controller
         return ApiResponse::paginated(
             $teachers,
             'Teachers retrieved successfully.',
-            TeacherData::collection($teachers->getCollection())
+            TeacherData::collect($teachers->getCollection())
         );
     }
 
+    /**
+     * Create a new teacher.
+     *
+     * @subgroup Teacher Management
+     *
+     * @bodyParam first_name string required Teacher's first name. Example: "Jane"
+     * @bodyParam last_name string required Teacher's last name. Example: "Smith"
+     * @bodyParam email string required Teacher's email. No-example
+     * @bodyParam phone string nullable Phone number. No-example
+     * @bodyParam qualification string nullable Academic qualification. No-example
+     * @bodyParam staff_id string nullable Unique staff ID. No-example
+     * @bodyParam class_level_id string nullable Assigned class level UUID. No-example
+     */
     public function store(TeacherAction $action, Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -75,6 +96,13 @@ class TeacherController extends Controller
         ], 'Teacher created.');
     }
 
+    /**
+     * Get a single teacher with their profile and assignments.
+     *
+     * @subgroup Teacher Management
+     *
+     * @urlParam id string required The teacher UUID.
+     */
     public function show(string $id): JsonResponse
     {
         // Now finding by USER ID, not Profile ID
@@ -90,6 +118,13 @@ class TeacherController extends Controller
         return ApiResponse::success(TeacherData::from($teacher), 'Teacher retrieved successfully.');
     }
 
+    /**
+     * Get the classes assigned to a teacher.
+     *
+     * @subgroup Teacher Classes & Subjects
+     *
+     * @urlParam id string required The teacher UUID.
+     */
     public function classes(string $id): JsonResponse
     {
         $teacher = User::role('teacher')->findOrFail($id);
@@ -101,6 +136,13 @@ class TeacherController extends Controller
         return ApiResponse::success($classes, 'Teacher classes retrieved.');
     }
 
+    /**
+     * Get the subjects assigned to a teacher.
+     *
+     * @subgroup Teacher Classes & Subjects
+     *
+     * @urlParam id string required The teacher UUID.
+     */
     public function subjects(string $id): JsonResponse
     {
         $teacher = User::role('teacher')->findOrFail($id);
@@ -138,6 +180,21 @@ class TeacherController extends Controller
         return ApiResponse::success($merged, 'Teacher subjects retrieved.');
     }
 
+    /**
+     * Update a teacher's information.
+     *
+     * @subgroup Teacher Management
+     *
+     * @urlParam id string required The teacher UUID.
+     *
+     * @bodyParam first_name string First name. No-example
+     * @bodyParam last_name string Last name. No-example
+     * @bodyParam email string Email. No-example
+     * @bodyParam phone string nullable Phone. No-example
+     * @bodyParam qualification string nullable Qualification. No-example
+     * @bodyParam staff_id string nullable Staff ID. No-example
+     * @bodyParam class_level_id string nullable Class level UUID. No-example
+     */
     public function update(TeacherAction $action, Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
@@ -155,6 +212,13 @@ class TeacherController extends Controller
         return ApiResponse::success(TeacherData::from($teacher), 'Teacher updated successfully.');
     }
 
+    /**
+     * Revoke a teacher's access and soft-delete their account.
+     *
+     * @subgroup Teacher Status
+     *
+     * @urlParam id string required The teacher UUID.
+     */
     public function revoke(TenantUserService $tenantUserService, string $id): JsonResponse
     {
         $teacher = User::role('teacher')->findOrFail($id);
@@ -171,6 +235,13 @@ class TeacherController extends Controller
         return ApiResponse::message('Teacher revoked.');
     }
 
+    /**
+     * Permanently delete a teacher record.
+     *
+     * @subgroup Teacher Status
+     *
+     * @urlParam id string required The teacher UUID.
+     */
     public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
     {
         $teacher = User::withTrashed()->role('teacher')->findOrFail($id);
@@ -186,6 +257,13 @@ class TeacherController extends Controller
         return ApiResponse::message('Teacher permanently deleted.');
     }
 
+    /**
+     * Restore a previously revoked teacher.
+     *
+     * @subgroup Teacher Status
+     *
+     * @urlParam id string required The teacher UUID.
+     */
     public function restore(TenantUserService $tenantUserService, string $id): JsonResponse
     {
         $teacher = User::withTrashed()->role('teacher')->findOrFail($id);
@@ -203,6 +281,16 @@ class TeacherController extends Controller
         ], "Teacher '{$teacher->first_name} {$teacher->last_name}' has been restored.");
     }
 
+    /**
+     * Reset a teacher's password.
+     *
+     * @subgroup Password
+     *
+     * @urlParam id string required The teacher UUID.
+     *
+     * @bodyParam password string required New password (min 8 chars, must contain number). No-example
+     * @bodyParam password_confirmation string required Confirm the new password. No-example
+     */
     public function resetPassword(PasswordResetService $passwordResetService, Request $request, string $id): JsonResponse
     {
         $teacher = User::role('teacher')->findOrFail($id);
@@ -216,6 +304,11 @@ class TeacherController extends Controller
         return ApiResponse::message('Password reset successfully.');
     }
 
+    /**
+     * Download a CSV template for bulk teacher import.
+     *
+     * @subgroup Import/Export
+     */
     public function downloadImportTemplate(): StreamedResponse
     {
         return response()->streamDownload(function () {
@@ -232,6 +325,15 @@ class TeacherController extends Controller
         ]);
     }
 
+    /**
+     * Import teachers from a CSV file.
+     *
+     * @subgroup Import/Export
+     *
+     * @bodyParam file file required The CSV file (max 5MB). No-example
+     * @bodyParam dry_run string required Set to "true" to preview without saving. No-example
+     * @bodyParam overwrite_existing string nullable How to handle existing records: skip, update. No-example
+     */
     public function importCsv(Request $request): JsonResponse
     {
         $validated = $request->validate([

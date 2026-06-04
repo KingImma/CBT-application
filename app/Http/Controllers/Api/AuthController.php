@@ -25,6 +25,9 @@ class AuthController extends Controller
      * Authenticate a user and return a token.
      *
      * @subgroup Login & Session
+     *
+     * @bodyParam identifier string required Email or username. Example: "admin@school.edu"
+     * @bodyParam password string required The user's password. No-example
      */
     public function login(Request $request): JsonResponse
     {

@@ -20,16 +20,32 @@ use Illuminate\Validation\Rule;
  */
 class ClassArmController extends Controller
 {
+    /**
+     * List all arms for a class level.
+     *
+     * @subgroup Class Arms
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     */
     public function index(string $classLevelId): JsonResponse
     {
         $level = ClassLevel::findOrFail($classLevelId);
 
         return ApiResponse::success(
-            ClassArmData::collection($level->classArms()->with('assignedTeacher')->withCount('students')->get()),
+            ClassArmData::collect($level->classArms()->with('assignedTeacher')->withCount('students')->get()),
             'Class arms retrieved successfully.'
         );
     }
 
+    /**
+     * Create a new class arm.
+     *
+     * @subgroup Class Arms
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     *
+     * @bodyParam name string required Arm name. Example: "A"
+     */
     public function store(Request $request, string $classLevelId): JsonResponse
     {
         $level = ClassLevel::findOrFail($classLevelId);
@@ -58,6 +74,16 @@ class ClassArmController extends Controller
         return ApiResponse::created(ClassArmData::from($arm), "Class arm '{$arm->name}' created.");
     }
 
+    /**
+     * Update a class arm name.
+     *
+     * @subgroup Class Arms
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam id string required The arm UUID.
+     *
+     * @bodyParam name string required Arm name. No-example
+     */
     public function update(Request $request, string $classLevelId, string $id): JsonResponse
     {
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);
@@ -92,6 +118,14 @@ class ClassArmController extends Controller
         );
     }
 
+    /**
+     * Delete a class arm (must have no students assigned).
+     *
+     * @subgroup Class Arms
+     *
+     * @urlParam classLevelId string required The class level UUID.
+     * @urlParam id string required The arm UUID.
+     */
     public function destroy(string $classLevelId, string $id): JsonResponse
     {
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);

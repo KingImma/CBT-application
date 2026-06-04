@@ -1,7 +1,7 @@
-<?php 
+<?php
 
-use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
 Schedule::command('horizon:snapshot')->everyFiveMinutes();

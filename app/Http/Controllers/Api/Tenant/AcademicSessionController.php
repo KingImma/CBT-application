@@ -19,15 +19,30 @@ use Illuminate\Support\Facades\DB;
  */
 class AcademicSessionController extends Controller
 {
+    /**
+     * List all academic sessions with their terms.
+     *
+     * @subgroup Academic Sessions
+     */
     public function index(): JsonResponse
     {
         $sessions = AcademicSession::with('terms')
             ->orderByDesc('start_date')
             ->get();
 
-        return ApiResponse::success(AcademicSessionData::collection($sessions), 'Academic sessions retrieved successfully.');
+        return ApiResponse::success(AcademicSessionData::collect($sessions), 'Academic sessions retrieved successfully.');
     }
 
+    /**
+     * Create a new academic session.
+     *
+     * @subgroup Academic Sessions
+     *
+     * @bodyParam name string required Session name. Example: "2025/2026"
+     * @bodyParam start_date string required Start date (Y-m-d). No-example
+     * @bodyParam end_date string required End date (Y-m-d), must be after start_date. No-example
+     * @bodyParam is_current boolean Set as the current session. No-example
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -42,6 +57,13 @@ class AcademicSessionController extends Controller
         return ApiResponse::created(AcademicSessionData::from($session), 'Academic session created.');
     }
 
+    /**
+     * Get a single academic session with its terms.
+     *
+     * @subgroup Academic Sessions
+     *
+     * @urlParam id string required The session UUID.
+     */
     public function show(string $id): JsonResponse
     {
         $session = AcademicSession::with('terms')->findOrFail($id);
@@ -49,6 +71,18 @@ class AcademicSessionController extends Controller
         return ApiResponse::success(AcademicSessionData::from($session), 'Academic session retrieved successfully.');
     }
 
+    /**
+     * Update an academic session.
+     *
+     * @subgroup Academic Sessions
+     *
+     * @urlParam id string required The session UUID.
+     *
+     * @bodyParam name string Session name. No-example
+     * @bodyParam start_date string Start date. No-example
+     * @bodyParam end_date string End date. No-example
+     * @bodyParam is_current boolean Set as current. No-example
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $session = AcademicSession::findOrFail($id);
@@ -65,6 +99,13 @@ class AcademicSessionController extends Controller
         return ApiResponse::success(AcademicSessionData::from($session->fresh('terms')), 'Academic session updated.');
     }
 
+    /**
+     * Delete an academic session.
+     *
+     * @subgroup Academic Sessions
+     *
+     * @urlParam id string required The session UUID.
+     */
     public function destroy(string $id): JsonResponse
     {
         $session = AcademicSession::findOrFail($id);
@@ -76,6 +117,8 @@ class AcademicSessionController extends Controller
     /**
      * Set a session as the current one.
      * Only one session can be current at a time.
+     *
+     * @subgroup Academic Sessions
      */
     public function setCurrent(string $id): JsonResponse
     {

@@ -33,7 +33,6 @@ class ExamData extends Resource
         #[Computed]
         public readonly Optional|int $question_count,
         public readonly ?string $scheduled_start,
-        public readonly ?string $scheduled_end,
         public readonly ?string $instructions,
         #[WhenLoaded('creator')]
         public readonly mixed $creator,

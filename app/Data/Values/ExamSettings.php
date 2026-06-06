@@ -38,7 +38,7 @@ class ExamSettings implements Castable
         return [
             'randomize_questions' => $this->randomizeQuestions,
             'show_result_immediately' => $this->showResultImmediately,
-            'results_release_date' => $this->resultsReleaseDate?->toDateTimeString(),
+            'results_release_date' => $this->resultsReleaseDate?->toIso8601String(),
             'require_attendance' => $this->requireAttendance,
             'max_suspicious_events' => $this->maxSuspiciousEvents,
         ];

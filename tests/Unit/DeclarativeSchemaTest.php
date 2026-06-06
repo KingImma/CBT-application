@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Schemas\Concerns\HasSchemaValidation;
-use App\Schemas\Requests\Exam\CreateExamRequestData;
-use App\Schemas\Shared\ExamSettingsData;
+use App\Data\Concerns\HasSchemaValidation;
+use App\Data\Exam\CreateExamData;
+use App\Data\Exam\ExamSettingsData;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-#[CoversClass(CreateExamRequestData::class)]
+#[CoversClass(CreateExamData::class)]
 #[CoversClass(ExamSettingsData::class)]
 #[CoversClass(HasSchemaValidation::class)]
 class DeclarativeSchemaTest extends TestCase
@@ -21,11 +21,10 @@ class DeclarativeSchemaTest extends TestCase
     use WithFaker;
 
     #[Test]
-    public function create_exam_request_data_has_expected_rules(): void
+    public function create_exam_data_has_expected_rules(): void
     {
-        $rules = CreateExamRequestData::getValidationRules([]);
+        $rules = CreateExamData::getValidationRules([]);
 
-        // Required field validation
         $this->assertArrayHasKey('title', $rules);
         $this->assertContains('required', $rules['title']);
         $this->assertContains('string', $rules['title']);
@@ -40,7 +39,6 @@ class DeclarativeSchemaTest extends TestCase
         $this->assertContains('integer', $rules['duration_minutes']);
         $this->assertContains('min:1', $rules['duration_minutes']);
 
-        // Nullable fields
         $this->assertArrayHasKey('class_arm_id', $rules);
         $this->assertContains('nullable', $rules['class_arm_id']);
 
@@ -49,18 +47,13 @@ class DeclarativeSchemaTest extends TestCase
 
         $this->assertArrayHasKey('instructions', $rules);
         $this->assertContains('nullable', $rules['instructions']);
-
-        // Cross-field validation
-        $this->assertArrayHasKey('scheduled_end', $rules);
-        $this->assertContains('after:scheduled_start', $rules['scheduled_end']);
     }
 
     #[Test]
     public function nested_settings_data_validates_correctly(): void
     {
-        $rules = CreateExamRequestData::getValidationRules([]);
+        $rules = CreateExamData::getValidationRules([]);
 
-        // Settings is nullable
         $this->assertArrayHasKey('settings', $rules);
         $this->assertContains('nullable', $rules['settings']);
     }
@@ -74,7 +67,7 @@ class DeclarativeSchemaTest extends TestCase
 
             protected function schemaClass(): string
             {
-                return CreateExamRequestData::class;
+                return CreateExamData::class;
             }
         };
 
@@ -88,15 +81,10 @@ class DeclarativeSchemaTest extends TestCase
     #[Test]
     public function exam_type_enum_is_validated(): void
     {
-        $rules = CreateExamRequestData::getValidationRules([]);
+        $rules = CreateExamData::getValidationRules([]);
 
         $this->assertArrayHasKey('type', $rules);
         $this->assertContains('required', $rules['type']);
-
-        // The enum validation should accept valid backed values
-        $typeRules = $rules['type'];
-        // Spatie Data validates BackedEnum by checking it's a valid value
-        // The exact rule format depends on the EnumTransformer
     }
 
     #[Test]
@@ -110,7 +98,7 @@ class DeclarativeSchemaTest extends TestCase
             'type' => 'exam',
             'duration_minutes' => 60,
         ];
-        $examData = CreateExamRequestData::from($data);
+        $examData = CreateExamData::from($data);
 
         $this->assertEquals('Mid-Term Exam', $examData->title);
         $this->assertEquals('exam', $examData->type->value);
@@ -130,14 +118,13 @@ class DeclarativeSchemaTest extends TestCase
             'pass_mark' => 75.0,
             'max_attempts' => 2,
             'scheduled_start' => '2026-06-10T09:00:00',
-            'scheduled_end' => '2026-06-10T11:00:00',
             'instructions' => 'Read carefully.',
             'settings' => [
                 'randomize_questions' => true,
                 'show_result_immediately' => false,
             ],
         ];
-        $examData = CreateExamRequestData::from($data);
+        $examData = CreateExamData::from($data);
 
         $this->assertEquals(75.0, $examData->pass_mark);
         $this->assertEquals(2, $examData->max_attempts);

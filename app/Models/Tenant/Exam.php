@@ -23,7 +23,6 @@ class Exam extends Model
     protected $casts = [
         'status' => ExamStatus::class,
         'scheduled_start' => 'datetime',
-        'scheduled_end' => 'datetime',
         'approved_at' => 'datetime',
         'settings' => ExamSettings::class,
         'duration_minutes' => 'integer',

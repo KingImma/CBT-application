@@ -25,9 +25,6 @@ class ExamAttempt extends Model
         'time_spent_seconds' => 'integer',
         'total_score' => 'decimal:2',
         'percentage_score' => 'decimal:2',
-        'objective_score' => 'decimal:2',
-        'theory_score' => 'decimal:2',
-        'is_theory_graded' => 'boolean',
         'suspicious_events' => 'array',
         'settings' => ExamAttemptSettings::class,
     ];
@@ -56,33 +53,11 @@ class ExamAttempt extends Model
         return $this->hasMany(ExamAnswer::class, 'attempt_id');
     }
 
-    /**
-     * @return BelongsTo<User,ExamAttempt>
-     */
-    public function gradedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'graded_by');
-    }
-
     // Scopes
 
     public function scopeInProgress(Builder $query): Builder
     {
         return $query->where('status', ExamAttemptStatus::InProgress->value);
-    }
-
-    public function scopeSubmitted(Builder $query): Builder
-    {
-        return $query->whereIn('status', [
-            ExamAttemptStatus::Submitted->value,
-            ExamAttemptStatus::TimedOut->value,
-            ExamAttemptStatus::Disqualified->value,
-        ]);
-    }
-
-    public function scopeNeedsGrading(Builder $query): Builder
-    {
-        return $query->where('status', ExamAttemptStatus::Grading->value);
     }
 
     public function scopeForExam(Builder $query, string $examId): Builder
@@ -117,16 +92,8 @@ class ExamAttempt extends Model
 
     public function getTimeRemainingSeconds(): int
     {
-        $exam = $this->exam;
-        $attemptDeadline = $this->started_at->copy()->addMinutes($exam->duration_minutes);
-        $sessionDeadline = null;
-
-        if ($exam->session_started_at) {
-            $sessionDeadline = $exam->session_started_at->copy()->addMinutes($exam->session_duration_minutes);
-        }
-
-        $deadline = $sessionDeadline ? min($attemptDeadline, $sessionDeadline) : $attemptDeadline;
-        $remaining = $deadline->getTimestamp() - now()->getTimestamp();
+        $deadline = $this->started_at->getTimestamp() + ($this->exam->duration_minutes * 60);
+        $remaining = $deadline - now()->getTimestamp();
 
         return max(0, $remaining);
     }

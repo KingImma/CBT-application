@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamAnswerAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
-use App\Actors\ExamSessionActor;
 use App\Data\Exam\ExamAttemptData;
 use App\Data\Exam\StudentExamQuestionData;
 use App\Enums\ExamAttemptStatus;
@@ -229,7 +228,7 @@ class StudentExamController extends Controller
             'time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $answer = (new ExamSessionActor($attemptId))->handle('saveAnswer', array_merge($validated, ['question_id' => $questionId]));
+        $answer = $this->answerAction->save($attempt, $questionId, $validated);
 
         return ApiResponse::success($answer, 'Answer saved.');
     }
@@ -280,7 +279,7 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
-        $remaining = (new ExamSessionActor($attemptId))->handle('timeRemaining');
+        $remaining = $attempt->getTimeRemainingSeconds();
 
         return ApiResponse::success([
             'remaining_seconds' => $remaining,

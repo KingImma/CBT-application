@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Data\Exam;
 
 use App\Enums\ExamType;
-use Spatie\LaravelData\Attributes\Validation\After;
 use Spatie\LaravelData\Attributes\Validation\Date;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\IntegerType;
@@ -16,7 +15,6 @@ use Spatie\LaravelData\Attributes\Validation\Numeric;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Support\Validation\References\FieldReference;
 
 class CreateExamData extends Data
 {
@@ -40,8 +38,6 @@ class CreateExamData extends Data
         public readonly ?int $max_attempts,
         #[Nullable, Date]
         public readonly ?string $scheduled_start,
-        #[Nullable, Date, After(new FieldReference('scheduled_start', fromRoot: true))]
-        public readonly ?string $scheduled_end,
         #[Nullable, StringType]
         public readonly ?string $instructions,
         #[Nullable]

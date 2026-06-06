@@ -11,14 +11,13 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamQuestion;
+use App\Models\Tenant\GradingScale;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\DB;
 
 class ExamSessionAction
 {
-    public function __construct(
-        private ExamGradingAction $gradingAction,
-    ) {}
+    public function __construct() {}
 
     public function validateStart(Exam $exam, User $student): void
     {
@@ -114,28 +113,74 @@ class ExamSessionAction
         }
 
         return DB::transaction(function () use ($attempt) {
-            $answers = ExamAnswer::where('attempt_id', $attempt->id)->get();
+            $exam = $attempt->exam;
+
+            $answers = ExamAnswer::with('question.options')
+                ->where('attempt_id', $attempt->id)
+                ->get();
+
+            $examQuestions = ExamQuestion::where('exam_id', $exam->id)
+                ->get()
+                ->keyBy('question_id');
+
+            $runningTotal = 0;
+            $maxTime = 0;
 
             foreach ($answers as $answer) {
-                $this->gradingAction->autoGrade($answer);
+                $selected = $answer->selected_option_ids ?? [];
+                $correctOption = $answer->question->options->firstWhere('is_correct', true);
+                $isCorrect = count($selected) === 1 && $correctOption?->id === $selected[0];
+
+                $marksAwarded = 0;
+                if ($isCorrect) {
+                    $eq = $examQuestions->get($answer->question_id);
+                    $marksAwarded = $eq?->getEffectiveMarks() ?? $answer->question->default_marks;
+                }
+
+                $answer->updateQuietly([
+                    'is_correct' => $isCorrect,
+                    'marks_awarded' => $marksAwarded,
+                ]);
+
+                $runningTotal += $marksAwarded;
+                $maxTime = max($maxTime, $answer->time_spent_seconds ?? 0);
             }
 
-            $timeSpentSeconds = ExamAnswer::where('attempt_id', $attempt->id)
-                ->whereNotNull('time_spent_seconds')
-                ->max('time_spent_seconds');
+            $percentageScore = $exam->total_marks > 0
+                ? ($runningTotal / $exam->total_marks) * 100
+                : 0;
+
+            $grade = $this->resolveGrade($percentageScore);
 
             $attempt->update([
                 'status' => ExamAttemptStatus::Graded->value,
                 'submitted_at' => now(),
-                'time_spent_seconds' => max(0, (int) ($timeSpentSeconds ?? now()->diffInSeconds($attempt->started_at))),
+                'time_spent_seconds' => $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
+                'total_score' => $runningTotal,
+                'percentage_score' => $percentageScore,
+                'grade' => $grade,
             ]);
-
-            $this->gradingAction->recomputeScore($attempt);
 
             $attempt->exam()->increment('completed_attempts');
 
             return $attempt->fresh();
         });
+    }
+
+    private function resolveGrade(float $percentageScore): ?string
+    {
+        $defaultScale = GradingScale::where('is_default', true)->first();
+        if (! $defaultScale) {
+            return null;
+        }
+
+        foreach ($defaultScale->grades as $grade) {
+            if ($percentageScore >= $grade['min_score'] && $percentageScore <= $grade['max_score']) {
+                return $grade['label'];
+            }
+        }
+
+        return null;
     }
 
     public function recover(ExamAttempt $attempt): array

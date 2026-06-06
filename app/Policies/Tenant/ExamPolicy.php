@@ -51,7 +51,7 @@ class ExamPolicy
 
     public function activate(User $user, Exam $exam): bool
     {
-        return $exam->isSubmitted();
+        return $user->hasRole('school_admin') && $exam->isSubmitted();
     }
 
     public function manageQuestions(User $user, Exam $exam): bool

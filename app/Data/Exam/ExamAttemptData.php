@@ -15,8 +15,6 @@ class ExamAttemptData extends Resource
         public readonly int $attempt_number,
         public readonly ?float $total_score,
         public readonly ?float $percentage_score,
-        public readonly ?float $objective_score,
-        public readonly ?float $theory_score,
         public readonly ?string $started_at,
         public readonly ?string $submitted_at,
         public readonly ?int $time_spent_seconds,

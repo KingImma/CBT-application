@@ -35,6 +35,8 @@ class QuestionPolicy
 
     public function createForClass(User $user, string $classLevelId): bool
     {
+        $user->loadMissing('teacherProfile');
+
         return $user->teacherProfile?->class_level_id === $classLevelId
             || ClassArm::where('assigned_teacher_id', $user->id)
                 ->where('class_level_id', $classLevelId)
@@ -80,6 +82,8 @@ class QuestionPolicy
 
     private function isClassTeacher(User $user, Question $question): bool
     {
+        $user->loadMissing('teacherProfile');
+
         // 1. In-memory check: Are they the overseer of this level?
         return $user->teacherProfile?->class_level_id === $question->class_level_id
         // 2. Database check: Do they manage a specific arm in this level?

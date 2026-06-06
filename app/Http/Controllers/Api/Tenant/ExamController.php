@@ -42,7 +42,7 @@ class ExamController extends Controller
     {
         $perPage = (int) $request->get('per_page', 20);
 
-        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'created_by', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'scheduled_end', 'instructions', 'created_at', 'expected_attempts', 'completed_attempts')
+        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'created_by', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'instructions', 'created_at', 'expected_attempts', 'completed_attempts')
             ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
             ->withCount('examQuestions')
             ->when($request->status, fn ($q, $status) => $q->byStatus($status))

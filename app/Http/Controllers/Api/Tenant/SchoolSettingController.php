@@ -24,7 +24,7 @@ class SchoolSettingController extends Controller
     public function index(): JsonResponse
     {
         return ApiResponse::success(
-            SchoolSetting::all()->pluck('value', 'key'),
+            SchoolSetting::pluck('value', 'key'),
             'School settings retrieved successfully.'
         );
     }
@@ -69,7 +69,7 @@ class SchoolSettingController extends Controller
         }
 
         return ApiResponse::success(
-            SchoolSetting::all()->pluck('value', 'key'),
+            SchoolSetting::pluck('value', 'key'),
             'Settings updated.'
         );
     }

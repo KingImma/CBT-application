@@ -100,6 +100,7 @@ class AuthController extends Controller
         }
 
         $user->loadMissing([
+            'teacherProfile',
             'teacherAssignments.subject',
             'teacherAssignments.classLevel',
             'teacherAssignments.classArm',

@@ -13,8 +13,6 @@ class TeacherProfile extends Model
 
     protected $guarded = ['id'];
 
-    protected $with = ['classLevel'];
-
     protected $casts = [
         'date_of_birth' => 'date',
     ];

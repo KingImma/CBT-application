@@ -4,15 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Student\StudentAction;
-use App\Data\Results\ImportResult;
-use App\Data\Schemas\StudentImportSchema;
-use App\Data\Student\StudentData;
-use App\Events\ActivityFeedEvent;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Tenant\StoreStudentRequest;
-use App\Http\Requests\Tenant\UpdateStudentRequest;
+use App\Queries\StudentQuery;
 use App\Models\Tenant\User;
+use App\Actions\Tenants\Student\StudentAction;
 use App\Services\Auth\PasswordResetService;
 use App\Services\StudentImportService;
 use App\Services\TenantUserService;
@@ -38,31 +32,14 @@ class StudentController extends Controller
      * @queryParam class_level_id string Filter by class level UUID. No-example
      * @queryParam class_arm_id string Filter by class arm UUID. No-example
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, StudentQuery $queries): JsonResponse
     {
         $status = $request->query('status', 'active');
-        $search = $request->query('search');
 
-        $students = User::role('student')
-            ->select('id', 'first_name', 'last_name', 'email', 'phone', 'is_active')
-            ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
-
-            // 1. Search by Name/Email on the User table, or Reg Number on the Profile
-            ->when($search, function ($query) use ($search) {
-                $query->search($search, ['first_name', 'last_name', 'email'])
-                    ->orWhereHas('studentProfile', fn ($p) => $p->where('admission_number', 'ilike', "%{$search}%")
-                    );
-            })
-
-            // 2. Filter by Class/Arm via the Profile relation
-            ->when($request->class_level_id, fn ($q) => $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id))
-            )
-            ->when($request->class_arm_id, fn ($q) => $q->whereHas('studentProfile', fn ($p) => $p->where('class_arm_id', $request->class_arm_id))
-            )
-
-            // 3. Apply standard status filters
+        $students = $queries->forList()
+            ->tap(fn ($q) => $queries->search($q, $request->query('search')))
+            ->tap(fn ($q) => $queries->filterByClass($q, $request->class_level_id, $request->class_arm_id))
             ->withStatus($status)
-
             ->orderBy('last_name')
             ->paginate(50);
 

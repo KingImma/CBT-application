@@ -22,3 +22,10 @@ Broadcast::channel('teacher.{teacherId}.activity', function ($user, $teacherId) 
         && $user->hasRole('teacher')
         && (string) $user->id === (string) $teacherId;
 });
+
+// Real-time exam attempt count updates
+Broadcast::channel('school-admin.{tenantId}.exam.{examId}', function ($user, string $tenantId, string $examId) {
+    return $user instanceof User
+        && $user->hasRole('school_admin')
+        && (string) tenant('id') === $tenantId;
+});

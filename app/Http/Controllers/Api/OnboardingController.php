@@ -23,15 +23,19 @@ class OnboardingController extends Controller
      *
      * @subgroup School Onboarding
      *
-     * @bodyParam handle string required Desired school handle (subdomain). Example: "greenwood-high"
+     * @queryParam handle string required Desired school handle (subdomain). Example: "greenwood-high"
      */
     public function checkHandle(Request $request): JsonResponse
     {
+        if (tenancy()->initialized) {
+            return ApiResponse::error('This endpoint must be called on the central domain.', 400);
+        }
+
         $request->validate([
-            'handle' => ['required', 'string', 'max:255'],
+            'handle' => ['required', 'string', 'max:63'],
         ]);
 
-        $exists = Tenant::where('handle', $request->handle)->exists();
+        $exists = Tenant::where('handle', $request->query('handle'))->exists();
 
         return ApiResponse::success([
             'available' => ! $exists,

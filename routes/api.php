@@ -30,7 +30,7 @@ Route::middleware([InitializeTenancyByHeader::class, 'auth:tenant'])->post('/bro
 });
 
 Route::prefix('onboarding')->controller(OnboardingController::class)->group(function () {
-    Route::get('/check-handle', 'checkHandle');
+    Route::get('/check-handle', 'checkHandle')->middleware('throttle:10,1');
     Route::post('/register', 'register');
 });
 

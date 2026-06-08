@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 /*
  * 1. What it is: `routes/api.php` (Public routes).
  * 2. What it does in a nutshell: Holds ONLY routes that do not require an active user session.
- * 3. Why this was chosen: Keeps the entry points (login, password resets, public downloads) entirely isolated from protected business logic.
+ * 3. Why this was chosen: Public downloads are entirely isolated from protected business logic.
  * 4. Expected deliverables and alternatives: A tiny, highly readable file for unauthenticated endpoints.
  */
 

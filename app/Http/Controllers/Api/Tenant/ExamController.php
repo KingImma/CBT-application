@@ -44,7 +44,7 @@ class ExamController extends Controller
 
         $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'created_by', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'instructions', 'created_at', 'expected_attempts', 'completed_attempts')
             ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
-            ->withCount('examQuestions')
+            ->withCount('examQuestions as question_count')
             ->when($request->status, fn ($q, $status) => $q->byStatus($status))
             ->when($request->subject_id, fn ($q, $id) => $q->bySubject($id))
             ->when($request->class_level_id, fn ($q, $id) => $q->byClassLevel($id))
@@ -102,7 +102,7 @@ class ExamController extends Controller
         $exam = Exam::with([
             'subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name',
             'examQuestions.question.options',
-        ])->findOrFail($id);
+        ])->withCount('examQuestions as question_count')->findOrFail($id);
 
         $this->authorize('view', $exam);
 

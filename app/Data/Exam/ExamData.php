@@ -32,6 +32,8 @@ class ExamData extends Resource
         public readonly ?int $max_attempts,
         #[Computed]
         public readonly Optional|int $question_count,
+        public readonly int $expected_attempts,
+        public readonly int $completed_attempts,
         public readonly ?string $scheduled_start,
         public readonly ?string $instructions,
         #[WhenLoaded('creator')]

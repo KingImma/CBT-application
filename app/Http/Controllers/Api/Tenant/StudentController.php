@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Queries\StudentQuery;
-use App\Models\Tenant\User;
 use App\Actions\Tenants\Student\StudentAction;
+use App\Http\Controllers\Controller;
+use App\Models\Tenant\User;
+use App\Queries\StudentQuery;
 use App\Services\Auth\PasswordResetService;
 use App\Services\StudentImportService;
 use App\Services\TenantUserService;

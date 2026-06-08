@@ -7,6 +7,7 @@ namespace App\Actions\Tenants\Exam;
 use App\Data\Values\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
+use App\Events\ExamAttemptsUpdated;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
@@ -162,6 +163,22 @@ class ExamSessionAction
             ]);
 
             $attempt->exam()->increment('completed_attempts');
+            $exam->refresh();
+
+            $shouldComplete = $exam->completed_attempts >= $exam->expected_attempts
+                || ($exam->window_end !== null && now()->gte($exam->window_end));
+
+            if ($shouldComplete) {
+                $exam->update(['status' => ExamStatus::Completed]);
+            }
+
+            event(new ExamAttemptsUpdated(
+                examId: $exam->id,
+                completedAttempts: $exam->completed_attempts,
+                expectedAttempts: $exam->expected_attempts,
+                status: $shouldComplete ? 'completed' : 'active',
+                tenantId: (string) tenant('id'),
+            ));
 
             return $attempt->fresh();
         });

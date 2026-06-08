@@ -33,7 +33,7 @@ class SuperAdminAuthService
             'token' => $token,
             'token_type' => 'Bearer',
             'expires_in' => (int) now()->diffInSeconds($expiresAt),
-            'role' => 'super_admin', 
+            'role' => 'super_admin',
             'admin' => [
                 'id' => $admin->id,
                 'name' => $admin->name,

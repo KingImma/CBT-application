@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Data\Tenant;
 
+use App\Enums\StatusType;
 use Spatie\LaravelData\Attributes\WhenLoaded;
 use Spatie\LaravelData\Resource;
 
@@ -22,7 +23,7 @@ class TenantData extends Resource
         public readonly ?string $address,
         public readonly ?string $city,
         public readonly ?string $state,
-        public readonly ?string $subscription_status,
+        public readonly ?StatusType $subscription_status,
         public readonly ?string $trial_ends_at,
         public readonly ?string $subscription_ends_at,
         public readonly ?string $onboarding_completed_at,

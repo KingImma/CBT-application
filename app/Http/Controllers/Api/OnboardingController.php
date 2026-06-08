@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Actions\SuperAdmin\CreateTenantAction;
-use App\Models\SubscriptionPlan;
+use App\Data\SubscriptionPlan\SubscriptionPlanData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OnboardingRequest;
+use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Support\ApiResponse;
-use App\Data\SubscriptionPlan\SubscriptionPlanData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
 
 /**
  * @group Authentication & Onboarding
@@ -73,13 +72,11 @@ class OnboardingController extends Controller
             'login_url' => $loginUrl,
         ], 'School provisioned successfully.');
     }
-    
+
     /**
      * Retrieve active subscription plans for onboarding.
      *
      * @subgroup School Onboarding
-     *
-     * @return JsonResponse
      */
     public function plans(): JsonResponse
     {

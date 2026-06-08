@@ -10,8 +10,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\OnboardingRequest;
 use App\Models\Tenant;
 use App\Support\ApiResponse;
+use App\Data\SubscriptionPlan\SubscriptionPlanData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
 
 /**
  * @group Authentication & Onboarding
@@ -73,7 +75,7 @@ class OnboardingController extends Controller
     }
     
     /**
-     * Description
+     * Retrieve active subscription plans for onboarding.
      *
      * @subgroup School Onboarding
      *
@@ -81,26 +83,18 @@ class OnboardingController extends Controller
      */
     public function plans(): JsonResponse
     {
-        // Optional: Ensure this is only hit on the central domain
         if (tenancy()->initialized) {
             return ApiResponse::error('This endpoint must be called on the central domain.', 400);
         }
 
-        // Industry practice: Select only the fields the frontend needs to render the pricing page.
         $plans = SubscriptionPlan::active()
-            ->select([
-                'id',
-                'name',
-                'description',
-                'price_monthly',
-                'price_yearly',
-                'max_students',
-                'max_teachers',
-                'max_exams_per_term',
-                'features',
-            ])
+            ->orderBy('price_monthly')
             ->get();
 
-        return ApiResponse::success($plans, 'Active subscription plans retrieved successfully.');
+        return ApiResponse::success(
+            SubscriptionPlanData::collect($plans),
+            'Active subscription plans retrieved successfully.',
+            meta: ['total' => $plans->count()]
+        );
     }
 }

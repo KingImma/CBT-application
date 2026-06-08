@@ -30,9 +30,9 @@ class SubscriptionPlanController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = SubscriptionPlan::query()
-            ->where('is_active', true)      // Only active
-            ->orderBy('price_monthly');     // Cheapest first
+        $plans = SubscriptionPlan::active()
+            ->orderBy('price_monthly')
+            ->get();
 
         // // Optional filters
         // if ($request->filled('interval')) {
@@ -42,8 +42,6 @@ class SubscriptionPlanController extends Controller
         // if ($request->filled('category')) {
         //     $query->where('category', $request->category);
         // }
-
-        $plans = $query->get();
 
         return ApiResponse::success(
             SubscriptionPlanData::collect($plans),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Actions\SuperAdmin\CreateTenantAction;
+use App\Models\SubscriptionPlan;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OnboardingRequest;
 use App\Models\Tenant;
@@ -69,5 +70,37 @@ class OnboardingController extends Controller
             'name' => $tenant->name,
             'login_url' => $loginUrl,
         ], 'School provisioned successfully.');
+    }
+    
+    /**
+     * Description
+     *
+     * @subgroup School Onboarding
+     *
+     * @return JsonResponse
+     */
+    public function plans(): JsonResponse
+    {
+        // Optional: Ensure this is only hit on the central domain
+        if (tenancy()->initialized) {
+            return ApiResponse::error('This endpoint must be called on the central domain.', 400);
+        }
+
+        // Industry practice: Select only the fields the frontend needs to render the pricing page.
+        $plans = SubscriptionPlan::active()
+            ->select([
+                'id',
+                'name',
+                'description',
+                'price_monthly',
+                'price_yearly',
+                'max_students',
+                'max_teachers',
+                'max_exams_per_term',
+                'features',
+            ])
+            ->get();
+
+        return ApiResponse::success($plans, 'Active subscription plans retrieved successfully.');
     }
 }

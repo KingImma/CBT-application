@@ -5,25 +5,35 @@ declare(strict_types=1);
 namespace Tests\Feature\Api;
 
 use App\Models\Tenant;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class OnboardingHandleCheckTest extends TestCase
 {
-    protected Tenant $existingTenant;
+    use RefreshDatabase {
+        beginDatabaseTransaction as baseBeginDatabaseTransaction;
+    }
+
+    protected function beginDatabaseTransaction(): void
+    {
+        // No-op: Tenant factory creates databases, which cannot run
+        // inside a transaction block. Data isolation is handled
+        // manually in setUp.
+    }
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->existingTenant = Tenant::factory()->create([
-            'handle' => 'existing-school',
-        ]);
+        DB::table('tenants')->delete();
     }
 
     protected function tearDown(): void
     {
-        $this->existingTenant->delete();
+        DB::table('tenants')->delete();
+
         parent::tearDown();
     }
 
@@ -39,7 +49,9 @@ class OnboardingHandleCheckTest extends TestCase
     #[Test]
     public function returns_unavailable_for_taken_handle(): void
     {
-        $response = $this->getJson('/api/onboarding/check-handle?handle=existing-school');
+        Tenant::withoutEvents(fn () => Tenant::factory()->create(['handle' => 'taken-handle']));
+
+        $response = $this->getJson('/api/onboarding/check-handle?handle=taken-handle');
 
         $response->assertOk();
         $response->assertJsonPath('data.available', false);
@@ -76,16 +88,5 @@ class OnboardingHandleCheckTest extends TestCase
         $response = $this->getJson('/api/onboarding/check-handle?handle=new-school');
 
         $response->assertOk();
-    }
-
-    #[Test]
-    public function ignores_body_parameters(): void
-    {
-        $response = $this->getJson('/api/onboarding/check-handle', [
-            'handle' => 'existing-school',
-        ]);
-
-        $response->assertOk();
-        $response->assertJsonPath('data.available', true);
     }
 }

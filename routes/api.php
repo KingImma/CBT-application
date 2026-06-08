@@ -17,29 +17,45 @@ use Illuminate\Support\Facades\Route;
  */
 
 Route::middleware([InitializeTenancyByHeader::class])->group(function () {
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post("/auth/login", [AuthController::class, "login"])->middleware(
+        "throttle:5,1",
+    );
 
-    Route::controller(PasswordController::class)->prefix('auth')->group(function () {
-        Route::post('/forgot-password', 'forgotPassword');
-        Route::post('/reset-password', 'resetPassword');
+    Route::controller(PasswordController::class)
+        ->prefix("auth")
+        ->group(function () {
+            Route::post("/forgot-password", "forgotPassword");
+            Route::post("/reset-password", "resetPassword");
+        });
+});
+
+Route::middleware([InitializeTenancyByHeader::class, "auth:tenant"])->post(
+    "/broadcasting/auth",
+    function () {
+        return Broadcast::auth(request());
+    },
+);
+
+Route::prefix("onboarding")
+    ->controller(OnboardingController::class)
+    ->group(function () {
+        Route::get("/check-handle", "checkHandle")->middleware("throttle:10,1");
+        Route::post("/register", "register");
+        Route::get("/plans", "plans");
     });
-});
 
-Route::middleware([InitializeTenancyByHeader::class, 'auth:tenant'])->post('/broadcasting/auth', function () {
-    return Broadcast::auth(request());
-});
+Route::controller(PasswordController::class)
+    ->middleware(["throttle:10,1", InitializeTenancyByHeader::class])
+    ->prefix("password")
+    ->group(function () {
+        // Public routes - no auth required, but tenancy is initialized if X-Tenant header is present
+        Route::post("/forgot", "forgot");
+        Route::post("/verify-otp", "verifyOtp");
+        Route::post("/reset", "reset");
 
-Route::prefix('onboarding')->controller(OnboardingController::class)->group(function () {
-    Route::get('/check-handle', 'checkHandle')->middleware('throttle:10,1');
-    Route::post('/register', 'register');
-});
-
-Route::controller(PasswordController::class)->middleware(['throttle:10,1', InitializeTenancyByHeader::class])->prefix('password')->group(function () {
-    // Public routes - no auth required, but tenancy is initialized if X-Tenant header is present
-    Route::post('/forgot', 'forgot');
-    Route::post('/verify-otp', 'verifyOtp');
-    Route::post('/reset', 'reset');
-
-    // Protected route - accepts super_admin or tenant users (school_admin, teacher)
-    Route::middleware('auth.any:super_admin,tenant')->post('/change', 'change');
-});
+        // Protected route - accepts super_admin or tenant users (school_admin, teacher)
+        Route::middleware("auth.any:super_admin,tenant")->post(
+            "/change",
+            "change",
+        );
+    });

@@ -63,9 +63,23 @@ class TenantController extends Controller
      * @bodyParam domain string required School domain. No-example
      * @bodyParam plan_id string nullable Subscription plan UUID. No-example
      */
-    public function store(StoreTenantRequest $request, CreateTenantAction $action): JsonResponse
+    public function store(Request $request, CreateTenantAction $action): JsonResponse
     {
-        $tenant = $action->execute($request->validated());
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:50'],
+            'plan_id' => ['nullable', 'uuid', 'exists:subscription_plans,id'],
+            'admin_first_name' => ['required', 'string', 'max:100'],
+            'admin_last_name' => ['required', 'string', 'max:100'],
+            'admin_email' => ['required', 'email', 'max:255'],
+            'admin_password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $tenant = $action->execute($validated);
 
         broadcast(new ActivityFeedEvent(
             channelType: 'super_admin',
@@ -102,10 +116,20 @@ class TenantController extends Controller
      *
      * @urlParam id string required The tenant UUID.
      */
-    public function update(UpdateTenantRequest $request, string $id, UpdateTenantAction $action): JsonResponse
+    public function update(Request $request, string $id, UpdateTenantAction $action): JsonResponse
     {
+        $validated = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:50'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
         $tenant = Tenant::with('domains')->findOrFail($id);
-        $updatedTenant = $action->handle($request->validated(), $tenant);
+        $updatedTenant = $action->handle($validated, $tenant);
 
         return ApiResponse::success(
             TenantData::from($updatedTenant->load('domains')),

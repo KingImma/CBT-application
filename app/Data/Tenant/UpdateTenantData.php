@@ -24,7 +24,5 @@ class UpdateTenantData extends Data
         public Optional|string|null $city,
         #[Nullable, StringType, Max(255)]
         public Optional|string|null $state,
-        #[Nullable, StringType]
-        public Optional|string|null $school_type,
     ) {}
 }

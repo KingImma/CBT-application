@@ -478,15 +478,7 @@ paths:
                   description: 'Must not be greater than 255 characters.'
                   example: qvorlhgxqdslgcxqtn
                   nullable: true
-                schoolType:
-                  type: string
-                  description: ''
-                  example: id
-                  enum:
-                    - 'Primary School'
-                    - 'Secondary School'
-                    - Mixed
-                  nullable: true
+
                 fullName:
                   type: string
                   description: 'Must not be greater than 255 characters.'

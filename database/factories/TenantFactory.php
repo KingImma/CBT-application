@@ -31,6 +31,7 @@ class TenantFactory extends Factory
             'id' => $slug,
             'name' => $name,
             'slug' => $slug,
+            'handle' => $slug,
             'database' => 'tenant_'.str_replace('-', '_', $slug),
             'plan_id' => SubscriptionPlan::factory(),
             'subscription_status' => 'trial',

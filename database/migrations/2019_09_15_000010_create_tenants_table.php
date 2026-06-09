@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\SchoolType;
 use App\Enums\StatusType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -21,7 +20,6 @@ class CreateTenantsTable extends Migration
             $table->string('name');
             $table->string('slug', 63)->unique();
             $table->string('handle', 100)->nullable()->unique()->after('slug');
-            $table->enum('school_type', array_column(SchoolType::cases(), 'value'))->nullable()->after('name');
             $table->string('database', 63)->unique();
 
             $table->string('logo', 500)->nullable();

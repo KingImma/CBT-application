@@ -114,7 +114,6 @@ class CreateTenantAction
         return array_merge([
             'id' => $slug,
             'name' => $data['name'],
-            'school_type' => $data['schoolType'] ?? null,
             'slug' => $slug,
             'handle' => $slug,
             'database' => $dbName,

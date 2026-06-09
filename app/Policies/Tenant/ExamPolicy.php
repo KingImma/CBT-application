@@ -45,8 +45,8 @@ class ExamPolicy
 
     public function submitForReview(User $user, Exam $exam): bool
     {
-        return $exam->isDraft()
-            && ($exam->isOwnedBy($user) || $this->isAssignedTeacher($user, $exam));
+        return $exam->isDraft() &&
+            ($exam->isOwnedBy($user) || $this->isAssignedTeacher($user, $exam));
     }
 
     public function activate(User $user, Exam $exam): bool
@@ -56,8 +56,23 @@ class ExamPolicy
 
     public function manageQuestions(User $user, Exam $exam): bool
     {
-        return $exam->isDraft()
-            && ($exam->isOwnedBy($user) || $this->isAssignedTeacher($user, $exam));
+        return $exam->isDraft() &&
+            ($exam->isOwnedBy($user) || $this->isAssignedTeacher($user, $exam));
+    }
+
+    public function publish(User $user, Exam $exam): bool
+    {
+        return $user->hasRole('school_admin');
+    }
+
+    public function publishResults(User $user, Exam $exam): bool
+    {
+        return $user->hasRole('school_admin');
+    }
+
+    public function unpublishResults(User $user, Exam $exam): bool
+    {
+        return $user->hasRole('school_admin');
     }
 
     private function isAssignedTeacher(User $user, Exam $exam): bool
@@ -67,7 +82,10 @@ class ExamPolicy
         }
 
         if ($this->isClassTeacher($user, $exam)) {
-            return ! TeacherSubjectAssignment::where('subject_id', $exam->subject_id)
+            return ! TeacherSubjectAssignment::where(
+                'subject_id',
+                $exam->subject_id,
+            )
                 ->where('class_level_id', $exam->class_level_id)
                 ->where('user_id', '!=', $user->id)
                 ->exists();

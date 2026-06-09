@@ -59,9 +59,7 @@ class OnboardingController extends Controller
      */
     public function register(OnboardingRequest $request, CreateTenantAction $action): JsonResponse
     {
-        $data = $request->mappedData();
-
-        $tenant = $action->execute($data);
+        $tenant = $action->execute($request->toData()->toArray());
 
         $centralDomain = config('app.central_domain', 'myapp.com');
         $loginUrl = "https://{$tenant->handle}.{$centralDomain}/login";

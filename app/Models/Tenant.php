@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\SchoolType;
 use App\Enums\StatusType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -33,7 +32,6 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'subscription_status' => StatusType::class,
         'settings' => 'array',
         'is_active' => 'boolean',
-        'school_type' => SchoolType::class,
         'trial_ends_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
         'onboarding_completed_at' => 'datetime',
@@ -54,7 +52,6 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'city',
             'state',
             'logo',
-            'school_type',
             'plan_id',
             'subscription_status',
             'trial_ends_at',

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamCrudAction;
+use App\Actions\Tenants\Exam\ExamResultPublishAction;
 use App\Actions\Tenants\Exam\ExamSessionAction;
 use App\Actions\Tenants\Exam\ExamStatusAction;
 use App\Data\Exam\ExamData;
+use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreExamRequest;
 use App\Models\Tenant\Exam;
@@ -25,6 +27,7 @@ class ExamController extends Controller
         private ExamCrudAction $crudAction,
         private ExamStatusAction $statusAction,
         private ExamSessionAction $sessionAction,
+        private ExamResultPublishAction $publishAction,
     ) {}
 
     /**
@@ -41,21 +44,52 @@ class ExamController extends Controller
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->get('per_page', 20);
+        $user = $request->user('tenant');
 
-        $exams = Exam::select('id', 'title', 'type', 'status', 'subject_id', 'class_level_id', 'class_arm_id', 'term_id', 'created_by', 'total_marks', 'pass_mark', 'duration_minutes', 'max_attempts', 'scheduled_start', 'instructions', 'created_at', 'expected_attempts', 'completed_attempts')
-            ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
+        $exams = Exam::select(
+            'id',
+            'title',
+            'type',
+            'status',
+            'subject_id',
+            'class_level_id',
+            'class_arm_id',
+            'term_id',
+            'created_by',
+            'total_marks',
+            'pass_mark',
+            'duration_minutes',
+            'max_attempts',
+            'scheduled_start',
+            'instructions',
+            'created_at',
+            'expected_attempts',
+            'completed_attempts',
+            'published_at',
+        )
+            ->with([
+                'subject',
+                'classLevel',
+                'classArm',
+                'term',
+                'creator:id,first_name,last_name',
+            ])
             ->withCount('examQuestions as question_count')
             ->when($request->status, fn ($q, $status) => $q->byStatus($status))
             ->when($request->subject_id, fn ($q, $id) => $q->bySubject($id))
-            ->when($request->class_level_id, fn ($q, $id) => $q->byClassLevel($id))
+            ->when(
+                $request->class_level_id,
+                fn ($q, $id) => $q->byClassLevel($id),
+            )
             ->when($request->class_arm_id, fn ($q, $id) => $q->byClassArm($id))
+            ->when($user && $user->role === RoleType::Teacher->value, fn ($q) => $q->where('created_by', $user->id))
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
         return ApiResponse::paginated(
             $exams,
             'Exams retrieved successfully.',
-            ExamData::collect($exams->getCollection())
+            ExamData::collect($exams->getCollection()),
         );
     }
 
@@ -79,14 +113,15 @@ class ExamController extends Controller
     {
         $this->authorize('create', Exam::class);
 
-        $exam = $this->crudAction->create(array_merge(
-            $request->validatedData()->toArray(),
-            ['created_by' => $request->user('tenant')->id],
-        ));
+        $exam = $this->crudAction->create(
+            array_merge($request->validatedData()->toArray(), [
+                'created_by' => $request->user('tenant')->id,
+            ]),
+        );
 
         return ApiResponse::created(
             $exam->load(['subject', 'classLevel']),
-            'Exam created.'
+            'Exam created.',
         );
     }
 
@@ -100,13 +135,22 @@ class ExamController extends Controller
     public function show(string $id): JsonResponse
     {
         $exam = Exam::with([
-            'subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name',
+            'subject',
+            'classLevel',
+            'classArm',
+            'term',
+            'creator:id,first_name,last_name',
             'examQuestions.question.options',
-        ])->withCount('examQuestions as question_count')->findOrFail($id);
+        ])
+            ->withCount('examQuestions as question_count')
+            ->findOrFail($id);
 
         $this->authorize('view', $exam);
 
-        return ApiResponse::success(ExamData::from($exam), 'Exam retrieved successfully.');
+        return ApiResponse::success(
+            ExamData::from($exam),
+            'Exam retrieved successfully.',
+        );
     }
 
     /**
@@ -136,7 +180,12 @@ class ExamController extends Controller
             'title' => ['sometimes', 'string', 'max:255'],
             'subject_id' => ['sometimes', 'uuid', 'exists:subjects,id'],
             'class_level_id' => ['sometimes', 'uuid', 'exists:class_levels,id'],
-            'class_arm_id' => ['sometimes', 'nullable', 'uuid', 'exists:class_arms,id'],
+            'class_arm_id' => [
+                'sometimes',
+                'nullable',
+                'uuid',
+                'exists:class_arms,id',
+            ],
             'term_id' => ['sometimes', 'uuid', 'exists:terms,id'],
             'duration_minutes' => ['sometimes', 'integer', 'min:1'],
             'pass_mark' => ['sometimes', 'nullable', 'numeric', 'min:0'],
@@ -146,14 +195,18 @@ class ExamController extends Controller
             'settings' => ['nullable', 'array'],
             'settings.randomize_questions' => ['sometimes', 'boolean'],
             'settings.show_result_immediately' => ['sometimes', 'boolean'],
-            'settings.results_release_date' => ['sometimes', 'nullable', 'date'],
+            'settings.results_release_date' => [
+                'sometimes',
+                'nullable',
+                'date',
+            ],
         ]);
 
         $exam = $this->crudAction->update($exam, $validated);
 
         return ApiResponse::success(
             $exam->load(['subject', 'classLevel']),
-            'Exam updated.'
+            'Exam updated.',
         );
     }
 
@@ -209,11 +262,79 @@ class ExamController extends Controller
         $this->authorize('activate', $exam);
 
         try {
-            $exam = $this->statusAction->activate($exam, $request->user('tenant')->id);
+            $exam = $this->statusAction->activate(
+                $exam,
+                $request->user('tenant')->id,
+            );
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
 
         return ApiResponse::success($exam, 'Exam activated.');
+    }
+
+    /**
+     * Publish an exam, transitioning it to the Published state
+     * and releasing results to students.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
+    public function publish(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('publish', $exam);
+
+        try {
+            $exam = $this->publishAction->publishResults($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Exam published.');
+    }
+
+    /**
+     * Publish results for an exam, making them visible to students.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
+    public function publishResults(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('publishResults', $exam);
+
+        try {
+            $exam = $this->publishAction->publishResults($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Results published.');
+    }
+
+    /**
+     * Unpublish results for an exam, rolling the status back to Completed
+     * and hiding results from students.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
+    public function unpublishResults(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('unpublishResults', $exam);
+
+        try {
+            $exam = $this->publishAction->unpublishResults($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($exam, 'Results unpublished.');
     }
 }

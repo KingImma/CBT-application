@@ -45,11 +45,15 @@ class StudentExamController extends Controller
 
         $exams = Exam::where('status', ExamStatus::Active->value)
             ->where(function ($q) use ($request) {
-                $q->where('class_level_id', $request->user('tenant')->studentProfile?->class_level_id)
-                    ->where(function ($q2) use ($request) {
-                        $q2->whereNull('class_arm_id')
-                            ->orWhere('class_arm_id', $request->user('tenant')->studentProfile?->class_arm_id);
-                    });
+                $q->where(
+                    'class_level_id',
+                    $request->user('tenant')->studentProfile?->class_level_id,
+                )->where(function ($q2) use ($request) {
+                    $q2->whereNull('class_arm_id')->orWhere(
+                        'class_arm_id',
+                        $request->user('tenant')->studentProfile?->class_arm_id,
+                    );
+                });
             })
             ->with(['subject', 'classLevel'])
             ->paginate($perPage);
@@ -73,10 +77,13 @@ class StudentExamController extends Controller
             ->orderByDesc('attempt_number')
             ->first();
 
-        return ApiResponse::success([
-            'exam' => $exam,
-            'last_attempt' => $lastAttempt,
-        ], 'Exam details retrieved.');
+        return ApiResponse::success(
+            [
+                'exam' => $exam,
+                'last_attempt' => $lastAttempt,
+            ],
+            'Exam details retrieved.',
+        );
     }
 
     /**
@@ -100,19 +107,30 @@ class StudentExamController extends Controller
         try {
             $attempt = $this->sessionAction->startAttempt($exam, $student);
         } catch (QueryException $e) {
-            if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'idx_unique_in_progress_attempt')) {
-                return ApiResponse::error('You already have an active exam attempt.', 422);
+            if (
+                $e->getCode() === '23505' ||
+                str_contains($e->getMessage(), 'idx_unique_in_progress_attempt')
+            ) {
+                return ApiResponse::error(
+                    'You already have an active exam attempt.',
+                    422,
+                );
             }
             throw $e;
         }
 
         $questionsData = $this->sessionAction->getQuestions($attempt);
 
-        return ApiResponse::created([
-            'attempt' => $attempt,
-            'questions' => StudentExamQuestionData::collect($questionsData['questions']),
-            'order' => $questionsData['order'],
-        ], 'Exam started.');
+        return ApiResponse::created(
+            [
+                'attempt' => $attempt,
+                'questions' => StudentExamQuestionData::collect(
+                    $questionsData['questions'],
+                ),
+                'order' => $questionsData['order'],
+            ],
+            'Exam started.',
+        );
     }
 
     /**
@@ -137,7 +155,9 @@ class StudentExamController extends Controller
         }
 
         $data = $this->sessionAction->recover($attempt);
-        $data['questions'] = StudentExamQuestionData::collect($data['questions']);
+        $data['questions'] = StudentExamQuestionData::collect(
+            $data['questions'],
+        );
 
         return ApiResponse::success($data, 'Active attempt retrieved.');
     }
@@ -160,18 +180,26 @@ class StudentExamController extends Controller
             ->first();
 
         if (! $attempt) {
-            return ApiResponse::error('No active attempt found for this exam.', 404);
+            return ApiResponse::error(
+                'No active attempt found for this exam.',
+                404,
+            );
         }
 
         $questionsData = $this->sessionAction->getQuestions($attempt);
 
-        return ApiResponse::success([
-            'exam_id' => $exam->id,
-            'attempt_id' => $attempt->id,
-            'questions' => StudentExamQuestionData::collect($questionsData['questions']),
-            'order' => $questionsData['order'],
-            'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
-        ], 'Questions retrieved.');
+        return ApiResponse::success(
+            [
+                'exam_id' => $exam->id,
+                'attempt_id' => $attempt->id,
+                'questions' => StudentExamQuestionData::collect(
+                    $questionsData['questions'],
+                ),
+                'order' => $questionsData['order'],
+                'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
+            ],
+            'Questions retrieved.',
+        );
     }
 
     /**
@@ -181,8 +209,10 @@ class StudentExamController extends Controller
      *
      * @urlParam id string required The attempt UUID.
      */
-    public function getAttemptQuestions(Request $request, string $id): JsonResponse
-    {
+    public function getAttemptQuestions(
+        Request $request,
+        string $id,
+    ): JsonResponse {
         $attempt = ExamAttempt::with('exam')->findOrFail($id);
         $student = $request->user('tenant');
 
@@ -191,18 +221,26 @@ class StudentExamController extends Controller
         }
 
         if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
-            return ApiResponse::error('Only in-progress attempts can retrieve questions.', 422);
+            return ApiResponse::error(
+                'Only in-progress attempts can retrieve questions.',
+                422,
+            );
         }
 
         $questionsData = $this->sessionAction->getQuestions($attempt);
 
-        return ApiResponse::success([
-            'exam_id' => $attempt->exam_id,
-            'attempt_id' => $attempt->id,
-            'questions' => StudentExamQuestionData::collect($questionsData['questions']),
-            'order' => $questionsData['order'],
-            'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
-        ], 'Questions retrieved.');
+        return ApiResponse::success(
+            [
+                'exam_id' => $attempt->exam_id,
+                'attempt_id' => $attempt->id,
+                'questions' => StudentExamQuestionData::collect(
+                    $questionsData['questions'],
+                ),
+                'order' => $questionsData['order'],
+                'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
+            ],
+            'Questions retrieved.',
+        );
     }
 
     /**
@@ -217,8 +255,11 @@ class StudentExamController extends Controller
      * @bodyParam text_answer string Text answer for theory questions. No-example
      * @bodyParam time_spent_seconds int Time spent on this question. No-example
      */
-    public function saveAnswer(Request $request, string $attemptId, string $questionId): JsonResponse
-    {
+    public function saveAnswer(
+        Request $request,
+        string $attemptId,
+        string $questionId,
+    ): JsonResponse {
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
@@ -271,8 +312,10 @@ class StudentExamController extends Controller
      *
      * @urlParam attemptId string required The attempt UUID.
      */
-    public function timeRemaining(Request $request, string $attemptId): JsonResponse
-    {
+    public function timeRemaining(
+        Request $request,
+        string $attemptId,
+    ): JsonResponse {
         $attempt = ExamAttempt::findOrFail($attemptId);
 
         if ($attempt->student_id !== $request->user('tenant')->id) {
@@ -281,10 +324,13 @@ class StudentExamController extends Controller
 
         $remaining = $attempt->getTimeRemainingSeconds();
 
-        return ApiResponse::success([
-            'remaining_seconds' => $remaining,
-            'expired' => $remaining <= 0,
-        ], 'Time remaining retrieved.');
+        return ApiResponse::success(
+            [
+                'remaining_seconds' => $remaining,
+                'expired' => $remaining <= 0,
+            ],
+            'Time remaining retrieved.',
+        );
     }
 
     /**
@@ -314,16 +360,22 @@ class StudentExamController extends Controller
         $canShowResult = false;
         $result = null;
 
-        if ($examSettings->showResultImmediately && $attempt->status === ExamAttemptStatus::Graded->value) {
+        if (
+            $examSettings->showResultImmediately &&
+            $attempt->status === ExamAttemptStatus::Graded->value
+        ) {
             $canShowResult = true;
             $result = $attempt;
         }
 
-        return ApiResponse::success([
-            'attempt' => $attempt,
-            'can_show_result' => $canShowResult,
-            'result' => $result,
-        ], 'Exam submitted.');
+        return ApiResponse::success(
+            [
+                'attempt' => $attempt,
+                'can_show_result' => $canShowResult,
+                'result' => $result,
+            ],
+            'Exam submitted.',
+        );
     }
 
     /**
@@ -334,8 +386,11 @@ class StudentExamController extends Controller
      * @urlParam attemptId string required The attempt UUID.
      * @urlParam questionId string required The question UUID.
      */
-    public function toggleFlag(Request $request, string $attemptId, string $questionId): JsonResponse
-    {
+    public function toggleFlag(
+        Request $request,
+        string $attemptId,
+        string $questionId,
+    ): JsonResponse {
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
@@ -345,7 +400,10 @@ class StudentExamController extends Controller
 
         $isFlagged = $this->answerAction->toggleFlag($answer);
 
-        return ApiResponse::success(['is_flagged' => $isFlagged], 'Flag toggled.');
+        return ApiResponse::success(
+            ['is_flagged' => $isFlagged],
+            'Flag toggled.',
+        );
     }
 
     /**
@@ -358,23 +416,32 @@ class StudentExamController extends Controller
      * @bodyParam type string required Event type. Must be one of: tab_switch, visibility_change, fullscreen_exit, copy_attempt, paste_detected. Example: "tab_switch"
      * @bodyParam metadata array Additional event metadata. No-example
      */
-    public function logSuspiciousEvent(Request $request, string $attemptId): JsonResponse
-    {
+    public function logSuspiciousEvent(
+        Request $request,
+        string $attemptId,
+    ): JsonResponse {
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
         $validated = $request->validate([
-            'type' => ['required', 'string', Rule::in([
-                'tab_switch',
-                'visibility_change',
-                'fullscreen_exit',
-                'copy_attempt',
-                'paste_detected',
-            ])],
+            'type' => [
+                'required',
+                'string',
+                Rule::in([
+                    'tab_switch',
+                    'visibility_change',
+                    'fullscreen_exit',
+                    'copy_attempt',
+                    'paste_detected',
+                ]),
+            ],
             'metadata' => ['sometimes', 'array'],
         ]);
 
-        $attempt->logSuspiciousEvent($validated['type'], $validated['metadata'] ?? []);
+        $attempt->logSuspiciousEvent(
+            $validated['type'],
+            $validated['metadata'] ?? [],
+        );
 
         return ApiResponse::message('Suspicious event logged.');
     }
@@ -396,21 +463,17 @@ class StudentExamController extends Controller
         }
 
         $exam = $attempt->exam;
-        $examSettings = $exam->settings;
 
-        if ($examSettings->showResultImmediately && $attempt->status === ExamAttemptStatus::Graded->value) {
-            return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
+        if (! $exam->isPublished()) {
+            return ApiResponse::error(
+                'Results for this exam have not been released yet.',
+                403,
+            );
         }
 
-        $releaseDate = $examSettings->resultsReleaseDate;
-        if ($releaseDate && now()->greaterThanOrEqualTo($releaseDate)) {
-            return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
-        }
-
-        if ($exam->status === ExamStatus::Completed) {
-            return ApiResponse::success(ExamAttemptData::from($attempt), 'Result retrieved.');
-        }
-
-        return ApiResponse::error('Results are not yet available.', 403);
+        return ApiResponse::success(
+            ExamAttemptData::from($attempt),
+            'Result retrieved.',
+        );
     }
 }

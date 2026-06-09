@@ -15,7 +15,6 @@ class TenantData extends Resource
         public readonly string $slug,
         public readonly string $name,
         public readonly string $handle,
-        public readonly ?string $school_type,
         public readonly ?string $logo,
         public readonly bool $is_active,
         public readonly ?string $email,

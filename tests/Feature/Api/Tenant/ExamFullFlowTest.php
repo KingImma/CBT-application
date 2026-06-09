@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Tenant;
 
+use App\Enums\ExamStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassLevel;
@@ -25,7 +26,11 @@ class ExamFullFlowTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->tenant->database()->drop();
+        try {
+            $this->tenant->database()->manager()->deleteDatabase($this->tenant);
+        } catch (\Exception) {
+            // Ignore cleanup failures.
+        }
         parent::tearDown();
     }
 
@@ -51,15 +56,21 @@ class ExamFullFlowTest extends TestCase
 
         $classLevel = ClassLevel::create([
             'name' => 'Grade 10',
+            'slug' => 'grade-10',
         ]);
 
         $academicSession = AcademicSession::create([
             'name' => '2025/2026',
+            'start_date' => now()->subMonths(3),
+            'end_date' => now()->addMonths(3),
+            'is_current' => true,
         ]);
 
         $term = Term::create([
             'name' => 'First Term',
             'academic_session_id' => $academicSession->id,
+            'start_date' => now()->subMonths(3),
+            'end_date' => now()->addMonths(3),
             'is_current' => true,
         ]);
 
@@ -81,7 +92,7 @@ class ExamFullFlowTest extends TestCase
         // 2. Verify exam exists
         $exam = Exam::find($examId);
         $this->assertNotNull($exam);
-        $this->assertEquals('draft', $exam->status);
+        $this->assertEquals(ExamStatus::Draft, $exam->status);
 
         // 3. Try to publish (should fail - no questions)
         $response = $this->postJson("/api/exams/{$examId}/publish");

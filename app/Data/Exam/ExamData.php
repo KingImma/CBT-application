@@ -18,25 +18,21 @@ class ExamData extends Resource
         public readonly string $title,
         public readonly ExamType $type,
         public readonly ExamStatus $status,
-        #[WhenLoaded('subject')]
-        public readonly mixed $subject,
-        #[WhenLoaded('classLevel')]
-        public readonly mixed $classLevel,
-        #[WhenLoaded('classArm')]
-        public readonly mixed $classArm,
-        #[WhenLoaded('term')]
-        public readonly mixed $term,
+        #[WhenLoaded('subject')] public readonly mixed $subject,
+        #[WhenLoaded('classLevel')] public readonly mixed $classLevel,
+        #[WhenLoaded('classArm')] public readonly mixed $classArm,
+        #[WhenLoaded('term')] public readonly mixed $term,
         public readonly ?float $total_marks,
         public readonly ?float $pass_mark,
         public readonly int $duration_minutes,
         public readonly ?int $max_attempts,
-        #[Computed]
-        public readonly Optional|int $question_count,
+        #[Computed] public readonly Optional|int $question_count,
         public readonly int $expected_attempts,
         public readonly int $completed_attempts,
         public readonly ?string $scheduled_start,
         public readonly ?string $instructions,
-        #[WhenLoaded('creator')]
-        public readonly mixed $creator,
+        public readonly ?string $published_at,
+        public readonly bool $is_published,
+        #[WhenLoaded('creator')] public readonly mixed $creator,
     ) {}
 }

@@ -96,7 +96,8 @@ class StudentController extends Controller
         ))->toOthers();
 
         return ApiResponse::created([
-            'student' => StudentData::from($result['user']->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
+            'student' => StudentData::from($result['user']
+                ->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
             'login_credentials' => [
                 'admission_number' => $result['user']->studentProfile->admission_number,
                 'default_password' => $result['password'],
@@ -274,8 +275,7 @@ class StudentController extends Controller
     {
         $query = User::role('student')
             ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
-            ->when($request->class_level_id, fn ($q) => $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id))
-            );
+            ->when($request->class_level_id, fn ($q) => $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id)));
 
         $headers = [
             'Content-Type' => 'text/csv',

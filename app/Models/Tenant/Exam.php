@@ -20,10 +20,13 @@ class Exam extends Model
 
     protected $guarded = ['id'];
 
+    protected $appends = ['is_published'];
+
     protected $casts = [
         'status' => ExamStatus::class,
         'scheduled_start' => 'datetime',
         'approved_at' => 'datetime',
+        'published_at' => 'datetime',
         'settings' => ExamSettings::class,
         'duration_minutes' => 'integer',
         'total_marks' => 'decimal:2',
@@ -79,8 +82,10 @@ class Exam extends Model
         return $query->where('subject_id', $subjectId);
     }
 
-    public function scopeByClassLevel(Builder $query, string $classLevelId): Builder
-    {
+    public function scopeByClassLevel(
+        Builder $query,
+        string $classLevelId,
+    ): Builder {
         return $query->where('class_level_id', $classLevelId);
     }
 
@@ -96,13 +101,15 @@ class Exam extends Model
 
     public function scopeActiveAndStarted(Builder $query): Builder
     {
-        return $query->where('status', ExamStatus::Active->value)
+        return $query
+            ->where('status', ExamStatus::Active->value)
             ->where('scheduled_start', '<=', now());
     }
 
     public function scopeWindowExpired(Builder $query): Builder
     {
-        return $query->where('status', ExamStatus::Active->value)
+        return $query
+            ->where('status', ExamStatus::Active->value)
             ->where('window_end', '<', now());
     }
 
@@ -130,5 +137,31 @@ class Exam extends Model
     public function isCompleted(): bool
     {
         return $this->status === ExamStatus::Completed;
+    }
+
+    public function publish(): void
+    {
+        if ($this->status !== ExamStatus::Completed) {
+            throw new \RuntimeException('An exam can only be published once it is completed.');
+        }
+
+        $this->status = ExamStatus::Published;
+        $this->published_at = now();
+    }
+
+    public function unpublish(): void
+    {
+        $this->status = ExamStatus::Completed;
+        $this->published_at = null;
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === ExamStatus::Published;
+    }
+
+    public function getIsPublishedAttribute(): bool
+    {
+        return $this->status === ExamStatus::Published;
     }
 }

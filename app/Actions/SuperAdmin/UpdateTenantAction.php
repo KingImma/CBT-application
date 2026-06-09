@@ -13,7 +13,7 @@ class UpdateTenantAction
      *
      * @param  array<int,mixed>  $data
      */
-    public function execute(array $data, Tenant $tenant): Tenant
+    public function handle(array $data, Tenant $tenant): Tenant
     {
         $tenant->update($data);
 

@@ -11,8 +11,7 @@ Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::get('/me', 'me');
 });
 
-Route::post('/teachers/{id}/reset-password-otp', [TeacherController::class, 'resetPassword'])
-    ->middleware('role:school_admin,tenant');
+Route::post('/teachers/{id}/reset-password-otp', [TeacherController::class, 'resetPassword'])->middleware('role:school_admin,tenant');
 
 require __DIR__.'/tenant/academic.php';
 require __DIR__.'/tenant/classes.php';

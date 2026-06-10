@@ -6,12 +6,16 @@ use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Controllers\Api\Tenant\StudentExamController;
 use Illuminate\Support\Facades\Route;
 
+// ↓ MUST come before students/{student} to avoid being swallowed as a wildcard
+Route::get('students/results', [StudentExamController::class, 'results'])
+    ->middleware(['role:student,tenant']);
+
 // View routes — teachers and school_admins
 Route::middleware('role:teacher|school_admin,tenant')->group(function () {
     Route::get('students/export', [StudentController::class, 'exportCsv']);
     Route::get('students/import-template', [StudentController::class, 'downloadImportTemplate']);
     Route::get('students', [StudentController::class, 'index']);
-    Route::get('students/{student}', [StudentController::class, 'show']);
+    Route::get('students/{student}', [StudentController::class, 'show']); // ← wildcard, must be last
 });
 
 // Mutation routes — school_admins only
@@ -28,27 +32,29 @@ Route::middleware('role:school_admin,tenant')->group(function () {
     Route::post('students/{id}/revoke', [StudentController::class, 'revoke']);
 });
 
-// Student self-service routes
-Route::get('students/results', [StudentExamController::class, 'results'])->middleware(['role:student,tenant']);
-
-Route::prefix('student/exams')->middleware('role:student,tenant')->controller(StudentExamController::class)->group(function () {
-    Route::get('/available', 'index');
-    Route::get('/{id}', 'show')->whereUuid('id');
-    Route::post('/{id}/start', 'start')->whereUuid('id');
-    Route::get('/{id}/attempt', 'activeAttempt')->whereUuid('id');
-    Route::get('/{id}/questions', 'getQuestions')->whereUuid('id');
-    Route::get('/attempts/{id}/questions', 'getAttemptQuestions')->whereUuid('id');
-    Route::get('/attempts/{id}/time-remaining', 'timeRemaining')->whereUuid('id');
-    Route::get('/attempts/{id}/result', 'result')->whereUuid('id');
-    Route::put('/attempts/{id}/answers/{questionId}', 'saveAnswer')
-        ->whereUuid('id')
-        ->whereUuid('questionId');
-    Route::post('/attempts/{id}/bulk-save', 'bulkSave')->whereUuid('id');
-    Route::post('/attempts/{id}/submit', 'submit')->whereUuid('id');
-    Route::post('/attempts/{id}/flag/{questionId}', 'toggleFlag')
-        ->whereUuid('id')
-        ->whereUuid('questionId');
-    Route::post('/attempts/{id}/suspicious-event', 'logSuspiciousEvent')
-        ->whereUuid('id')
-        ->middleware('throttle:30,1');
-});
+// Student exam portal
+Route::prefix('student/exams')
+    ->middleware('role:student,tenant')
+    ->controller(StudentExamController::class)
+    ->group(function () {
+        Route::get('/available', 'index');
+        Route::get('/{id}', 'show')->whereUuid('id');
+        Route::post('/{id}/start', 'start')->whereUuid('id');
+        Route::get('/{id}/attempt', 'activeAttempt')->whereUuid('id');
+        Route::get('/{id}/questions', 'getQuestions')->whereUuid('id');
+        Route::get('/attempts/{id}/questions', 'getAttemptQuestions')->whereUuid('id');
+        Route::get('/attempts/{id}/time-remaining', 'timeRemaining')->whereUuid('id');
+        Route::get('/attempts/{id}/result', 'result')->whereUuid('id');
+        Route::put('/attempts/{id}/answers/{questionId}', 'saveAnswer')
+            ->whereUuid('id')
+            ->whereUuid('questionId');
+        Route::post('/attempts/{id}/bulk-save', 'bulkSave')->whereUuid('id');
+        Route::post('/attempts/{id}/submit', 'submit')->whereUuid('id');
+        Route::post('/attempts/{id}/flag/{questionId}', 'toggleFlag')
+            ->whereUuid('id')
+            ->whereUuid('questionId');
+        Route::post('/attempts/{id}/suspicious-event', 'logSuspiciousEvent')
+            ->whereUuid('id')
+            ->middleware('throttle:30,1');
+    });
+    

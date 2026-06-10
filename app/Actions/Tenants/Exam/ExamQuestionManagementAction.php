@@ -5,16 +5,23 @@ declare(strict_types=1);
 namespace App\Actions\Tenants\Exam;
 
 use App\Enums\ExamStatus;
+use App\Exceptions\Business\ExamQuestionBelongsToDifferentExamException;
+use App\Exceptions\Business\ExamQuestionNotFoundException;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\SchoolSetting;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ExamQuestionManagementAction
 {
-    public function add(Exam $exam, string $questionId, ?string $marksOverride = null, ?string $userId = null): ExamQuestion
-    {
+    public function add(
+        Exam $exam,
+        string $questionId,
+        ?string $marksOverride = null,
+        ?string $userId = null
+    ): ExamQuestion {
         $this->ensureDraft($exam, 'added');
 
         $question = Question::findOrFail($questionId);
@@ -45,9 +52,7 @@ class ExamQuestionManagementAction
         $this->ensureDraft($exam, 'modified');
 
         return DB::transaction(function () use ($exam, $questionId, $marksOverride) {
-            $examQuestion = ExamQuestion::where('exam_id', $exam->id)
-                ->where('question_id', $questionId)
-                ->firstOrFail();
+            $examQuestion = $this->resolveExamQuestion($exam, $questionId);
 
             $examQuestion->update(['marks' => $marksOverride ?? $examQuestion->question->default_marks]);
             $this->recomputeTotalMarks($exam);
@@ -61,9 +66,7 @@ class ExamQuestionManagementAction
         $this->ensureDraft($exam, 'removed');
 
         DB::transaction(function () use ($exam, $questionId) {
-            $examQuestion = ExamQuestion::where('exam_id', $exam->id)
-                ->where('question_id', $questionId)
-                ->firstOrFail();
+            $examQuestion = $this->resolveExamQuestion($exam, $questionId);
 
             $examQuestion->delete();
             $this->recomputeTotalMarks($exam);
@@ -98,6 +101,37 @@ class ExamQuestionManagementAction
         $this->ensureWithinSchoolMaximum($exam, (float) $total);
 
         $exam->update(['total_marks' => $total]);
+    }
+
+    private function resolveExamQuestion(Exam $exam, string $identifier): ExamQuestion
+    {
+        $examQuestionByRowId = ExamQuestion::find($identifier);
+        $examQuestionByQuestionId = ExamQuestion::where('exam_id', $exam->id)
+            ->where('question_id', $identifier)
+            ->first();
+
+        if ($examQuestionByRowId !== null && $examQuestionByQuestionId !== null) {
+            Log::warning('Ambiguous question identifier matched both exam_questions.id and question_id.', [
+                'identifier' => $identifier,
+                'exam_id' => $exam->id,
+                'exam_question_id' => $examQuestionByRowId->id,
+                'question_exam_question_id' => $examQuestionByQuestionId->id,
+            ]);
+        }
+
+        if ($examQuestionByRowId !== null && $examQuestionByRowId->exam_id === $exam->id) {
+            return $examQuestionByRowId;
+        }
+
+        if ($examQuestionByQuestionId !== null) {
+            return $examQuestionByQuestionId;
+        }
+
+        if ($examQuestionByRowId !== null) {
+            throw new ExamQuestionBelongsToDifferentExamException;
+        }
+
+        throw new ExamQuestionNotFoundException;
     }
 
     private function ensureWithinSchoolMaximum(Exam $exam, float $total): void

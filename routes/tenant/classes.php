@@ -9,29 +9,31 @@ use App\Http\Controllers\Api\Tenant\ClassArmSubjectController;
 use App\Http\Controllers\Api\Tenant\ClassLevelController;
 use Illuminate\Support\Facades\Route;
 
-Route::patch('class-levels/{id}/assign-teacher', [ClassLevelController::class, 'assignTeacher']);
+// View routes — teachers and school_admins
+Route::get('class-levels', [ClassLevelController::class, 'index'])->middleware('role:teacher|school_admin');
+Route::get('class-levels/{classLevel}', [ClassLevelController::class, 'show'])->middleware('role:teacher|school_admin');
+Route::get('class-levels/{classLevelId}/arms', [ClassArmController::class, 'index'])->middleware('role:teacher|school_admin');
+Route::get('class-levels/{classLevelId}/subjects', [ClassLevelController::class, 'availableSubjects'])->middleware('role:teacher|school_admin');
+Route::get('class-levels/{classLevelId}/arms/{armId}/subjects', [ClassArmSubjectController::class, 'index'])->middleware('role:teacher|school_admin');
 
-Route::apiResource('class-levels', ClassLevelController::class);
+// Mutation routes — school_admins only
+Route::middleware('role:school_admin')->group(function () {
+    Route::post('class-levels', [ClassLevelController::class, 'store']);
+    Route::match(['put', 'patch'], 'class-levels/{classLevel}', [ClassLevelController::class, 'update']);
+    Route::delete('class-levels/{classLevel}', [ClassLevelController::class, 'destroy']);
+    Route::patch('class-levels/{id}/assign-teacher', [ClassLevelController::class, 'assignTeacher']);
 
-Route::prefix('class-levels/{classLevelId}/arms')->controller(ClassArmController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::post('/', 'store');
-    Route::patch('/{id}/assign-teacher', 'assignTeacher');
-    Route::patch('/{id}', 'update');
-    Route::delete('/{id}', 'destroy');
-});
+    Route::post('class-levels/{classLevelId}/arms', [ClassArmController::class, 'store']);
+    Route::patch('class-levels/{classLevelId}/arms/{id}/assign-teacher', [ClassArmController::class, 'assignTeacher']);
+    Route::patch('class-levels/{classLevelId}/arms/{id}', [ClassArmController::class, 'update']);
+    Route::delete('class-levels/{classLevelId}/arms/{id}', [ClassArmController::class, 'destroy']);
 
-Route::prefix('class-levels/{classLevelId}/subjects')->controller(ClassLevelController::class)->group(function () {
-    Route::get('/', 'availableSubjects');
-    Route::post('/sync', 'sync');
-    Route::patch('/{subjectId}/toggle-compulsory', 'toggleCompulsory');
-});
+    Route::post('class-levels/{classLevelId}/subjects/sync', [ClassLevelController::class, 'sync']);
+    Route::patch('class-levels/{classLevelId}/subjects/{subjectId}/toggle-compulsory', [ClassLevelController::class, 'toggleCompulsory']);
 
-Route::prefix('class-levels/{classLevelId}/arms/{armId}/subjects')->controller(ClassArmSubjectController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::post('/sync', 'sync');
-    Route::post('/inherit', 'inheritFromLevel');
-    Route::post('/{subjectId}', 'attach');
-    Route::delete('/{subjectId}', 'detach');
-    Route::patch('/{subjectId}/toggle-compulsory', 'toggleCompulsory');
+    Route::post('class-levels/{classLevelId}/arms/{armId}/subjects/sync', [ClassArmSubjectController::class, 'sync']);
+    Route::post('class-levels/{classLevelId}/arms/{armId}/subjects/inherit', [ClassArmSubjectController::class, 'inheritFromLevel']);
+    Route::post('class-levels/{classLevelId}/arms/{armId}/subjects/{subjectId}', [ClassArmSubjectController::class, 'attach']);
+    Route::delete('class-levels/{classLevelId}/arms/{armId}/subjects/{subjectId}', [ClassArmSubjectController::class, 'detach']);
+    Route::patch('class-levels/{classLevelId}/arms/{armId}/subjects/{subjectId}/toggle-compulsory', [ClassArmSubjectController::class, 'toggleCompulsory']);
 });

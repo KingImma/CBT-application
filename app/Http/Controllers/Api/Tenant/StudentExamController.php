@@ -62,6 +62,51 @@ class StudentExamController extends Controller
     }
 
     /**
+     * List the authenticated student's published results.
+     *
+     * @subgroup Results
+     *
+     * @queryParam exam_id string Filter by exam UUID. No-example
+     * @queryParam per_page int Results per page (default: 20). No-example
+     */
+    public function results(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'exam_id' => ['sometimes', 'uuid', 'exists:exams,id'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $perPage = (int) ($validated['per_page'] ?? 20);
+        $student = $request->user('tenant');
+
+        $attempts = ExamAttempt::with([
+            'exam.subject',
+            'exam.classLevel',
+        ])
+            ->where('student_id', $student->id)
+            ->whereIn('status', [
+                ExamAttemptStatus::Graded->value,
+                ExamAttemptStatus::Disqualified->value,
+                ExamAttemptStatus::Timed_out->value,
+            ])
+            ->whereHas('exam', function ($query) {
+                $query->whereNotNull('published_at');
+            })
+            ->when(
+                isset($validated['exam_id']),
+                fn ($query) => $query->where('exam_id', $validated['exam_id'])
+            )
+            ->latest('submitted_at')
+            ->paginate($perPage);
+
+        return ApiResponse::paginated(
+            $attempts,
+            'Results retrieved successfully.',
+            ExamAttemptData::collect($attempts->getCollection()),
+        );
+    }
+
+    /**
      * Get details for a specific exam.
      *
      * @subgroup Available Exams

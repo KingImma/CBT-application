@@ -8,12 +8,15 @@ use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\SchoolSetting;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\Term;
 use App\Models\Tenant\User;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -431,6 +434,105 @@ class AssessmentLifecycleTest extends TestCase
         $response = $this->deleteJson("/api/exams/{$exam->id}/questions/{$question->id}");
         $response->assertStatus(200);
         $this->assertEquals(0, $exam->fresh()->examQuestions()->count());
+    }
+
+    #[Test]
+    public function teacher_can_remove_a_question_using_the_exam_question_id(): void
+    {
+        $exam = $this->createDraftExam($this->teacher);
+
+        $question = Question::create([
+            'content' => 'Removable question',
+            'type' => 'mcq_single',
+            'default_marks' => 5,
+            'subject_id' => $this->subject->id,
+            'class_level_id' => $this->classLevel->id,
+            'created_by' => $this->teacher->id,
+            'is_active' => true,
+            'academic_session_id' => $this->academicSession->id,
+            'term_id' => $this->term->id,
+        ]);
+
+        $this->postJson("/api/exams/{$exam->id}/questions", [
+            'question_id' => $question->id,
+        ])->assertStatus(201);
+
+        $examQuestion = ExamQuestion::where('exam_id', $exam->id)
+            ->where('question_id', $question->id)
+            ->firstOrFail();
+
+        $response = $this->deleteJson("/api/exams/{$exam->id}/questions/{$examQuestion->id}");
+
+        $response->assertStatus(200);
+        $this->assertEquals(0, $exam->fresh()->examQuestions()->count());
+    }
+
+    #[Test]
+    public function ambiguous_question_identifier_logs_a_warning_before_resolving(): void
+    {
+        Log::spy();
+
+        $exam = $this->createDraftExam($this->teacher);
+        $sharedIdentifier = (string) Str::uuid();
+
+        $primaryQuestion = Question::create([
+            'content' => 'Primary question',
+            'type' => 'mcq_single',
+            'default_marks' => 5,
+            'subject_id' => $this->subject->id,
+            'class_level_id' => $this->classLevel->id,
+            'created_by' => $this->teacher->id,
+            'is_active' => true,
+            'academic_session_id' => $this->academicSession->id,
+            'term_id' => $this->term->id,
+        ]);
+
+        ExamQuestion::unguarded(function () use ($exam, $primaryQuestion, $sharedIdentifier): void {
+            ExamQuestion::create([
+                'id' => $sharedIdentifier,
+                'exam_id' => $exam->id,
+                'question_id' => $primaryQuestion->id,
+                'order' => 1,
+                'marks' => 5,
+            ]);
+        });
+
+        $collisionQuestion = Question::unguarded(function () use ($sharedIdentifier): Question {
+            return Question::create([
+                'id' => $sharedIdentifier,
+                'content' => 'Collision question',
+                'type' => 'mcq_single',
+                'default_marks' => 5,
+                'subject_id' => $this->subject->id,
+                'class_level_id' => $this->classLevel->id,
+                'created_by' => $this->teacher->id,
+                'is_active' => true,
+                'academic_session_id' => $this->academicSession->id,
+                'term_id' => $this->term->id,
+            ]);
+        });
+
+        ExamQuestion::unguarded(function () use ($exam, $collisionQuestion): void {
+            ExamQuestion::create([
+                'exam_id' => $exam->id,
+                'question_id' => $collisionQuestion->id,
+                'order' => 2,
+                'marks' => 5,
+            ]);
+        });
+
+        $response = $this->deleteJson("/api/exams/{$exam->id}/questions/{$sharedIdentifier}");
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $exam->fresh()->examQuestions);
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context) use ($exam, $sharedIdentifier): bool {
+                return $message === 'Ambiguous question identifier matched both exam_questions.id and question_id.'
+                    && $context['identifier'] === $sharedIdentifier
+                    && $context['exam_id'] === $exam->id;
+            });
     }
 
     #[Test]

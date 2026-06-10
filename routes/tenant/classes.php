@@ -10,14 +10,14 @@ use App\Http\Controllers\Api\Tenant\ClassLevelController;
 use Illuminate\Support\Facades\Route;
 
 // View routes — teachers and school_admins
-Route::get('class-levels', [ClassLevelController::class, 'index'])->middleware('role:teacher|school_admin');
-Route::get('class-levels/{classLevel}', [ClassLevelController::class, 'show'])->middleware('role:teacher|school_admin');
-Route::get('class-levels/{classLevelId}/arms', [ClassArmController::class, 'index'])->middleware('role:teacher|school_admin');
-Route::get('class-levels/{classLevelId}/subjects', [ClassLevelController::class, 'availableSubjects'])->middleware('role:teacher|school_admin');
-Route::get('class-levels/{classLevelId}/arms/{armId}/subjects', [ClassArmSubjectController::class, 'index'])->middleware('role:teacher|school_admin');
+Route::get('class-levels', [ClassLevelController::class, 'index'])->middleware('role:teacher|school_admin,tenant');
+Route::get('class-levels/{classLevel}', [ClassLevelController::class, 'show'])->middleware('role:teacher|school_admin,tenant');
+Route::get('class-levels/{classLevelId}/arms', [ClassArmController::class, 'index'])->middleware('role:teacher|school_admin,tenant');
+Route::get('class-levels/{classLevelId}/subjects', [ClassLevelController::class, 'availableSubjects'])->middleware('role:teacher|school_admin,tenant');
+Route::get('class-levels/{classLevelId}/arms/{armId}/subjects', [ClassArmSubjectController::class, 'index'])->middleware('role:teacher|school_admin,tenant');
 
 // Mutation routes — school_admins only
-Route::middleware('role:school_admin')->group(function () {
+Route::middleware('role:school_admin,tenant')->group(function () {
     Route::post('class-levels', [ClassLevelController::class, 'store']);
     Route::match(['put', 'patch'], 'class-levels/{classLevel}', [ClassLevelController::class, 'update']);
     Route::delete('class-levels/{classLevel}', [ClassLevelController::class, 'destroy']);

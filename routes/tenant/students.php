@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\Tenant\StudentExamController;
 use Illuminate\Support\Facades\Route;
 
 // View routes — teachers and school_admins
-Route::middleware('role:teacher|school_admin')->group(function () {
+Route::middleware('role:teacher|school_admin,tenant')->group(function () {
     Route::get('students/export', [StudentController::class, 'exportCsv']);
     Route::get('students/import-template', [StudentController::class, 'downloadImportTemplate']);
     Route::get('students', [StudentController::class, 'index']);
@@ -15,9 +15,9 @@ Route::middleware('role:teacher|school_admin')->group(function () {
 });
 
 // Mutation routes — school_admins only
-Route::middleware('role:school_admin')->group(function () {
+Route::middleware('role:school_admin,tenant')->group(function () {
     Route::post('students/import', [StudentController::class, 'importCsv'])
-        ->middleware(['permission:manage_students']);
+        ->middleware(['permission:manage_students,tenant']);
     Route::post('students/bulk-reset-passwords', [StudentController::class, 'bulkResetPasswords']);
     Route::post('students', [StudentController::class, 'store']);
     Route::match(['put', 'patch'], 'students/{student}', [StudentController::class, 'update']);
@@ -29,9 +29,9 @@ Route::middleware('role:school_admin')->group(function () {
 });
 
 // Student self-service routes
-Route::get('students/results', [StudentExamController::class, 'results'])->middleware(['role:student']);
+Route::get('students/results', [StudentExamController::class, 'results'])->middleware(['role:student,tenant']);
 
-Route::prefix('student/exams')->middleware('role:student')->controller(StudentExamController::class)->group(function () {
+Route::prefix('student/exams')->middleware('role:student,tenant')->controller(StudentExamController::class)->group(function () {
     Route::get('/available', 'index');
     Route::get('/{id}', 'show')->whereUuid('id');
     Route::post('/{id}/start', 'start')->whereUuid('id');

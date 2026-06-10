@@ -10,7 +10,10 @@ php artisan tenants:migrate --force
 echo "==> Seeding central DB..."
 php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=SubscriptionPlanSeeder --force
-php artisan tenants:backfill-user-roles --tenant=premier-academy
+echo "==> Clearing Spatie permission cache..."
+php artisan cache:forget spatie.permission.cache
+
+php artisan tenants:backfill-user-roles 
 
 echo "==> Generating API documentation (Scribe)..."
 php artisan scribe:generate

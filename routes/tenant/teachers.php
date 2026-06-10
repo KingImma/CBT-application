@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('role:school_admin')->group(function () {
+Route::middleware('role:school_admin,tenant')->group(function () {
     // Static routes must be registered before apiResource to avoid capture by the `show` route
     Route::get('teachers/import-template', [TeacherController::class, 'downloadImportTemplate']);
     Route::post('teachers/import', [TeacherController::class, 'importCsv'])->middleware(['permission:manage_teachers,tenant']);

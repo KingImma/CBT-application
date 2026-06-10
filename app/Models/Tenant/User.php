@@ -20,6 +20,8 @@ class User extends Authenticatable
 
     protected $guarded = ['id'];
 
+    protected $guard_name = 'tenant';
+
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [

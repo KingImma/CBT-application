@@ -10,6 +10,7 @@ php artisan tenants:migrate --force
 echo "==> Seeding central DB..."
 php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=SubscriptionPlanSeeder --force
+php artisan tenants:backfill-user-roles --tenant=premier-academy
 
 echo "==> Generating API documentation (Scribe)..."
 php artisan scribe:generate

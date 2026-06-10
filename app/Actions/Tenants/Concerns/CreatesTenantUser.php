@@ -26,6 +26,13 @@ trait CreatesTenantUser
     protected function assignRoleAndSyncIndex(User $user, string $role, TenantUserService $tenantUserService): void
     {
         $user->assignRole($role);
+
+        if (! $user->hasRole($role)) {
+            throw new \RuntimeException(
+                "Failed to assign role '{$role}' to user {$user->id}"
+            );
+        }
+
         $tenantUserService->updateCentralIndex($user->email, $role);
     }
 

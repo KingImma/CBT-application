@@ -10,6 +10,8 @@ use App\Data\Schemas\StudentImportSchema;
 use App\Data\Student\StudentData;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\StoreStudentRequest;
+use App\Http\Requests\Tenant\UpdateStudentRequest; 
 use App\Models\Tenant\User;
 use App\Queries\StudentQuery;
 use App\Services\Auth\PasswordResetService;

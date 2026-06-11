@@ -20,7 +20,7 @@ class CreateTenantData extends Data
         #[Required, StringType, Max(255)]
         public string $name,
 
-        #[Required, StringType, Max(63), AlphaDash, Rule('unique:tenants,id'), Rule('unique:tenants,handle')]
+        #[Required, StringType, Max(63), AlphaDash, Rule(['unique:tenants,id', 'unique:tenants,handle'])]
         public string $handle,
 
         #[Required, Email, Max(255)]

@@ -337,4 +337,29 @@ class ExamController extends Controller
 
         return ApiResponse::success($exam, 'Results unpublished.');
     }
+
+    /**
+     * Force-complete an active exam immediately, bypassing window
+     * and completed attempt checks.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
+    public function forceComplete(string $id): JsonResponse
+    {
+        $exam = Exam::findOrFail($id);
+        $this->authorize('forceComplete', $exam);
+    
+        try {
+            $exam = $this->statusAction->forceComplete($exam);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+    
+        return ApiResponse::success(
+            ExamData::from($exam->load(['subject', 'classLevel'])),
+            'Exam ended successfully.'
+        );
+    }
 }

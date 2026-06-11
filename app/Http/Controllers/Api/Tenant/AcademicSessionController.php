@@ -108,10 +108,12 @@ class AcademicSessionController extends Controller
      */
     public function destroy(string $id): JsonResponse
     {
-        $session = AcademicSession::findOrFail($id);
-        $session->delete();
+        $exam = Exam::findOrFail($id);
+        $this->authorize('delete', $exam);
 
-        return ApiResponse::message('Academic session deleted.');
+        $this->crudAction->delete($exam);
+
+        return ApiResponse::message('Exam deleted.');
     }
 
     /**

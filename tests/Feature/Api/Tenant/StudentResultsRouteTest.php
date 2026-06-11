@@ -159,8 +159,8 @@ class StudentResultsRouteTest extends TestCase
 
         $listingResponse
             ->assertSuccessful()
-            ->assertJsonPath('data.0.id', $attempt->id)
-            ->assertJsonPath('data.0.exam.id', $exam->id);
+            ->assertJsonPath('data.0.attempt_id', $attempt->id)
+            ->assertJsonPath('data.0.exam_id', $exam->id);
 
         $this->getJson('/api/students/results?exam_id=results')
             ->assertStatus(422)

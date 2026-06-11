@@ -16,6 +16,6 @@ class ExamResultQuestionData extends Resource
         public readonly float $marks_awarded,
         public readonly bool $is_correct,
         public readonly array $options,
-        public readonly array $selected_option_ids,
+        public readonly array $selected_options,
     ) {}
 }

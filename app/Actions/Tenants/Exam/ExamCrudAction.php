@@ -48,11 +48,26 @@ class ExamCrudAction
 
     public function delete(Exam $exam): void
     {
-        if ($exam->status !== ExamStatus::Draft) {
-            throw new \RuntimeException('Only draft exams can be deleted.');
+        if ($exam->status === ExamStatus::Active) {
+            throw new \RuntimeException('Cannot delete an active exam. End the exam first.');
+        }
+
+        if ($exam->status === ExamStatus::Published) {
+            throw new \RuntimeException('Cannot delete a published exam. Unpublish it first.');
+        }
+
+        if ($exam->completed_attempts > 0) {
+            throw new \RuntimeException(
+                "Cannot delete an exam with {$exam->completed_attempts} completed attempt(s). Results would be permanently lost."
+            );
         }
 
         DB::transaction(function () use ($exam) {
+            $exam->attempts()->each(function ($attempt) {
+                $attempt->answers()->delete();
+            });
+            $exam->attempts()->delete();
+            $exam->examQuestions()->delete();
             $exam->delete();
         });
     }

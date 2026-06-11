@@ -17,12 +17,18 @@ class ExamAnswerAction
             throw new \RuntimeException('Attempt is no longer active.');
         }
 
-        if ($attempt->getTimeRemainingSeconds() <= 0) {
-            app(ExamSessionAction::class)->submit($attempt);
-            throw new \RuntimeException('Exam time has expired.');
-        }
-
         return DB::transaction(function () use ($attempt, $questionId, $payload) {
+            $attempt->refresh();
+
+            if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
+                throw new \RuntimeException('Attempt is no longer active.');
+            }
+
+            if ($attempt->getTimeRemainingSeconds() <= 0) {
+                app(ExamSessionAction::class)->finalizeExpiredAttempt($attempt);
+                throw new \RuntimeException('Exam time has expired.');
+            }
+
             return ExamAnswer::updateOrCreate(
                 [
                     'attempt_id' => $attempt->id,
@@ -32,18 +38,22 @@ class ExamAnswerAction
                     'selected_option_ids' => $payload['selected_option_ids'] ?? null,
                     'text_answer' => $payload['text_answer'] ?? null,
                     'answered_at' => now(),
-                    'time_spent_seconds' => $payload['time_spent_seconds'] ?? null,
+                    'time_spent_seconds' => abs((int) now()->diffInSeconds($attempt->started_at, true)),
                 ]
             );
         });
     }
 
-    public function bulkSave(ExamAttempt $attempt, array $answers): void
+    public function bulkSave(ExamAttempt $attempt, array $answers): array
     {
-        DB::transaction(function () use ($attempt, $answers) {
+        return DB::transaction(function () use ($attempt, $answers) {
+            $saved = [];
+
             foreach ($answers as $answerData) {
-                $this->save($attempt, $answerData['question_id'], $answerData);
+                $saved[] = $this->save($attempt, $answerData['question_id'], $answerData);
             }
+
+            return $saved;
         });
     }
 

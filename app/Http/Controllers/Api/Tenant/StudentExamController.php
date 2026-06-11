@@ -75,10 +75,10 @@ class StudentExamController extends Controller
             'exam_id' => ['sometimes', 'uuid', 'exists:exams,id'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
-    
+
         $perPage = (int) ($validated['per_page'] ?? 20);
         $student = $request->user('tenant');
-    
+
         $attempts = ExamAttempt::with([
             'exam.subject',
             'exam.classLevel',
@@ -100,7 +100,7 @@ class StudentExamController extends Controller
             )
             ->latest('submitted_at')
             ->paginate($perPage);
-    
+
         $results = $attempts->getCollection()->map(function ($attempt) {
             $questions = $attempt->answers->map(function ($answer) use ($attempt) {
                 $question = $answer->question;
@@ -111,51 +111,51 @@ class StudentExamController extends Controller
 
                 $selectedOptions = collect($answer->selected_option_ids ?? [])
                     ->map(fn ($optionId) => $optionsMap->has($optionId) ? [
-                        'id'         => $optionsMap[$optionId]->id,
-                        'label'      => $optionsMap[$optionId]->label,
-                        'content'    => $optionsMap[$optionId]->content,
-                        'image_url'  => $optionsMap[$optionId]->image_url,
+                        'id' => $optionsMap[$optionId]->id,
+                        'label' => $optionsMap[$optionId]->label,
+                        'content' => $optionsMap[$optionId]->content,
+                        'image_url' => $optionsMap[$optionId]->image_url,
                         'is_correct' => (bool) $optionsMap[$optionId]->is_correct,
                     ] : null)
                     ->filter()
                     ->values()
                     ->toArray();
-    
+
                 return [
-                    'question_id'        => $question->id,
-                    'content'            => $question->content,
-                    'image_url'          => $question->image_url,
-                    'marks_available'    => (float) ($examQuestion?->getEffectiveMarks() ?? $question->default_marks),
-                    'marks_awarded'      => (float) ($answer->marks_awarded ?? 0),
-                    'is_correct'         => (bool) $answer->is_correct,
-                    'selected_options'   => $selectedOptions,
-                    'options'            => $question->options->map(fn ($opt) => [
-                        'id'         => $opt->id,
-                        'label'      => $opt->label,
-                        'content'    => $opt->content,
-                        'image_url'  => $opt->image_url,
+                    'question_id' => $question->id,
+                    'content' => $question->content,
+                    'image_url' => $question->image_url,
+                    'marks_available' => (float) ($examQuestion?->getEffectiveMarks() ?? $question->default_marks),
+                    'marks_awarded' => (float) ($answer->marks_awarded ?? 0),
+                    'is_correct' => (bool) $answer->is_correct,
+                    'selected_options' => $selectedOptions,
+                    'options' => $question->options->map(fn ($opt) => [
+                        'id' => $opt->id,
+                        'label' => $opt->label,
+                        'content' => $opt->content,
+                        'image_url' => $opt->image_url,
                         'is_correct' => (bool) $opt->is_correct, // ← correct answer revealed
                     ])->toArray(),
                 ];
             })->toArray();
-    
+
             return [
-                'attempt_id'         => $attempt->id,
-                'exam_id'            => $attempt->exam_id,
-                'exam_title'         => $attempt->exam->title,
-                'exam_subject'       => $attempt->exam->subject?->name,
-                'status'             => $attempt->status,
-                'attempt_number'     => $attempt->attempt_number,
-                'total_score'        => (float) $attempt->total_score,
-                'total_marks'        => (float) $attempt->exam->total_marks,
-                'percentage_score'   => (float) $attempt->percentage_score,
-                'grade'              => $attempt->grade,
-                'submitted_at'       => $attempt->submitted_at?->toIso8601String(),
+                'attempt_id' => $attempt->id,
+                'exam_id' => $attempt->exam_id,
+                'exam_title' => $attempt->exam->title,
+                'exam_subject' => $attempt->exam->subject?->name,
+                'status' => $attempt->status,
+                'attempt_number' => $attempt->attempt_number,
+                'total_score' => (float) $attempt->total_score,
+                'total_marks' => (float) $attempt->exam->total_marks,
+                'percentage_score' => (float) $attempt->percentage_score,
+                'grade' => $attempt->grade,
+                'submitted_at' => $attempt->submitted_at?->toIso8601String(),
                 'time_spent_seconds' => $attempt->time_spent_seconds,
-                'questions'          => $questions,
+                'questions' => $questions,
             ];
         });
-    
+
         return ApiResponse::paginated(
             $attempts,
             'Results retrieved successfully.',

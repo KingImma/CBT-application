@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\Tenant\StudentController;
 use App\Http\Controllers\Api\Tenant\StudentExamController;
 use Illuminate\Support\Facades\Route;
 
-// ↓ MUST come before students/{student} to avoid being swallowed as a wildcard
+// ↓ Static Routes
 Route::get('students/results', [StudentExamController::class, 'results'])
     ->middleware(['role:student,tenant']);
 
@@ -57,4 +57,3 @@ Route::prefix('student/exams')
             ->whereUuid('id')
             ->middleware('throttle:30,1');
     });
-    

@@ -93,4 +93,20 @@ class ExamStatusAction
             return $exam->fresh();
         });
     }
+
+    public function forceComplete(Exam $exam): Exam
+    {
+        if ($exam->status === ExamStatus::Completed || $exam->status === ExamStatus::Published) {
+            throw new \RuntimeException('Exam is already completed or published.');
+        }
+    
+        if ($exam->status === ExamStatus::Draft || $exam->status === ExamStatus::Submitted) {
+            throw new \RuntimeException('Only active exams can be force-completed.');
+        }
+    
+        return $this->transition($exam, [
+            'status' => ExamStatus::Completed->value,
+            'window_end' => now(), // close the window immediately
+        ]);
+    }
 }

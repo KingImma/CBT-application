@@ -40,7 +40,13 @@ class ExamPolicy
 
     public function delete(User $user, Exam $exam): bool
     {
-        return $exam->isOwnedBy($user) && $exam->isDraft();
+        if (! $user->hasRole('school_admin') && ! $exam->isOwnedBy($user)) {
+            return false;
+        }
+
+        return $exam->status !== ExamStatus::Active
+            && $exam->status !== ExamStatus::Published
+            && $exam->completed_attempts === 0;
     }
 
     public function submitForReview(User $user, Exam $exam): bool
@@ -107,5 +113,12 @@ class ExamPolicy
         return ClassArm::where('assigned_teacher_id', $user->id)
             ->where('class_level_id', $exam->class_level_id)
             ->exists();
+    }
+
+    public function forceComplete(User $user, Exam $exam): bool
+    {
+        // Only school_admin, handled by before() hook already
+        // but being explicit for clarity
+        return $user->hasRole('school_admin') && $exam->status === ExamStatus::Active;
     }
 }

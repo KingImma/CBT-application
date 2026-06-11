@@ -184,6 +184,23 @@ class ExamSessionAction
         });
     }
 
+    public function finalizeExpiredAttempt(ExamAttempt $attempt): ExamAttempt
+    {
+        return DB::transaction(function () use ($attempt) {
+            $attempt->refresh();
+
+            if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
+                return $attempt->fresh();
+            }
+
+            if ($attempt->getTimeRemainingSeconds() > 0) {
+                return $attempt->fresh();
+            }
+
+            return $this->submit($attempt);
+        });
+    }
+
     private function resolveGrade(float $percentageScore): ?string
     {
         $defaultScale = GradingScale::where('is_default', true)->first();
@@ -213,7 +230,7 @@ class ExamSessionAction
             'questions' => $questionsData['questions'],
             'order' => $questionsData['order'],
             'answers' => $answers,
-            'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
+            'time_remaining_seconds' => max(0, $attempt->getTimeRemainingSeconds()),
         ];
     }
 }

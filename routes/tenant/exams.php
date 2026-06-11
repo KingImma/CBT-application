@@ -8,20 +8,17 @@ use App\Http\Controllers\Api\Tenant\ExamQuestionController;
 use Illuminate\Support\Facades\Route;
 
 Route::apiResource('exams', ExamController::class);
-Route::post('exams/{id}/submit-for-review', [
-    ExamController::class,
-    'submitForReview',
-]);
-Route::post('exams/{id}/activate', [ExamController::class, 'activate']);
-Route::post('exams/{id}/publish', [ExamController::class, 'publish']);
-Route::post('exams/{id}/publish-results', [
-    ExamController::class,
-    'publishResults',
-]);
-Route::post('exams/{id}/unpublish-results', [
-    ExamController::class,
-    'unpublishResults',
-]);
+
+Route::prefix('exams/{id}')->controller(ExamController::class)->group(function () {
+    Route::post('/submit-for-review', 'submitForReview');
+    Route::post('/activate', 'activate');
+    Route::post('/publish', 'publish');
+    Route::post('/publish-results', 'publishResults');
+    Route::post('/unpublish-results', 'unpublishResults');
+
+    // School admin only
+    Route::post('/force-complete', 'forceComplete')->middleware('role:school_admin,tenant');
+});
 
 Route::prefix('exams/{examId}/questions')
     ->controller(ExamQuestionController::class)

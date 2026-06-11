@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Teacher\TeacherAction;
-use App\Data\Teacher\TeacherData;
-use App\Events\ActivityFeedEvent;
+use App\Data\Results\ImportResult;        
+use App\Data\Schemas\TeacherImportSchema;    
+use App\Data\Teacher\TeacherData;   
+use App\Events\ActivityFeedEvent; 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\TeacherSubjectAssignment;

@@ -22,7 +22,7 @@ class GradingScaleController extends Controller
      *
      * @subgroup Grading Scales
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->get('per_page', 20);
 

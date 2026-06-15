@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class ExamAnswerAction
 {
+    public function __construct(
+        private ExamSessionAction $sessionAction,
+    ) {}
+
     public function save(ExamAttempt $attempt, string $questionId, array $payload): ExamAnswer
     {
         if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
@@ -25,7 +29,7 @@ class ExamAnswerAction
             }
 
             if ($attempt->getTimeRemainingSeconds() <= 0) {
-                app(ExamSessionAction::class)->finalizeExpiredAttempt($attempt);
+                $this->sessionAction->finalizeExpiredAttempt($attempt);
                 throw new \RuntimeException('Exam time has expired.');
             }
 

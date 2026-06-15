@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Events;
 
+use App\Enums\ExamStatus;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
@@ -13,7 +14,7 @@ class ExamAttemptsUpdated implements ShouldBroadcast
         public readonly string $examId,
         public readonly int $completedAttempts,
         public readonly int $expectedAttempts,
-        public readonly string $status,
+        public readonly ExamStatus $status,
         public readonly string $tenantId,
     ) {}
 
@@ -35,7 +36,7 @@ class ExamAttemptsUpdated implements ShouldBroadcast
             'exam_id' => $this->examId,
             'completed_attempts' => $this->completedAttempts,
             'expected_attempts' => $this->expectedAttempts,
-            'status' => $this->status,
+            'status' => $this->status->value,
         ];
     }
 }

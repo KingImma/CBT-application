@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Tenants\Exam;
 
 use App\Enums\ExamStatus;
+use App\Enums\ExamType;
 use App\Exceptions\Business\ExamQuestionBelongsToDifferentExamException;
 use App\Exceptions\Business\ExamQuestionNotFoundException;
 use App\Models\Tenant\Exam;
@@ -16,6 +17,10 @@ use Illuminate\Support\Facades\Log;
 
 class ExamQuestionManagementAction
 {
+    private const SETTING_KEY_EXAM_MAX_SCORE = 'exam_max_score';
+
+    private const SETTING_KEY_ASSESSMENT_MAX_SCORE = 'assessment_max_score';
+
     public function add(
         Exam $exam,
         string $questionId,
@@ -136,7 +141,9 @@ class ExamQuestionManagementAction
 
     private function ensureWithinSchoolMaximum(Exam $exam, float $total): void
     {
-        $settingKey = $exam->type === 'exam' ? 'exam_max_score' : 'assessment_max_score';
+        $settingKey = $exam->type === ExamType::Exam->value
+            ? self::SETTING_KEY_EXAM_MAX_SCORE
+            : self::SETTING_KEY_ASSESSMENT_MAX_SCORE;
         $schoolMax = SchoolSetting::where('key', $settingKey)->value('value');
 
         if ($schoolMax !== null) {

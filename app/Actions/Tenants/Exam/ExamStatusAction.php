@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\DB;
 
 class ExamStatusAction
 {
+    /**
+     * The exam window extends to N× the exam duration to allow late starters.
+     */
+    private const WINDOW_DURATION_MULTIPLIER = 2;
+
     public function submitForReview(Exam $exam): Exam
     {
         if ($exam->status !== ExamStatus::Draft) {
@@ -50,7 +55,9 @@ class ExamStatusAction
             throw new \RuntimeException('Scheduled start time must be set before activation.');
         }
 
-        $windowEnd = $exam->scheduled_start->copy()->addMinutes($exam->duration_minutes * 2);
+        $windowEnd = $exam->scheduled_start->copy()->addMinutes(
+            $exam->duration_minutes * self::WINDOW_DURATION_MULTIPLIER
+        );
 
         $expectedAttempts = User::role('student')
             ->whereHas('studentProfile', function ($q) use ($exam) {
@@ -99,11 +106,11 @@ class ExamStatusAction
         if ($exam->status === ExamStatus::Completed || $exam->status === ExamStatus::Published) {
             throw new \RuntimeException('Exam is already completed or published.');
         }
-    
+
         if ($exam->status === ExamStatus::Draft || $exam->status === ExamStatus::Submitted) {
             throw new \RuntimeException('Only active exams can be force-completed.');
         }
-    
+
         return $this->transition($exam, [
             'status' => ExamStatus::Completed->value,
             'window_end' => now(), // close the window immediately

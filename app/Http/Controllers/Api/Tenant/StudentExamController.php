@@ -10,6 +10,7 @@ use App\Data\Exam\ExamAttemptData;
 use App\Data\Exam\StudentExamQuestionData;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
+use App\Enums\SuspiciousEventType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
@@ -529,21 +530,16 @@ class StudentExamController extends Controller
             'type' => [
                 'required',
                 'string',
-                Rule::in([
-                    'tab_switch',
-                    'visibility_change',
-                    'fullscreen_exit',
-                    'copy_attempt',
-                    'paste_detected',
-                ]),
+                Rule::in(array_column(SuspiciousEventType::cases(), 'value')),
             ],
             'metadata' => ['sometimes', 'array'],
         ]);
 
         $attempt->logSuspiciousEvent(
-            $validated['type'],
+            SuspiciousEventType::from($validated['type']),
             $validated['metadata'] ?? [],
         );
+        $attempt->save();
 
         return ApiResponse::message('Suspicious event logged.');
     }

@@ -14,12 +14,12 @@ use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\GradingScale;
 use App\Models\Tenant\User;
+use App\Services\Exam\GradeResolver;
+use App\Services\Exam\ScoreCalculator;
 use Illuminate\Support\Facades\DB;
 
 class ExamSessionAction
 {
-    public function __construct() {}
-
     public function validateStart(Exam $exam, User $student): void
     {
         if ($exam->status !== ExamStatus::Active) {
@@ -147,11 +147,10 @@ class ExamSessionAction
                 $maxTime = max($maxTime, $answer->time_spent_seconds ?? 0);
             }
 
-            $percentageScore = $exam->total_marks > 0
-                ? ($runningTotal / $exam->total_marks) * 100
-                : 0;
+            $percentageScore = ScoreCalculator::percentage($runningTotal, (float) $exam->total_marks);
 
-            $grade = $this->resolveGrade($percentageScore);
+            $defaultScale = GradingScale::where('is_default', true)->first();
+            $grade = GradeResolver::resolve($percentageScore, $defaultScale?->grades);
 
             $attempt->update([
                 'status' => ExamAttemptStatus::Graded->value,
@@ -176,7 +175,7 @@ class ExamSessionAction
                 examId: $exam->id,
                 completedAttempts: $exam->completed_attempts,
                 expectedAttempts: $exam->expected_attempts,
-                status: $shouldComplete ? 'completed' : 'active',
+                status: $shouldComplete ? ExamStatus::Completed : ExamStatus::Active,
                 tenantId: (string) tenant('id'),
             ));
 
@@ -199,22 +198,6 @@ class ExamSessionAction
 
             return $this->submit($attempt);
         });
-    }
-
-    private function resolveGrade(float $percentageScore): ?string
-    {
-        $defaultScale = GradingScale::where('is_default', true)->first();
-        if (! $defaultScale) {
-            return null;
-        }
-
-        foreach ($defaultScale->grades as $grade) {
-            if ($percentageScore >= $grade['min_score'] && $percentageScore <= $grade['max_score']) {
-                return $grade['label'];
-            }
-        }
-
-        return null;
     }
 
     public function recover(ExamAttempt $attempt): array

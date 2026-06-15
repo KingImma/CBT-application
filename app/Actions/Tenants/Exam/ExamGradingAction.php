@@ -6,6 +6,8 @@ namespace App\Actions\Tenants\Exam;
 
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\GradingScale;
+use App\Services\Exam\GradeResolver;
+use App\Services\Exam\ScoreCalculator;
 use Illuminate\Support\Facades\DB;
 
 class ExamGradingAction
@@ -14,20 +16,10 @@ class ExamGradingAction
     {
         return DB::transaction(function () use ($attempt) {
             $totalScore = $attempt->answers()->sum('marks_awarded') ?? 0;
-            $percentageScore = $attempt->exam->total_marks > 0
-                ? ($totalScore / $attempt->exam->total_marks) * 100
-                : 0;
+            $percentageScore = ScoreCalculator::percentage((float) $totalScore, (float) $attempt->exam->total_marks);
 
-            $grade = null;
             $defaultScale = GradingScale::where('is_default', true)->first();
-            if ($defaultScale) {
-                foreach ($defaultScale->grades as $gradeEntry) {
-                    if ($percentageScore >= $gradeEntry['min_score'] && $percentageScore <= $gradeEntry['max_score']) {
-                        $grade = $gradeEntry['label'];
-                        break;
-                    }
-                }
-            }
+            $grade = GradeResolver::resolve($percentageScore, $defaultScale?->grades);
 
             $attempt->update([
                 'total_score' => $totalScore,

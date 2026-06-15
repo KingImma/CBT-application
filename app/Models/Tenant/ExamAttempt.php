@@ -6,7 +6,9 @@ namespace App\Models\Tenant;
 
 use App\Data\Values\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
+use App\Enums\SuspiciousEventType;
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ExamAttempt extends Model
 {
     use BelongsToSessionTerm, HasUuids;
+
+    private const SECONDS_PER_MINUTE = 60;
 
     protected $guarded = ['id'];
 
@@ -72,29 +76,54 @@ class ExamAttempt extends Model
 
     // Helper
 
-    public function logSuspiciousEvent(string $type, array $metadata = []): void
+    /**
+     * Append a suspicious event to the attempt's event log.
+     *
+     * Does NOT persist — caller is responsible for calling save().
+     * This keeps the domain method pure and side-effect-free.
+     */
+    public function logSuspiciousEvent(SuspiciousEventType $type, array $metadata = []): void
     {
         $events = $this->suspicious_events ?? [];
         $events[] = [
-            'type' => $type,
+            'type' => $type->value,
             'timestamp' => now()->toIso8601String(),
             'metadata' => $metadata,
         ];
         $this->suspicious_events = $events;
-
-        $this->save();
     }
 
-    public function isExpired(): bool
+    /**
+     * Check if this attempt has exceeded its time limit.
+     *
+     * @param  DateTimeInterface|null  $now  Injectable clock for testability. Defaults to now().
+     */
+    public function isExpired(?DateTimeInterface $now = null): bool
     {
-        return now()->getTimestamp() >= $this->started_at->getTimestamp() + ($this->exam->duration_minutes * 60);
+        $currentTimestamp = ($now ?? now())->getTimestamp();
+
+        return $currentTimestamp >= $this->getDeadlineTimestamp();
     }
 
-    public function getTimeRemainingSeconds(): int
+    /**
+     * Get the number of seconds remaining before the attempt deadline.
+     *
+     * @param  DateTimeInterface|null  $now  Injectable clock for testability. Defaults to now().
+     */
+    public function getTimeRemainingSeconds(?DateTimeInterface $now = null): int
     {
-        $deadline = $this->started_at->getTimestamp() + ($this->exam->duration_minutes * 60);
-        $remaining = $deadline - now()->getTimestamp();
+        $currentTimestamp = ($now ?? now())->getTimestamp();
+        $remaining = $this->getDeadlineTimestamp() - $currentTimestamp;
 
         return max(0, $remaining);
+    }
+
+    /**
+     * Calculate the absolute deadline timestamp for this attempt.
+     */
+    private function getDeadlineTimestamp(): int
+    {
+        return $this->started_at->getTimestamp()
+            + ($this->exam->duration_minutes * self::SECONDS_PER_MINUTE);
     }
 }

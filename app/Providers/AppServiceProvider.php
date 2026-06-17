@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Services\SessionTermContext;
+use App\Actions\Tenants\SessionTerm\ResolveCurrentSessionTerm;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(SessionTermContext::class);
+        $this->app->singleton(ResolveCurrentSessionTerm::class);
     }
 
     /**

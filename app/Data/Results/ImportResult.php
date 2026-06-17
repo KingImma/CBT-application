@@ -7,54 +7,99 @@ namespace App\Data\Results;
 class ImportResult
 {
     public function __construct(
-        public readonly bool $success,
-        public readonly ?string $message = null,
-        public readonly ?int $totalRows = null,
-        public readonly ?int $imported = null,
-        public readonly ?int $skipped = null,
-        public readonly ?int $updated = null,
-        public readonly array $errors = [],
-        public readonly array $duplicates = [],
-        public readonly array $missingHeaders = [],
-        public readonly bool $canProceed = true,
+        private readonly bool $success,
+        private readonly ?string $message = null,
+        private readonly ?int $totalRows = null,
+        private readonly ?int $imported = null,
+        private readonly ?int $skipped = null,
+        private readonly ?int $updated = null,
+        private readonly array $errors = [],
+        private readonly array $duplicates = [],
+        private readonly array $missingHeaders = [],
+        private readonly bool $canProceed = true,
     ) {}
+
+    public function isSuccess(): bool
+    {
+        return $this->success;
+    }
+
+    public function getMessage(): ?string
+    {
+        return $this->message;
+    }
+
+    public function getTotalRows(): ?int
+    {
+        return $this->totalRows;
+    }
+
+    public function getImported(): ?int
+    {
+        return $this->imported;
+    }
+
+    public function getSkipped(): ?int
+    {
+        return $this->skipped;
+    }
+
+    public function getUpdated(): ?int
+    {
+        return $this->updated;
+    }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    public function getDuplicates(): array
+    {
+        return $this->duplicates;
+    }
+
+    public function getMissingHeaders(): array
+    {
+        return $this->missingHeaders;
+    }
+
+    public function canProceed(): bool
+    {
+        return $this->canProceed;
+    }
 
     public function hasBlockingErrors(): bool
     {
-        return $this->missingHeaders !== [] || $this->errors !== [];
+        return $this->getMissingHeaders() !== [] || $this->getErrors() !== [];
     }
 
-    /**
-     * Build a response data array suitable for API responses.
-     *
-     * @return array<string, mixed>
-     */
     public function toResponseData(bool $dryRun): array
     {
         if ($dryRun) {
             $data = [
                 'dry_run' => true,
-                'total_rows' => $this->totalRows,
+                'total_rows' => $this->getTotalRows(),
                 'can_proceed' => true,
             ];
 
-            if ($this->duplicates !== []) {
-                $data['duplicates'] = $this->duplicates;
+            if ($this->getDuplicates() !== []) {
+                $data['duplicates'] = $this->getDuplicates();
             }
 
             return $data;
         }
 
         $data = [
-            'imported' => $this->imported,
+            'imported' => $this->getImported(),
         ];
 
-        if ($this->skipped > 0) {
-            $data['skipped'] = $this->skipped;
+        if ($this->getSkipped() > 0) {
+            $data['skipped'] = $this->getSkipped();
         }
 
-        if ($this->updated > 0) {
-            $data['updated'] = $this->updated;
+        if ($this->getUpdated() > 0) {
+            $data['updated'] = $this->getUpdated();
         }
 
         return $data;

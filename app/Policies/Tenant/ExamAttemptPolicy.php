@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies\Tenant;
 
 use App\Enums\ExamAttemptStatus;
+use App\Enums\RoleType;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -17,7 +18,7 @@ class ExamAttemptPolicy
     {
         return $user->id === $attempt->student_id
             || $user->id === $attempt->exam->created_by
-            || $user->hasAnyRole(['admin', 'school_admin']);
+            || $user->hasAnyRole(['admin', RoleType::SchoolAdmin->value]);
     }
 
     public function start(User $user, ExamAttempt $attempt): bool
@@ -27,7 +28,7 @@ class ExamAttemptPolicy
 
     public function submit(User $user, ExamAttempt $attempt): bool
     {
-        return $user->id === $attempt->student_id && $attempt->status === ExamAttemptStatus::InProgress->value;
+        return $user->id === $attempt->student_id;
     }
 
     public function saveAnswer(User $user, ExamAttempt $attempt): bool
@@ -37,6 +38,6 @@ class ExamAttemptPolicy
 
     public function grade(User $user, ExamAttempt $attempt): bool
     {
-        return $user->id === $attempt->exam->created_by || $user->hasAnyRole(['admin', 'school_admin']);
+        return $user->id === $attempt->exam->created_by || $user->hasAnyRole(['admin', RoleType::SchoolAdmin->value]);
     }
 }

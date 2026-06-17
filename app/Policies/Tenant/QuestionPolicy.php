@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
+use App\Enums\RoleType;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\TeacherSubjectAssignment;
@@ -16,7 +17,7 @@ class QuestionPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->hasAnyRole(['admin', 'school_admin'])) {
+        if ($user->hasAnyRole(['admin', RoleType::SchoolAdmin->value])) {
             return true;
         }
 
@@ -25,12 +26,12 @@ class QuestionPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('teacher') || $user->hasAnyRole(['admin', 'school_admin']);
+        return $user->hasRole(RoleType::Teacher->value) || $user->hasAnyRole(['admin', RoleType::SchoolAdmin->value]);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'school_admin']);
+        return $user->hasAnyRole(['admin', RoleType::SchoolAdmin->value]);
     }
 
     public function createForClass(User $user, string $classLevelId): bool

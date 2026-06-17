@@ -26,4 +26,29 @@ class ExamSettingsData extends Data
         #[Nullable, IntegerType, Min(0)]
         public Optional|int $max_suspicious_events,
     ) {}
+
+    public function getRandomizeQuestions(): Optional|bool
+    {
+        return $this->randomize_questions;
+    }
+
+    public function getShowResultImmediately(): Optional|bool
+    {
+        return $this->show_result_immediately;
+    }
+
+    public function getResultsReleaseDate(): Optional|string|null
+    {
+        return $this->results_release_date;
+    }
+
+    public function getRequireAttendance(): Optional|bool
+    {
+        return $this->require_attendance;
+    }
+
+    public function getMaxSuspiciousEvents(): Optional|int
+    {
+        return $this->max_suspicious_events;
+    }
 }

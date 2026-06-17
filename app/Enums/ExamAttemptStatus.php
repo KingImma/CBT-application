@@ -10,4 +10,5 @@ enum ExamAttemptStatus: string
     case Timed_out = 'timed_out';
     case Grading = 'grading';
     case Disqualified = 'disqualified';
+    case Failed = 'failed';
 }

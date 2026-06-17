@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Data\AcademicSession\AcademicSessionData;
+use App\Exceptions\Domain\Session\SessionAlreadyCurrentException;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\AcademicSession;
-use App\Models\Tenant\Term;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @group Academic Calendar
@@ -126,19 +125,13 @@ class AcademicSessionController extends Controller
     {
         $session = AcademicSession::findOrFail($id);
 
-        if ($session->is_current) {
+        try {
+            $session->setAsCurrent()->save();
+        } catch (SessionAlreadyCurrentException $e) {
             return ApiResponse::success([
                 'session' => AcademicSessionData::from($session->load('terms')),
-            ], "'{$session->name}' is already the current academic session.");
+            ], $e->getMessage());
         }
-
-        DB::transaction(function () use ($session) {
-            AcademicSession::where('is_current', true)->update(['is_current' => false]);
-
-            $session->update(['is_current' => true]);
-
-            Term::where('is_current', true)->update(['is_current' => false]);
-        });
 
         return ApiResponse::success([
             'session' => AcademicSessionData::from($session->fresh('terms')),

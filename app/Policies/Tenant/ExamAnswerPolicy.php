@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies\Tenant;
 
 use App\Enums\ExamAttemptStatus;
+use App\Enums\RoleType;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -19,7 +20,7 @@ class ExamAnswerPolicy
 
         return $user->id === $attempt->student_id
             || $user->id === $attempt->exam->created_by
-            || $user->hasAnyRole(['admin', 'school_admin']);
+            || $user->hasAnyRole(['admin', RoleType::SchoolAdmin->value]);
     }
 
     public function update(User $user, ExamAnswer $answer): bool

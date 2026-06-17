@@ -23,4 +23,49 @@ class TeacherData extends Resource
         #[WhenLoaded('teacherAssignments')]
         public readonly mixed $teacherAssignments,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getFirstName(): string
+    {
+        return $this->first_name;
+    }
+
+    public function getLastName(): string
+    {
+        return $this->last_name;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active;
+    }
+
+    public function getTeacherProfile(): mixed
+    {
+        return $this->teacherProfile;
+    }
+
+    public function getAssignedClasses(): mixed
+    {
+        return $this->assignedClasses;
+    }
+
+    public function getTeacherAssignments(): mixed
+    {
+        return $this->teacherAssignments;
+    }
 }

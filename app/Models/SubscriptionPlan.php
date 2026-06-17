@@ -14,7 +14,17 @@ class SubscriptionPlan extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'name',
+        'slug',
+        'max_students',
+        'max_teachers',
+        'max_exams_per_term',
+        'price_monthly',
+        'price_yearly',
+        'features',
+        'is_active',
+    ];
 
     protected $casts = [
         'features' => 'array',

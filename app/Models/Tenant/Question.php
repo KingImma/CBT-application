@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Tenant;
 
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
+use App\Models\Tenant\Question\Concerns\HasLifecycle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -14,9 +15,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Question extends Model
 {
-    use BelongsToSessionTerm, HasUuids, SoftDeletes;
+    use BelongsToSessionTerm, HasLifecycle, HasUuids, SoftDeletes;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'subject_id',
+        'class_level_id',
+        'type',
+        'content',
+        'default_marks',
+        'image_url',
+        'is_active',
+        'academic_session_id',
+        'term_id',
+        'created_by',
+    ];
 
     protected $casts = [
         'is_active' => 'boolean',

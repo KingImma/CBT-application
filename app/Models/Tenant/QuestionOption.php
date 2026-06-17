@@ -18,7 +18,15 @@ class QuestionOption extends Model
 {
     use HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'question_id',
+        'label',
+        'content',
+        'image_url',
+        'is_correct',
+        'order',
+        'match_pair',
+    ];
 
     protected $casts = ['is_correct' => 'boolean'];
 

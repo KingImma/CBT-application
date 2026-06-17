@@ -14,7 +14,11 @@ class Subject extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'name',
+        'code',
+        'is_active',
+    ];
 
     protected $casts = [
         'is_active' => 'boolean',

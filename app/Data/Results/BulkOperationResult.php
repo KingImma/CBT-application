@@ -7,10 +7,10 @@ namespace App\Data\Results;
 class BulkOperationResult
 {
     public function __construct(
-        public readonly int $succeeded,
-        public readonly int $failed,
-        public readonly array $failures = [],
-        public readonly ?string $message = null,
+        private readonly int $succeeded,
+        private readonly int $failed,
+        private readonly array $failures = [],
+        private readonly ?string $message = null,
     ) {}
 
     public static function fromLoop(int $succeeded, int $failed, array $failures = []): self
@@ -31,25 +31,45 @@ class BulkOperationResult
         );
     }
 
+    public function getSucceeded(): int
+    {
+        return $this->succeeded;
+    }
+
+    public function getFailed(): int
+    {
+        return $this->failed;
+    }
+
+    public function getFailures(): array
+    {
+        return $this->failures;
+    }
+
+    public function getMessage(): ?string
+    {
+        return $this->message;
+    }
+
     public function hasFailures(): bool
     {
-        return $this->failed > 0;
+        return $this->getFailed() > 0;
     }
 
     public function isFullSuccess(): bool
     {
-        return $this->failed === 0;
+        return $this->getFailed() === 0;
     }
 
     public function toArray(): array
     {
         $data = [
-            'succeeded' => $this->succeeded,
-            'failed' => $this->failed,
+            'succeeded' => $this->getSucceeded(),
+            'failed' => $this->getFailed(),
         ];
 
-        if ($this->failures !== []) {
-            $data['failures'] = $this->failures;
+        if ($this->getFailures() !== []) {
+            $data['failures'] = $this->getFailures();
         }
 
         return $data;

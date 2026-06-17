@@ -35,4 +35,104 @@ class ExamData extends Resource
         public readonly bool $is_published,
         #[WhenLoaded('creator')] public readonly mixed $creator,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function getType(): ExamType
+    {
+        return $this->type;
+    }
+
+    public function getStatus(): ExamStatus
+    {
+        return $this->status;
+    }
+
+    public function getSubject(): mixed
+    {
+        return $this->subject;
+    }
+
+    public function getClassLevel(): mixed
+    {
+        return $this->classLevel;
+    }
+
+    public function getClassArm(): mixed
+    {
+        return $this->classArm;
+    }
+
+    public function getTerm(): mixed
+    {
+        return $this->term;
+    }
+
+    public function getTotalMarks(): ?float
+    {
+        return $this->total_marks;
+    }
+
+    public function getPassMark(): ?float
+    {
+        return $this->pass_mark;
+    }
+
+    public function getDurationMinutes(): int
+    {
+        return $this->duration_minutes;
+    }
+
+    public function getMaxAttempts(): ?int
+    {
+        return $this->max_attempts;
+    }
+
+    public function getQuestionCount(): Optional|int
+    {
+        return $this->question_count;
+    }
+
+    public function getExpectedAttempts(): int
+    {
+        return $this->expected_attempts;
+    }
+
+    public function getCompletedAttempts(): int
+    {
+        return $this->completed_attempts;
+    }
+
+    public function getScheduledStart(): ?string
+    {
+        return $this->scheduled_start;
+    }
+
+    public function getInstructions(): ?string
+    {
+        return $this->instructions;
+    }
+
+    public function getPublishedAt(): ?string
+    {
+        return $this->published_at;
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->is_published;
+    }
+
+    public function getCreator(): mixed
+    {
+        return $this->creator;
+    }
 }

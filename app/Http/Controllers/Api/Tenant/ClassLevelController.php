@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Data\ClassLevel\ClassLevelData;
+use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
@@ -12,6 +13,7 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * @group Classes & Arms
@@ -42,11 +44,12 @@ class ClassLevelController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $request->merge(['name' => $this->normalizeName($request->input('name'))]);
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100', 'unique:class_levels,name'],
+            'name' => ['required', 'string', 'max:100', Rule::unique('class_levels', 'name')->withoutTrashed()],
         ]);
 
-        // Auto-generate the slug based on the name
         $validated['slug'] = Str::slug($validated['name']);
 
         $level = ClassLevel::create($validated);
@@ -84,8 +87,12 @@ class ClassLevelController extends Controller
     {
         $level = ClassLevel::findOrFail($id);
 
+        if ($request->has('name')) {
+            $request->merge(['name' => $this->normalizeName($request->input('name'))]);
+        }
+
         $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:100', 'unique:class_levels,name,'.$id],
+            'name' => ['sometimes', 'string', 'max:100', Rule::unique('class_levels', 'name')->ignore($id)->withoutTrashed()],
             'order' => ['nullable', 'integer', 'min:1'],
         ]);
 
@@ -103,7 +110,7 @@ class ClassLevelController extends Controller
     }
 
     /**
-     * Delete a class level (must have no students assigned).
+     * Delete a class level (soft-deletes if dependencies exist).
      *
      * @subgroup Class Levels
      *
@@ -111,16 +118,26 @@ class ClassLevelController extends Controller
      */
     public function destroy(string $id): JsonResponse
     {
-        $level = ClassLevel::withCount('students')->findOrFail($id);
-
-        // Prevent deletion if students are assigned — data integrity
-        if ($level->students_count > 0) {
-            return ApiResponse::error("Cannot delete — {$level->students_count} student(s) are assigned to this class level.", 422);
-        }
+        $level = ClassLevel::withCount(['students', 'exams', 'classArms'])->findOrFail($id);
 
         $level->delete();
 
-        return ApiResponse::message('Class level deleted.');
+        $parts = [];
+        if ($level->students_count > 0) {
+            $parts[] = "{$level->students_count} student(s)";
+        }
+        if ($level->exams_count > 0) {
+            $parts[] = "{$level->exams_count} exam(s)";
+        }
+        if ($level->classArms_count > 0) {
+            $parts[] = "{$level->classArms_count} arm(s)";
+        }
+
+        $message = $parts !== []
+            ? 'Class level soft-deleted (has '.implode(', ', $parts).').'
+            : 'Class level deleted.';
+
+        return ApiResponse::message($message);
     }
 
     /**
@@ -186,7 +203,7 @@ class ClassLevelController extends Controller
         $level->subjects()->sync($validated['subject_ids']);
 
         if (! empty($validated['compulsory_ids'])) {
-            $level->classArms->each(function ($arm) use ($validated) {
+            foreach ($level->classArms as $arm) {
                 foreach ($validated['compulsory_ids'] as $subjectId) {
                     $arm->subjects()->syncWithoutDetaching([
                         $subjectId => [
@@ -195,7 +212,7 @@ class ClassLevelController extends Controller
                         ],
                     ]);
                 }
-            });
+            }
         }
 
         return ApiResponse::message('Subjects synced successfully.');
@@ -222,14 +239,14 @@ class ClassLevelController extends Controller
         ]);
 
         if ($newStatus) {
-            $level->classArms->each(function ($arm) use ($subjectId) {
+            foreach ($level->classArms as $arm) {
                 $arm->subjects()->syncWithoutDetaching([
                     $subjectId => [
                         'id' => Str::uuid()->toString(),
                         'is_compulsory' => true,
                     ],
                 ]);
-            });
+            }
         }
 
         return ApiResponse::success([
@@ -255,7 +272,7 @@ class ClassLevelController extends Controller
             'teacher_id' => ['required', 'uuid', 'exists:users,id'],
         ]);
 
-        $teacher = User::role('teacher')->findOrFail($validated['teacher_id']);
+        $teacher = User::role(RoleType::Teacher->value)->findOrFail($validated['teacher_id']);
 
         $teacher->teacherProfile()->update(
             ['class_level_id' => $level->id]
@@ -265,5 +282,10 @@ class ClassLevelController extends Controller
             ClassLevelData::from($level->load(['classArms.assignedTeacher', 'subjects'])),
             "Teacher assigned to class level {$level->name} successfully."
         );
+    }
+
+    private function normalizeName(?string $name): string
+    {
+        return trim(strtoupper($name ?? ''));
     }
 }

@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Teacher\TeacherAction;
+use App\Actions\Auth\ResetUserPassword;
+use App\Actions\Tenants\Teacher\Teacher;
+use App\Actions\Tenants\TenantUsers\RemoveTenantUserIndex;
+use App\Actions\Tenants\TenantUsers\SyncTenantUser;
 use App\Data\Results\ImportResult;
 use App\Data\Schemas\TeacherImportSchema;
 use App\Data\Teacher\TeacherData;
+use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
-use App\Services\Auth\PasswordResetService;
-use App\Services\TenantUserService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,7 +43,7 @@ class TeacherController extends Controller
         $status = $request->query('status', 'active');
         $search = $request->query('search');
 
-        $teachers = User::role('teacher')
+        $teachers = User::role(RoleType::Teacher->value)
             ->select('id', 'first_name', 'last_name', 'email', 'phone', 'is_active')
             ->with([
                 'teacherProfile',
@@ -75,7 +77,7 @@ class TeacherController extends Controller
      * @bodyParam staff_id string nullable Unique staff ID. No-example
      * @bodyParam class_level_id string nullable Assigned class level UUID. No-example
      */
-    public function store(TeacherAction $action, Request $request): JsonResponse
+    public function store(Teacher $action, Request $request): JsonResponse
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
@@ -112,14 +114,15 @@ class TeacherController extends Controller
     public function show(string $id): JsonResponse
     {
         // Now finding by USER ID, not Profile ID
-        $teacher = User::role('teacher')->with([
-            'teacherProfile',
-            'assignedClasses.classLevel',
-            'assignedClasses.subjects',
-            'assignedClasses.assignedTeacher',
-            'teacherAssignments.subject',
-            'teacherAssignments.classLevel',
-        ])->findOrFail($id);
+        $teacher = User::role(RoleType::Teacher->value)
+            ->with([
+                'teacherProfile',
+                'assignedClasses.classLevel',
+                'assignedClasses.subjects',
+                'assignedClasses.assignedTeacher',
+                'teacherAssignments.subject',
+                'teacherAssignments.classLevel',
+            ])->findOrFail($id);
 
         return ApiResponse::success(TeacherData::from($teacher), 'Teacher retrieved successfully.');
     }
@@ -133,7 +136,7 @@ class TeacherController extends Controller
      */
     public function classes(string $id): JsonResponse
     {
-        $teacher = User::role('teacher')->findOrFail($id);
+        $teacher = User::role(RoleType::Teacher->value)->findOrFail($id);
 
         $classes = ClassArm::where('assigned_teacher_id', $teacher->id)
             ->with(['classLevel', 'subjects'])
@@ -151,7 +154,7 @@ class TeacherController extends Controller
      */
     public function subjects(string $id): JsonResponse
     {
-        $teacher = User::role('teacher')->findOrFail($id);
+        $teacher = User::role(RoleType::Teacher->value)->findOrFail($id);
 
         $subjectTeacherSubjects = $teacher->teacherAssignments()
             ->with('subject', 'classLevel')
@@ -201,7 +204,7 @@ class TeacherController extends Controller
      * @bodyParam staff_id string nullable Staff ID. No-example
      * @bodyParam class_level_id string nullable Class level UUID. No-example
      */
-    public function update(TeacherAction $action, Request $request, string $id): JsonResponse
+    public function update(Teacher $action, Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'first_name' => ['sometimes', 'string', 'max:100'],
@@ -225,16 +228,16 @@ class TeacherController extends Controller
      *
      * @urlParam id string required The teacher UUID.
      */
-    public function revoke(TenantUserService $tenantUserService, string $id): JsonResponse
+    public function revoke(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
-        $teacher = User::role('teacher')->findOrFail($id);
+        $teacher = User::role(RoleType::Teacher->value)->findOrFail($id);
 
-        DB::transaction(function () use ($teacher, $tenantUserService) {
-            $teacher->update(['is_active' => false]);
+        DB::transaction(function () use ($teacher, $removeTenantUserIndex) {
+            $teacher->deactivate()->save();
             $teacher->tokens()->delete();
 
             TeacherSubjectAssignment::where('user_id', $teacher->id)->delete();
-            $tenantUserService->removeFromCentralIndex($teacher->email);
+            $removeTenantUserIndex->execute($teacher->email);
             $teacher->delete();
         });
 
@@ -248,14 +251,14 @@ class TeacherController extends Controller
      *
      * @urlParam id string required The teacher UUID.
      */
-    public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
+    public function destroy(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
-        $teacher = User::withTrashed()->role('teacher')->findOrFail($id);
+        $teacher = User::withTrashed()->role(RoleType::Teacher->value)->findOrFail($id);
 
-        DB::transaction(function () use ($teacher, $tenantUserService) {
+        DB::transaction(function () use ($teacher, $removeTenantUserIndex) {
             $teacher->teacherProfile()->delete();
             TeacherSubjectAssignment::where('user_id', $teacher->id)->delete();
-            $tenantUserService->removeFromCentralIndex($teacher->email);
+            $removeTenantUserIndex->execute($teacher->email);
             $teacher->syncRoles([]);
             $teacher->forceDelete();
         });
@@ -270,17 +273,17 @@ class TeacherController extends Controller
      *
      * @urlParam id string required The teacher UUID.
      */
-    public function restore(TenantUserService $tenantUserService, string $id): JsonResponse
+    public function restore(SyncTenantUser $syncTenantUser, string $id): JsonResponse
     {
-        $teacher = User::withTrashed()->role('teacher')->findOrFail($id);
+        $teacher = User::withTrashed()->role(RoleType::Teacher->value)->findOrFail($id);
 
         if (! $teacher->trashed()) {
             return ApiResponse::error('This teacher is already active and has not been deleted.', 422);
         }
 
         $teacher->restore();
-        $teacher->update(['is_active' => true]);
-        $tenantUserService->updateCentralIndex($teacher->email, 'teacher');
+        $teacher->activate()->save();
+        $syncTenantUser->execute($teacher->email, RoleType::Teacher->value);
 
         return ApiResponse::success([
             'teacher' => TeacherData::from($teacher->fresh('teacherProfile')),
@@ -297,15 +300,15 @@ class TeacherController extends Controller
      * @bodyParam password string required New password (min 8 chars, must contain number). No-example
      * @bodyParam password_confirmation string required Confirm the new password. No-example
      */
-    public function resetPassword(PasswordResetService $passwordResetService, Request $request, string $id): JsonResponse
+    public function resetPassword(ResetUserPassword $resetUserPassword, Request $request, string $id): JsonResponse
     {
-        $teacher = User::role('teacher')->findOrFail($id);
+        $teacher = User::role(RoleType::Teacher->value)->findOrFail($id);
 
         $validated = $request->validate([
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
         ]);
 
-        $passwordResetService->resetPasswordForUser($teacher, $validated['password']);
+        $resetUserPassword->execute($teacher, $validated['password']);
 
         return ApiResponse::message('Password reset successfully.');
     }
@@ -353,26 +356,26 @@ class TeacherController extends Controller
         $file = $request->file('file');
         $path = $file->getRealPath();
 
-        $result = app(TeacherImportService::class)->import($validated, $path, $dryRun);
+        $result = app(ImportTeachers::class)->execute($validated, $path, $dryRun);
 
         return $this->buildImportResponse($result, $dryRun);
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse
     {
-        if ($result->missingHeaders !== []) {
+        if ($result->getMissingHeaders() !== []) {
             return ApiResponse::error(
-                $result->message ?? 'Missing required columns.',
+                $result->getMessage() ?? 'Missing required columns.',
                 422,
-                ['missing_headers' => $result->missingHeaders],
+                ['missing_headers' => $result->getMissingHeaders()],
             );
         }
 
-        if ($result->errors !== []) {
+        if ($result->getErrors() !== []) {
             return ApiResponse::error(
-                $result->message ?? 'Row validation failed.',
+                $result->getMessage() ?? 'Row validation failed.',
                 422,
-                $result->errors,
+                $result->getErrors(),
             );
         }
 
@@ -380,7 +383,7 @@ class TeacherController extends Controller
 
         return ApiResponse::success(
             $result->toResponseData($dryRun),
-            $result->message ?? ($dryRun ? 'Preview complete.' : 'Import complete.'),
+            $result->getMessage() ?? ($dryRun ? 'Preview complete.' : 'Import complete.'),
             $status,
         );
     }

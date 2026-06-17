@@ -92,7 +92,7 @@ class TenantProvisioningPipelineTest extends TestCase
         tenancy()->end();
     }
 
-    public function test_provisioning_pipeline_seeds_default_data(): void
+    public function test_provisioning_pipeline_seeds_roles_and_permissions(): void
     {
         $plan = SubscriptionPlan::factory()->create();
 
@@ -110,20 +110,27 @@ class TenantProvisioningPipelineTest extends TestCase
         $tenant = Tenant::find(self::TENANT_SLUG);
         tenancy()->initialize($tenant);
 
-        // Class levels
-        $this->assertSame(6, DB::table('class_levels')->count());
+        // Roles & permissions — the only data the seeder still seeds
+        $this->assertSame(18, DB::table('permissions')->count());
+        $this->assertSame(3, DB::table('roles')->count());
+        $this->assertTrue(DB::table('model_has_roles')->exists() === false); // no user assigned yet
 
-        // Default grading scale
-        $this->assertSame(1, DB::table('grading_scales')->where('is_default', true)->count());
+        // Tables exist (from migrations) but no default seed records
+        $this->assertSame(0, DB::table('class_levels')->count());
+        $this->assertSame(0, DB::table('subjects')->count());
+        $this->assertSame(0, DB::table('grading_scales')->count());
 
-        // Subjects
-        $this->assertGreaterThanOrEqual(10, DB::table('subjects')->count());
-
-        // School settings
+        // Migration-seeded settings still exist; seeder-only ones do not
         $this->assertTrue(
-            DB::table('school_settings')->where('key', 'ca_weight')->exists()
+            DB::table('school_settings')->where('key', 'assessment_max_score')->exists()
         );
         $this->assertTrue(
+            DB::table('school_settings')->where('key', 'exam_max_score')->exists()
+        );
+        $this->assertFalse(
+            DB::table('school_settings')->where('key', 'ca_weight')->exists()
+        );
+        $this->assertFalse(
             DB::table('school_settings')->where('key', 'exam_weight')->exists()
         );
 

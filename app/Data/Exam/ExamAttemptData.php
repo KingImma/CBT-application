@@ -23,4 +23,54 @@ class ExamAttemptData extends Resource
         #[WhenLoaded('exam')]
         public readonly mixed $exam,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function getAttemptNumber(): int
+    {
+        return $this->attempt_number;
+    }
+
+    public function getTotalScore(): ?float
+    {
+        return $this->total_score;
+    }
+
+    public function getPercentageScore(): ?float
+    {
+        return $this->percentage_score;
+    }
+
+    public function getStartedAt(): ?string
+    {
+        return $this->started_at;
+    }
+
+    public function getSubmittedAt(): ?string
+    {
+        return $this->submitted_at;
+    }
+
+    public function getTimeSpentSeconds(): ?int
+    {
+        return $this->time_spent_seconds;
+    }
+
+    public function getStudent(): mixed
+    {
+        return $this->student;
+    }
+
+    public function getExam(): mixed
+    {
+        return $this->exam;
+    }
 }

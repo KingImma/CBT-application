@@ -62,11 +62,11 @@ class GradingScaleController extends Controller
             return ApiResponse::error($error, 422);
         }
 
-        if (! empty($validated['is_default'])) {
-            GradingScale::where('is_default', true)->update(['is_default' => false]);
-        }
-
         $scale = GradingScale::create($validated);
+
+        if (! empty($validated['is_default'])) {
+            $scale->setAsDefault()->save();
+        }
 
         return ApiResponse::created(GradingScaleData::from($scale), 'Grading scale created.');
     }
@@ -114,20 +114,19 @@ class GradingScaleController extends Controller
             'grades.*.remark' => ['nullable', 'string'],
         ]);
 
-        if (! empty($validated['grades'])) {
-            $error = $this->validateGradeRanges($validated['grades']);
-            if ($error !== null) {
-                return ApiResponse::error($error, 422);
-            }
-        }
+        $error = ! empty($validated['grades'])
+            ? $this->validateGradeRanges($validated['grades'])
+            : null;
 
-        if (! empty($validated['is_default'])) {
-            GradingScale::where('is_default', true)
-                ->where('id', '!=', $id)
-                ->update(['is_default' => false]);
+        if ($error !== null) {
+            return ApiResponse::error($error, 422);
         }
 
         $scale->update($validated);
+
+        if (! empty($validated['is_default'])) {
+            $scale->setAsDefault()->save();
+        }
 
         return ApiResponse::success(GradingScaleData::from($scale->fresh()), 'Grading scale updated.');
     }
@@ -143,7 +142,7 @@ class GradingScaleController extends Controller
     {
         $scale = GradingScale::findOrFail($id);
 
-        if ($scale->is_default) {
+        if (! $scale->canDelete()) {
             return ApiResponse::error('Cannot delete the default grading scale. Set another as default first.', 422);
         }
 

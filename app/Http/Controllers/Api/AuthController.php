@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\SuperAdmin\AuthenticateSuperAdmin;
+use App\Actions\Tenants\Auth\AuthenticateTenantUser;
+use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\SuperAdmin;
-use App\Services\Auth\SuperAdminAuthService;
-use App\Services\Auth\TenantAuthService;
+use App\Models\Tenant\User;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,8 +19,8 @@ use Illuminate\Http\Request;
 class AuthController extends Controller
 {
     public function __construct(
-        private readonly SuperAdminAuthService $superAdminAuth,
-        private readonly TenantAuthService $tenantAuth
+        private readonly AuthenticateSuperAdmin $superAdminAuth,
+        private readonly AuthenticateTenantUser $tenantAuth
     ) {}
 
     /**
@@ -122,60 +124,8 @@ class AuthController extends Controller
         ];
 
         $roleData = match ($role) {
-            'teacher' => (function () use ($user): array {
-                $data = [
-                    'teacher_profile' => $user->teacherProfile ? [
-                        'staff_id' => $user->teacherProfile->staff_id,
-                        'qualification' => $user->teacherProfile->qualification,
-                        'department' => $user->teacherProfile->department,
-                    ] : null,
-                ];
-
-                if ($user->assignedLevels->isNotEmpty()) {
-                    $data['assigned_levels'] = $user->assignedLevels->map(fn ($l) => [
-                        'class_level' => $l->classLevel ? [
-                            'id' => $l->classLevel->id,
-                            'name' => $l->classLevel->name,
-                            'slug' => $l->classLevel->slug,
-                        ] : null,
-                    ])->toArray();
-                }
-
-                if ($user->assignedClasses->isNotEmpty()) {
-                    $data['assigned_classes'] = $user->assignedClasses->map(fn ($arm) => [
-                        'id' => $arm->id,
-                        'name' => $arm->name,
-                        'class_level' => $arm->classLevel ? [
-                            'id' => $arm->classLevel->id,
-                            'name' => $arm->classLevel->name,
-                            'slug' => $arm->classLevel->slug,
-                        ] : null,
-                    ])->toArray();
-                }
-
-                if ($user->teacherAssignments->isNotEmpty()) {
-                    $data['assigned_subjects'] = $user->teacherAssignments->map(fn ($a) => [
-                        'subject' => $a->subject ? [
-                            'id' => $a->subject->id,
-                            'name' => $a->subject->name,
-                            'code' => $a->subject->code,
-                        ] : null,
-                        'scope' => $a->class_arm_id ? 'class_arm' : 'level',
-                        'class_level' => $a->classLevel ? [
-                            'id' => $a->classLevel->id,
-                            'name' => $a->classLevel->name,
-                            'slug' => $a->classLevel->slug,
-                        ] : null,
-                        'classes' => $a->classArm ? [
-                            ['id' => $a->classArm->id, 'name' => $a->classArm->name],
-                        ] : null,
-                    ])->toArray();
-                }
-
-                return $data;
-            })(),
-
-            'student' => [
+            RoleType::Teacher->value => $this->buildTeacherRoleData($user),
+            RoleType::Student->value => [
                 'student_profile' => $user->studentProfile ? [
                     'admission_number' => $user->studentProfile->admission_number,
                     'gender' => $user->studentProfile->gender,
@@ -191,14 +141,65 @@ class AuthController extends Controller
                     ] : null,
                 ] : null,
             ],
-
-            // School Admins typically don't need a profile resource,
-            // so they safely return an empty array to merge.
-            default => []
+            default => [],
         };
 
         $finalPayload = array_merge($sessionData, $roleData);
 
         return ApiResponse::success($finalPayload, 'Profile retrieved successfully.');
+    }
+
+    private function buildTeacherRoleData(User $user): array
+    {
+        $data = [
+            'teacher_profile' => $user->teacherProfile ? [
+                'staff_id' => $user->teacherProfile->staff_id,
+                'qualification' => $user->teacherProfile->qualification,
+                'department' => $user->teacherProfile->department,
+            ] : null,
+        ];
+
+        if ($user->assignedLevels->isNotEmpty()) {
+            $data['assigned_levels'] = $user->assignedLevels->map(fn ($l) => [
+                'class_level' => $l->classLevel ? [
+                    'id' => $l->classLevel->id,
+                    'name' => $l->classLevel->name,
+                    'slug' => $l->classLevel->slug,
+                ] : null,
+            ])->toArray();
+        }
+
+        if ($user->assignedClasses->isNotEmpty()) {
+            $data['assigned_classes'] = $user->assignedClasses->map(fn ($arm) => [
+                'id' => $arm->id,
+                'name' => $arm->name,
+                'class_level' => $arm->classLevel ? [
+                    'id' => $arm->classLevel->id,
+                    'name' => $arm->classLevel->name,
+                    'slug' => $arm->classLevel->slug,
+                ] : null,
+            ])->toArray();
+        }
+
+        if ($user->teacherAssignments->isNotEmpty()) {
+            $data['assigned_subjects'] = $user->teacherAssignments->map(fn ($a) => [
+                'subject' => $a->subject ? [
+                    'id' => $a->subject->id,
+                    'name' => $a->subject->name,
+                    'code' => $a->subject->code,
+                ] : null,
+                'scope' => $a->class_arm_id ? 'class_arm' : 'level',
+                'class_level' => $a->classLevel ? [
+                    'id' => $a->classLevel->id,
+                    'name' => $a->classLevel->name,
+                    'slug' => $a->classLevel->slug,
+                ] : null,
+                'classes' => $a->classArm ? [
+                    ['id' => $a->classArm->id, 'name' => $a->classArm->name],
+                ] : null,
+            ])->toArray();
+        }
+
+        return $data;
     }
 }

@@ -33,6 +33,8 @@ class CreateExamData extends Data
         #[IntegerType, Min(1)]
         public readonly int $duration_minutes,
         #[Nullable, Numeric, Min(0)]
+        public readonly ?float $total_marks,
+        #[Nullable, Numeric, Min(0)]
         public readonly ?float $pass_mark,
         #[Nullable, IntegerType, Min(1)]
         public readonly ?int $max_attempts,
@@ -43,4 +45,64 @@ class CreateExamData extends Data
         #[Nullable]
         public readonly ?ExamSettingsData $settings,
     ) {}
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function getSubjectId(): string
+    {
+        return $this->subject_id;
+    }
+
+    public function getClassLevelId(): string
+    {
+        return $this->class_level_id;
+    }
+
+    public function getClassArmId(): ?string
+    {
+        return $this->class_arm_id;
+    }
+
+    public function getTermId(): string
+    {
+        return $this->term_id;
+    }
+
+    public function getType(): ExamType
+    {
+        return $this->type;
+    }
+
+    public function getDurationMinutes(): int
+    {
+        return $this->duration_minutes;
+    }
+
+    public function getPassMark(): ?float
+    {
+        return $this->pass_mark;
+    }
+
+    public function getMaxAttempts(): ?int
+    {
+        return $this->max_attempts;
+    }
+
+    public function getScheduledStart(): ?string
+    {
+        return $this->scheduled_start;
+    }
+
+    public function getInstructions(): ?string
+    {
+        return $this->instructions;
+    }
+
+    public function getSettings(): ?ExamSettingsData
+    {
+        return $this->settings;
+    }
 }

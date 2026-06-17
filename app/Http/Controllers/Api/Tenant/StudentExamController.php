@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ExamAnswerAction;
-use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Actions\Tenants\Exam\FinalizeAttempt;
+use App\Actions\Tenants\Exam\ManageExamSession;
+use App\Actions\Tenants\Exam\RecordExamAnswer;
 use App\Data\Exam\ExamAttemptData;
 use App\Data\Exam\StudentExamQuestionData;
 use App\Enums\ExamAttemptStatus;
@@ -16,6 +17,7 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Support\ApiResponse;
+use App\Support\Exam\ExamSessionStateStore;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,8 +31,10 @@ use Illuminate\Validation\Rule;
 class StudentExamController extends Controller
 {
     public function __construct(
-        private ExamSessionAction $sessionAction,
-        private ExamAnswerAction $answerAction,
+        private ManageExamSession $sessionAction,
+        private RecordExamAnswer $answerAction,
+        private FinalizeAttempt $finalizeAttempt,
+        private ExamSessionStateStore $stateStore,
     ) {}
 
     /**
@@ -210,16 +214,17 @@ class StudentExamController extends Controller
         try {
             $attempt = $this->sessionAction->startAttempt($exam, $student);
         } catch (QueryException $e) {
-            if (
-                $e->getCode() === '23505' ||
-                str_contains($e->getMessage(), 'idx_unique_in_progress_attempt')
-            ) {
-                return ApiResponse::error(
-                    'You already have an active exam attempt.',
-                    422,
-                );
+            $isDuplicateAttempt = $e->getCode() === '23505' ||
+                str_contains($e->getMessage(), 'idx_unique_in_progress_attempt');
+
+            if (! $isDuplicateAttempt) {
+                throw $e;
             }
-            throw $e;
+
+            return ApiResponse::error(
+                'You already have an active exam attempt.',
+                422,
+            );
         }
 
         $questionsData = $this->sessionAction->getQuestions($attempt);
@@ -453,31 +458,18 @@ class StudentExamController extends Controller
         }
 
         try {
-            $attempt = $this->sessionAction->submit($attempt);
+            $attempt = $this->finalizeAttempt->execute(
+                $attempt,
+                $request->user('tenant'),
+            );
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
 
-        $exam = $attempt->exam;
-        $examSettings = $exam->settings;
-        $canShowResult = false;
-        $result = null;
-
-        if (
-            $examSettings->showResultImmediately &&
-            $attempt->status === ExamAttemptStatus::Graded->value
-        ) {
-            $canShowResult = true;
-            $result = $attempt;
-        }
-
         return ApiResponse::success(
-            [
-                'attempt' => $attempt,
-                'can_show_result' => $canShowResult,
-                'result' => $result,
-            ],
-            'Exam submitted.',
+            ['attempt_id' => $attempt->id],
+            'Exam submitted for grading.',
+            202,
         );
     }
 
@@ -516,7 +508,8 @@ class StudentExamController extends Controller
      *
      * @urlParam attemptId string required The attempt UUID.
      *
-     * @bodyParam type string required Event type. Must be one of: tab_switch, visibility_change, fullscreen_exit, copy_attempt, paste_detected. Example: "tab_switch"
+     * @bodyParam type string required Event type. Must be one of: tab_switch,
+     * visibility_change, fullscreen_exit, copy_attempt, paste_detected. Example: "tab_switch"
      * @bodyParam metadata array Additional event metadata. No-example
      */
     public function logSuspiciousEvent(
@@ -573,5 +566,43 @@ class StudentExamController extends Controller
             ExamAttemptData::from($attempt),
             'Result retrieved.',
         );
+    }
+
+    /**
+     * Get the current session state for reconnection.
+     *
+     * @subgroup Exam Attempts
+     *
+     * @urlParam attemptId string required The attempt UUID.
+     */
+    public function sessionState(Request $request, string $attemptId): JsonResponse
+    {
+        $attempt = ExamAttempt::findOrFail($attemptId);
+        $student = $request->user('tenant');
+
+        if ($attempt->student_id !== $student->id) {
+            return ApiResponse::error('Unauthorized.', 403);
+        }
+
+        $tenantId = (string) tenant('id');
+        $cached = $this->stateStore->read($tenantId, $attemptId);
+
+        if ($cached !== null) {
+            return ApiResponse::success([
+                'attempt_id' => $cached->attemptId,
+                'time_remaining_seconds' => $cached->timeRemainingSeconds,
+                'last_answer_id' => $cached->lastAnswerId,
+                'last_activity_at' => $cached->lastActivityAt,
+                'connection_alive' => $cached->connectionAlive,
+            ]);
+        }
+
+        return ApiResponse::success([
+            'attempt_id' => $attempt->id,
+            'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
+            'last_answer_id' => null,
+            'last_activity_at' => null,
+            'connection_alive' => false,
+        ]);
     }
 }

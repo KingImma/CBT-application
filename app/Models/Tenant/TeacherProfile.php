@@ -11,7 +11,13 @@ class TeacherProfile extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'user_id',
+        'qualification',
+        'staff_id',
+        'class_level_id',
+        'date_of_birth',
+    ];
 
     protected $casts = [
         'date_of_birth' => 'date',
@@ -28,4 +34,22 @@ class TeacherProfile extends Model
     }
 
     // Note: The subjectAssignments relationship was removed from here.
+
+    public static function generateStaffId(): string
+    {
+        $year = date('Y');
+
+        $last = static::lockForUpdate()
+            ->where('staff_id', 'like', "TCH/{$year}/%")
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $next = 1;
+
+        if ($last && preg_match('/(\d+)$/', $last->staff_id, $m)) {
+            $next = (int) $m[1] + 1;
+        }
+
+        return "TCH/{$year}/".str_pad((string) $next, 3, '0', STR_PAD_LEFT);
+    }
 }

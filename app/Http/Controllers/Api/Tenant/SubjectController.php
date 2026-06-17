@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Data\Subject\SubjectData;
+use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\TeacherSubjectAssignment;
@@ -173,7 +174,7 @@ class SubjectController extends Controller
 
         $teacher = User::findOrFail($validated['user_id']);
 
-        if (! $teacher->hasRole('teacher')) {
+        if (! $teacher->hasRole(RoleType::Teacher->value)) {
             return ApiResponse::error('Invalid assignment. The selected user must be a teacher.', 422);
         }
 

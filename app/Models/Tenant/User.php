@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\User\Concerns\HasBroadcasting;
+use App\Models\Tenant\User\Concerns\HasLifecycle;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,9 +18,17 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
+    use HasApiTokens, HasBroadcasting, HasFactory, HasLifecycle, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'password',
+        'is_active',
+        'role',
+    ];
 
     protected $guard_name = 'tenant';
 
@@ -94,8 +104,11 @@ class User extends Authenticatable
     /**
      * Scope to search users by multiple fields.
      */
-    public function scopeSearch($query, ?string $search, array $searchFields = ['first_name', 'last_name', 'email']): void
-    {
+    public function scopeSearch(
+        $query,
+        ?string $search,
+        array $searchFields = ['first_name', 'last_name', 'email']
+    ): void {
         if (! $search) {
             return;
         }

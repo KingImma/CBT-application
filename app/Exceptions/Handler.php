@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
+use App\Actions\Exceptions\MonitorException;
 use App\Exceptions\Auth\AccountDeactivatedException;
 use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Exceptions\Business\BulkOperationException;
 use App\Exceptions\Business\PlanLimitExceededException;
 use App\Exceptions\Tenant\TenantSlugAlreadyTakenException;
-use App\Services\ExceptionMonitoringService;
 use App\Support\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -53,7 +53,7 @@ class Handler extends ExceptionHandler
 
             Log::error('Exception occurred', $context);
 
-            app(ExceptionMonitoringService::class)->record(
+            app(MonitorException::class)->execute(
                 get_class($e),
                 $context
             );

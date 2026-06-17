@@ -11,12 +11,37 @@ use Illuminate\Support\Carbon;
 class ExamSettings implements Castable
 {
     public function __construct(
-        public readonly bool $randomizeQuestions = false,
-        public readonly bool $showResultImmediately = false,
-        public readonly ?Carbon $resultsReleaseDate = null,
-        public readonly bool $requireAttendance = true,
-        public readonly int $maxSuspiciousEvents = 5,
+        private readonly bool $randomizeQuestions = false,
+        private readonly bool $showResultImmediately = false,
+        private readonly ?Carbon $resultsReleaseDate = null,
+        private readonly bool $requireAttendance = true,
+        private readonly int $maxSuspiciousEvents = 5,
     ) {}
+
+    public function getRandomizeQuestions(): bool
+    {
+        return $this->randomizeQuestions;
+    }
+
+    public function getShowResultImmediately(): bool
+    {
+        return $this->showResultImmediately;
+    }
+
+    public function getResultsReleaseDate(): ?Carbon
+    {
+        return $this->resultsReleaseDate;
+    }
+
+    public function getRequireAttendance(): bool
+    {
+        return $this->requireAttendance;
+    }
+
+    public function getMaxSuspiciousEvents(): int
+    {
+        return $this->maxSuspiciousEvents;
+    }
 
     public static function fromArray(?array $data): self
     {
@@ -36,11 +61,11 @@ class ExamSettings implements Castable
     public function toArray(): array
     {
         return [
-            'randomize_questions' => $this->randomizeQuestions,
-            'show_result_immediately' => $this->showResultImmediately,
-            'results_release_date' => $this->resultsReleaseDate?->toIso8601String(),
-            'require_attendance' => $this->requireAttendance,
-            'max_suspicious_events' => $this->maxSuspiciousEvents,
+            'randomize_questions' => $this->getRandomizeQuestions(),
+            'show_result_immediately' => $this->getShowResultImmediately(),
+            'results_release_date' => $this->getResultsReleaseDate()?->toIso8601String(),
+            'require_attendance' => $this->getRequireAttendance(),
+            'max_suspicious_events' => $this->getMaxSuspiciousEvents(),
         ];
     }
 

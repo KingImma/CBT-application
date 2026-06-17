@@ -10,8 +10,13 @@ use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 class ExamAttemptSettings implements Castable
 {
     public function __construct(
-        public readonly array $questionOrder = [],
+        private readonly array $questionOrder = [],
     ) {}
+
+    public function getQuestionOrder(): array
+    {
+        return $this->questionOrder;
+    }
 
     public static function fromArray(?array $data): self
     {
@@ -27,7 +32,7 @@ class ExamAttemptSettings implements Castable
     public function toArray(): array
     {
         return [
-            'question_order' => $this->questionOrder,
+            'question_order' => $this->getQuestionOrder(),
         ];
     }
 

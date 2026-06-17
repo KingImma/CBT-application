@@ -17,6 +17,12 @@ class ClassArmSubjectPivot extends Pivot
 
     protected $keyType = 'string';
 
+    protected $fillable = [
+        'class_arm_id',
+        'subject_id',
+        'is_compulsory',
+    ];
+
     protected $casts = [
         'is_compulsory' => 'boolean',
     ];

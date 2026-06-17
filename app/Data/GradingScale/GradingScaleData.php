@@ -14,4 +14,24 @@ class GradingScaleData extends Resource
         public readonly array $grades,
         public readonly bool $is_default,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getGrades(): array
+    {
+        return $this->grades;
+    }
+
+    public function isDefault(): bool
+    {
+        return $this->is_default;
+    }
 }

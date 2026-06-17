@@ -25,4 +25,39 @@ class ClassLevelData extends Resource
         #[WhenLoaded('subjects')]
         public readonly Optional|DataCollection $subjects,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function getClassArmsCount(): Optional|int
+    {
+        return $this->class_arms_count;
+    }
+
+    public function getStudentsCount(): Optional|int
+    {
+        return $this->students_count;
+    }
+
+    public function getClassArms(): Optional|DataCollection
+    {
+        return $this->classArms;
+    }
+
+    public function getSubjects(): Optional|DataCollection
+    {
+        return $this->subjects;
+    }
 }

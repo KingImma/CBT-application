@@ -38,3 +38,6 @@ postman
 # Dev test harnesses — never committed
 /resources/views/dev/
 dev-notes.md
+CLAUDE.md
+graphify-out/
+handoff.md

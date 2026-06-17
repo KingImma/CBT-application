@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Actions\Tenants\Exam\ExamSessionAction;
+use App\Actions\Tenants\Exam\FinalizeAttempt;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\ExamAttempt;
@@ -17,7 +17,7 @@ class AutoSubmitExpiredExams extends Command
     protected $description = 'Auto-submit expired exam attempts based on individual timer';
 
     public function __construct(
-        private ExamSessionAction $sessionAction,
+        private FinalizeAttempt $finalizeAction,
     ) {
         parent::__construct();
     }
@@ -33,9 +33,7 @@ class AutoSubmitExpiredExams extends Command
         }
 
         foreach ($tenants as $tenant) {
-            $tenant->run(function () use ($tenant) {
-                $this->info("Checking tenant: {$tenant->id}");
-
+            $tenant->run(function () {
                 ExamAttempt::with('exam')
                     ->where('status', ExamAttemptStatus::InProgress->value)
                     ->whereHas('exam', fn ($q) => $q->whereNotNull('duration_minutes'))
@@ -46,7 +44,7 @@ class AutoSubmitExpiredExams extends Command
                             }
 
                             try {
-                                $this->sessionAction->submit($attempt);
+                                $this->finalizeAction->execute($attempt);
                                 $this->info("  Auto-submitted attempt {$attempt->id} for student {$attempt->student_id}");
                             } catch (\Exception $e) {
                                 $this->error("  Failed to submit attempt {$attempt->id}: {$e->getMessage()}");

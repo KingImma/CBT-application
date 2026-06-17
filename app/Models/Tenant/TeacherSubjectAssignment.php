@@ -12,7 +12,13 @@ class TeacherSubjectAssignment extends Model
 {
     use HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'user_id',
+        'subject_id',
+        'class_level_id',
+        'class_arm_id',
+        'academic_session_id',
+    ];
 
     public function user(): BelongsTo
     {

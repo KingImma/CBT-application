@@ -9,13 +9,18 @@ use Spatie\LaravelData\Resource;
 
 class ExamQuestionData extends Resource
 {
-    protected bool $showAnswers = true;
+    private bool $showAnswers = true;
 
     public function showAnswers(bool $show): static
     {
         $this->showAnswers = $show;
 
         return $this;
+    }
+
+    public function isShowingAnswers(): bool
+    {
+        return $this->showAnswers;
     }
 
     public function __construct(
@@ -27,4 +32,34 @@ class ExamQuestionData extends Resource
         #[WhenLoaded('question')]
         public readonly mixed $question,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getExamId(): string
+    {
+        return $this->exam_id;
+    }
+
+    public function getQuestionId(): string
+    {
+        return $this->question_id;
+    }
+
+    public function getOrder(): int
+    {
+        return $this->order;
+    }
+
+    public function getMarks(): ?float
+    {
+        return $this->marks;
+    }
+
+    public function getQuestion(): mixed
+    {
+        return $this->question;
+    }
 }

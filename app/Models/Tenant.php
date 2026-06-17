@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\StatusType;
+use App\Models\Tenant\Concerns\HasBroadcasting;
+use App\Models\Tenant\Concerns\HasLifecycle;
+use App\Models\Tenant\Concerns\HasValidation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
@@ -14,7 +17,7 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
-    use HasDatabase, HasDomains, HasFactory, SoftDeletes;
+    use HasBroadcasting, HasDatabase, HasDomains, HasFactory, HasLifecycle, HasValidation, SoftDeletes;
 
     protected $table = 'tenants';
 
@@ -25,8 +28,26 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     protected $keyType = 'string';
 
-    // NOT guarded — primary key is assigned manually (slug), not auto-generated.
-    protected $guarded = [];
+    protected $fillable = [
+        'id',
+        'name',
+        'slug',
+        'handle',
+        'database',
+        'email',
+        'phone',
+        'address',
+        'city',
+        'state',
+        'logo',
+        'plan_id',
+        'subscription_status',
+        'trial_ends_at',
+        'subscription_ends_at',
+        'settings',
+        'is_active',
+        'onboarding_completed_at',
+    ];
 
     protected $casts = [
         'subscription_status' => StatusType::class,

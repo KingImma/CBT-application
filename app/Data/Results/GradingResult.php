@@ -7,10 +7,10 @@ namespace App\Data\Results;
 class GradingResult
 {
     public function __construct(
-        public readonly string $questionId,
-        public readonly bool $isCorrect,
-        public readonly float $marksAwarded,
-        public readonly string $questionType,
+        private readonly string $questionId,
+        private readonly bool $isCorrect,
+        private readonly float $marksAwarded,
+        private readonly string $questionType,
     ) {}
 
     public static function incorrect(string $questionId, string $questionType): self
@@ -31,5 +31,25 @@ class GradingResult
             marksAwarded: $marks,
             questionType: $questionType,
         );
+    }
+
+    public function getQuestionId(): string
+    {
+        return $this->questionId;
+    }
+
+    public function isCorrect(): bool
+    {
+        return $this->isCorrect;
+    }
+
+    public function getMarksAwarded(): float
+    {
+        return $this->marksAwarded;
+    }
+
+    public function getQuestionType(): string
+    {
+        return $this->questionType;
     }
 }

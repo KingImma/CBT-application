@@ -26,4 +26,44 @@ class ClassArmData extends Resource
         #[WhenLoaded('subjects')]
         public readonly mixed $subjects,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getCapacity(): ?int
+    {
+        return $this->capacity;
+    }
+
+    public function getClassLevelId(): Optional|string
+    {
+        return $this->class_level_id;
+    }
+
+    public function getStudentsCount(): Optional|int
+    {
+        return $this->students_count;
+    }
+
+    public function getClassLevel(): mixed
+    {
+        return $this->classLevel;
+    }
+
+    public function getAssignedTeacher(): mixed
+    {
+        return $this->assignedTeacher;
+    }
+
+    public function getSubjects(): mixed
+    {
+        return $this->subjects;
+    }
 }

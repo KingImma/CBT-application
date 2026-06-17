@@ -56,4 +56,6 @@ Route::prefix('student/exams')
         Route::post('/attempts/{id}/suspicious-event', 'logSuspiciousEvent')
             ->whereUuid('id')
             ->middleware('throttle:30,1');
+        Route::get('/attempts/{id}/session-state', 'sessionState')
+            ->whereUuid('id');
     });

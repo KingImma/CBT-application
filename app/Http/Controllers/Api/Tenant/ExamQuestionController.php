@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ExamQuestionManagementAction;
-use App\Actions\Tenants\Exam\ExamRandomizationAction;
+use App\Actions\Tenants\Exam\ManageExamQuestion;
+use App\Actions\Tenants\Exam\RandomizeExamQuestions;
 use App\Data\Exam\ExamQuestionData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
@@ -22,8 +22,8 @@ use Illuminate\Http\Request;
 class ExamQuestionController extends Controller
 {
     public function __construct(
-        private ExamQuestionManagementAction $managementAction,
-        private ExamRandomizationAction $randomizationAction,
+        private ManageExamQuestion $managementAction,
+        private RandomizeExamQuestions $randomizationAction,
     ) {}
 
     /**

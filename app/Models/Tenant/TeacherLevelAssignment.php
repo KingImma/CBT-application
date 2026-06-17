@@ -12,7 +12,11 @@ class TeacherLevelAssignment extends Model
 {
     use HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'user_id',
+        'class_level_id',
+        'academic_session_id',
+    ];
 
     public function user(): BelongsTo
     {

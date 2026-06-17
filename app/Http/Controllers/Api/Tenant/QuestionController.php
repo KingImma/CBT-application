@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\CloneQuestionAction;
 use App\Data\Question\QuestionData;
+use App\Enums\QuestionType;
 use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
@@ -81,13 +82,17 @@ class QuestionController extends Controller
                 'required', 'uuid', 'exists:subjects,id',
                 function ($attribute, $value, $fail) use ($request) {
                     $classLevelId = $request->input('class_level_id');
-                    if ($classLevelId) {
-                        $exists = ClassLevel::where('id', $classLevelId)
-                            ->whereHas('subjects', fn ($q) => $q->where('subject_id', $value))
-                            ->exists();
-                        if (! $exists) {
-                            $fail('The selected subject is not assigned to the selected class level.');
-                        }
+
+                    if ($classLevelId === null) {
+                        return;
+                    }
+
+                    $exists = ClassLevel::where('id', $classLevelId)
+                        ->whereHas('subjects', fn ($q) => $q->where('subject_id', $value))
+                        ->exists();
+
+                    if (! $exists) {
+                        $fail('The selected subject is not assigned to the selected class level.');
                     }
                 },
             ],
@@ -111,7 +116,7 @@ class QuestionController extends Controller
             $question = Question::create([
                 'subject_id' => $validated['subject_id'],
                 'class_level_id' => $validated['class_level_id'],
-                'type' => 'mcq_single',
+                'type' => QuestionType::McqSingle->value,
                 'content' => $validated['content'],
                 'default_marks' => $validated['default_marks'],
                 'image_url' => $validated['image_url'] ?? null,

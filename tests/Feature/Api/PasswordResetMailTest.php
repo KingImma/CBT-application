@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Actions\Auth\SendOtp;
 use App\Mail\PasswordResetOtpMail;
 use App\Models\User;
-use App\Services\Auth\OtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -26,7 +26,7 @@ class PasswordResetMailTest extends TestCase
 
         User::factory()->create(['email' => 'student@example.com']);
 
-        app(OtpService::class)->sendOtp('student@example.com', 'EduCBT');
+        app(SendOtp::class)->execute('student@example.com', 'EduCBT');
 
         Mail::assertSent(PasswordResetOtpMail::class, function (PasswordResetOtpMail $mail): bool {
             return $mail->hasTo('student@example.com');
@@ -41,7 +41,7 @@ class PasswordResetMailTest extends TestCase
 
         User::factory()->create(['email' => 'student@example.com']);
 
-        app(OtpService::class)->sendOtp('student@example.com', 'EduCBT');
+        app(SendOtp::class)->execute('student@example.com', 'EduCBT');
 
         Mail::assertSent(PasswordResetOtpMail::class, function (PasswordResetOtpMail $mail): bool {
             return $mail->hasTo('student@example.com');
@@ -56,7 +56,7 @@ class PasswordResetMailTest extends TestCase
 
         User::factory()->create(['email' => 'student@example.com']);
 
-        app(OtpService::class)->sendOtp('student@example.com', 'EduCBT');
+        app(SendOtp::class)->execute('student@example.com', 'EduCBT');
 
         Mail::assertSent(PasswordResetOtpMail::class, function (PasswordResetOtpMail $mail): bool {
             return $mail->hasTo('developer@example.com')
@@ -71,7 +71,7 @@ class PasswordResetMailTest extends TestCase
 
         $this->expectException(ValidationException::class);
 
-        app(OtpService::class)->sendOtp('', 'EduCBT');
+        app(SendOtp::class)->execute('', 'EduCBT');
 
         Mail::assertNothingSent();
     }
@@ -87,7 +87,7 @@ class PasswordResetMailTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('MAIL_OVERRIDE_ADDRESS must be a valid email address when set.');
 
-        app(OtpService::class)->sendOtp('student@example.com', 'EduCBT');
+        app(SendOtp::class)->execute('student@example.com', 'EduCBT');
 
         Mail::assertNothingSent();
     }

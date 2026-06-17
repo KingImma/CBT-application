@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\RoleType;
 use App\Models\Tenant;
 use App\Models\Tenant\User;
 use Illuminate\Console\Command;
@@ -69,7 +70,7 @@ class BackfillUserRoles extends Command
     {
         $assigned = 0;
 
-        $studentRole = Role::where('name', 'student')->where('guard_name', 'tenant')->first();
+        $studentRole = Role::where('name', RoleType::Student->value)->where('guard_name', 'tenant')->first();
         if ($studentRole) {
             User::join('student_profiles', 'users.id', '=', 'student_profiles.user_id')
                 ->select('users.id')
@@ -85,7 +86,7 @@ class BackfillUserRoles extends Command
                 });
         }
 
-        $teacherRole = Role::where('name', 'teacher')->where('guard_name', 'tenant')->first();
+        $teacherRole = Role::where('name', RoleType::Teacher->value)->where('guard_name', 'tenant')->first();
         if ($teacherRole) {
             User::join('teacher_profiles', 'users.id', '=', 'teacher_profiles.user_id')
                 ->select('users.id')
@@ -101,9 +102,9 @@ class BackfillUserRoles extends Command
                 });
         }
 
-        $adminRole = Role::where('name', 'school_admin')->where('guard_name', 'tenant')->first();
+        $adminRole = Role::where('name', RoleType::SchoolAdmin->value)->where('guard_name', 'tenant')->first();
         if ($adminRole) {
-            User::where('role', 'school_admin')
+            User::where('role', RoleType::SchoolAdmin->value)
                 ->cursor()
                 ->each(function ($user) use ($adminRole, $isDryRun, &$assigned) {
                     if (! $user->hasRole($adminRole)) {

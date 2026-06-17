@@ -17,7 +17,14 @@ class SuperAdmin extends Authenticatable
 
     public $incrementing = false;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'id',
+        'name',
+        'email',
+        'password',
+        'is_active',
+        'last_login_at',
+    ];
 
     protected $hidden = ['password'];
 

@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Data\Question\QuestionOptionData;
+use App\Enums\QuestionType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
@@ -52,7 +53,7 @@ class QuestionOptionController extends Controller
         ]);
 
         // Enforce single-correct for mcq_single
-        if ($validated['is_correct'] && $question->type === 'mcq_single') {
+        if ($validated['is_correct'] && $question->type === QuestionType::McqSingle->value) {
             $question->options()->update(['is_correct' => false]);
         }
 
@@ -93,7 +94,7 @@ class QuestionOptionController extends Controller
             'match_pair' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
-        if (($validated['is_correct'] ?? false) && $question->type === 'mcq_single') {
+        if (($validated['is_correct'] ?? false) && $question->type === QuestionType::McqSingle->value) {
             $question->options()->where('id', '!=', $id)->update(['is_correct' => false]);
         }
 

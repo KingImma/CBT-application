@@ -4,15 +4,27 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\ExamAnswer\Concerns\HasBroadcasting;
+use App\Models\Tenant\ExamAnswer\Concerns\HasScoring;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExamAnswer extends Model
 {
-    use HasUuids;
+    use HasBroadcasting, HasScoring, HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'attempt_id',
+        'question_id',
+        'selected_option_ids',
+        'ordering_answer',
+        'matching_answer',
+        'text_answer',
+        'time_spent_seconds',
+        'is_flagged',
+        'answered_at',
+    ];
 
     protected $casts = [
         'selected_option_ids' => 'array',

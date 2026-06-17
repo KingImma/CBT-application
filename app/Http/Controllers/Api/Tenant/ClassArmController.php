@@ -50,13 +50,16 @@ class ClassArmController extends Controller
     {
         $level = ClassLevel::findOrFail($classLevelId);
 
+        $request->merge(['name' => $this->normalizeName($request->input('name'))]);
+
         $validated = $request->validate([
             'name' => [
                 'required',
                 'string',
                 'max:50',
                 Rule::unique('class_arms', 'name')
-                    ->where('class_level_id', $level->id),
+                    ->where('class_level_id', $level->id)
+                    ->withoutTrashed(),
             ],
         ]);
 
@@ -88,11 +91,18 @@ class ClassArmController extends Controller
     {
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);
 
+        $request->merge(['name' => $this->normalizeName($request->input('name'))]);
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:50'],
-            Rule::unique('class_arms', 'name')
-                ->where('class_level_id', $classLevelId)
-                ->ignore($id),
+            'name' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('class_arms', 'name')
+                    ->where('class_level_id', $classLevelId)
+                    ->ignore($id)
+                    ->withoutTrashed(),
+            ],
         ]);
 
         $arm->update($validated);
@@ -119,7 +129,7 @@ class ClassArmController extends Controller
     }
 
     /**
-     * Delete a class arm (must have no students assigned).
+     * Delete a class arm (soft-deletes if dependencies exist).
      *
      * @subgroup Class Arms
      *
@@ -128,16 +138,27 @@ class ClassArmController extends Controller
      */
     public function destroy(string $classLevelId, string $id): JsonResponse
     {
-        $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);
-
-        if ($arm->students()->count() > 0) {
-            return ApiResponse::error('Cannot delete a class arm that has stude
-            
-            nts assigned to it.', 422);
-        }
+        $arm = ClassArm::withCount(['students', 'exams'])->where('class_level_id', $classLevelId)->findOrFail($id);
 
         $arm->delete();
 
-        return ApiResponse::message('Class arm deleted.');
+        $parts = [];
+        if ($arm->students_count > 0) {
+            $parts[] = "{$arm->students_count} student(s)";
+        }
+        if ($arm->exams_count > 0) {
+            $parts[] = "{$arm->exams_count} exam(s)";
+        }
+
+        $message = $parts !== []
+            ? 'Class arm soft-deleted (has '.implode(', ', $parts).').'
+            : 'Class arm deleted.';
+
+        return ApiResponse::message($message);
+    }
+
+    private function normalizeName(?string $name): string
+    {
+        return trim(strtoupper($name ?? ''));
     }
 }

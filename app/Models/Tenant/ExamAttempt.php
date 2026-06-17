@@ -6,8 +6,11 @@ namespace App\Models\Tenant;
 
 use App\Data\Values\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
-use App\Enums\SuspiciousEventType;
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
+use App\Models\Tenant\ExamAttempt\Concerns\HasBroadcasting;
+use App\Models\Tenant\ExamAttempt\Concerns\HasGrading;
+use App\Models\Tenant\ExamAttempt\Concerns\HasLifecycle;
+use App\Models\Tenant\ExamAttempt\Concerns\HasValidation;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -17,11 +20,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ExamAttempt extends Model
 {
-    use BelongsToSessionTerm, HasUuids;
+    use BelongsToSessionTerm, HasBroadcasting, HasGrading, HasLifecycle, HasUuids, HasValidation;
 
     private const SECONDS_PER_MINUTE = 60;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'exam_id',
+        'student_id',
+        'attempt_number',
+        'started_at',
+        'suspicious_events',
+        'settings',
+    ];
 
     protected $casts = [
         'started_at' => 'datetime',
@@ -61,7 +71,7 @@ class ExamAttempt extends Model
 
     public function scopeInProgress(Builder $query): Builder
     {
-        return $query->where('status', ExamAttemptStatus::InProgress->value);
+        return $query->where('status', ExamAttemptStatus::InProgress);
     }
 
     public function scopeForExam(Builder $query, string $examId): Builder
@@ -72,25 +82,6 @@ class ExamAttempt extends Model
     public function scopeForStudent(Builder $query, string $studentId): Builder
     {
         return $query->where('student_id', $studentId);
-    }
-
-    // Helper
-
-    /**
-     * Append a suspicious event to the attempt's event log.
-     *
-     * Does NOT persist — caller is responsible for calling save().
-     * This keeps the domain method pure and side-effect-free.
-     */
-    public function logSuspiciousEvent(SuspiciousEventType $type, array $metadata = []): void
-    {
-        $events = $this->suspicious_events ?? [];
-        $events[] = [
-            'type' => $type->value,
-            'timestamp' => now()->toIso8601String(),
-            'metadata' => $metadata,
-        ];
-        $this->suspicious_events = $events;
     }
 
     /**

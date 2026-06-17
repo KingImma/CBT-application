@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\SuperAdmin\CreateTenantAction;
+use App\Actions\SuperAdmin\CreateTenant;
 use App\Data\SubscriptionPlan\SubscriptionPlanData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OnboardingRequest;
@@ -57,7 +57,7 @@ class OnboardingController extends Controller
      * @bodyParam handle string required Unique school handle for subdomain. No-example
      * @bodyParam plan_id string nullable Subscription plan UUID. No-example
      */
-    public function register(OnboardingRequest $request, CreateTenantAction $action): JsonResponse
+    public function register(OnboardingRequest $request, CreateTenant $action): JsonResponse
     {
         $tenant = $action->execute($request->toData()->toArray());
 

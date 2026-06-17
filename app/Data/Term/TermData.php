@@ -17,4 +17,34 @@ class TermData extends Resource
         public readonly ?string $end_date,
         public readonly Optional|string $academic_session_id,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function isCurrent(): bool
+    {
+        return $this->is_current;
+    }
+
+    public function getStartDate(): ?string
+    {
+        return $this->start_date;
+    }
+
+    public function getEndDate(): ?string
+    {
+        return $this->end_date;
+    }
+
+    public function getAcademicSessionId(): Optional|string
+    {
+        return $this->academic_session_id;
+    }
 }

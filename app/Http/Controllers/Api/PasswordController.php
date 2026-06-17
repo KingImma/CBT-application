@@ -9,12 +9,17 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Auth\ChangePassword;
+use App\Actions\Auth\ResetPassword;
+use App\Actions\Auth\SendOtp;
+use App\Actions\Auth\VerifyOtp;
 use App\Http\Controllers\Controller;
-use App\Services\Auth\OtpService;
-use App\Services\Auth\PasswordResetService;
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
+use App\Http\Requests\VerifyOtpRequest;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 
 /**
@@ -24,8 +29,10 @@ use Illuminate\Validation\Rules\Password;
 class PasswordController extends Controller
 {
     public function __construct(
-        private readonly OtpService $otpService,
-        private readonly PasswordResetService $passwordResetService,
+        private readonly SendOtp $sendOtp,
+        private readonly VerifyOtp $verifyOtp,
+        private readonly ResetPassword $resetPassword,
+        private readonly ChangePassword $changePassword,
     ) {}
 
     // ────────────────────────────
@@ -39,16 +46,14 @@ class PasswordController extends Controller
      *
      * @bodyParam email string required User's email address. No-example
      */
-    public function forgot(Request $request): JsonResponse
+    public function forgot(ForgotPasswordRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'email' => ['bail', 'required', 'email:rfc', 'max:254'],
-        ]);
+        $validated = $request->validated();
 
         // Resolve school name from tenant config for the email template
         $schoolName = config('tenant.school_name', 'EduCBT');
 
-        $this->otpService->sendOtp($validated['email'], $schoolName);
+        $this->sendOtp->execute($validated['email'], $schoolName);
 
         // Always return 200 — never reveal whether the email exists
         return ApiResponse::message('If that email is registered, you will receive a reset code.');
@@ -66,14 +71,11 @@ class PasswordController extends Controller
      * @bodyParam email string required User's email address. No-example
      * @bodyParam otp string required The 6-digit OTP code. Example: "123456"
      */
-    public function verifyOtp(Request $request): JsonResponse
+    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'email' => ['bail', 'required', 'email:rfc', 'max:254'],
-            'otp' => ['bail', 'required', 'string', 'size:6'],
-        ]);
+        $validated = $request->validated();
 
-        $resetToken = $this->otpService->verifyOtp(
+        $resetToken = $this->verifyOtp->execute(
             $validated['email'],
             $validated['otp']
         );
@@ -96,14 +98,11 @@ class PasswordController extends Controller
      * @bodyParam password string required New password (min 8 chars, must contain number). No-example
      * @bodyParam password_confirmation string required Confirm the new password. No-example
      */
-    public function reset(Request $request): JsonResponse
+    public function reset(ResetPasswordRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'reset_token' => ['required', 'string'],
-            'password' => ['required', 'confirmed', Password::min(8)->numbers()],
-        ]);
+        $validated = $request->validated();
 
-        $this->passwordResetService->resetPassword(
+        $this->resetPassword->execute(
             $validated['reset_token'],
             $validated['password']
         );
@@ -120,21 +119,12 @@ class PasswordController extends Controller
      * @bodyParam password string required New password (min 8 chars, must contain number). No-example
      * @bodyParam password_confirmation string required Confirm the new password. No-example
      */
-    public function change(Request $request): JsonResponse
+    public function change(ChangePasswordRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'string'],
-            'password' => ['required', 'confirmed', Password::min(8)->numbers()],
-        ]);
+        $validated = $request->validated();
 
-        $user = $request->user();
-
-        if (! $user) {
-            abort(401);
-        }
-
-        $this->passwordResetService->changePassword(
-            $user,
+        $this->changePassword->execute(
+            $request->user(),
             $validated['current_password'],
             $validated['password']
         );

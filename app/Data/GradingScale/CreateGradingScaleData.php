@@ -22,4 +22,19 @@ class CreateGradingScaleData extends Data
         #[BooleanType]
         public bool $is_default = false,
     ) {}
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getGrades(): array
+    {
+        return $this->grades;
+    }
+
+    public function isDefault(): bool
+    {
+        return $this->is_default;
+    }
 }

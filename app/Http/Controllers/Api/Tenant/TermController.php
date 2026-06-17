@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Actions\Tenants\Terms\CreateTerm;
+use App\Actions\Tenants\Terms\UpdateTerm;
 use App\Data\Term\TermData;
+use App\Exceptions\Domain\Session\TermAlreadyCurrentException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\StoreTermRequest;
+use App\Http\Requests\Tenant\UpdateTermRequest;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Term;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @group Academic Calendar
@@ -48,18 +51,15 @@ class TermController extends Controller
      * @bodyParam end_date string required End date (Y-m-d), must be after start_date. No-example
      * @bodyParam is_current boolean Set as the current term. No-example
      */
-    public function store(Request $request, string $sessionId): JsonResponse
+    public function store(StoreTermRequest $request, string $sessionId): JsonResponse
     {
         $session = AcademicSession::findOrFail($sessionId);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after:start_date'],
-            'is_current' => ['sometimes', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
-        $term = $session->terms()->create($validated);
+        $validated['tenant_id'] = $session->tenant_id;
+
+        $term = (new CreateTerm)->execute(array_merge($validated, ['academic_session_id' => $sessionId]));
 
         return ApiResponse::created(TermData::from($term), 'Term created.');
     }
@@ -77,18 +77,13 @@ class TermController extends Controller
      * @bodyParam end_date string End date. No-example
      * @bodyParam is_current boolean Set as current. No-example
      */
-    public function update(Request $request, string $sessionId, string $id): JsonResponse
+    public function update(UpdateTermRequest $request, string $sessionId, string $id): JsonResponse
     {
         $term = Term::where('academic_session_id', $sessionId)->findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:100'],
-            'start_date' => ['sometimes', 'date'],
-            'end_date' => ['sometimes', 'date', 'after:start_date'],
-            'is_current' => ['sometimes', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
-        $term->update($validated);
+        $term = (new UpdateTerm)->execute($term, $validated);
 
         return ApiResponse::success(TermData::from($term->fresh()), 'Term updated.');
     }
@@ -125,22 +120,13 @@ class TermController extends Controller
 
         $term = Term::where('academic_session_id', $sessionId)->findOrFail($id);
 
-        // 1. Prevent unnecessary database calls if it is already current
-        if ($term->is_current) {
+        try {
+            $term->setAsCurrent()->save();
+        } catch (TermAlreadyCurrentException $e) {
             return ApiResponse::success([
                 'term' => TermData::from($term),
-            ], "'{$term->name}' is already the current term.");
+            ], $e->getMessage());
         }
-
-        // 2. Wrap the toggle in a transaction for data integrity
-        DB::transaction(function () use ($term) {
-            // Unset current on ALL terms globally.
-            // This is a great safety net that guarantees no term from a previous year was accidentally left active.
-            Term::where('is_current', true)->update(['is_current' => false]);
-
-            // Set the new current term
-            $term->update(['is_current' => true]);
-        });
 
         return ApiResponse::success([
             'term' => TermData::from($term->fresh()),

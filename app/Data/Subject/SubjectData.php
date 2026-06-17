@@ -25,4 +25,44 @@ class SubjectData extends Resource
         #[WhenLoaded('teacherAssignments')]
         public readonly mixed $teacherAssignments,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getCode(): ?string
+    {
+        return $this->code;
+    }
+
+    public function getCategory(): Optional|string
+    {
+        return $this->category;
+    }
+
+    public function getDepartment(): Optional|string
+    {
+        return $this->department;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active;
+    }
+
+    public function getClassLevels(): mixed
+    {
+        return $this->classLevels;
+    }
+
+    public function getTeacherAssignments(): mixed
+    {
+        return $this->teacherAssignments;
+    }
 }

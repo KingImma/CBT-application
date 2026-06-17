@@ -100,9 +100,9 @@ class DeclarativeSchemaTest extends TestCase
         ];
         $examData = CreateExamData::from($data);
 
-        $this->assertEquals('Mid-Term Exam', $examData->title);
-        $this->assertEquals('exam', $examData->type->value);
-        $this->assertEquals(60, $examData->duration_minutes);
+        $this->assertEquals('Mid-Term Exam', $examData->getTitle());
+        $this->assertEquals('exam', $examData->getType()->value);
+        $this->assertEquals(60, $examData->getDurationMinutes());
     }
 
     #[Test]
@@ -126,11 +126,11 @@ class DeclarativeSchemaTest extends TestCase
         ];
         $examData = CreateExamData::from($data);
 
-        $this->assertEquals(75.0, $examData->pass_mark);
-        $this->assertEquals(2, $examData->max_attempts);
-        $this->assertEquals('Read carefully.', $examData->instructions);
-        $this->assertNotNull($examData->settings);
-        $this->assertTrue($examData->settings->randomize_questions);
-        $this->assertFalse($examData->settings->show_result_immediately);
+        $this->assertEquals(75.0, $examData->getPassMark());
+        $this->assertEquals(2, $examData->getMaxAttempts());
+        $this->assertEquals('Read carefully.', $examData->getInstructions());
+        $this->assertNotNull($examData->getSettings());
+        $this->assertTrue($examData->getSettings()->getRandomizeQuestions());
+        $this->assertFalse($examData->getSettings()->getShowResultImmediately());
     }
 }

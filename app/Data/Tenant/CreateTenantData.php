@@ -19,39 +19,88 @@ class CreateTenantData extends Data
     public function __construct(
         #[Required, StringType, Max(255)]
         public string $name,
-
         #[Required, StringType, Max(63), AlphaDash, Rule(['unique:tenants,id', 'unique:tenants,handle'])]
         public string $handle,
-
         #[Required, Email, Max(255)]
         public string $admin_email,
-
         #[Required, StringType]
         public string $admin_password,
-
         #[Required, StringType, Max(255)]
         public string $admin_first_name,
-
         #[Required, StringType, Max(255)]
         public string $admin_last_name,
-
         #[Required, StringType, Max(20)]
         public string $admin_phone,
-
         #[Nullable, StringType, Max(500)]
         public ?string $address,
-
         #[Nullable, StringType, Max(255)]
         public ?string $city,
-
         #[Nullable, StringType, Max(255)]
         public ?string $state,
-
         #[Nullable, Exists('subscription_plans', 'id')]
         public ?string $plan_id,
-
         public array $curriculum = [],
     ) {}
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getHandle(): string
+    {
+        return $this->handle;
+    }
+
+    public function getAdminEmail(): string
+    {
+        return $this->admin_email;
+    }
+
+    public function getAdminPassword(): string
+    {
+        return $this->admin_password;
+    }
+
+    public function getAdminFirstName(): string
+    {
+        return $this->admin_first_name;
+    }
+
+    public function getAdminLastName(): string
+    {
+        return $this->admin_last_name;
+    }
+
+    public function getAdminPhone(): string
+    {
+        return $this->admin_phone;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function getState(): ?string
+    {
+        return $this->state;
+    }
+
+    public function getPlanId(): ?string
+    {
+        return $this->plan_id;
+    }
+
+    public function getCurriculum(): array
+    {
+        return $this->curriculum;
+    }
 
     /**
      * Runs before validation. Morphs the raw HTTP payload (camelCase frontend
@@ -59,7 +108,6 @@ class CreateTenantData extends Data
      */
     public static function prepareForPipeline(array $properties): array
     {
-        // Only remap if the payload comes from the frontend onboarding form.
         if (! isset($properties['schoolName'])) {
             return $properties;
         }

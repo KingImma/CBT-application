@@ -9,12 +9,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassLevel extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'name',
+        'slug',
+    ];
 
     public function classArms(): HasMany
     {
@@ -38,12 +42,37 @@ class ClassLevel extends Model
         return $this->hasMany(TeacherSubjectAssignment::class);
     }
 
+    public function setNameAttribute(string $value): void
+    {
+        $this->attributes['name'] = trim(strtoupper($value));
+    }
+
+    public function canDelete(): bool
+    {
+        return $this->students()->count() === 0
+            && $this->exams()->count() === 0;
+    }
+
+    public function hasDependencies(): bool
+    {
+        return $this->students()->count() > 0
+            || $this->exams()->count() > 0
+            || $this->classArms()->count() > 0;
+    }
+
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class);
+    }
+
     protected static function booted(): void
     {
         static::deleting(function ($level) {
-            $level->subjects()->detach();
-            $level->classArms()->delete();
-            $level->teacherAssignments()->delete();
+            if ($level->isForceDeleting()) {
+                $level->subjects()->detach();
+                $level->classArms()->forceDelete();
+                $level->teacherAssignments()->forceDelete();
+            }
         });
     }
 }

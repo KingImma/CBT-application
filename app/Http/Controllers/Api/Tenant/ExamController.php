@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ExamCrudAction;
-use App\Actions\Tenants\Exam\ExamResultPublishAction;
-use App\Actions\Tenants\Exam\ExamSessionAction;
-use App\Actions\Tenants\Exam\ExamStatusAction;
+use App\Actions\Tenants\Exam\ManageExam;
+use App\Actions\Tenants\Exam\ManageExamSession;
 use App\Data\Exam\ExamData;
 use App\Enums\RoleType;
+use App\Exceptions\Domain\Exam\ExamCannotBeActivatedException;
+use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
+use App\Exceptions\Domain\Exam\ExamCannotBeSubmittedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreExamRequest;
 use App\Models\Tenant\Exam;
@@ -24,10 +25,8 @@ use Illuminate\Http\Request;
 class ExamController extends Controller
 {
     public function __construct(
-        private ExamCrudAction $crudAction,
-        private ExamStatusAction $statusAction,
-        private ExamSessionAction $sessionAction,
-        private ExamResultPublishAction $publishAction,
+        private ManageExam $crudAction,
+        private ManageExamSession $sessionAction,
     ) {}
 
     /**
@@ -240,8 +239,8 @@ class ExamController extends Controller
         $this->authorize('submitForReview', $exam);
 
         try {
-            $exam = $this->statusAction->submitForReview($exam);
-        } catch (\RuntimeException $e) {
+            $exam->submitForReview()->save();
+        } catch (ExamCannotBeSubmittedException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
 
@@ -262,11 +261,8 @@ class ExamController extends Controller
         $this->authorize('activate', $exam);
 
         try {
-            $exam = $this->statusAction->activate(
-                $exam,
-                $request->user('tenant')->id,
-            );
-        } catch (\RuntimeException $e) {
+            $exam->activate($request->user('tenant')->id)->save();
+        } catch (ExamCannotBeActivatedException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
 
@@ -274,8 +270,14 @@ class ExamController extends Controller
     }
 
     /**
-     * Publish an exam, transitioning it to the Published state
-     * and releasing results to students.
+     * Publish an exam once it's completed and ready for student access.
+     *
+     * @subgroup Exam Workflow
+     *
+     * @urlParam id string required The exam UUID.
+     */
+    /**
+     * Publish an exam to make it available to students.
      *
      * @subgroup Exam Workflow
      *
@@ -287,7 +289,7 @@ class ExamController extends Controller
         $this->authorize('publish', $exam);
 
         try {
-            $exam = $this->publishAction->publishResults($exam);
+            $exam->publish()->save();
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -307,11 +309,7 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('publishResults', $exam);
 
-        try {
-            $exam = $this->publishAction->publishResults($exam);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $exam->publish()->save();
 
         return ApiResponse::success($exam, 'Results published.');
     }
@@ -329,11 +327,7 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('unpublishResults', $exam);
 
-        try {
-            $exam = $this->publishAction->unpublishResults($exam);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $exam->unpublish()->save();
 
         return ApiResponse::success($exam, 'Results unpublished.');
     }
@@ -350,13 +344,13 @@ class ExamController extends Controller
     {
         $exam = Exam::findOrFail($id);
         $this->authorize('forceComplete', $exam);
-    
+
         try {
-            $exam = $this->statusAction->forceComplete($exam);
-        } catch (\RuntimeException $e) {
+            $exam->complete()->save();
+        } catch (ExamCannotBeCompletedException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
-    
+
         return ApiResponse::success(
             ExamData::from($exam->load(['subject', 'classLevel'])),
             'Exam ended successfully.'

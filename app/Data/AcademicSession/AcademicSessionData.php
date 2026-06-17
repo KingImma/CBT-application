@@ -18,4 +18,34 @@ class AcademicSessionData extends Resource
         #[WhenLoaded('terms')]
         public readonly mixed $terms,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function isCurrent(): bool
+    {
+        return $this->is_current;
+    }
+
+    public function getStartDate(): ?string
+    {
+        return $this->start_date;
+    }
+
+    public function getEndDate(): ?string
+    {
+        return $this->end_date;
+    }
+
+    public function getTerms(): mixed
+    {
+        return $this->terms;
+    }
 }

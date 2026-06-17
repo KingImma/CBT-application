@@ -12,7 +12,12 @@ class ExamQuestion extends Model
 {
     use HasUuids;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'exam_id',
+        'question_id',
+        'order',
+        'marks',
+    ];
 
     protected $casts = [
         'marks' => 'decimal:2',

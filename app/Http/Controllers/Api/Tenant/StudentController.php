@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Student\StudentAction;
+use App\Actions\Auth\ResetUserPassword;
+use App\Actions\Import\ImportStudents;
+use App\Actions\Tenants\Student\Student;
+use App\Actions\Tenants\TenantUsers\RemoveTenantUserIndex;
+use App\Actions\Tenants\TenantUsers\SyncTenantUser;
 use App\Data\Results\ImportResult;
 use App\Data\Schemas\StudentImportSchema;
 use App\Data\Student\StudentData;
+use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Models\Tenant\User;
 use App\Queries\StudentQuery;
-use App\Services\Auth\PasswordResetService;
-use App\Services\StudentImportService;
-use App\Services\TenantUserService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,7 +68,7 @@ class StudentController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $student = User::role('student')
+        $student = User::role(RoleType::Student->value)
             ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
             ->findOrFail($id);
 
@@ -89,7 +91,7 @@ class StudentController extends Controller
      * @bodyParam gender string nullable Gender: male, female, other. No-example
      * @bodyParam guardian_email string nullable Guardian email address. No-example
      */
-    public function store(StoreStudentRequest $request, StudentAction $action): JsonResponse
+    public function store(StoreStudentRequest $request, Student $action): JsonResponse
     {
         $result = $action->create($request->validated());
 
@@ -129,7 +131,7 @@ class StudentController extends Controller
      * @bodyParam gender string nullable Gender. No-example
      * @bodyParam guardian_email string nullable Guardian email. No-example
      */
-    public function update(UpdateStudentRequest $request, string $id, StudentAction $action): JsonResponse
+    public function update(UpdateStudentRequest $request, string $id, Student $action): JsonResponse
     {
         $result = $action->update($request->validated(), $id);
 
@@ -149,7 +151,7 @@ class StudentController extends Controller
      * @bodyParam class_level_id string required New class level UUID. No-example
      * @bodyParam class_arm_id string nullable New class arm UUID. No-example
      */
-    public function reassignClass(Request $request, string $id, StudentAction $action): JsonResponse
+    public function reassignClass(Request $request, string $id, Student $action): JsonResponse
     {
         $validated = $request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
@@ -170,18 +172,18 @@ class StudentController extends Controller
      *
      * @urlParam id string required The student UUID.
      */
-    public function revoke(TenantUserService $tenantUserService, string $id): JsonResponse
+    public function revoke(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
-        $student = User::role('student')->findOrFail($id);
+        $student = User::role(RoleType::Student->value)->findOrFail($id);
 
-        DB::transaction(function () use ($student, $tenantUserService) {
-            $student->update(['is_active' => false]);
+        DB::transaction(function () use ($student, $removeTenantUserIndex) {
+            $student->deactivate()->save();
             $student->tokens()->delete();
 
             $student->studentProfile()->update([
                 'class_arm_id' => null,
             ]);
-            $tenantUserService->removeFromCentralIndex($student->email);
+            $removeTenantUserIndex->execute($student->email);
             $student->delete();
         });
 
@@ -195,17 +197,17 @@ class StudentController extends Controller
      *
      * @urlParam id string required The student UUID.
      */
-    public function restore(TenantUserService $tenantUserService, string $id): JsonResponse
+    public function restore(SyncTenantUser $syncTenantUser, string $id): JsonResponse
     {
-        $student = User::withTrashed()->role('student')->findOrFail($id);
+        $student = User::withTrashed()->role(RoleType::Student->value)->findOrFail($id);
 
         if (! $student->trashed()) {
             return ApiResponse::error('This student is already active and has not been deleted.', 422);
         }
 
         $student->restore();
-        $student->update(['is_active' => true]);
-        $tenantUserService->updateCentralIndex($student->email, 'student');
+        $student->activate()->save();
+        $syncTenantUser->execute($student->email, RoleType::Student->value);
 
         return ApiResponse::success([
             'student' => StudentData::from($student->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
@@ -219,13 +221,13 @@ class StudentController extends Controller
      *
      * @urlParam id string required The student UUID.
      */
-    public function destroy(TenantUserService $tenantUserService, string $id): JsonResponse
+    public function destroy(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
-        $student = User::withTrashed()->role('student')->findOrFail($id);
+        $student = User::withTrashed()->role(RoleType::Student->value)->findOrFail($id);
 
-        DB::transaction(function () use ($student, $tenantUserService) {
+        DB::transaction(function () use ($student, $removeTenantUserIndex) {
             $student->studentProfile()->delete();
-            $tenantUserService->removeFromCentralIndex($student->email);
+            $removeTenantUserIndex->execute($student->email);
             $student->syncRoles([]);
             $student->forceDelete();
         });
@@ -241,14 +243,14 @@ class StudentController extends Controller
      * @bodyParam class_level_id string required Class level UUID to target. No-example
      * @bodyParam class_arm_id string nullable Class arm UUID to target. No-example
      */
-    public function bulkResetPasswords(PasswordResetService $passwordResetService, Request $request): JsonResponse
+    public function bulkResetPasswords(ResetUserPassword $resetUserPassword, Request $request): JsonResponse
     {
         $validated = $request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'class_arm_id' => ['nullable', 'uuid', 'exists:class_arms,id'],
         ]);
 
-        $query = User::role('student')
+        $query = User::role(RoleType::Student->value)
             ->whereHas('studentProfile', function ($query) use ($validated) {
                 $query->where('class_level_id', $validated['class_level_id'])
                     ->when($validated['class_arm_id'] ?? null, fn ($q) => $q->where('class_arm_id', $validated['class_arm_id']));
@@ -258,9 +260,9 @@ class StudentController extends Controller
 
         $newPassword = config('app.student_default_password');
 
-        $query->chunkById(200, function ($students) use ($passwordResetService, &$reset, $newPassword) {
+        $query->chunkById(200, function ($students) use ($resetUserPassword, &$reset, $newPassword) {
             foreach ($students as $student) {
-                $passwordResetService->resetPasswordForUser($student, $newPassword);
+                $resetUserPassword->execute($student, $newPassword);
                 $reset++;
             }
         });
@@ -279,7 +281,7 @@ class StudentController extends Controller
      */
     public function exportCsv(Request $request): StreamedResponse
     {
-        $query = User::role('student')
+        $query = User::role(RoleType::Student->value)
             ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
             ->when($request->class_level_id, fn ($q) => $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id)));
 
@@ -364,26 +366,26 @@ class StudentController extends Controller
         $file = $request->file('file');
         $path = $file->getRealPath();
 
-        $result = app(StudentImportService::class)->import($validated, $path, $dryRun);
+        $result = app(ImportStudents::class)->execute($validated, $path, $dryRun);
 
         return $this->buildImportResponse($result, $dryRun);
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse
     {
-        if ($result->missingHeaders !== []) {
+        if ($result->getMissingHeaders() !== []) {
             return ApiResponse::error(
-                $result->message ?? 'Missing required columns.',
+                $result->getMessage() ?? 'Missing required columns.',
                 422,
-                ['missing_headers' => $result->missingHeaders],
+                ['missing_headers' => $result->getMissingHeaders()],
             );
         }
 
-        if ($result->errors !== []) {
+        if ($result->getErrors() !== []) {
             return ApiResponse::error(
-                $result->message ?? 'Row validation failed.',
+                $result->getMessage() ?? 'Row validation failed.',
                 422,
-                $result->errors,
+                $result->getErrors(),
             );
         }
 
@@ -391,7 +393,7 @@ class StudentController extends Controller
 
         return ApiResponse::success(
             $result->toResponseData($dryRun),
-            $result->message ?? ($dryRun ? 'Preview complete.' : 'Import complete.'),
+            $result->getMessage() ?? ($dryRun ? 'Preview complete.' : 'Import complete.'),
             $status,
         );
     }

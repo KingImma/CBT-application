@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\RoleType;
 use App\Models\Tenant;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
@@ -38,6 +39,20 @@ class ProvisionTenantDetailsJob implements ShouldQueue
             $this->applyGradingScale();
             $this->applySettings();
         });
+
+        $centralDomain = config('app.central_domain')
+            ?? collect(config('tenancy.central_domains', []))
+                ->reject(fn ($d) => in_array($d, ['127.0.0.1', 'localhost'], true))
+                ->first()
+            ?? 'localhost';
+
+        SendSchoolWelcomeEmail::dispatch(
+            adminEmail: $this->adminData['email'],
+            adminName: trim(($this->adminData['first_name'] ?? '').' '.($this->adminData['last_name'] ?? '')),
+            schoolName: $this->tenant->name,
+            handle: $this->tenant->handle,
+            loginUrl: "https://{$this->tenant->handle}.{$centralDomain}/login",
+        )->onQueue('emails');
     }
 
     private function createAdminUser(): User
@@ -51,12 +66,12 @@ class ProvisionTenantDetailsJob implements ShouldQueue
                 'email' => $this->adminData['email'],
                 'phone' => $this->adminData['phone'] ?? null,
                 'password' => Hash::make($this->adminData['password']),
-                'role' => 'school_admin',
+                'role' => RoleType::SchoolAdmin->value,
                 'is_active' => true,
             ],
         );
 
-        $admin->assignRole('school_admin');
+        $admin->assignRole(RoleType::SchoolAdmin->value);
 
         DB::connection(config('tenancy.database.central_connection'))
             ->table('tenant_user_index')
@@ -66,7 +81,7 @@ class ProvisionTenantDetailsJob implements ShouldQueue
                     'tenant_id' => $this->tenant->id,
                 ],
                 [
-                    'role' => 'school_admin',
+                    'role' => RoleType::SchoolAdmin->value,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ],
@@ -134,9 +149,13 @@ class ProvisionTenantDetailsJob implements ShouldQueue
         }
 
         foreach ($settingsToUpdate as $key => $value) {
-            DB::table('school_settings')
-                ->where('key', $key)
-                ->update(['value' => $value]);
+            DB::table('school_settings')->updateOrInsert(
+                ['key' => $key],
+                [
+                    'value' => $value,
+                    'updated_at' => now(),
+                ],
+            );
         }
     }
 }

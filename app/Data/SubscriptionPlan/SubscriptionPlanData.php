@@ -20,4 +20,54 @@ class SubscriptionPlanData extends Resource
         public readonly ?array $features,
         public readonly bool $is_active,
     ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function getMaxStudents(): int
+    {
+        return $this->max_students;
+    }
+
+    public function getMaxTeachers(): int
+    {
+        return $this->max_teachers;
+    }
+
+    public function getMaxExamsPerTerm(): int
+    {
+        return $this->max_exams_per_term;
+    }
+
+    public function getPriceMonthly(): ?int
+    {
+        return $this->price_monthly;
+    }
+
+    public function getPriceYearly(): ?int
+    {
+        return $this->price_yearly;
+    }
+
+    public function getFeatures(): ?array
+    {
+        return $this->features;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active;
+    }
 }

@@ -6,6 +6,10 @@ namespace App\Models\Tenant;
 
 use App\Data\Values\ExamSettings;
 use App\Enums\ExamStatus;
+use App\Models\Tenant\Exam\Concerns\HasAttempts;
+use App\Models\Tenant\Exam\Concerns\HasBroadcasting;
+use App\Models\Tenant\Exam\Concerns\HasLifecycle;
+use App\Models\Tenant\Exam\Concerns\HasValidation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,9 +20,25 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Exam extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasAttempts, HasBroadcasting, HasFactory, HasLifecycle, HasUuids, HasValidation, SoftDeletes;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'title',
+        'subject_id',
+        'class_level_id',
+        'class_arm_id',
+        'term_id',
+        'type',
+        'status',
+        'duration_minutes',
+        'total_marks',
+        'pass_mark',
+        'max_attempts',
+        'scheduled_start',
+        'instructions',
+        'settings',
+        'created_by',
+    ];
 
     protected $appends = ['is_published'];
 
@@ -96,20 +116,20 @@ class Exam extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', ExamStatus::Active->value);
+        return $query->where('status', ExamStatus::Active);
     }
 
     public function scopeActiveAndStarted(Builder $query): Builder
     {
         return $query
-            ->where('status', ExamStatus::Active->value)
+            ->where('status', ExamStatus::Active)
             ->where('scheduled_start', '<=', now());
     }
 
     public function scopeWindowExpired(Builder $query): Builder
     {
         return $query
-            ->where('status', ExamStatus::Active->value)
+            ->where('status', ExamStatus::Active)
             ->where('window_end', '<', now());
     }
 
@@ -117,47 +137,6 @@ class Exam extends Model
     {
         return $this->created_by === $user->id;
         // TODO: v2 — expand to team/department ownership via exam_collaborators pivot
-    }
-
-    public function isDraft(): bool
-    {
-        return $this->status === ExamStatus::Draft;
-    }
-
-    public function isSubmitted(): bool
-    {
-        return $this->status === ExamStatus::Submitted;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->status === ExamStatus::Active;
-    }
-
-    public function isCompleted(): bool
-    {
-        return $this->status === ExamStatus::Completed;
-    }
-
-    public function publish(): void
-    {
-        if ($this->status !== ExamStatus::Completed) {
-            throw new \RuntimeException('An exam can only be published once it is completed.');
-        }
-
-        $this->status = ExamStatus::Published;
-        $this->published_at = now();
-    }
-
-    public function unpublish(): void
-    {
-        $this->status = ExamStatus::Completed;
-        $this->published_at = null;
-    }
-
-    public function isPublished(): bool
-    {
-        return $this->status === ExamStatus::Published;
     }
 
     public function getIsPublishedAttribute(): bool

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
+use App\Enums\RoleType;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\TeacherSubjectAssignment;
@@ -16,7 +17,7 @@ class ExamPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->hasRole('school_admin')) {
+        if ($user->hasRole(RoleType::SchoolAdmin->value)) {
             return true;
         }
 
@@ -30,7 +31,7 @@ class ExamPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('teacher');
+        return $user->hasRole(RoleType::Teacher->value);
     }
 
     public function update(User $user, Exam $exam): bool
@@ -40,7 +41,7 @@ class ExamPolicy
 
     public function delete(User $user, Exam $exam): bool
     {
-        if (! $user->hasRole('school_admin') && ! $exam->isOwnedBy($user)) {
+        if (! $user->hasRole(RoleType::SchoolAdmin->value) && ! $exam->isOwnedBy($user)) {
             return false;
         }
 
@@ -57,7 +58,7 @@ class ExamPolicy
 
     public function activate(User $user, Exam $exam): bool
     {
-        return $user->hasRole('school_admin') && $exam->isSubmitted();
+        return $user->hasRole(RoleType::SchoolAdmin->value) && $exam->isSubmitted();
     }
 
     public function manageQuestions(User $user, Exam $exam): bool
@@ -68,17 +69,17 @@ class ExamPolicy
 
     public function publish(User $user, Exam $exam): bool
     {
-        return $user->hasRole('school_admin');
+        return $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
     public function publishResults(User $user, Exam $exam): bool
     {
-        return $user->hasRole('school_admin');
+        return $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
     public function unpublishResults(User $user, Exam $exam): bool
     {
-        return $user->hasRole('school_admin');
+        return $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
     private function isAssignedTeacher(User $user, Exam $exam): bool
@@ -119,6 +120,6 @@ class ExamPolicy
     {
         // Only school_admin, handled by before() hook already
         // but being explicit for clarity
-        return $user->hasRole('school_admin') && $exam->status === ExamStatus::Active;
+        return $user->hasRole(RoleType::SchoolAdmin->value) && $exam->status === ExamStatus::Active;
     }
 }

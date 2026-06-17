@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Concerns;
 
+use App\Actions\Tenants\TenantUsers\SyncTenantUser;
 use App\Models\Tenant\User;
-use App\Services\TenantUserService;
 use Illuminate\Support\Facades\Hash;
 
 trait CreatesTenantUser
@@ -23,7 +23,7 @@ trait CreatesTenantUser
         ]);
     }
 
-    protected function assignRoleAndSyncIndex(User $user, string $role, TenantUserService $tenantUserService): void
+    protected function assignRoleAndSyncIndex(User $user, string $role, SyncTenantUser $syncTenantUser): void
     {
         $user->assignRole($role);
 
@@ -33,7 +33,7 @@ trait CreatesTenantUser
             );
         }
 
-        $tenantUserService->updateCentralIndex($user->email, $role);
+        $syncTenantUser->execute($user->email, $role);
     }
 
     protected function updateUserAndProfile(User $user, array $data, array $profileKeys): void

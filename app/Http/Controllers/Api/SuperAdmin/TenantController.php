@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\SuperAdmin;
 
-use App\Actions\SuperAdmin\CreateTenantAction;
-use App\Actions\SuperAdmin\DeleteTenantAction;
-use App\Actions\SuperAdmin\ReinstateTenantAction;
-use App\Actions\SuperAdmin\SuspendTenantAction;
-use App\Actions\SuperAdmin\UpdateTenantAction;
+use App\Actions\SuperAdmin\CreateTenant;
 use App\Data\Tenant\TenantData;
 use App\Events\ActivityFeedEvent;
+use App\Exceptions\Domain\Tenant\TenantAlreadyActiveException;
+use App\Exceptions\Domain\Tenant\TenantAlreadySuspendedException;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Support\ApiResponse;
@@ -63,7 +61,7 @@ class TenantController extends Controller
      * @bodyParam domain string required School domain. No-example
      * @bodyParam plan_id string nullable Subscription plan UUID. No-example
      */
-    public function store(Request $request, CreateTenantAction $action): JsonResponse
+    public function store(Request $request, CreateTenant $action): JsonResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -116,7 +114,7 @@ class TenantController extends Controller
      *
      * @urlParam id string required The tenant UUID.
      */
-    public function update(Request $request, string $id, UpdateTenantAction $action): JsonResponse
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -129,10 +127,10 @@ class TenantController extends Controller
         ]);
 
         $tenant = Tenant::with('domains')->findOrFail($id);
-        $updatedTenant = $action->handle($validated, $tenant);
+        $tenant->update($validated);
 
         return ApiResponse::success(
-            TenantData::from($updatedTenant->load('domains')),
+            TenantData::from($tenant->load('domains')),
             'Tenant updated successfully.'
         );
     }
@@ -144,10 +142,15 @@ class TenantController extends Controller
      *
      * @urlParam id string required The tenant UUID.
      */
-    public function suspend(string $id, SuspendTenantAction $action): JsonResponse
+    public function suspend(string $id): JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
-        $action->handle($tenant);
+
+        try {
+            $tenant->suspend()->save();
+        } catch (TenantAlreadySuspendedException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
 
         return ApiResponse::success(
             TenantData::from($tenant),
@@ -162,10 +165,15 @@ class TenantController extends Controller
      *
      * @urlParam id string required The tenant UUID.
      */
-    public function reinstate(string $id, ReinstateTenantAction $action): JsonResponse
+    public function reinstate(string $id): JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
-        $action->handle($tenant);
+
+        try {
+            $tenant->reinstate()->save();
+        } catch (TenantAlreadyActiveException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
 
         return ApiResponse::success(
             TenantData::from($tenant),
@@ -178,13 +186,12 @@ class TenantController extends Controller
      *
      * @subgroup Tenant Status
      *
-     * @urlParam id string required The tenant UUID.
+     * @urlParam id string required the tenant UUID.
      */
-    public function destroy(string $id, DeleteTenantAction $action): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
-
-        $action->handle($tenant);
+        $tenant->delete();
 
         return ApiResponse::message('Tenant deleted successfully');
     }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\SuperAdmin;
+use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -28,4 +29,16 @@ Broadcast::channel('school-admin.{tenantId}.exam.{examId}', function ($user, str
     return $user instanceof User
         && $user->hasRole('school_admin')
         && (string) tenant('id') === $tenantId;
+});
+
+// Live exam session state for students
+Broadcast::channel('exam-session.{attemptId}', function ($user, string $attemptId) {
+    if (! $user instanceof User) {
+        return false;
+    }
+
+    $attempt = ExamAttempt::find($attemptId);
+
+    return $attempt !== null
+        && (string) $user->id === (string) $attempt->student_id;
 });

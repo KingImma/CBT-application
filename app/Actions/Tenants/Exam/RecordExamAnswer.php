@@ -9,6 +9,7 @@ use App\Events\ExamSessionStateUpdated;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Support\Exam\ExamSessionStateStore;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 class RecordExamAnswer
@@ -24,30 +25,34 @@ class RecordExamAnswer
             throw new \RuntimeException('Attempt is no longer active.');
         }
 
-        $answer = DB::transaction(function () use ($attempt, $questionId, $payload) {
-            $attempt->refresh();
+        $attempt->load('exam');
 
-            if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
-                throw new \RuntimeException('Attempt is no longer active.');
-            }
+        $answer = $this->retryOnUniqueViolation(function () use ($attempt, $questionId, $payload) {
+            return DB::transaction(function () use ($attempt, $questionId, $payload) {
+                $status = ExamAttempt::where('id', $attempt->id)->value('status');
 
-            if ($attempt->getTimeRemainingSeconds() <= 0) {
-                $this->sessionAction->finalizeExpiredAttempt($attempt);
-                throw new \RuntimeException('Exam time has expired.');
-            }
+                if ($status !== ExamAttemptStatus::InProgress->value) {
+                    throw new \RuntimeException('Attempt is no longer active.');
+                }
 
-            return ExamAnswer::updateOrCreate(
-                [
-                    'attempt_id' => $attempt->id,
-                    'question_id' => $questionId,
-                ],
-                [
-                    'selected_option_ids' => $payload['selected_option_ids'] ?? null,
-                    'text_answer' => $payload['text_answer'] ?? null,
-                    'answered_at' => now(),
-                    'time_spent_seconds' => abs((int) now()->diffInSeconds($attempt->started_at, true)),
-                ]
-            );
+                if ($attempt->getTimeRemainingSeconds() <= 0) {
+                    $this->sessionAction->finalizeExpiredAttempt($attempt);
+                    throw new \RuntimeException('Exam time has expired.');
+                }
+
+                return ExamAnswer::updateOrCreate(
+                    [
+                        'attempt_id' => $attempt->id,
+                        'question_id' => $questionId,
+                    ],
+                    [
+                        'selected_option_ids' => $payload['selected_option_ids'] ?? null,
+                        'text_answer' => $payload['text_answer'] ?? null,
+                        'answered_at' => now(),
+                        'time_spent_seconds' => abs((int) now()->diffInSeconds($attempt->started_at, true)),
+                    ]
+                );
+            });
         });
 
         $this->updateSessionState($attempt);
@@ -79,18 +84,20 @@ class RecordExamAnswer
                     throw new \RuntimeException('Exam time has expired.');
                 }
 
-                $questionSaves[] = ExamAnswer::updateOrCreate(
-                    [
-                        'attempt_id' => $attempt->id,
-                        'question_id' => $questionId,
-                    ],
-                    [
-                        'selected_option_ids' => $answerData['selected_option_ids'] ?? null,
-                        'text_answer' => $answerData['text_answer'] ?? null,
-                        'answered_at' => now(),
-                        'time_spent_seconds' => abs((int) now()->diffInSeconds($attempt->started_at, true)),
-                    ]
-                );
+                $questionSaves[] = $this->retryOnUniqueViolation(function () use ($attempt, $questionId, $answerData) {
+                    return ExamAnswer::updateOrCreate(
+                        [
+                            'attempt_id' => $attempt->id,
+                            'question_id' => $questionId,
+                        ],
+                        [
+                            'selected_option_ids' => $answerData['selected_option_ids'] ?? null,
+                            'text_answer' => $answerData['text_answer'] ?? null,
+                            'answered_at' => now(),
+                            'time_spent_seconds' => abs((int) now()->diffInSeconds($attempt->started_at, true)),
+                        ]
+                    );
+                });
 
                 $results[] = $questionSaves[0];
             }
@@ -111,6 +118,23 @@ class RecordExamAnswer
 
             return $answer->is_flagged;
         });
+    }
+
+    private function retryOnUniqueViolation(callable $callback, int $maxAttempts = 3): mixed
+    {
+        $attempts = 0;
+
+        while (true) {
+            try {
+                return $callback();
+            } catch (QueryException $e) {
+                if ($e->getCode() !== '23505' || ++$attempts >= $maxAttempts) {
+                    throw $e;
+                }
+
+                usleep(50_000);
+            }
+        }
     }
 
     private function updateSessionState(ExamAttempt $attempt): void

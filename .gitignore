@@ -41,3 +41,7 @@ dev-notes.md
 CLAUDE.md
 graphify-out/
 handoff.md
+/tests/CLAUDE.md
+**/caddy
+frankenphp
+frankenphp-worker.php

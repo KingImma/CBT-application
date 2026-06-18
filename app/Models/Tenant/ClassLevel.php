@@ -45,7 +45,8 @@ class ClassLevel extends Model
 
     public function setNameAttribute(string $value): void
     {
-        $this->attributes['name'] = NormalizeName::canonical($value);
+        $this->attributes['name'] = $value;
+        $this->attributes['normalized_name'] = NormalizeName::canonical($value);
     }
 
     public function canDelete(): bool

@@ -11,7 +11,6 @@ use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
 use App\Rules\UniqueNormalized;
 use App\Support\ApiResponse;
-use App\Support\NormalizeName;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -49,7 +48,6 @@ class ClassLevelController extends Controller
             'name' => ['required', 'string', 'max:100', (new UniqueNormalized('class_levels'))->withoutTrashed()],
         ]);
 
-        $validated['name'] = NormalizeName::canonical($validated['name']);
         $validated['slug'] = Str::slug($validated['name']);
 
         $level = ClassLevel::create($validated);
@@ -91,10 +89,6 @@ class ClassLevelController extends Controller
             'name' => ['sometimes', 'string', 'max:100', (new UniqueNormalized('class_levels'))->ignore($id)->withoutTrashed()],
             'order' => ['nullable', 'integer', 'min:1'],
         ]);
-
-        if (isset($validated['name'])) {
-            $validated['name'] = NormalizeName::canonical($validated['name']);
-        }
 
         if (isset($validated['name']) && $validated['name'] !== $level->name) {
             $validated['slug'] = Str::slug($validated['name'], '');

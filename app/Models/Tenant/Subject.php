@@ -23,7 +23,8 @@ class Subject extends Model
 
     public function setNameAttribute(string $value): void
     {
-        $this->attributes['name'] = NormalizeName::canonical($value);
+        $this->attributes['name'] = $value;
+        $this->attributes['normalized_name'] = NormalizeName::canonical($value);
     }
 
     protected $casts = [

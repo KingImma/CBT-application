@@ -10,7 +10,6 @@ use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Rules\UniqueNormalized;
 use App\Support\ApiResponse;
-use App\Support\NormalizeName;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -62,8 +61,6 @@ class ClassArmController extends Controller
             ],
         ]);
 
-        $validated['name'] = NormalizeName::canonical($validated['name']);
-
         $arm = $level->classArms()->create($validated);
 
         $level->subjects()->wherePivot('is_compulsory', true)->each(function ($subject) use ($arm) {
@@ -103,8 +100,6 @@ class ClassArmController extends Controller
                     ->withoutTrashed(),
             ],
         ]);
-
-        $validated['name'] = NormalizeName::canonical($validated['name']);
 
         $arm->update($validated);
 

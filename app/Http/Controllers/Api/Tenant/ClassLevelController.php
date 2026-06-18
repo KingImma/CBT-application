@@ -9,11 +9,12 @@ use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
+use App\Rules\UniqueNormalized;
 use App\Support\ApiResponse;
+use App\Support\NormalizeName;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 /**
  * @group Classes & Arms
@@ -44,12 +45,11 @@ class ClassLevelController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $request->merge(['name' => $this->normalizeName($request->input('name'))]);
-
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100', Rule::unique('class_levels', 'name')->withoutTrashed()],
+            'name' => ['required', 'string', 'max:100', (new UniqueNormalized('class_levels'))->withoutTrashed()],
         ]);
 
+        $validated['name'] = NormalizeName::canonical($validated['name']);
         $validated['slug'] = Str::slug($validated['name']);
 
         $level = ClassLevel::create($validated);
@@ -87,14 +87,14 @@ class ClassLevelController extends Controller
     {
         $level = ClassLevel::findOrFail($id);
 
-        if ($request->has('name')) {
-            $request->merge(['name' => $this->normalizeName($request->input('name'))]);
-        }
-
         $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:100', Rule::unique('class_levels', 'name')->ignore($id)->withoutTrashed()],
+            'name' => ['sometimes', 'string', 'max:100', (new UniqueNormalized('class_levels'))->ignore($id)->withoutTrashed()],
             'order' => ['nullable', 'integer', 'min:1'],
         ]);
+
+        if (isset($validated['name'])) {
+            $validated['name'] = NormalizeName::canonical($validated['name']);
+        }
 
         if (isset($validated['name']) && $validated['name'] !== $level->name) {
             $validated['slug'] = Str::slug($validated['name'], '');
@@ -282,10 +282,5 @@ class ClassLevelController extends Controller
             ClassLevelData::from($level->load(['classArms.assignedTeacher', 'subjects'])),
             "Teacher assigned to class level {$level->name} successfully."
         );
-    }
-
-    private function normalizeName(?string $name): string
-    {
-        return trim(strtoupper($name ?? ''));
     }
 }

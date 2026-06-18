@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
+use App\Rules\UniqueNormalized;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,7 +55,7 @@ class SubjectController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', new UniqueNormalized('subjects')],
             'code' => ['nullable', 'string', 'max:20', 'unique:subjects,code'],
             'class_level_ids' => ['nullable', 'array'],
             'class_level_ids.*' => ['uuid', 'exists:class_levels,id'],
@@ -108,7 +109,7 @@ class SubjectController extends Controller
         $subject = Subject::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:100'],
+            'name' => ['sometimes', 'string', 'max:100', (new UniqueNormalized('subjects'))->ignore($id)],
             'code' => [
                 'sometimes',
                 'nullable',

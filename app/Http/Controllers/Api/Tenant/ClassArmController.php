@@ -8,11 +8,12 @@ use App\Data\ClassArm\ClassArmData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
+use App\Rules\UniqueNormalized;
 use App\Support\ApiResponse;
+use App\Support\NormalizeName;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 /**
  * @group Classes & Arms
@@ -50,18 +51,18 @@ class ClassArmController extends Controller
     {
         $level = ClassLevel::findOrFail($classLevelId);
 
-        $request->merge(['name' => $this->normalizeName($request->input('name'))]);
-
         $validated = $request->validate([
             'name' => [
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('class_arms', 'name')
+                (new UniqueNormalized('class_arms'))
                     ->where('class_level_id', $level->id)
                     ->withoutTrashed(),
             ],
         ]);
+
+        $validated['name'] = NormalizeName::canonical($validated['name']);
 
         $arm = $level->classArms()->create($validated);
 
@@ -91,19 +92,19 @@ class ClassArmController extends Controller
     {
         $arm = ClassArm::where('class_level_id', $classLevelId)->findOrFail($id);
 
-        $request->merge(['name' => $this->normalizeName($request->input('name'))]);
-
         $validated = $request->validate([
             'name' => [
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('class_arms', 'name')
+                (new UniqueNormalized('class_arms'))
                     ->where('class_level_id', $classLevelId)
                     ->ignore($id)
                     ->withoutTrashed(),
             ],
         ]);
+
+        $validated['name'] = NormalizeName::canonical($validated['name']);
 
         $arm->update($validated);
 
@@ -155,10 +156,5 @@ class ClassArmController extends Controller
             : 'Class arm deleted.';
 
         return ApiResponse::message($message);
-    }
-
-    private function normalizeName(?string $name): string
-    {
-        return trim(strtoupper($name ?? ''));
     }
 }

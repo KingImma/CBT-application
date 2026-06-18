@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Support\NormalizeName;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,7 +45,7 @@ class ClassLevel extends Model
 
     public function setNameAttribute(string $value): void
     {
-        $this->attributes['name'] = trim(strtoupper($value));
+        $this->attributes['name'] = NormalizeName::canonical($value);
     }
 
     public function canDelete(): bool

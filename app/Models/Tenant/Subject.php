@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Support\NormalizeName;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,11 @@ class Subject extends Model
         'code',
         'is_active',
     ];
+
+    public function setNameAttribute(string $value): void
+    {
+        $this->attributes['name'] = NormalizeName::canonical($value);
+    }
 
     protected $casts = [
         'is_active' => 'boolean',

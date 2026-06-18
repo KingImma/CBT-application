@@ -9,11 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('DROP INDEX IF EXISTS subjects_name_unique');
+        DB::statement('ALTER TABLE subjects DROP CONSTRAINT IF EXISTS subjects_name_unique');
     }
 
     public function down(): void
     {
-        DB::statement('DROP INDEX IF EXISTS subjects_name_unique');
+        DB::statement('ALTER TABLE subjects DROP CONSTRAINT IF EXISTS subjects_name_unique');
     }
 };

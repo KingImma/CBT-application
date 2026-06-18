@@ -32,7 +32,7 @@ return new class extends Migration
 
         DB::statement('DROP INDEX IF EXISTS uq_class_levels_name');
         DB::statement('DROP INDEX IF EXISTS uq_class_arms_name');
-        DB::statement('DROP INDEX IF EXISTS subjects_name_unique');
+        DB::statement('ALTER TABLE subjects DROP CONSTRAINT IF EXISTS subjects_name_unique');
 
         DB::statement('CREATE UNIQUE INDEX uq_class_levels_normalized_name ON class_levels (normalized_name) WHERE deleted_at IS NULL;');
         DB::statement('CREATE UNIQUE INDEX uq_class_arms_normalized_name ON class_arms (class_level_id, normalized_name) WHERE deleted_at IS NULL;');

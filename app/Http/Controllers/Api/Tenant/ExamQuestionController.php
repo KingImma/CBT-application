@@ -105,7 +105,7 @@ class ExamQuestionController extends Controller
         ]);
 
         try {
-            $this->randomizationAction->randomizeQuestions($exam, $validated['count']);
+            $this->randomizationAction->execute($exam, $validated['count']);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }

@@ -173,7 +173,8 @@ class ManageExamSession
     {
         ExamAttemptGuard::assertCanTransitionTo($attempt, ExamAttemptStatus::Grading);
 
-        $attempt->update(['status' => ExamAttemptStatus::Grading->value]);
+        $attempt->status = ExamAttemptStatus::Grading->value;
+        $attempt->save();
 
         $answers = ExamAnswer::with('question.options')
             ->where('attempt_id', $attempt->id)
@@ -197,13 +198,12 @@ class ManageExamSession
         $defaultScale = GradingScale::where('is_default', true)->first();
         $grade = ResolveGrade::execute($percentageScore, $defaultScale?->grades);
 
-        $attempt->update([
-            'status' => ExamAttemptStatus::Graded->value,
-            'time_spent_seconds' => $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
-            'total_score' => $runningTotal,
-            'percentage_score' => $percentageScore,
-            'grade' => $grade,
-        ]);
+        $attempt->status = ExamAttemptStatus::Graded->value;
+        $attempt->time_spent_seconds = $maxTime ?: (int) now()->diffInSeconds($attempt->started_at);
+        $attempt->total_score = $runningTotal;
+        $attempt->percentage_score = $percentageScore;
+        $attempt->grade = $grade;
+        $attempt->save();
 
         $attempt->exam()->increment('completed_attempts');
         $exam->refresh();

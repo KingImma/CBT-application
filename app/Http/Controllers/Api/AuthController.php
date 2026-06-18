@@ -41,7 +41,7 @@ class AuthController extends Controller
         // 1. TENANT PATH (School Admin, Teacher, Student)
         // If the middleware initialized a tenant, we are in the school's database.
         if (tenant()) {
-            return ApiResponse::success($this->tenantAuth->authenticate(
+            return ApiResponse::success($this->tenantAuth->execute(
                 $request->identifier,
                 $request->password
             ), 'Login successful.');
@@ -54,7 +54,7 @@ class AuthController extends Controller
             ->first();
 
         if ($superAdmin) {
-            return $this->superAdminAuth->authenticate($superAdmin, $request->password);
+            return $this->superAdminAuth->execute($superAdmin, $request->password);
         }
 
         // Fallback for invalid central credentials

@@ -255,7 +255,7 @@ abstract class CsvImport
         } catch (\Exception $e) {
             return new ImportResult(
                 success: false,
-                message: 'Import failed: '.$e->getMessage(),
+                message: 'Import failed: ' . $e->getMessage(),
                 errors: [],
                 canProceed: false,
             );

@@ -22,7 +22,7 @@ trait HasLifecycle
         return $this;
     }
 
-    public function activate(int $userId): self
+    public function activate(string $userId): self
     {
         throw_unless($this->canActivate(), ExamCannotBeActivatedException::class);
 

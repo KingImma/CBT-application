@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 abstract class CsvImport
 {
-    public function __construct(
-        private CsvHeaderNormalizer $headerNormalizer
-    ) {}
+    public function __construct() {}
 
     public function execute(array $validated, string $filePath, bool $dryRun): ImportResult
     {
@@ -129,14 +127,14 @@ abstract class CsvImport
             return [];
         }
 
-        return array_map(fn ($header) => $this->headerNormalizer->normalize($header) ?? '', $raw);
+        return array_map(fn ($header) => CsvHeaderNormalizer::normalize($header) ?? '', $raw);
     }
 
     protected function normalizeRow(array $data): array
     {
         $normalized = [];
         foreach ($data as $key => $value) {
-            $normalizedKey = $this->headerNormalizer->normalize((string) $key) ?? strtolower(trim((string) $key));
+            $normalizedKey = CsvHeaderNormalizer::normalize((string) $key) ?? strtolower(trim((string) $key));
             $normalized[$normalizedKey] = $value;
         }
 

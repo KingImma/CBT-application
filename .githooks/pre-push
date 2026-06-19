@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+echo "Running PHPStan static analysis..."
+
+vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --no-progress --debug
+
+exit_code=$?
+
+if [ $exit_code -ne 0 ]; then
+    echo "❌ PHPStan found errors. Fix them before pushing."
+    exit 1
+fi
+
+echo "✅ PHPStan passed."
+exit 0

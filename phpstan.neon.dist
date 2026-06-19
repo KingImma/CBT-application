@@ -1,0 +1,15 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 6
+    paths:
+        - app/
+    tmpDir: storage/framework/cache/phpstan
+
+    checkOctaneCompatibility: false
+    checkModelProperties: true
+    noModelMake: true
+    noUnnecessaryCollectionCall: true
+    treatPhpDocTypesAsCertain: false

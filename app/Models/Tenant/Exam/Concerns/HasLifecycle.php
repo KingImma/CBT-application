@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Models\Tenant\Exam\Concerns;
 
 use App\Enums\ExamStatus;
-use App\Exceptions\Domain\Exam\ExamCannotBeActivatedException;
-use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
-use App\Exceptions\Domain\Exam\ExamCannotBeSubmittedException;
-use App\Exceptions\Domain\Exam\ExamStateTransitionException;
 use Illuminate\Support\Facades\DB;
+use App\Exceptions\Domain\Exam\{
+    ExamCannotBeActivatedException, 
+    ExamCannotBeCompletedException, 
+    ExamCannotBeSubmittedException, 
+    ExamStateTransitionException
+};
+
 
 trait HasLifecycle
 {
@@ -63,19 +66,23 @@ trait HasLifecycle
         return $this;
     }
 
-    public function publish(): void
+    public function publish(): self
     {
-        if ($this->status !== ExamStatus::Completed) {
-            throw new \RuntimeException('An exam can only be published once it is completed.');
-        }
+        throw_unless($this->status === ExamStatus::Completed, new \RuntimeException('An exam can only be published once it is completed.'));
 
         $this->status = ExamStatus::Published;
         $this->published_at = now();
+        
+        return $this;
     }
 
-    public function unpublish(): void
+    public function unpublish(): self
     {
+        throw_unless($this->status === ExamStatus::Published, new \RuntimeException('An exam can only be unpublished if it is published.'));
+
         $this->status = ExamStatus::Completed;
         $this->published_at = null;
+
+        return $this;
     }
 }

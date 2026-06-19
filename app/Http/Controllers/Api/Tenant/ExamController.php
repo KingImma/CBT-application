@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ManageExam;
-use App\Actions\Tenants\Exam\ManageExamSession;
-use App\Data\Exam\ExamData;
-use App\Enums\RoleType;
-use App\Exceptions\Domain\Exam\ExamCannotBeActivatedException;
-use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
-use App\Exceptions\Domain\Exam\ExamCannotBeSubmittedException;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Tenant\StoreExamRequest;
-use App\Models\Tenant\Exam;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Tenant\StoreExamRequest;
+use App\Models\Tenant\Exam;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Data\Exam\ExamData;
+use App\Enums\RoleType;
+use App\Actions\Tenants\Exam\{
+    ManageExam,
+    ManageExamSession
+};
+use App\Exceptions\Domain\Exam\{
+    ExamCannotBeActivatedException,
+    ExamCannotBeCompletedException,
+    ExamCannotBeSubmittedException
+};
 
 /**
  * @group Exam Administration
@@ -74,13 +78,10 @@ class ExamController extends Controller
                 'creator:id,first_name,last_name',
             ])
             ->withCount('examQuestions as question_count')
-            ->when($request->status, fn ($q, $status) => $q->byStatus($status))
-            ->when($request->subject_id, fn ($q, $id) => $q->bySubject($id))
-            ->when(
-                $request->class_level_id,
-                fn ($q, $id) => $q->byClassLevel($id),
-            )
-            ->when($request->class_arm_id, fn ($q, $id) => $q->byClassArm($id))
+            ->when($request->status, fn ($q, $status) => $q->where('status', $status))
+            ->when($request->subject_id, fn ($q, $id) => $q->where('subject_id', $id))
+            ->when($request->class_level_id, fn ($q, $id) => $q->where('class_level_id', $id))
+            ->when($request->class_arm_id, fn ($q, $id) => $q->where('class_arm_id', $id))
             ->when($user && $user->role === RoleType::Teacher->value, fn ($q) => $q->where('created_by', $user->id))
             ->orderByDesc('created_at')
             ->paginate($perPage);
@@ -289,7 +290,8 @@ class ExamController extends Controller
         $this->authorize('publish', $exam);
 
         try {
-            $exam->publish()->save();
+            $exam->publish();
+            $exam->save();
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }
@@ -309,7 +311,8 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('publishResults', $exam);
 
-        $exam->publish()->save();
+        $exam->publish();
+        $exam->save();
 
         return ApiResponse::success($exam, 'Results published.');
     }
@@ -327,7 +330,8 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $this->authorize('unpublishResults', $exam);
 
-        $exam->unpublish()->save();
+        $exam->unpublish();
+        $exam->save();
 
         return ApiResponse::success($exam, 'Results unpublished.');
     }
@@ -346,7 +350,8 @@ class ExamController extends Controller
         $this->authorize('forceComplete', $exam);
 
         try {
-            $exam->complete()->save();
+            $exam->complete();
+            $exam->save();
         } catch (ExamCannotBeCompletedException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         }

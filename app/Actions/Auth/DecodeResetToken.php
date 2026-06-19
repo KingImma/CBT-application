@@ -11,16 +11,34 @@ class DecodeResetToken
 {
     public function execute(string $token): string
     {
-        $key = "pwd_reset_token:{$token}";
-        $email = Cache::get($key);
+        $this->validateTokenExists($token);
 
-        if (! $email) {
-            throw ValidationException::withMessages([
-                'reset_token' => 'Your reset session has expired. Please start again.',
-            ]);
+        return $this->getAndDeleteToken($token);
+    }
+
+    private function validateTokenExists(string $token): void
+    {
+        $key = "pwd_reset_token:{$token}";
+        $cache = Cache::getFacadeRoot();
+
+        if ($cache->has($key)) {
+            return;
         }
 
-        Cache::forget($key);
+        throw ValidationException::withMessages([
+            'reset_token' => 'Your reset session has expired. Please start again.',
+        ]);
+    }
+
+    private function getAndDeleteToken(string $token): string
+    {
+        $key = "pwd_reset_token:{$token}";
+
+        $cache = Cache::getFacadeRoot();
+    
+        $email = $cache->get($key);
+        
+        $cache->forget($key);
 
         return $email;
     }

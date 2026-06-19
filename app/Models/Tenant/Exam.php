@@ -92,28 +92,6 @@ class Exam extends Model
         return $this->hasMany(ExamAttempt::class);
     }
 
-    public function scopeByStatus(Builder $query, string $status): Builder
-    {
-        return $query->where('status', $status);
-    }
-
-    public function scopeBySubject(Builder $query, string $subjectId): Builder
-    {
-        return $query->where('subject_id', $subjectId);
-    }
-
-    public function scopeByClassLevel(
-        Builder $query,
-        string $classLevelId,
-    ): Builder {
-        return $query->where('class_level_id', $classLevelId);
-    }
-
-    public function scopeByClassArm(Builder $query, string $classArmId): Builder
-    {
-        return $query->where('class_arm_id', $classArmId);
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ExamStatus::Active);
@@ -136,7 +114,6 @@ class Exam extends Model
     public function isOwnedBy(User $user): bool
     {
         return $this->created_by === $user->id;
-        // TODO: v2 — expand to team/department ownership via exam_collaborators pivot
     }
 
     public function getIsPublishedAttribute(): bool

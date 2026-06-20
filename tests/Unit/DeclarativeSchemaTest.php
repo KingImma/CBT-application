@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Data\Concerns\HasSchemaValidation;
-use App\Data\Exam\CreateExamData;
-use App\Data\Exam\ExamSettingsData;
+use App\Data\Exam\Input\CreateExamData;
+use App\Data\Exam\Input\ExamSettingsData;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\CoversClass;

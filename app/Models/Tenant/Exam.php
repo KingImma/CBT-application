@@ -6,6 +6,7 @@ namespace App\Models\Tenant;
 
 use App\Data\Values\ExamSettings;
 use App\Enums\ExamStatus;
+use App\Enums\RoleType;
 use App\Models\Tenant\Exam\Concerns\HasAttempts;
 use App\Models\Tenant\Exam\Concerns\HasBroadcasting;
 use App\Models\Tenant\Exam\Concerns\HasLifecycle;
@@ -119,5 +120,13 @@ class Exam extends Model
     public function getIsPublishedAttribute(): bool
     {
         return $this->status === ExamStatus::Published;
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return match ($user->role) {
+            RoleType::Teacher->value => $query->where('created_by', $user->id),
+            default => $query,
+        };
     }
 }

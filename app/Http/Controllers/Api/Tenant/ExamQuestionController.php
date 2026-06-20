@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ManageExamQuestion;
-use App\Actions\Tenants\Exam\RandomizeExamQuestions;
-use App\Data\Exam\ExamQuestionData;
+use App\Actions\Tenants\Exam\Questions\AddExamQuestion;
+use App\Actions\Tenants\Exam\Questions\DeleteExamQuestion;
+use App\Actions\Tenants\Exam\Questions\RandomizeExamQuestions;
+use App\Actions\Tenants\Exam\Questions\ReorderExamQuestions;
+use App\Actions\Tenants\Exam\Questions\UpdateExamQuestion;
+use App\Data\Exam\Input\AddQuestionData;
+use App\Data\Exam\Input\RandomizeQuestionsData;
+use App\Data\Exam\Input\ReorderQuestionsData;
+use App\Data\Exam\Input\UpdateExamQuestionData;
+use App\Data\Exam\Output\ExamQuestionData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
-use App\Models\Tenant\ExamQuestion;
+use App\Models\Tenant\Question;
 use App\Support\ApiResponse;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,24 +27,16 @@ use Illuminate\Http\Request;
  */
 class ExamQuestionController extends Controller
 {
-    public function __construct(
-        private ManageExamQuestion $managementAction,
-        private RandomizeExamQuestions $randomizationAction,
-    ) {}
-
     /**
      * List questions attached to an exam.
      *
      * @subgroup Exam Questions
-     *
-     * @urlParam examId string required The exam UUID.
      */
-    public function index(string $examId): JsonResponse
+    public function index(Exam $exam): JsonResponse
     {
-        $exam = Exam::findOrFail($examId);
         $this->authorize('view', $exam);
 
-        $questions = ExamQuestion::where('exam_id', $exam->id)
+        $questions = $exam->examQuestions()
             ->with('question.options')
             ->orderBy('order')
             ->get();
@@ -53,32 +51,14 @@ class ExamQuestionController extends Controller
      * Attach a question to an exam.
      *
      * @subgroup Exam Questions
-     *
-     * @urlParam examId string required The exam UUID.
-     *
-     * @bodyParam question_id string required The question UUID. No-example
-     * @bodyParam marks_override numeric nullable Override the default marks for this question. No-example
      */
-    public function store(Request $request, string $examId): JsonResponse
+    public function store(AddQuestionData $data, Exam $exam, AddExamQuestion $action, Request $request): JsonResponse
     {
-        $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
-        $validated = $request->validate([
-            'question_id' => ['required', 'uuid', 'exists:questions,id'],
-            'marks_override' => ['nullable', 'numeric', 'min:0'],
-        ]);
+        $question = Question::findOrFail($data->question_id);
 
-        try {
-            $examQuestion = $this->managementAction->add($exam, $validated['question_id'], $validated['marks_override'] ?? null, auth()->id());
-        } catch (QueryException $e) {
-            if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'duplicate') || str_contains($e->getMessage(), 'UNIQUE')) {
-                return ApiResponse::error('This question has already been added to the exam.', 422);
-            }
-            throw $e;
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $examQuestion = $action->execute($exam, $question, $data, $request->user('tenant')->id);
 
         return ApiResponse::created(
             $examQuestion->load('question'),
@@ -90,31 +70,18 @@ class ExamQuestionController extends Controller
      * Randomly select questions from the question bank for this exam.
      *
      * @subgroup Exam Questions
-     *
-     * @urlParam examId string required The exam UUID.
-     *
-     * @bodyParam count int required Number of questions to randomly select. Example: 10
      */
-    public function randomize(Request $request, string $examId): JsonResponse
+    public function randomize(RandomizeQuestionsData $data, Exam $exam, RandomizeExamQuestions $action): JsonResponse
     {
-        $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
-        $validated = $request->validate([
-            'count' => ['required', 'integer', 'min:1'],
-        ]);
-
-        try {
-            $this->randomizationAction->execute($exam, $validated['count']);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
-
-        $exam->refresh();
-        $questions = $exam->examQuestions()->with('question.options')->get();
+        $action->execute($exam, $data->count);
 
         return ApiResponse::success(
-            ['total_marks' => $exam->total_marks, 'questions' => $questions],
+            [
+                'total_marks' => $exam->fresh()->total_marks,
+                'questions'   => $exam->examQuestions()->with('question.options')->get()
+            ],
             'Questions randomized successfully.'
         );
     }
@@ -123,30 +90,16 @@ class ExamQuestionController extends Controller
      * Update marks override for a question in an exam.
      *
      * @subgroup Exam Questions
-     *
-     * @urlParam examId string required The exam UUID.
-     * @urlParam questionId string required The question UUID.
-     *
-     * @bodyParam marks_override numeric nullable Override marks. No-example
      */
-    public function update(Request $request, string $examId, string $questionId): JsonResponse
+    public function update(UpdateExamQuestionData $data, Exam $exam, Question $question, UpdateExamQuestion $action): JsonResponse
     {
-        $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
-        $validated = $request->validate([
-            'marks_override' => ['nullable', 'numeric', 'min:0'],
-        ]);
-
-        try {
-            $examQuestion = $this->managementAction->updateMarks($exam, $questionId, $validated['marks_override'] ?? null);
-        } catch (\RuntimeException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $examQuestion = $action->execute($data, $exam, $question);
 
         return ApiResponse::success(
             $examQuestion->load('question'),
-            'Question marks updated.'
+            'Exam Question updated.'
         );
     }
 
@@ -155,15 +108,12 @@ class ExamQuestionController extends Controller
      *
      * @subgroup Exam Questions
      *
-     * @urlParam examId string required The exam UUID.
-     * @urlParam questionId string required The question UUID.
      */
-    public function destroy(string $examId, string $questionId): JsonResponse
+    public function destroy(Exam $exam, Question $question, DeleteExamQuestion $action): JsonResponse
     {
-        $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
-        $this->managementAction->remove($exam, $questionId);
+        $action->execute($exam, $question);
 
         return ApiResponse::message('Question removed from exam.');
     }
@@ -172,22 +122,12 @@ class ExamQuestionController extends Controller
      * Reorder questions in an exam.
      *
      * @subgroup Exam Questions
-     *
-     * @urlParam examId string required The exam UUID.
-     *
-     * @bodyParam order array required Array of question orders (position => question_index). No-example
      */
-    public function reorder(Request $request, string $examId): JsonResponse
+    public function reorder(ReorderQuestionsData $data, Exam $exam, ReorderExamQuestions $action): JsonResponse
     {
-        $exam = Exam::findOrFail($examId);
         $this->authorize('manageQuestions', $exam);
 
-        $validated = $request->validate([
-            'order' => ['required', 'array'],
-            'order.*' => ['required', 'integer', 'min:1'],
-        ]);
-
-        $this->managementAction->reorder($exam, $validated['order']);
+        $action->execute($exam, $data);
 
         return ApiResponse::message('Questions reordered.');
     }

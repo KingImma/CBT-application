@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant;
 
 use App\Data\Concerns\HasSchemaValidation;
-use App\Data\Exam\CreateExamData;
+use App\Data\Exam\Input\CreateExamData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreExamRequest extends FormRequest

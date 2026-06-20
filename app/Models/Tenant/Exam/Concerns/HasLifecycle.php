@@ -5,20 +5,18 @@ declare(strict_types=1);
 namespace App\Models\Tenant\Exam\Concerns;
 
 use App\Enums\ExamStatus;
+use App\Exceptions\Domain\Exam\{ ExamCannotBeActivatedException, ExamCannotBeCompletedException, ExamCannotBeSubmittedException, ExamStateTransitionException };
 use Illuminate\Support\Facades\DB;
-use App\Exceptions\Domain\Exam\{
-    ExamCannotBeActivatedException, 
-    ExamCannotBeCompletedException, 
-    ExamCannotBeSubmittedException, 
-    ExamStateTransitionException
-};
 
 
 trait HasLifecycle
 {
     public function submitForReview(): self
     {
-        throw_unless($this->canSubmitForReview(), ExamCannotBeSubmittedException::class);
+        throw_unless(
+            $this->canSubmitForReview(), 
+            ExamCannotBeSubmittedException::class
+        );
 
         $this->status = ExamStatus::Submitted;
 
@@ -27,7 +25,10 @@ trait HasLifecycle
 
     public function activate(string $userId): self
     {
-        throw_unless($this->canActivate(), ExamCannotBeActivatedException::class);
+        throw_unless(
+            $this->canActivate(), 
+            ExamCannotBeActivatedException::class
+        );
 
         $windowEnd = $this->scheduled_start->copy()->addMinutes(
             $this->duration_minutes * 2
@@ -48,7 +49,10 @@ trait HasLifecycle
 
     public function complete(): self
     {
-        throw_unless($this->canComplete(), ExamCannotBeCompletedException::class);
+        throw_unless(
+            $this->canComplete(), 
+            ExamCannotBeCompletedException::class
+        );
 
         $this->status = ExamStatus::Completed;
         $this->window_end = now();
@@ -58,7 +62,10 @@ trait HasLifecycle
 
     public function revertToDraft(?string $reason = null): self
     {
-        throw_unless($this->canRevertToDraft(), ExamStateTransitionException::class);
+        throw_unless(
+            $this->canRevertToDraft(), 
+            ExamStateTransitionException::class
+        );
 
         $this->status = ExamStatus::Draft;
         $this->rejection_reason = $reason;
@@ -68,7 +75,11 @@ trait HasLifecycle
 
     public function publish(): self
     {
-        throw_unless($this->status === ExamStatus::Completed, new \RuntimeException('An exam can only be published once it is completed.'));
+        throw_unless(
+            $this->isCompleted(), 
+            ExamStateTransitionException::class, 
+            'An exam can only be published once it is completed.'
+        );
 
         $this->status = ExamStatus::Published;
         $this->published_at = now();
@@ -78,7 +89,11 @@ trait HasLifecycle
 
     public function unpublish(): self
     {
-        throw_unless($this->status === ExamStatus::Published, new \RuntimeException('An exam can only be unpublished if it is published.'));
+        throw_unless(
+            $this->isPublished(), 
+            ExamStateTransitionException::class, 
+            'An exam can only be unpublished if it is published.'
+        );
 
         $this->status = ExamStatus::Completed;
         $this->published_at = null;

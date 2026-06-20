@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain\General;
 
-use Exception;
+use App\Exceptions\Domain\BaseDomainException;
 
-class InvalidStateException extends Exception
+class InvalidStateException extends BaseDomainException
 {
-    public function __construct(string $message = 'Invalid state.', int $code = 422, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
+    protected $message = 'Invalid state.';
 }

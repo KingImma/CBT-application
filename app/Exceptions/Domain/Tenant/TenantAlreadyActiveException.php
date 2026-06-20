@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain\Tenant;
 
-use Exception;
+use App\Exceptions\Domain\BaseDomainException;
 
-class TenantAlreadyActiveException extends Exception
+class TenantAlreadyActiveException extends BaseDomainException
 {
-    public function __construct(string $message = 'Tenant is already active.', int $code = 422, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
+    protected $message = 'Tenant is already active.';
+    protected int $httpStatus = 409; 
 }

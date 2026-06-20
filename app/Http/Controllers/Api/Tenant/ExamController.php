@@ -4,23 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Actions\Tenants\Exam\{ActivateExam, CreateExam, UpdateExam, DeleteExam, SubmitExamForReview};
+use App\Data\Exam\Input\{CreateExamData, UpdateExamData};
+use App\Data\Exam\Ouput\ExamData;
+use App\Exceptions\Domain\Exam\{ExamCannotBeCompletedException};
+use App\Http\Controllers\Controller;
+use App\Models\Tenant\Exam;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
-use App\Http\Requests\Tenant\StoreExamRequest;
-use App\Models\Tenant\Exam;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Data\Exam\ExamData;
-use App\Enums\RoleType;
-use App\Actions\Tenants\Exam\{
-    ManageExam,
-    ManageExamSession
-};
-use App\Exceptions\Domain\Exam\{
-    ExamCannotBeActivatedException,
-    ExamCannotBeCompletedException,
-    ExamCannotBeSubmittedException
-};
 
 /**
  * @group Exam Administration
@@ -28,11 +20,6 @@ use App\Exceptions\Domain\Exam\{
  */
 class ExamController extends Controller
 {
-    public function __construct(
-        private ManageExam $crudAction,
-        private ManageExamSession $sessionAction,
-    ) {}
-
     /**
      * List all exams with optional filters.
      *
@@ -49,75 +36,27 @@ class ExamController extends Controller
         $perPage = (int) $request->get('per_page', 20);
         $user = $request->user('tenant');
 
-        $exams = Exam::select(
-            'id',
-            'title',
-            'type',
-            'status',
-            'subject_id',
-            'class_level_id',
-            'class_arm_id',
-            'term_id',
-            'created_by',
-            'total_marks',
-            'pass_mark',
-            'duration_minutes',
-            'max_attempts',
-            'scheduled_start',
-            'instructions',
-            'created_at',
-            'expected_attempts',
-            'completed_attempts',
-            'published_at',
+        $exams = QueryBuilder::for(
+            Exam::query()->visibleTo($user)->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
         )
-            ->with([
-                'subject',
-                'classLevel',
-                'classArm',
-                'term',
-                'creator:id,first_name,last_name',
-            ])
+            ->allowedFilters(['status', 'subject_id', 'class_level_id', 'class_arm_id'])
+            ->defaultSort('-created_at')
             ->withCount('examQuestions as question_count')
-            ->when($request->status, fn ($q, $status) => $q->where('status', $status))
-            ->when($request->subject_id, fn ($q, $id) => $q->where('subject_id', $id))
-            ->when($request->class_level_id, fn ($q, $id) => $q->where('class_level_id', $id))
-            ->when($request->class_arm_id, fn ($q, $id) => $q->where('class_arm_id', $id))
-            ->when($user && $user->role === RoleType::Teacher->value, fn ($q) => $q->where('created_by', $user->id))
-            ->orderByDesc('created_at')
             ->paginate($perPage);
 
-        return ApiResponse::paginated(
-            $exams,
-            'Exams retrieved successfully.',
-            ExamData::collect($exams->getCollection()),
-        );
+        return ApiResponse::paginated($exams, 'Exams retrieved successfully.', ExamData::collect($exams->getCollection()));
     }
 
     /**
      * Create a new exam.
      *
      * @subgroup Exam Management
-     *
-     * @bodyParam title string required The exam title. Example: "Mid-Term Mathematics"
-     * @bodyParam subject_id string required The subject UUID. No-example
-     * @bodyParam class_level_id string required The class level UUID. No-example
-     * @bodyParam class_arm_id string nullable The class arm UUID. No-example
-     * @bodyParam term_id string required The term UUID. No-example
-     * @bodyParam duration_minutes int Exam duration in minutes. Example: 120
-     * @bodyParam pass_mark numeric Pass mark percentage. Example: 50
-     * @bodyParam max_attempts int Maximum attempts per student. Example: 1
-     * @bodyParam scheduled_start string nullable ISO 8601 scheduled start datetime. No-example
-     * @bodyParam instructions string nullable Exam instructions for students. No-example
      */
-    public function store(StoreExamRequest $request): JsonResponse
+    public function store(CreateExamData $data, Request $request, CreateExam $action): JsonResponse
     {
         $this->authorize('create', Exam::class);
 
-        $exam = $this->crudAction->create(
-            array_merge($request->validatedData()->toArray(), [
-                'created_by' => $request->user('tenant')->id,
-            ]),
-        );
+        $exam = $action->execute($data, $request->user('tenant')->id);
 
         return ApiResponse::created(
             $exam->load(['subject', 'classLevel']),
@@ -129,23 +68,20 @@ class ExamController extends Controller
      * Get a single exam with its questions.
      *
      * @subgroup Exam Management
-     *
-     * @urlParam id string required The exam UUID.
+     * @urlParam exam string required The exam UUID.
      */
-    public function show(string $id): JsonResponse
+    public function show(Exam $exam): JsonResponse
     {
-        $exam = Exam::with([
+        $this->authorize('view', $exam);
+
+        $exam->load([
             'subject',
             'classLevel',
             'classArm',
             'term',
             'creator:id,first_name,last_name',
             'examQuestions.question.options',
-        ])
-            ->withCount('examQuestions as question_count')
-            ->findOrFail($id);
-
-        $this->authorize('view', $exam);
+        ])->loadCount('examQuestions as question_count');
 
         return ApiResponse::success(
             ExamData::from($exam),
@@ -159,50 +95,12 @@ class ExamController extends Controller
      * @subgroup Exam Management
      *
      * @urlParam id string required The exam UUID.
-     *
-     * @bodyParam title string The exam title. No-example
-     * @bodyParam subject_id string The subject UUID. No-example
-     * @bodyParam class_level_id string The class level UUID. No-example
-     * @bodyParam class_arm_id string nullable The class arm UUID. No-example
-     * @bodyParam term_id string The term UUID. No-example
-     * @bodyParam duration_minutes int Exam duration in minutes. No-example
-     * @bodyParam pass_mark numeric nullable Pass mark percentage. No-example
-     * @bodyParam max_attempts int Maximum attempts per student. No-example
-     * @bodyParam scheduled_start string nullable ISO 8601 scheduled start. No-example
-     * @bodyParam instructions string nullable Exam instructions. No-example
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateExamData $data, Exam $exam, UpdateExam $action): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('update', $exam);
 
-        $validated = $request->validate([
-            'title' => ['sometimes', 'string', 'max:255'],
-            'subject_id' => ['sometimes', 'uuid', 'exists:subjects,id'],
-            'class_level_id' => ['sometimes', 'uuid', 'exists:class_levels,id'],
-            'class_arm_id' => [
-                'sometimes',
-                'nullable',
-                'uuid',
-                'exists:class_arms,id',
-            ],
-            'term_id' => ['sometimes', 'uuid', 'exists:terms,id'],
-            'duration_minutes' => ['sometimes', 'integer', 'min:1'],
-            'pass_mark' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'max_attempts' => ['sometimes', 'integer', 'min:1'],
-            'scheduled_start' => ['sometimes', 'nullable', 'date'],
-            'instructions' => ['sometimes', 'nullable', 'string'],
-            'settings' => ['nullable', 'array'],
-            'settings.randomize_questions' => ['sometimes', 'boolean'],
-            'settings.show_result_immediately' => ['sometimes', 'boolean'],
-            'settings.results_release_date' => [
-                'sometimes',
-                'nullable',
-                'date',
-            ],
-        ]);
-
-        $exam = $this->crudAction->update($exam, $validated);
+        $exam = $action->execute($exam, $data);
 
         return ApiResponse::success(
             $exam->load(['subject', 'classLevel']),
@@ -217,12 +115,11 @@ class ExamController extends Controller
      *
      * @urlParam id string required The exam UUID.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Exam $exam, DeleteExam $action): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('delete', $exam);
 
-        $this->crudAction->delete($exam);
+        $action->execute($exam);
 
         return ApiResponse::message('Exam deleted.');
     }
@@ -231,19 +128,12 @@ class ExamController extends Controller
      * Submit an exam for review by an administrator.
      *
      * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
      */
-    public function submitForReview(string $id): JsonResponse
+    public function submitForReview(Exam $exam, SubmitExamForReview $action): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('submitForReview', $exam);
 
-        try {
-            $exam->submitForReview()->save();
-        } catch (ExamCannotBeSubmittedException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $exam = $action->execute($exam);
 
         return ApiResponse::success($exam, 'Exam submitted for review.');
     }
@@ -254,29 +144,16 @@ class ExamController extends Controller
      *
      * @subgroup Exam Workflow
      *
-     * @urlParam id string required The exam UUID.
      */
-    public function activate(string $id, Request $request): JsonResponse
+    public function activate(Exam $exam, Request $request, ActivateExam $action): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('activate', $exam);
 
-        try {
-            $exam->activate($request->user('tenant')->id)->save();
-        } catch (ExamCannotBeActivatedException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $exam = $action->execute($exam, $request->user('tenant')->id);
 
         return ApiResponse::success($exam, 'Exam activated.');
     }
 
-    /**
-     * Publish an exam once it's completed and ready for student access.
-     *
-     * @subgroup Exam Workflow
-     *
-     * @urlParam id string required The exam UUID.
-     */
     /**
      * Publish an exam to make it available to students.
      *
@@ -284,9 +161,8 @@ class ExamController extends Controller
      *
      * @urlParam id string required The exam UUID.
      */
-    public function publish(string $id): JsonResponse
+    public function publish(Exam $exam): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('publish', $exam);
 
         try {
@@ -306,9 +182,8 @@ class ExamController extends Controller
      *
      * @urlParam id string required The exam UUID.
      */
-    public function publishResults(string $id): JsonResponse
+    public function publishResults(Exam $exam): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('publishResults', $exam);
 
         $exam->publish();
@@ -325,9 +200,8 @@ class ExamController extends Controller
      *
      * @urlParam id string required The exam UUID.
      */
-    public function unpublishResults(string $id): JsonResponse
+    public function unpublishResults(Exam $exam): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('unpublishResults', $exam);
 
         $exam->unpublish();
@@ -344,9 +218,8 @@ class ExamController extends Controller
      *
      * @urlParam id string required The exam UUID.
      */
-    public function forceComplete(string $id): JsonResponse
+    public function forceComplete(Exam $exam): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
         $this->authorize('forceComplete', $exam);
 
         try {

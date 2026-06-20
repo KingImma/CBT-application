@@ -9,6 +9,7 @@ use App\Exceptions\Auth\AccountDeactivatedException;
 use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Exceptions\Business\BulkOperationException;
 use App\Exceptions\Business\PlanLimitExceededException;
+use App\Exceptions\Domain\BaseDomainException;
 use App\Exceptions\Tenant\TenantSlugAlreadyTakenException;
 use App\Support\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
@@ -42,6 +43,7 @@ class Handler extends ExceptionHandler
         AccountDeactivatedException::class,
         TenantSlugAlreadyTakenException::class,
         HttpResponseException::class,
+        BaseDomainException::class,
     ];
 
     public function register(): void

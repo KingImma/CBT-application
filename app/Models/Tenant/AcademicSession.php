@@ -41,7 +41,7 @@ class AcademicSession extends Model
 
     public function setAsCurrent(): self
     {
-        throw_unless(! $this->is_current, SessionAlreadyCurrentException::class);
+        throw_if($this->is_current, SessionAlreadyCurrentException::class);
 
         DB::transaction(function () {
             static::where('is_current', true)->update(['is_current' => false]);

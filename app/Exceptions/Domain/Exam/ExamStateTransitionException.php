@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain\Exam;
 
-use Exception;
+use App\Exceptions\Domain\BaseDomainException;
 
-class ExamStateTransitionException extends Exception
+class ExamStateTransitionException extends BaseDomainException
 {
-    public function __construct(string $message = 'Invalid exam state transition.', int $code = 422, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
+    protected $message = 'Invalid exam state transition.';
 }

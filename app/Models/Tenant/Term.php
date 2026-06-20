@@ -51,7 +51,7 @@ class Term extends Model
     public function setAsCurrent(): self
     {
         throw_unless($this->academicSession->is_current, \InvalidArgumentException::class, 'Academic session must be current before setting a current term.');
-        throw_unless(! $this->is_current, TermAlreadyCurrentException::class);
+        throw_if($this->is_current, TermAlreadyCurrentException::class);
 
         DB::transaction(function () {
             static::where('is_current', true)->update(['is_current' => false]);

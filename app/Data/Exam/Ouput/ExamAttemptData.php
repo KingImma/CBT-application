@@ -2,40 +2,31 @@
 
 declare(strict_types=1);
 
-namespace App\Data\Exam;
+namespace App\Data\Exam\Ouput;
 
+use Spatie\LaravelData\Attributes\WhenLoaded;
 use Spatie\LaravelData\Resource;
 
-class ExamResultData extends Resource
+class ExamAttemptData extends Resource
 {
     public function __construct(
-        public readonly string $attempt_id,
-        public readonly string $exam_id,
-        public readonly string $exam_title,
+        public readonly string $id,
         public readonly string $status,
         public readonly int $attempt_number,
         public readonly ?float $total_score,
-        public readonly ?float $total_marks,
         public readonly ?float $percentage_score,
-        public readonly ?string $grade,
+        public readonly ?string $started_at,
         public readonly ?string $submitted_at,
         public readonly ?int $time_spent_seconds,
-        public readonly array $questions,
+        #[WhenLoaded('student')]
+        public readonly mixed $student,
+        #[WhenLoaded('exam')]
+        public readonly mixed $exam,
     ) {}
 
-    public function getAttemptId(): string
+    public function getId(): string
     {
-        return $this->attempt_id;
-    }
-
-    public function getExamId(): string
-    {
-        return $this->exam_id;
-    }
-
-    public function getExamTitle(): string
-    {
-        return $this->exam_title;
+        return $this->id;
     }
 
     public function getStatus(): string
@@ -53,19 +44,14 @@ class ExamResultData extends Resource
         return $this->total_score;
     }
 
-    public function getTotalMarks(): ?float
-    {
-        return $this->total_marks;
-    }
-
     public function getPercentageScore(): ?float
     {
         return $this->percentage_score;
     }
 
-    public function getGrade(): ?string
+    public function getStartedAt(): ?string
     {
-        return $this->grade;
+        return $this->started_at;
     }
 
     public function getSubmittedAt(): ?string
@@ -78,8 +64,13 @@ class ExamResultData extends Resource
         return $this->time_spent_seconds;
     }
 
-    public function getQuestions(): array
+    public function getStudent(): mixed
     {
-        return $this->questions;
+        return $this->student;
+    }
+
+    public function getExam(): mixed
+    {
+        return $this->exam;
     }
 }

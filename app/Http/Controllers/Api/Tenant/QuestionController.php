@@ -177,6 +177,13 @@ class QuestionController extends Controller
      * @bodyParam image_url string nullable Image URL. No-example
      * @bodyParam is_active boolean Whether the question is active. No-example
      */
+    /**
+     * Update a question.
+     *
+     * @subgroup Questions
+     *
+     * @urlParam id string required The question UUID.
+     */
     public function update(Request $request, string $id): JsonResponse
     {
         $question = Question::findOrFail($id);
@@ -187,9 +194,53 @@ class QuestionController extends Controller
             'default_marks' => ['sometimes', 'numeric', 'min:0.5', 'max:100'],
             'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'is_active' => ['sometimes', 'boolean'],
+            
+            // Allow options to pass through validation
+            'options' => ['sometimes', 'array', 'min:2'],
+            'options.*.id' => ['nullable', 'uuid'],
+            'options.*.content' => ['required_with:options', 'string'],
+            'options.*.is_correct' => ['required_with:options', 'boolean'],
+            'options.*.order' => ['nullable', 'integer'],
+            'options.*.label' => ['nullable', 'string', 'max:10'],
         ]);
 
-        $question->update($validated);
+        // Enforce single-correct validation if options are being updated
+        if (isset($validated['options'])) {
+            $correctCount = collect($validated['options'])->where('is_correct', true)->count();
+            if ($correctCount !== 1 && $question->type === QuestionType::McqSingle->value) {
+                return ApiResponse::error('MCQ must have exactly one correct option.', 422);
+            }
+        }
+
+        DB::transaction(function () use ($question, $validated) {
+            // 1. Update the core question text and settings
+            $question->update(collect($validated)->except('options')->toArray());
+
+            // 2. Synchronize options if the frontend sent them
+            if (isset($validated['options'])) {
+                // Find which option IDs the frontend kept
+                $keptOptionIds = collect($validated['options'])->pluck('id')->filter()->toArray();
+
+                // Delete any existing options that the frontend removed
+                $question->options()->whereNotIn('id', $keptOptionIds)->delete();
+
+                // Update existing options or insert new ones
+                foreach ($validated['options'] as $index => $opt) {
+                    QuestionOption::updateOrCreate(
+                        [
+                            'id' => $opt['id'] ?? null,
+                            'question_id' => $question->id,
+                        ],
+                        [
+                            'content' => $opt['content'],
+                            'is_correct' => $opt['is_correct'],
+                            'label' => $opt['label'] ?? null,
+                            'order' => $opt['order'] ?? $index,
+                        ]
+                    );
+                }
+            }
+        });
 
         return ApiResponse::success(
             $question->fresh(['options']),

@@ -11,6 +11,7 @@ use App\Exceptions\Domain\Exam\{ExamCannotBeCompletedException};
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Support\ApiResponse;
+use Spatie\QueryBuilder\QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

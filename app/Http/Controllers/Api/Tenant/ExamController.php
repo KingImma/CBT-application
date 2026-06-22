@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\{ActivateExam, CreateExam, UpdateExam, DeleteExam, SubmitExamForReview};
 use App\Data\Exam\Input\{CreateExamData, UpdateExamData};
-use App\Data\Exam\Ouput\ExamData;
+use App\Data\Exam\Output\ExamData;
 use App\Exceptions\Domain\Exam\{ExamCannotBeCompletedException};
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;

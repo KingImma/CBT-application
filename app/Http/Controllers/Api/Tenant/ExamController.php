@@ -32,21 +32,27 @@ class ExamController extends Controller
      * @queryParam class_arm_id string Filter by class arm UUID. No-example
      * @queryParam per_page int Results per page (default: 20). No-example
      */
-    public function index(Request $request): JsonResponse
-    {
-        $perPage = (int) $request->get('per_page', 20);
-        $user = $request->user('tenant');
-
-        $exams = QueryBuilder::for(
-            Exam::query()->visibleTo($user)->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
-        )
-            ->allowedFilters(['status', 'subject_id', 'class_level_id', 'class_arm_id'])
-            ->defaultSort('-created_at')
-            ->withCount('examQuestions as question_count')
-            ->paginate($perPage);
-
-        return ApiResponse::paginated($exams, 'Exams retrieved successfully.', ExamData::collect($exams->getCollection()));
-    }
+     public function index(Request $request): JsonResponse
+     {
+         $perPage = (int) $request->get('per_page', 20);
+         $user = $request->user('tenant');
+     
+         $exams = QueryBuilder::for(
+             Exam::query()
+                 ->visibleTo($user)
+                 ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
+         )
+             ->allowedFilters('status', 'subject_id', 'class_level_id', 'class_arm_id')
+             ->defaultSort('-created_at')
+             ->withCount('examQuestions as question_count')
+             ->paginate($perPage);
+     
+         return ApiResponse::paginated(
+             $exams, 
+             'Exams retrieved successfully.', 
+             ExamData::collect($exams->getCollection())
+         );
+     }
 
     /**
      * Create a new exam.

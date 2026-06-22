@@ -27,12 +27,14 @@ class SubjectController extends Controller
      * @subgroup Subject Management
      *
      * @queryParam class_level_id string Filter by class level UUID. No-example
+     * @queryParam academic_session_id string Filter by academic session UUID. No-example
      */
     public function index(Request $request): JsonResponse
     {
         $subjects = Subject::with([
             'classLevels',
             'teacherAssignments.user:id,first_name,last_name',
+            'teacherAssignments.academicSession:id,name',
         ])
             ->where('is_active', true)
             ->when($request->class_level_id, fn ($q, $id) => $q->whereHas('classLevels', fn ($q2) => $q2->where('class_level_id', $id)))
@@ -86,6 +88,7 @@ class SubjectController extends Controller
         $subject = Subject::with([
             'classLevels',
             'teacherAssignments.user:id,first_name,last_name',
+            'teacherAssignments.academicSession:id,name',
         ])->findOrFail($id);
 
         return ApiResponse::success(SubjectData::from($subject), 'Subject retrieved successfully.');

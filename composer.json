@@ -26,6 +26,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
         "laravel/boost": "^2.4",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",
@@ -71,7 +72,8 @@
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php -r \"exec('git config core.hooksPath .githooks');\""
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -86,6 +88,17 @@
         ],
         "lint": [
             "@php artisan pint --test"
+        ],
+        "analyse": [
+            "@php artisan config:clear --ansi",
+            "vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --debug"
+        ],
+        "setup-hooks": [
+            "@php -r \"exec('git config core.hooksPath .githooks');\""
+        ],
+        "post-install-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php -r \"exec('git config core.hooksPath .githooks');\""
         ]
     },
     "extra": {

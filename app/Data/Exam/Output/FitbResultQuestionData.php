@@ -43,7 +43,7 @@ final class FitbResultQuestionData extends ResultQuestionData
         ExamAnswer $answer,
         ExamQuestion $examQuestion,
         Question $question,
-    ): self {
+    ): static {
         $acceptableAnswers = $question->options
             ->filter(fn ($o) => (bool) $o->is_correct)
             ->map(fn ($o) => [

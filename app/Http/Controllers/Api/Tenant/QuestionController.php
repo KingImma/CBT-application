@@ -16,6 +16,7 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 /**
  * @group Question Bank
@@ -27,6 +28,12 @@ class QuestionController extends Controller
     /**
      * List questions with optional filters.
      *
+     * The response contains a polymorphic array of question objects.
+     * Each question's shape depends on its type field:
+     * - mcq: includes options with id, content, is_correct, label, order
+     * - true_false: includes options with id, content, is_correct, label, order
+     * - fill_in_blank: includes acceptable_answers with content, case_sensitive
+     *
      * @subgroup Questions
      *
      * @queryParam subject_id string Filter by subject UUID. No-example
@@ -34,6 +41,12 @@ class QuestionController extends Controller
      * @queryParam search string Search question content. No-example
      * @queryParam include_inactive bool Include inactive questions (default: false). No-example
      * @queryParam per_page int Results per page (default: 20). No-example
+     *
+     * @responseField data.*.id string The question UUID.
+     * @responseField data.*.type string The question type: mcq, true_false, or fill_in_blank.
+     * @responseField data.*.content string Question text.
+     * @responseField data.*.options array|null Present for mcq/true_false. Array of {id, content, is_correct, label, order}.
+     * @responseField data.*.acceptable_answers array|null Present for fill_in_blank. Array of {content, case_sensitive}.
      */
     public function index(Request $request): JsonResponse
     {
@@ -50,11 +63,42 @@ class QuestionController extends Controller
             ->orderByDesc('created_at')
             ->paginate((int) $request->get('per_page', 20));
 
+        $questionDtos = $questions->getCollection()->map(
+            fn (Question $q) => QuestionData::fromQuestion($q)
+        );
+
         return ApiResponse::paginated(
             $questions,
             'Questions retrieved successfully.',
-            QuestionData::collect($questions->getCollection())
+            $questionDtos,
         );
+    }
+
+    /**
+     * Type-specific validation rules for question options.
+     *
+     * @return array<string, mixed>
+     */
+    private function optionRulesForType(string $type): array
+    {
+        if ($type === QuestionType::FillInBlank->value) {
+            return [
+                'options' => ['required', 'array', 'min:1'],
+                'options.*.content' => ['required', 'string'],
+                'options.*.is_correct' => ['prohibited'],
+                'options.*.order' => ['nullable', 'integer'],
+                'options.*.label' => ['nullable', 'string', 'max:10'],
+                'options.*.match_pair' => ['nullable', 'string', 'max:255'],
+            ];
+        }
+
+        return [
+            'options' => ['required', 'array', 'min:2'],
+            'options.*.content' => ['required', 'string'],
+            'options.*.is_correct' => ['required', 'boolean'],
+            'options.*.order' => ['nullable', 'integer'],
+            'options.*.label' => ['nullable', 'string', 'max:10'],
+        ];
     }
 
     /**
@@ -62,22 +106,29 @@ class QuestionController extends Controller
      *
      * @subgroup Questions
      *
+     * @bodyParam type string required The question type: mcq, true_false, or fill_in_blank. Example: "mcq"
      * @bodyParam subject_id string required The subject UUID. Must be assigned to the class level. No-example
      * @bodyParam class_level_id string required The class level UUID. No-example
      * @bodyParam content string required The question text. Example: "What is the capital of Nigeria?"
      * @bodyParam default_marks numeric required Default mark for the question (0.5 - 100). Example: 2
      * @bodyParam image_url string nullable URL to an image for the question. No-example
-     * @bodyParam options array required Array of answer options (minimum 2). No-example
+     * @bodyParam options array required Array of answer options. Minimum 2 for MCQ/TrueFalse, minimum 1 for FillInBlank. No-example
      * @bodyParam options.*.content string required Option text. No-example
-     * @bodyParam options.*.is_correct boolean required Whether this is the correct option (exactly one must be true). No-example
+     * @bodyParam options.*.is_correct boolean required for MCQ/TrueFalse. Whether this is the correct option. Prohibited for FillInBlank. No-example
      * @bodyParam options.*.order int nullable Display order. No-example
      * @bodyParam options.*.label string nullable Short label (max 10 chars). No-example
+     *
+     * @responseField data.id string The question UUID.
+     * @responseField data.type string The question type.
+     * @responseField data.content string Question text.
+     * @responseField data.options array Type-specific options (incl. is_correct for MCQ/TF; acceptable_answers for FITB).
      */
     public function store(Request $request): JsonResponse
     {
         $this->authorize('createForClass', [Question::class, $request->input('class_level_id')]);
 
         $validated = $request->validate([
+            'type' => ['required', 'string', Rule::in(array_column(QuestionType::cases(), 'value'))],
             'subject_id' => [
                 'required', 'uuid', 'exists:subjects,id',
                 function ($attribute, $value, $fail) use ($request) {
@@ -100,23 +151,22 @@ class QuestionController extends Controller
             'content' => ['required', 'string'],
             'default_marks' => ['required', 'numeric', 'min:0.5', 'max:100'],
             'image_url' => ['nullable', 'url', 'max:500'],
-            'options' => ['required', 'array', 'min:2'],
-            'options.*.content' => ['required', 'string'],
-            'options.*.is_correct' => ['required', 'boolean'],
-            'options.*.order' => ['nullable', 'integer'],
-            'options.*.label' => ['nullable', 'string', 'max:10'],
-        ]);
+        ] + $this->optionRulesForType($request->input('type', '')));
 
-        $correctCount = collect($validated['options'])->where('is_correct', true)->count();
-        if ($correctCount !== 1) {
-            return ApiResponse::error('MCQ must have exactly one correct option.', 422);
+        $type = $validated['type'];
+
+        if ($type !== QuestionType::FillInBlank->value) {
+            $correctCount = collect($validated['options'])->where('is_correct', true)->count();
+            if ($correctCount !== 1) {
+                return ApiResponse::error("{$type} must have exactly one correct option.", 422);
+            }
         }
 
-        $question = DB::transaction(function () use ($validated, $request) {
+        $question = DB::transaction(function () use ($validated, $request, $type) {
             $question = Question::create([
                 'subject_id' => $validated['subject_id'],
                 'class_level_id' => $validated['class_level_id'],
-                'type' => QuestionType::Mcq->value,
+                'type' => $type,
                 'content' => $validated['content'],
                 'default_marks' => $validated['default_marks'],
                 'image_url' => $validated['image_url'] ?? null,
@@ -126,12 +176,17 @@ class QuestionController extends Controller
             ]);
 
             foreach ($validated['options'] as $i => $opt) {
+                $isCorrect = $type === QuestionType::FillInBlank->value
+                    ? true  // All FITB options are acceptable answers by definition
+                    : $opt['is_correct'];
+
                 QuestionOption::create([
                     'question_id' => $question->id,
                     'label' => $opt['label'] ?? null,
                     'content' => $opt['content'],
-                    'is_correct' => $opt['is_correct'],
+                    'is_correct' => $isCorrect,
                     'order' => $opt['order'] ?? $i,
+                    'match_pair' => $opt['match_pair'] ?? null,
                 ]);
             }
 
@@ -147,9 +202,19 @@ class QuestionController extends Controller
     /**
      * Get a single question with its options.
      *
+     * The question shape depends on its type field:
+     * - mcq: includes options with id, content, is_correct, label, order
+     * - true_false: includes options with id, content, is_correct, label, order
+     * - fill_in_blank: includes acceptable_answers with content, case_sensitive
+     *
      * @subgroup Questions
      *
      * @urlParam id string required The question UUID.
+     *
+     * @responseField data.id string The question UUID.
+     * @responseField data.type string The question type: mcq, true_false, or fill_in_blank.
+     * @responseField data.options array|null Present for mcq/true_false.
+     * @responseField data.acceptable_answers array|null Present for fill_in_blank.
      */
     public function show(string $id): JsonResponse
     {
@@ -162,7 +227,10 @@ class QuestionController extends Controller
 
         $this->authorize('view', $question);
 
-        return ApiResponse::success(QuestionData::from($question), 'Question retrieved successfully.');
+        return ApiResponse::success(
+            QuestionData::fromQuestion($question),
+            'Question retrieved successfully.',
+        );
     }
 
     /**
@@ -189,26 +257,44 @@ class QuestionController extends Controller
         $question = Question::findOrFail($id);
         $this->authorize('update', $question);
 
-        $validated = $request->validate([
+        $baseRules = [
             'content' => ['sometimes', 'string'],
             'default_marks' => ['sometimes', 'numeric', 'min:0.5', 'max:100'],
             'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'is_active' => ['sometimes', 'boolean'],
+        ];
 
-            // Allow options to pass through validation
-            'options' => ['sometimes', 'array', 'min:2'],
-            'options.*.id' => ['nullable', 'uuid'],
-            'options.*.content' => ['required_with:options', 'string'],
-            'options.*.is_correct' => ['required_with:options', 'boolean'],
-            'options.*.order' => ['nullable', 'integer'],
-            'options.*.label' => ['nullable', 'string', 'max:10'],
-        ]);
+        $optionRules = [];
+        if ($request->has('options')) {
+            if ($question->type === QuestionType::FillInBlank->value) {
+                $optionRules = [
+                    'options' => ['sometimes', 'array', 'min:1'],
+                    'options.*.id' => ['nullable', 'uuid'],
+                    'options.*.content' => ['required_with:options', 'string'],
+                    'options.*.is_correct' => ['prohibited'],
+                    'options.*.order' => ['nullable', 'integer'],
+                    'options.*.label' => ['nullable', 'string', 'max:10'],
+                    'options.*.match_pair' => ['nullable', 'string', 'max:255'],
+                ];
+            } else {
+                $optionRules = [
+                    'options' => ['sometimes', 'array', 'min:2'],
+                    'options.*.id' => ['nullable', 'uuid'],
+                    'options.*.content' => ['required_with:options', 'string'],
+                    'options.*.is_correct' => ['required_with:options', 'boolean'],
+                    'options.*.order' => ['nullable', 'integer'],
+                    'options.*.label' => ['nullable', 'string', 'max:10'],
+                ];
+            }
+        }
 
-        // Enforce single-correct validation if options are being updated
-        if (isset($validated['options'])) {
+        $validated = $request->validate(array_merge($baseRules, $optionRules));
+
+        // Enforce correct-count rules if options are being updated
+        if (isset($validated['options']) && $question->type !== QuestionType::FillInBlank->value) {
             $correctCount = collect($validated['options'])->where('is_correct', true)->count();
-            if ($correctCount !== 1 && $question->type === QuestionType::Mcq->value) {
-                return ApiResponse::error('MCQ must have exactly one correct option.', 422);
+            if ($correctCount !== 1) {
+                return ApiResponse::error($question->type.' must have exactly one correct option.', 422);
             }
         }
 
@@ -226,6 +312,10 @@ class QuestionController extends Controller
 
                 // Update existing options or insert new ones
                 foreach ($validated['options'] as $index => $opt) {
+                    $isCorrect = $question->type === QuestionType::FillInBlank->value
+                        ? true  // All FITB options are acceptable answers by definition
+                        : $opt['is_correct'];
+
                     QuestionOption::updateOrCreate(
                         [
                             'id' => $opt['id'] ?? null,
@@ -233,9 +323,10 @@ class QuestionController extends Controller
                         ],
                         [
                             'content' => $opt['content'],
-                            'is_correct' => $opt['is_correct'],
+                            'is_correct' => $isCorrect,
                             'label' => $opt['label'] ?? null,
                             'order' => $opt['order'] ?? $index,
+                            'match_pair' => $opt['match_pair'] ?? null,
                         ]
                     );
                 }

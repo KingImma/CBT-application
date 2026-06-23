@@ -8,14 +8,17 @@ use App\Actions\Tenants\Exam\FinalizeAttempt;
 use App\Actions\Tenants\Exam\ManageExamSession;
 use App\Actions\Tenants\Exam\RecordExamAnswer;
 use App\Data\Exam\Output\ExamAttemptData;
-use App\Data\Exam\Output\StudentExamQuestionData;
+use App\Data\Exam\Output\ResultQuestionData;
+use App\Data\Exam\Output\StudentQuestionData;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
+use App\Enums\QuestionType;
 use App\Enums\SuspiciousEventType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
+use App\Models\Tenant\Question;
 use App\Support\ApiResponse;
 use App\Support\Exam\ExamSessionStateStore;
 use Illuminate\Database\QueryException;
@@ -36,6 +39,30 @@ class StudentExamController extends Controller
         private FinalizeAttempt $finalizeAttempt,
         private ExamSessionStateStore $stateStore,
     ) {}
+
+    /**
+     * Return validation rules for a given question type.
+     *
+     * - Choice-based (MCQ, TrueFalse): require selected_option_ids, reject text_answer.
+     * - Text-based (FillInBlank): require text_answer, reject selected_option_ids.
+     *
+     * @return array<string, mixed>
+     */
+    private function answerRulesByType(string $questionType): array
+    {
+        if ($questionType === QuestionType::FillInBlank->value) {
+            return [
+                'selected_option_ids' => ['prohibited'],
+                'text_answer' => ['required', 'string', 'max:2000'],
+            ];
+        }
+
+        return [
+            'selected_option_ids' => ['required', 'array', 'min:1'],
+            'selected_option_ids.*' => ['uuid'],
+            'text_answer' => ['prohibited'],
+        ];
+    }
 
     /**
      * List available exams for the authenticated student.
@@ -69,10 +96,20 @@ class StudentExamController extends Controller
     /**
      * List the authenticated student's published results.
      *
+     * Each question in the results is type-specific:
+     * - mcq / true_false: includes options with is_correct revealed, and selected_options.
+     * - fill_in_blank: includes text_answer and acceptable_answers; no selected_option_ids.
+     *
      * @subgroup Results
      *
      * @queryParam exam_id string Filter by exam UUID. No-example
      * @queryParam per_page int Results per page (default: 20). No-example
+     *
+     * @responseField data.*.questions.*.type string The question type.
+     * @responseField data.*.questions.*.options array|null Present for mcq/true_false with is_correct revealed.
+     * @responseField data.*.questions.*.selected_options array|null Student's selected options (mcq/true_false).
+     * @responseField data.*.questions.*.text_answer string|null Student's text answer (fill_in_blank).
+     * @responseField data.*.questions.*.acceptable_answers array|null Acceptable answers (fill_in_blank).
      */
     public function results(Request $request): JsonResponse
     {
@@ -107,43 +144,22 @@ class StudentExamController extends Controller
             ->paginate($perPage);
 
         $results = $attempts->getCollection()->map(function ($attempt) {
-            $questions = $attempt->answers->map(function ($answer) use ($attempt) {
+            $examQuestions = $attempt->exam->examQuestions->keyBy('question_id');
+
+            $questions = $attempt->answers->map(function ($answer) use ($examQuestions) {
                 $question = $answer->question;
-                $examQuestion = $attempt->exam->examQuestions
-                    ->firstWhere('question_id', $question->id);
+                $examQuestion = $examQuestions->get($question->id);
 
-                $optionsMap = $question->options->keyBy('id');
+                if ($examQuestion === null) {
+                    return null;
+                }
 
-                $selectedOptions = collect($answer->selected_option_ids ?? [])
-                    ->map(fn ($optionId) => $optionsMap->has($optionId) ? [
-                        'id' => $optionsMap[$optionId]->id,
-                        'label' => $optionsMap[$optionId]->label,
-                        'content' => $optionsMap[$optionId]->content,
-                        'image_url' => $optionsMap[$optionId]->image_url,
-                        'is_correct' => (bool) $optionsMap[$optionId]->is_correct,
-                    ] : null)
-                    ->filter()
-                    ->values()
-                    ->toArray();
-
-                return [
-                    'question_id' => $question->id,
-                    'content' => $question->content,
-                    'image_url' => $question->image_url,
-                    'marks_available' => (float) ($examQuestion?->getEffectiveMarks() ?? $question->default_marks),
-                    'marks_awarded' => (float) ($answer->marks_awarded ?? 0),
-                    'is_correct' => (bool) $answer->is_correct,
-                    'selected_options' => $selectedOptions,
-                    'text_answer' => $answer->text_answer,
-                    'options' => $question->options->map(fn ($opt) => [
-                        'id' => $opt->id,
-                        'label' => $opt->label,
-                        'content' => $opt->content,
-                        'image_url' => $opt->image_url,
-                        'is_correct' => (bool) $opt->is_correct, // ← correct answer revealed
-                    ])->toArray(),
-                ];
-            })->toArray();
+                return ResultQuestionData::fromAnswer(
+                    $answer,
+                    $examQuestion,
+                    $question,
+                );
+            })->filter()->values()->toArray();
 
             return [
                 'attempt_id' => $attempt->id,
@@ -233,7 +249,7 @@ class StudentExamController extends Controller
         return ApiResponse::created(
             [
                 'attempt' => $attempt,
-                'questions' => StudentExamQuestionData::collect(
+                'questions' => StudentQuestionData::collectFromExamQuestions(
                     $questionsData['questions'],
                 ),
                 'order' => $questionsData['order'],
@@ -264,7 +280,7 @@ class StudentExamController extends Controller
         }
 
         $data = $this->sessionAction->recover($attempt);
-        $data['questions'] = StudentExamQuestionData::collect(
+        $data['questions'] = StudentQuestionData::collectFromExamQuestions(
             $data['questions'],
         );
 
@@ -274,9 +290,18 @@ class StudentExamController extends Controller
     /**
      * Get questions for an active exam attempt.
      *
+     * Returns type-specific question objects with correct answers stripped:
+     * - mcq / true_false: options contain only id and content (no is_correct).
+     * - fill_in_blank: no options or acceptable answers returned.
+     *
      * @subgroup Answering
      *
      * @urlParam id string required The exam UUID.
+     *
+     * @responseField questions array Type-specific question objects.
+     * @responseField questions.*.type string The question type.
+     * @responseField questions.*.options array|null Present for mcq/true_false with {id, content} only.
+     * @responseField questions.*.order array Question ID order.
      */
     public function getQuestions(Request $request, string $id): JsonResponse
     {
@@ -301,7 +326,7 @@ class StudentExamController extends Controller
             [
                 'exam_id' => $exam->id,
                 'attempt_id' => $attempt->id,
-                'questions' => StudentExamQuestionData::collect(
+                'questions' => StudentQuestionData::collectFromExamQuestions(
                     $questionsData['questions'],
                 ),
                 'order' => $questionsData['order'],
@@ -342,7 +367,7 @@ class StudentExamController extends Controller
             [
                 'exam_id' => $attempt->exam_id,
                 'attempt_id' => $attempt->id,
-                'questions' => StudentExamQuestionData::collect(
+                'questions' => StudentQuestionData::collectFromExamQuestions(
                     $questionsData['questions'],
                 ),
                 'order' => $questionsData['order'],
@@ -355,14 +380,23 @@ class StudentExamController extends Controller
     /**
      * Save an answer for a question in an attempt.
      *
+     * Validation branches by question type:
+     * - MCQ / TrueFalse: requires selected_option_ids, rejects text_answer.
+     * - FillInBlank: requires text_answer, rejects selected_option_ids.
+     *
      * @subgroup Answering
      *
      * @urlParam attemptId string required The attempt UUID.
      * @urlParam questionId string required The question UUID.
      *
-     * @bodyParam selected_option_ids array Selected option UUIDs for MCQ questions. No-example
-     * @bodyParam text_answer string Text answer for theory questions. No-example
+     * @bodyParam selected_option_ids array Required for MCQ/TrueFalse. No-example
+     * @bodyParam text_answer string Required for FillInBlank. No-example
      * @bodyParam time_spent_seconds int Time spent on this question. No-example
+     *
+     * @responseField data.id string The answer UUID.
+     * @responseField data.question_id string The question UUID.
+     * @responseField data.selected_option_ids array|null Selected options (MCQ/TF only).
+     * @responseField data.text_answer string|null Student's text answer (FITB only).
      */
     public function saveAnswer(
         Request $request,
@@ -372,12 +406,12 @@ class StudentExamController extends Controller
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
-        $validated = $request->validate([
-            'selected_option_ids' => ['sometimes', 'nullable', 'array'],
-            'selected_option_ids.*' => ['uuid'],
-            'text_answer' => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
-        ]);
+        $question = Question::findOrFail($questionId);
+
+        $rules = $this->answerRulesByType($question->type);
+        $rules['time_spent_seconds'] = ['sometimes', 'integer', 'min:0'];
+
+        $validated = $request->validate($rules);
 
         $answer = $this->answerAction->save($attempt, $questionId, $validated);
 
@@ -387,14 +421,16 @@ class StudentExamController extends Controller
     /**
      * Bulk save answers for an attempt.
      *
+     * Each answer's validation branches by the question's type.
+     *
      * @subgroup Answering
      *
      * @urlParam attemptId string required The attempt UUID.
      *
      * @bodyParam answers array required Array of answers. No-example
      * @bodyParam answers.*.question_id string required The question UUID. No-example
-     * @bodyParam answers.*.selected_option_ids array Selected option UUIDs. No-example
-     * @bodyParam answers.*.text_answer string Text answer. No-example
+     * @bodyParam answers.*.selected_option_ids array Required for MCQ/TrueFalse. No-example
+     * @bodyParam answers.*.text_answer string Required for FillInBlank. No-example
      * @bodyParam answers.*.time_spent_seconds int Time spent on this question. No-example
      */
     public function bulkSave(Request $request, string $attemptId): JsonResponse
@@ -410,6 +446,52 @@ class StudentExamController extends Controller
             'answers.*.text_answer' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'answers.*.time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
+
+        // Validate each answer against its question type
+        $questionIds = array_unique(array_column($validated['answers'], 'question_id'));
+        $questions = Question::whereIn('id', $questionIds)->get()->keyBy('id');
+
+        foreach ($validated['answers'] as $i => $answer) {
+            $question = $questions->get($answer['question_id']);
+
+            if ($question === null) {
+                return ApiResponse::error(
+                    "Question {$answer['question_id']} not found.",
+                    422,
+                );
+            }
+
+            $hasOptions = isset($answer['selected_option_ids']);
+            $hasText = isset($answer['text_answer']);
+
+            if ($question->type === QuestionType::FillInBlank->value) {
+                if ($hasOptions) {
+                    return ApiResponse::error(
+                        "Question {$answer['question_id']} is FillInBlank; selected_option_ids not accepted.",
+                        422,
+                    );
+                }
+                if (! $hasText) {
+                    return ApiResponse::error(
+                        "Question {$answer['question_id']} requires text_answer.",
+                        422,
+                    );
+                }
+            } else {
+                if ($hasText) {
+                    return ApiResponse::error(
+                        "Question {$answer['question_id']} is choice-based; text_answer not accepted.",
+                        422,
+                    );
+                }
+                if (! $hasOptions) {
+                    return ApiResponse::error(
+                        "Question {$answer['question_id']} requires selected_option_ids.",
+                        422,
+                    );
+                }
+            }
+        }
 
         $this->answerAction->bulkSave($attempt, $validated['answers']);
 
@@ -541,15 +623,24 @@ class StudentExamController extends Controller
     }
 
     /**
-     * Get the result for a completed exam attempt.
+     * Get the result for a completed exam attempt, including per-question
+     * type-specific result data.
      *
      * @subgroup Results
      *
      * @urlParam attemptId string required The attempt UUID.
+     *
+     * @responseField data.id string The attempt UUID.
+     * @responseField data.status string Attempt status.
+     * @responseField data.total_score float Total score earned.
+     * @responseField data.questions array Type-specific question results.
      */
     public function result(Request $request, string $attemptId): JsonResponse
     {
-        $attempt = ExamAttempt::with('exam')->findOrFail($attemptId);
+        $attempt = ExamAttempt::with([
+            'exam.examQuestions',
+            'answers.question.options',
+        ])->findOrFail($attemptId);
         $student = $request->user('tenant');
 
         if ($attempt->student_id !== $student->id) {
@@ -565,8 +656,29 @@ class StudentExamController extends Controller
             );
         }
 
+        $examQuestions = $exam->examQuestions->keyBy('question_id');
+
+        $questions = $attempt->answers->map(function ($answer) use ($examQuestions) {
+            $question = $answer->question;
+            $examQuestion = $examQuestions->get($question->id);
+
+            if ($examQuestion === null) {
+                return null;
+            }
+
+            return ResultQuestionData::fromAnswer(
+                $answer,
+                $examQuestion,
+                $question,
+            );
+        })->filter()->values();
+
+        // Build a response envelope that includes the attempt + per-question results
+        $data = ExamAttemptData::from($attempt)->toArray();
+        $data['questions'] = $questions->toArray();
+
         return ApiResponse::success(
-            ExamAttemptData::from($attempt),
+            $data,
             'Result retrieved.',
         );
     }

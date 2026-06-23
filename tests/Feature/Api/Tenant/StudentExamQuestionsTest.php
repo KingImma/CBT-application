@@ -157,7 +157,9 @@ class StudentExamQuestionsTest extends TestCase
             ->assertJsonPath('data.exam_id', $this->exam->id)
             ->assertJsonPath('data.attempt_id', $this->attempt->id)
             ->assertJsonPath('data.questions.0.question_id', $this->question->id)
-            ->assertJsonPath('data.questions.0.question.options.0.is_correct', false);
+            ->assertJsonPath('data.questions.0.type', 'mcq')
+            ->assertJsonPath('data.questions.0.content', 'What is 2 + 2?')
+            ->assertJsonMissingPath('data.questions.0.options.0.is_correct');
     }
 
     public function test_student_cannot_call_another_students_attempt_questions(): void

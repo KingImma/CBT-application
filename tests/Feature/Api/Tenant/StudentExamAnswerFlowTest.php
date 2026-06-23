@@ -391,10 +391,12 @@ class StudentExamAnswerFlowTest extends TestCase
 
     public function test_student_can_flag_and_unflag_question(): void
     {
+        $option = $this->mcqQuestion->options()->first();
+
         // Save an answer first so there's something to flag
         $this->putJson(
             "/api/student/exams/attempts/{$this->attempt->id}/answers/{$this->mcqQuestion->id}",
-            ['selected_option_ids' => []],
+            ['selected_option_ids' => [$option->id]],
         );
 
         // Flag

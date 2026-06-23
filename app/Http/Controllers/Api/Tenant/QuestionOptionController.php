@@ -43,25 +43,44 @@ class QuestionOptionController extends Controller
     {
         $question = Question::findOrFail($questionId);
 
-        $validated = $request->validate([
-            'label' => ['nullable', 'string', 'max:10'],
-            'content' => ['required', 'string'],
-            'image_url' => ['nullable', 'url', 'max:500'],
-            'is_correct' => ['required', 'boolean'],
-            'order' => ['nullable', 'integer'],
-            'match_pair' => ['nullable', 'string', 'max:255'],
-        ]);
+        $isFitb = $question->type === QuestionType::FillInBlank->value;
 
-        // Enforce single-correct for types that only allow one correct option.
-        $questionType = QuestionType::tryFrom($question->type);
-        if ($validated['is_correct'] && $questionType?->maxCorrectOptions() === 1) {
-            $question->options()->update(['is_correct' => false]);
+        if ($isFitb) {
+            $validated = $request->validate([
+                'label' => ['nullable', 'string', 'max:10'],
+                'content' => ['required', 'string'],
+                'image_url' => ['nullable', 'url', 'max:500'],
+                'is_correct' => ['prohibited'],
+                'order' => ['nullable', 'integer'],
+                'match_pair' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            $option = QuestionOption::create(array_merge($validated, [
+                'question_id' => $questionId,
+                'is_correct' => true,  // All FITB options are acceptable answers by definition
+                'order' => $validated['order'] ?? $question->options()->count(),
+            ]));
+        } else {
+            $validated = $request->validate([
+                'label' => ['nullable', 'string', 'max:10'],
+                'content' => ['required', 'string'],
+                'image_url' => ['nullable', 'url', 'max:500'],
+                'is_correct' => ['required', 'boolean'],
+                'order' => ['nullable', 'integer'],
+                'match_pair' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            // Enforce single-correct for types that only allow one correct option.
+            $questionType = QuestionType::tryFrom($question->type);
+            if ($validated['is_correct'] && $questionType?->maxCorrectOptions() === 1) {
+                $question->options()->update(['is_correct' => false]);
+            }
+
+            $option = QuestionOption::create(array_merge($validated, [
+                'question_id' => $questionId,
+                'order' => $validated['order'] ?? $question->options()->count(),
+            ]));
         }
-
-        $option = QuestionOption::create(array_merge($validated, [
-            'question_id' => $questionId,
-            'order' => $validated['order'] ?? $question->options()->count(),
-        ]));
 
         return ApiResponse::created(QuestionOptionData::from($option), 'Option added.');
     }
@@ -86,21 +105,37 @@ class QuestionOptionController extends Controller
         $question = Question::findOrFail($questionId);
         $option = QuestionOption::where('question_id', $questionId)->findOrFail($id);
 
-        $validated = $request->validate([
-            'label' => ['sometimes', 'nullable', 'string', 'max:10'],
-            'content' => ['sometimes', 'string'],
-            'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
-            'is_correct' => ['sometimes', 'boolean'],
-            'order' => ['sometimes', 'integer'],
-            'match_pair' => ['sometimes', 'nullable', 'string', 'max:255'],
-        ]);
+        $isFitb = $question->type === QuestionType::FillInBlank->value;
 
-        $questionType = QuestionType::tryFrom($question->type);
-        if (($validated['is_correct'] ?? false) && $questionType?->maxCorrectOptions() === 1) {
-            $question->options()->where('id', '!=', $id)->update(['is_correct' => false]);
+        if ($isFitb) {
+            $validated = $request->validate([
+                'label' => ['sometimes', 'nullable', 'string', 'max:10'],
+                'content' => ['sometimes', 'string'],
+                'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
+                'is_correct' => ['prohibited'],
+                'order' => ['sometimes', 'integer'],
+                'match_pair' => ['sometimes', 'nullable', 'string', 'max:255'],
+            ]);
+
+            // FITB options are always acceptable answers; is_correct forced to true
+            $option->update(array_merge($validated, ['is_correct' => true]));
+        } else {
+            $validated = $request->validate([
+                'label' => ['sometimes', 'nullable', 'string', 'max:10'],
+                'content' => ['sometimes', 'string'],
+                'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
+                'is_correct' => ['sometimes', 'boolean'],
+                'order' => ['sometimes', 'integer'],
+                'match_pair' => ['sometimes', 'nullable', 'string', 'max:255'],
+            ]);
+
+            $questionType = QuestionType::tryFrom($question->type);
+            if (($validated['is_correct'] ?? false) && $questionType?->maxCorrectOptions() === 1) {
+                $question->options()->where('id', '!=', $id)->update(['is_correct' => false]);
+            }
+
+            $option->update($validated);
         }
-
-        $option->update($validated);
 
         return ApiResponse::success(QuestionOptionData::from($option->fresh()), 'Option updated.');
     }

@@ -21,7 +21,7 @@ class ExamResultData extends Resource
         public readonly ?string $submitted_at,
         public readonly ?int $time_spent_seconds,
 
-        /** @var array<ExamResultQuestionData> */
+        /** @var array<ResultQuestionData> */
         public readonly array $questions,
     ) {}
 }

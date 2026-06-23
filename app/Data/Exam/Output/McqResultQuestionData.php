@@ -45,7 +45,6 @@ final class McqResultQuestionData extends ResultQuestionData
         ExamQuestion $examQuestion,
         Question $question,
     ): static {
-    ): static {
         $optionsMap = $question->options->keyBy('id');
 
         $selectedOptions = collect($answer->selected_option_ids ?? [])

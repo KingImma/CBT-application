@@ -46,3 +46,7 @@ handoff.md
 frankenphp
 frankenphp-worker.php
 ARCHITECTURE_DIAGRAM.md
+/config/octane.php
+/docs/superpowers
+tasks
+latest

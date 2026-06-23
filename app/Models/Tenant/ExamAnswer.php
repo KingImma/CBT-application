@@ -21,6 +21,8 @@ class ExamAnswer extends Model
         'ordering_answer',
         'matching_answer',
         'text_answer',
+        'is_correct',
+        'marks_awarded',
         'time_spent_seconds',
         'is_flagged',
         'answered_at',

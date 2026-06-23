@@ -19,5 +19,5 @@ class AddQuestionData extends Data
 
         #[Nullable, Numeric, Min(0)]
         public readonly ?float $marks_override,
-    ){}
+    ) {}
 }

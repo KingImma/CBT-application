@@ -13,6 +13,7 @@ class SubmitExamForReview
     {
         return DB::transaction(function () use ($exam) {
             $exam->submitForReview()->save();
+
             return $exam->fresh();
         });
     }

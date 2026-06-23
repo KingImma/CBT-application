@@ -9,5 +9,6 @@ use App\Exceptions\Domain\BaseDomainException;
 class TenantAlreadyActiveException extends BaseDomainException
 {
     protected $message = 'Tenant is already active.';
-    protected int $httpStatus = 409; 
+
+    protected int $httpStatus = 409;
 }

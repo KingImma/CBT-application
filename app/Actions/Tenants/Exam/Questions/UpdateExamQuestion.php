@@ -28,8 +28,8 @@ class UpdateExamQuestion
     private function ensureExamQuestionIsUpdatable(Exam $exam): void
     {
         throw_unless(
-            $exam->isDraft(), 
-            ExamStateTransitionException::class, 
+            $exam->isDraft(),
+            ExamStateTransitionException::class,
             'Questions can only be modified in draft exams.'
         );
     }
@@ -42,7 +42,7 @@ class UpdateExamQuestion
 
         $payload = $data->toArray();
 
-        if (array_key_exists('marks', $payload) && $payload['marks'] === null){
+        if (array_key_exists('marks', $payload) && $payload['marks'] === null) {
             $payload['marks'] = question->default_marks;
         }
 

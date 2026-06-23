@@ -17,7 +17,7 @@ class ExamQuestionData extends Resource
         public readonly string $question_id,
         public readonly int $order,
         public readonly ?float $marks,
-        
+
         #[WhenLoaded('question')]
         public readonly mixed $question,
     ) {}
@@ -25,6 +25,7 @@ class ExamQuestionData extends Resource
     public function hideAnswers(): static
     {
         $this->showAnswers = false;
+
         return $this;
     }
 }

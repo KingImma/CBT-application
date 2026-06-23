@@ -7,8 +7,8 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Actions\Tenants\Exam\FinalizeAttempt;
 use App\Actions\Tenants\Exam\ManageExamSession;
 use App\Actions\Tenants\Exam\RecordExamAnswer;
-use App\Data\Exam\Ouput\ExamAttemptData;
-use App\Data\Exam\Ouput\StudentExamQuestionData;
+use App\Data\Exam\Output\ExamAttemptData;
+use App\Data\Exam\Output\StudentExamQuestionData;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\SuspiciousEventType;
@@ -134,6 +134,7 @@ class StudentExamController extends Controller
                     'marks_awarded' => (float) ($answer->marks_awarded ?? 0),
                     'is_correct' => (bool) $answer->is_correct,
                     'selected_options' => $selectedOptions,
+                    'text_answer' => $answer->text_answer,
                     'options' => $question->options->map(fn ($opt) => [
                         'id' => $opt->id,
                         'label' => $opt->label,
@@ -372,8 +373,9 @@ class StudentExamController extends Controller
         $this->authorize('saveAnswer', $attempt);
 
         $validated = $request->validate([
-            'selected_option_ids' => ['sometimes', 'array'],
-            'text_answer' => ['sometimes', 'string'],
+            'selected_option_ids' => ['sometimes', 'nullable', 'array'],
+            'selected_option_ids.*' => ['uuid'],
+            'text_answer' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
@@ -403,8 +405,9 @@ class StudentExamController extends Controller
         $validated = $request->validate([
             'answers' => ['required', 'array'],
             'answers.*.question_id' => ['required', 'uuid'],
-            'answers.*.selected_option_ids' => ['sometimes', 'array'],
-            'answers.*.text_answer' => ['sometimes', 'string'],
+            'answers.*.selected_option_ids' => ['sometimes', 'nullable', 'array'],
+            'answers.*.selected_option_ids.*' => ['uuid'],
+            'answers.*.text_answer' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'answers.*.time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 

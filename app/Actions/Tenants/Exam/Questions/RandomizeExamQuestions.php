@@ -22,7 +22,7 @@ class RandomizeExamQuestions
         $this->validateState($exam);
 
         $query = $this->getAvailableQuestionsQuery($exam);
-        
+
         $this->ensureEnoughQuestions($query, $count);
 
         DB::transaction(fn () => $this->performRandomization($exam, $query, $count));
@@ -63,8 +63,8 @@ class RandomizeExamQuestions
         $examQuestionsData = $questions->map(function ($question, $index) use ($maxOrder) {
             return [
                 'question_id' => $question->id,
-                'order'       => $maxOrder + $index + 1,
-                'marks'       => $question->default_marks,
+                'order' => $maxOrder + $index + 1,
+                'marks' => $question->default_marks,
             ];
         });
 

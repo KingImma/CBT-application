@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Models\Tenant\Exam\Concerns;
 
 use App\Enums\ExamStatus;
-use App\Events\{ExamActivated, ExamCompleted};
+use App\Events\ExamActivated;
+use App\Events\ExamCompleted;
 use Illuminate\Database\Eloquent\Model;
 
 trait HasBroadcasting

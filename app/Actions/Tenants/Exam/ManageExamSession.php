@@ -20,6 +20,7 @@ use App\Models\Tenant\User;
 use App\Support\Exam\ExamAttemptGuard;
 use App\Support\Exam\ExamSessionState;
 use App\Support\Exam\ExamSessionStateStore;
+use App\Support\QuestionGrader;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -27,6 +28,7 @@ class ManageExamSession
 {
     public function __construct(
         private ExamSessionStateStore $stateStore,
+        private QuestionGrader $questionGrader,
     ) {}
 
     public function validateStart(Exam $exam, User $student): void
@@ -228,9 +230,12 @@ class ManageExamSession
 
     private function awardMarksForAnswer(ExamAnswer $answer, Collection $examQuestions): array
     {
-        $selected = $answer->selected_option_ids ?? [];
-        $correctOption = $answer->question->options->firstWhere('is_correct', true);
-        $isCorrect = count($selected) === 1 && $correctOption?->id === $selected[0];
+        $isCorrect = $this->questionGrader->isCorrect(
+            questionType: $answer->question->type,
+            options: $answer->question->options,
+            selectedIds: $answer->selected_option_ids ?? [],
+            textAnswer: $answer->text_answer,
+        );
 
         $marksAwarded = 0;
         if ($isCorrect) {

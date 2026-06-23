@@ -13,6 +13,7 @@ class ForceCompleteExam
     {
         return DB::transaction(function () use ($exam) {
             $exam->complete()->save();
+
             return $exam->fresh();
         });
     }

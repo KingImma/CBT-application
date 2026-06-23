@@ -17,5 +17,6 @@ class ExamResultQuestionData extends Resource
         public readonly bool $is_correct,
         public readonly array $options,
         public readonly array $selected_options,
+        public readonly ?string $text_answer,
     ) {}
 }

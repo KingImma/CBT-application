@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain;
 
+use App\Support\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use App\Support\ApiResponse;
 
 abstract class BaseDomainException extends Exception
 {

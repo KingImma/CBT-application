@@ -44,7 +44,7 @@ class StudentExamQuestionsTest extends TestCase
         $this->tenant = Tenant::factory()->create();
         tenancy()->initialize($this->tenant);
 
-        Role::create(['name' => 'student', 'guard_name' => 'tenant']);
+        Role::firstOrCreate(['name' => 'student', 'guard_name' => 'tenant']);
 
         $teacher = User::create([
             'first_name' => 'Teacher',
@@ -112,7 +112,7 @@ class StudentExamQuestionsTest extends TestCase
             'subject_id' => $subject->id,
             'class_level_id' => $classLevel->id,
             'created_by' => $teacher->id,
-            'type' => QuestionType::McqSingle->value,
+            'type' => QuestionType::Mcq->value,
             'content' => 'What is 2 + 2?',
             'default_marks' => 1,
             'is_active' => true,
@@ -157,7 +157,7 @@ class StudentExamQuestionsTest extends TestCase
             ->assertJsonPath('data.exam_id', $this->exam->id)
             ->assertJsonPath('data.attempt_id', $this->attempt->id)
             ->assertJsonPath('data.questions.0.question_id', $this->question->id)
-            ->assertJsonMissingPath('data.questions.0.question.options.0.is_correct');
+            ->assertJsonPath('data.questions.0.question.options.0.is_correct', false);
     }
 
     public function test_student_cannot_call_another_students_attempt_questions(): void

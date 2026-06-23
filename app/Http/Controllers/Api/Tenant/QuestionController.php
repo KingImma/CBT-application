@@ -116,7 +116,7 @@ class QuestionController extends Controller
             $question = Question::create([
                 'subject_id' => $validated['subject_id'],
                 'class_level_id' => $validated['class_level_id'],
-                'type' => QuestionType::McqSingle->value,
+                'type' => QuestionType::Mcq->value,
                 'content' => $validated['content'],
                 'default_marks' => $validated['default_marks'],
                 'image_url' => $validated['image_url'] ?? null,
@@ -194,7 +194,7 @@ class QuestionController extends Controller
             'default_marks' => ['sometimes', 'numeric', 'min:0.5', 'max:100'],
             'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'is_active' => ['sometimes', 'boolean'],
-            
+
             // Allow options to pass through validation
             'options' => ['sometimes', 'array', 'min:2'],
             'options.*.id' => ['nullable', 'uuid'],
@@ -207,7 +207,7 @@ class QuestionController extends Controller
         // Enforce single-correct validation if options are being updated
         if (isset($validated['options'])) {
             $correctCount = collect($validated['options'])->where('is_correct', true)->count();
-            if ($correctCount !== 1 && $question->type === QuestionType::McqSingle->value) {
+            if ($correctCount !== 1 && $question->type === QuestionType::Mcq->value) {
                 return ApiResponse::error('MCQ must have exactly one correct option.', 422);
             }
         }

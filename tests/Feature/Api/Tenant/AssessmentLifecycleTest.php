@@ -275,7 +275,7 @@ class AssessmentLifecycleTest extends TestCase
         // Add a question to the exam first
         $question = Question::create([
             'content' => 'Sample question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -304,7 +304,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $question = Question::create([
             'content' => 'What is 2+2?',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -329,7 +329,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $question = Question::create([
             'content' => 'What is the capital of France?',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -361,7 +361,7 @@ class AssessmentLifecycleTest extends TestCase
         // Create a question owned by otherTeacher (different subject/class assignment)
         $question = Question::create([
             'content' => 'Other teacher question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->otherSubject->id,
             'class_level_id' => $this->classLevel->id,
@@ -386,7 +386,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $question = Question::create([
             'content' => 'Question for active exam',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -414,7 +414,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $question = Question::create([
             'content' => 'Removable question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -443,7 +443,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $question = Question::create([
             'content' => 'Removable question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -477,7 +477,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $primaryQuestion = Question::create([
             'content' => 'Primary question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -501,7 +501,7 @@ class AssessmentLifecycleTest extends TestCase
             return Question::create([
                 'id' => $sharedIdentifier,
                 'content' => 'Collision question',
-                'type' => 'mcq_single',
+                'type' => 'mcq',
                 'default_marks' => 5,
                 'subject_id' => $this->subject->id,
                 'class_level_id' => $this->classLevel->id,
@@ -548,7 +548,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $q1 = Question::create([
             'content' => 'Question 1',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -563,7 +563,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $q2 = Question::create([
             'content' => 'Question 2',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -578,7 +578,7 @@ class AssessmentLifecycleTest extends TestCase
 
         $q3 = Question::create([
             'content' => 'Question 3',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -602,7 +602,7 @@ class AssessmentLifecycleTest extends TestCase
 
         Question::create([
             'content' => 'Teacher One question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -614,7 +614,7 @@ class AssessmentLifecycleTest extends TestCase
 
         Question::create([
             'content' => 'Other Teacher question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->otherSubject->id,
             'class_level_id' => $this->classLevel->id,
@@ -715,7 +715,7 @@ class AssessmentLifecycleTest extends TestCase
         // Try to add another question
         $extraQuestion = Question::create([
             'content' => 'Extra question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -939,7 +939,7 @@ class AssessmentLifecycleTest extends TestCase
         ]);
         $examId = $exam->id;
 
-        // 2. Teacher creates 3 mcq_single questions with options
+        // 2. Teacher creates 3 mcq questions with options
         $q1 = $this->createMcqQuestion('What is 2+2?', ['1', '2', '3', '4'], 1);
         $q2 = $this->createMcqQuestion('What is the capital of France?', ['London', 'Paris', 'Berlin', 'Madrid'], 1);
         $q3 = $this->createMcqQuestion('Which planet is closest to the sun?', ['Venus', 'Mars', 'Mercury', 'Earth'], 2);
@@ -1057,7 +1057,7 @@ class AssessmentLifecycleTest extends TestCase
         $user = $owner ?? $this->teacher;
         $question = Question::create([
             'content' => 'What is 2+2?',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,
@@ -1082,7 +1082,7 @@ class AssessmentLifecycleTest extends TestCase
     {
         $question = Question::create([
             'content' => $content,
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,

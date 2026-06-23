@@ -15,7 +15,7 @@ class UpdateExamQuestionData extends Data
     public function __construct(
         #[Numeric, Min(0)]
         public readonly Optional|float|null $marks,
-        
+
         #[IntegerType, Min(1)]
         public readonly Optional|int $order,
     ) {}

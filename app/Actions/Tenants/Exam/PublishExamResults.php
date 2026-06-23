@@ -13,6 +13,7 @@ class PublishExamResults
     {
         return DB::transaction(function () use ($exam) {
             $exam->publish()->save();
+
             return $exam->fresh();
         });
     }

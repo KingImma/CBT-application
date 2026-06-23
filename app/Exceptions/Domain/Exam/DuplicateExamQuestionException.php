@@ -8,5 +8,5 @@ use App\Exceptions\Domain\BaseDomainException;
 
 class DuplicateExamQuestionException extends BaseDomainException
 {
-    protected message = '';
+    protected string $message = 'This question has already been added to the exam.';
 }

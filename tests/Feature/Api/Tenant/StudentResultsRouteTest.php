@@ -112,7 +112,7 @@ class StudentResultsRouteTest extends TestCase
             'subject_id' => $subject->id,
             'class_level_id' => $classLevel->id,
             'created_by' => $teacher->id,
-            'type' => QuestionType::McqSingle->value,
+            'type' => QuestionType::Mcq->value,
             'content' => 'What is 2 + 2?',
             'default_marks' => 10,
             'is_active' => true,

@@ -12,12 +12,13 @@ use DomainException;
 class RecomputeExamTotalMarks
 {
     private const SETTING_KEY_EXAM_MAX_SCORE = 'exam_max_score';
+
     private const SETTING_KEY_ASSESSMENT_MAX_SCORE = 'assessment_max_score';
 
     public function execute(Exam $exam): void
     {
         $total = $exam->examQuestions()->get()->sum(fn ($eq) => $eq->getEffectiveMarks());
-        
+
         $this->ensureWithinSchoolMaximum($exam, (float) $total);
 
         $exam->update(['total_marks' => $total]);
@@ -28,10 +29,12 @@ class RecomputeExamTotalMarks
         $settingKey = $exam->type === ExamType::Exam->value
             ? self::SETTING_KEY_EXAM_MAX_SCORE
             : self::SETTING_KEY_ASSESSMENT_MAX_SCORE;
-        
+
         $schoolMax = SchoolSetting::where('key', $settingKey)->value('value');
 
-        if ($schoolMax === null) return;
+        if ($schoolMax === null) {
+            return;
+        }
 
         $schoolMaxFloat = (float) $schoolMax;
 

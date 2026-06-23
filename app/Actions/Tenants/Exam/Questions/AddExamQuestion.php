@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 declare(strict_types=1);
 
@@ -10,15 +10,14 @@ use App\Exceptions\Domain\Exam\ExamStateTransitionException;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
-use Illuminate\Support\Facades\DB;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 class AddExamQuestion
 {
     public function __construct(
         private RecomputeExamTotalMarks $recomputeMarks
-    )
-    {}
+    ) {}
 
     public function execute(Exam $exam, Question $question, AddQuestionData $data, string $userId): ExamQuestion
     {
@@ -55,10 +54,10 @@ class AddExamQuestion
         $maxOrder = $exam->examQuestions()->max('order') ?? 0;
 
         $examQuestion = ExamQuestion::create([
-            'exam_id'    => $exam->id,
+            'exam_id' => $exam->id,
             'question_id' => $question->id,
-            'order'       => $maxOrder + 1,
-            'marks'       => $data->marks_override ?? $question->default_marks,
+            'order' => $maxOrder + 1,
+            'marks' => $data->marks_override ?? $question->default_marks,
         ]);
 
         $this->recomputeMarks->execute($exam);

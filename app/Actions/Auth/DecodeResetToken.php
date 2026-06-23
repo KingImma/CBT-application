@@ -35,9 +35,9 @@ class DecodeResetToken
         $key = "pwd_reset_token:{$token}";
 
         $cache = Cache::getFacadeRoot();
-    
+
         $email = $cache->get($key);
-        
+
         $cache->forget($key);
 
         return $email;

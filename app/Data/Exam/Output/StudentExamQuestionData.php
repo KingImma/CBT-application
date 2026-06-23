@@ -13,7 +13,12 @@ class StudentExamQuestionData extends ExamQuestionData
         int $order,
         ?float $marks,
         mixed $question,
+        public readonly ?string $text_answer = null,
     ) {
+        if ($question && method_exists($question, 'relationLoaded') && $question->relationLoaded('options')) {
+            $question->options->makeHidden('is_correct');
+        }
+        
         parent::__construct($id, $exam_id, $question_id, $order, $marks, $question);
         $this->hideAnswers();
     }

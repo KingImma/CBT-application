@@ -80,7 +80,7 @@ class ExamQuestionController extends Controller
         return ApiResponse::success(
             [
                 'total_marks' => $exam->fresh()->total_marks,
-                'questions'   => $exam->examQuestions()->with('question.options')->get()
+                'questions' => $exam->examQuestions()->with('question.options')->get(),
             ],
             'Questions randomized successfully.'
         );
@@ -107,7 +107,6 @@ class ExamQuestionController extends Controller
      * Remove a question from an exam.
      *
      * @subgroup Exam Questions
-     *
      */
     public function destroy(Exam $exam, Question $question, DeleteExamQuestion $action): JsonResponse
     {

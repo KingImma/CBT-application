@@ -26,7 +26,7 @@ class ExamGradingController extends Controller
      */
     public function recomputeScore(Exam $exam, ExamAttempt $attempt, ExamGradingAction $action): JsonResponse
     {
-        $this->authorize('grade', $exam); 
+        $this->authorize('grade', $exam);
 
         $gradedAttempt = $action->execute($attempt);
 

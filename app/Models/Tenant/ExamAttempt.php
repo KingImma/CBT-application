@@ -29,6 +29,12 @@ class ExamAttempt extends Model
         'student_id',
         'attempt_number',
         'started_at',
+        'status',
+        'submitted_at',
+        'total_score',
+        'percentage_score',
+        'grade',
+        'time_spent_seconds',
         'suspicious_events',
         'settings',
     ];

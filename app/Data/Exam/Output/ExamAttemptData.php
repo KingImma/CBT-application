@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Data\Exam\Ouput;
+namespace App\Data\Exam\Output;
 
 use Spatie\LaravelData\Attributes\WhenLoaded;
 use Spatie\LaravelData\Resource;

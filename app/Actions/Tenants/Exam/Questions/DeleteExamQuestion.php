@@ -13,8 +13,8 @@ class DeleteExamQuestion
 {
     public function __construct(
         private RecomputeExamTotalMarks $recomputeMarks
-    ){}
-    
+    ) {}
+
     public function execute(Exam $exam, Question $question): void
     {
         $this->ensureExamQuestionIsDeletable($exam);
@@ -36,7 +36,7 @@ class DeleteExamQuestion
         $examQuesion = $exam->examQuestions()
             ->where('question_id', $question->id)
             ->firstOrFail();
-        
+
         $examQuesion->delete();
 
         $this->recomputeMarks($exam);

@@ -166,7 +166,7 @@ class ExamRealtimeUpdatesTest extends TestCase
         $user = $owner ?? $this->teacher;
         $question = Question::create([
             'content' => 'What is 2+2?',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 5,
             'subject_id' => $this->subject->id,
             'class_level_id' => $this->classLevel->id,

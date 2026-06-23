@@ -9,7 +9,7 @@ use App\Models\Tenant\Exam;
 use DomainException;
 use Illuminate\Support\Facade\DB;
 
-class UpdateExam 
+class UpdateExam
 {
     public function execute(Exam $exam, UpdateExamData $data): Exam
     {
@@ -22,7 +22,7 @@ class UpdateExam
     {
         throw_unless($exam->isDraft(), new DomainException('Only draft exams can be updated'));
     }
-    
+
     private function performUpdate(Exam $exam, UpdateExamData $data): Exam
     {
         // 1. Convert the DTO to an array inside the Action

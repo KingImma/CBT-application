@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\{ActivateExam, CreateExam, UpdateExam, DeleteExam, SubmitExamForReview};
-use App\Data\Exam\Input\{CreateExamData, UpdateExamData};
+use App\Actions\Tenants\Exam\ActivateExam;
+use App\Actions\Tenants\Exam\CreateExam;
+use App\Actions\Tenants\Exam\DeleteExam;
+use App\Actions\Tenants\Exam\SubmitExamForReview;
+use App\Actions\Tenants\Exam\UpdateExam;
+use App\Data\Exam\Input\CreateExamData;
+use App\Data\Exam\Input\UpdateExamData;
 use App\Data\Exam\Output\ExamData;
-use App\Exceptions\Domain\Exam\{ExamCannotBeCompletedException};
+use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Support\ApiResponse;
@@ -32,27 +37,27 @@ class ExamController extends Controller
      * @queryParam class_arm_id string Filter by class arm UUID. No-example
      * @queryParam per_page int Results per page (default: 20). No-example
      */
-     public function index(Request $request): JsonResponse
-     {
-         $perPage = (int) $request->get('per_page', 20);
-         $user = $request->user('tenant');
-     
-         $exams = QueryBuilder::for(
-             Exam::query()
-                 ->visibleTo($user)
-                 ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
-         )
-             ->allowedFilters('status', 'subject_id', 'class_level_id', 'class_arm_id')
-             ->defaultSort('-created_at')
-             ->withCount('examQuestions as question_count')
-             ->paginate($perPage);
-     
-         return ApiResponse::paginated(
-             $exams, 
-             'Exams retrieved successfully.', 
-             ExamData::collect($exams->getCollection())
-         );
-     }
+    public function index(Request $request): JsonResponse
+    {
+        $perPage = (int) $request->get('per_page', 20);
+        $user = $request->user('tenant');
+
+        $exams = QueryBuilder::for(
+            Exam::query()
+                ->visibleTo($user)
+                ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
+        )
+            ->allowedFilters('status', 'subject_id', 'class_level_id', 'class_arm_id')
+            ->defaultSort('-created_at')
+            ->withCount('examQuestions as question_count')
+            ->paginate($perPage);
+
+        return ApiResponse::paginated(
+            $exams,
+            'Exams retrieved successfully.',
+            ExamData::collect($exams->getCollection())
+        );
+    }
 
     /**
      * Create a new exam.
@@ -75,6 +80,7 @@ class ExamController extends Controller
      * Get a single exam with its questions.
      *
      * @subgroup Exam Management
+     *
      * @urlParam exam string required The exam UUID.
      */
     public function show(Exam $exam): JsonResponse
@@ -150,7 +156,6 @@ class ExamController extends Controller
      * Students can start the exam when scheduled_start is reached.
      *
      * @subgroup Exam Workflow
-     *
      */
     public function activate(Exam $exam, Request $request, ActivateExam $action): JsonResponse
     {

@@ -16,16 +16,16 @@ class ExamSettingsData extends Data
     public function __construct(
         #[BooleanType]
         public readonly bool|Optional $randomize_questions,
-        
+
         #[BooleanType]
         public readonly bool|Optional $show_result_immediately,
-        
+
         #[Date]
         public readonly string|Optional $results_release_date,
-        
+
         #[BooleanType]
         public readonly bool|Optional $require_attendance,
-        
+
         #[IntegerType, Min(0)]
         public readonly int|Optional $max_suspicious_events,
     ) {}

@@ -52,8 +52,9 @@ class QuestionOptionController extends Controller
             'match_pair' => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Enforce single-correct for mcq_single
-        if ($validated['is_correct'] && $question->type === QuestionType::McqSingle->value) {
+        // Enforce single-correct for types that only allow one correct option.
+        $questionType = QuestionType::tryFrom($question->type);
+        if ($validated['is_correct'] && $questionType?->maxCorrectOptions() === 1) {
             $question->options()->update(['is_correct' => false]);
         }
 
@@ -94,7 +95,8 @@ class QuestionOptionController extends Controller
             'match_pair' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
-        if (($validated['is_correct'] ?? false) && $question->type === QuestionType::McqSingle->value) {
+        $questionType = QuestionType::tryFrom($question->type);
+        if (($validated['is_correct'] ?? false) && $questionType?->maxCorrectOptions() === 1) {
             $question->options()->where('id', '!=', $id)->update(['is_correct' => false]);
         }
 

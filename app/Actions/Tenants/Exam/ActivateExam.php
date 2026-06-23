@@ -12,7 +12,7 @@ class ActivateExam
     public function execute(Exam $exam, string $userId): Exam
     {
         return DB::transaction(function () use ($exam, $userId) {
-            
+
             // The activate() method in HasLifecycle handles the state transition,
             // window end calculation, expected attempts, and throws exceptions if invalid.
             $exam->activate($userId)->save();

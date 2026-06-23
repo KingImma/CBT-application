@@ -9,11 +9,16 @@ use App\Actions\Exam\ResolveGrade;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\GradingScale;
+use App\Support\QuestionGrader;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ExamGradingAction
 {
+    public function __construct(
+        private QuestionGrader $questionGrader,
+    ) {}
+
     public function execute(ExamAttempt $attempt): ExamAttempt
     {
         return DB::transaction(fn () => $this->performGrading($attempt));
@@ -22,7 +27,7 @@ class ExamGradingAction
     private function performGrading(ExamAttempt $attempt): ExamAttempt
     {
         $exam = $attempt->exam;
-        
+
         // Eager load questions to prevent N+1 queries inside the grading loop
         $answers = $attempt->answers()->with('question.options')->get();
         $examQuestions = $exam->examQuestions()->get()->keyBy('question_id');
@@ -42,11 +47,12 @@ class ExamGradingAction
 
     private function gradeSingleAnswer(ExamAnswer $answer, Collection $examQuestions): float
     {
-        $selectedIds = $answer->selected_option_ids ?? [];
-        $correctOption = $answer->question->options->firstWhere('is_correct', true);
-
-        // Basic validation for single-choice questions
-        $isCorrect = count($selectedIds) === 1 && $correctOption?->id === $selectedIds[0];
+        $isCorrect = $this->questionGrader->isCorrect(
+            questionType: $answer->question->type,
+            options: $answer->question->options,
+            selectedIds: $answer->selected_option_ids ?? [],
+            textAnswer: $answer->text_answer,
+        );
 
         $marksAwarded = 0.0;
 
@@ -57,7 +63,7 @@ class ExamGradingAction
 
         // updateQuietly prevents firing model events on every single answer update
         $answer->updateQuietly([
-            'is_correct'    => $isCorrect,
+            'is_correct' => $isCorrect,
             'marks_awarded' => $marksAwarded,
         ]);
 
@@ -73,9 +79,9 @@ class ExamGradingAction
 
         $attempt->update([
             'time_spent_seconds' => $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
-            'total_score'        => $runningTotal,
-            'percentage_score'   => $percentageScore,
-            'grade'              => $grade,
+            'total_score' => $runningTotal,
+            'percentage_score' => $percentageScore,
+            'grade' => $grade,
         ]);
 
         return $attempt->fresh();

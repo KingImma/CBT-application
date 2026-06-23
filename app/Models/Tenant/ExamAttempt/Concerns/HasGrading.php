@@ -6,6 +6,7 @@ namespace App\Models\Tenant\ExamAttempt\Concerns;
 
 use App\Actions\Exam\CalculateScore;
 use App\Actions\Exam\ResolveGrade;
+use App\Support\QuestionGrader;
 
 trait HasGrading
 {
@@ -27,9 +28,12 @@ trait HasGrading
                 continue;
             }
 
-            $selected = $answer['selected_option_ids'] ?? [];
-            $correctOption = $question->options->firstWhere('is_correct', true);
-            $isCorrect = count($selected) === 1 && $correctOption?->id === $selected[0];
+            $isCorrect = app(QuestionGrader::class)->isCorrect(
+                questionType: $question->type,
+                options: $question->options,
+                selectedIds: $answer['selected_option_ids'] ?? [],
+                textAnswer: $answer['text_answer'] ?? null,
+            );
 
             $marksAwarded = 0.0;
             if ($isCorrect) {
@@ -38,7 +42,12 @@ trait HasGrading
 
             $answerModel = $this->answers()->where('question_id', $answer['question_id'])->first();
             if ($answerModel) {
-                $answerModel->markCorrect($marksAwarded);
+                if ($isCorrect) {
+                    $answerModel->markCorrect($marksAwarded);
+                } else {
+                    $answerModel->markIncorrect();
+                }
+
                 $graded[] = $answerModel;
             }
 

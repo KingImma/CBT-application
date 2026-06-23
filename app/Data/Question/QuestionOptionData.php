@@ -16,6 +16,7 @@ class QuestionOptionData extends Resource
         public readonly bool $is_correct,
         public readonly ?int $order,
         public readonly ?string $match_pair,
+        public readonly ?bool $case_sensitive,
     ) {}
 
     public function getId(): string
@@ -51,5 +52,10 @@ class QuestionOptionData extends Resource
     public function getMatchPair(): ?string
     {
         return $this->match_pair;
+    }
+
+    public function getCaseSensitive(): ?bool
+    {
+        return $this->case_sensitive;
     }
 }

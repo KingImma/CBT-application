@@ -138,7 +138,7 @@ class ExamPublishResultsTest extends TestCase
     {
         $question = Question::create([
             'content' => 'Sample question',
-            'type' => 'mcq_single',
+            'type' => 'mcq',
             'default_marks' => 10,
             'subject_id' => $exam->subject_id,
             'class_level_id' => $exam->class_level_id,

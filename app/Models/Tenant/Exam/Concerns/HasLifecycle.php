@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Models\Tenant\Exam\Concerns;
 
 use App\Enums\ExamStatus;
-use App\Exceptions\Domain\Exam\{ ExamCannotBeActivatedException, ExamCannotBeCompletedException, ExamCannotBeSubmittedException, ExamStateTransitionException };
+use App\Exceptions\Domain\Exam\ExamCannotBeActivatedException;
+use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
+use App\Exceptions\Domain\Exam\ExamCannotBeSubmittedException;
+use App\Exceptions\Domain\Exam\ExamStateTransitionException;
 use Illuminate\Support\Facades\DB;
-
 
 trait HasLifecycle
 {
     public function submitForReview(): self
     {
         throw_unless(
-            $this->canSubmitForReview(), 
+            $this->canSubmitForReview(),
             ExamCannotBeSubmittedException::class
         );
 
@@ -26,7 +28,7 @@ trait HasLifecycle
     public function activate(string $userId): self
     {
         throw_unless(
-            $this->canActivate(), 
+            $this->canActivate(),
             ExamCannotBeActivatedException::class
         );
 
@@ -50,7 +52,7 @@ trait HasLifecycle
     public function complete(): self
     {
         throw_unless(
-            $this->canComplete(), 
+            $this->canComplete(),
             ExamCannotBeCompletedException::class
         );
 
@@ -63,7 +65,7 @@ trait HasLifecycle
     public function revertToDraft(?string $reason = null): self
     {
         throw_unless(
-            $this->canRevertToDraft(), 
+            $this->canRevertToDraft(),
             ExamStateTransitionException::class
         );
 
@@ -76,22 +78,22 @@ trait HasLifecycle
     public function publish(): self
     {
         throw_unless(
-            $this->isCompleted(), 
-            ExamStateTransitionException::class, 
+            $this->isCompleted(),
+            ExamStateTransitionException::class,
             'An exam can only be published once it is completed.'
         );
 
         $this->status = ExamStatus::Published;
         $this->published_at = now();
-        
+
         return $this;
     }
 
     public function unpublish(): self
     {
         throw_unless(
-            $this->isPublished(), 
-            ExamStateTransitionException::class, 
+            $this->isPublished(),
+            ExamStateTransitionException::class,
             'An exam can only be unpublished if it is published.'
         );
 

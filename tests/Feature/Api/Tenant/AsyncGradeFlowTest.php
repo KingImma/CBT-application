@@ -84,7 +84,7 @@ beforeEach(function () {
 
     $question = Question::create([
         'content' => 'What is 2+2?',
-        'type' => QuestionType::McqSingle->value,
+        'type' => QuestionType::Mcq->value,
         'default_marks' => 10,
         'subject_id' => $subject->id,
         'class_level_id' => $classLevel->id,

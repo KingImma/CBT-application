@@ -276,7 +276,7 @@ class StudentExamResultFlowTest extends TestCase
             ->assertJsonPath('data.0.attempt_id', $this->attempt->id)
             ->assertJsonPath('data.0.exam_title', 'Result Flow Exam');
 
-        // Verify questions are included with grading details
+        // Verify questions are included with type-specific grading details
         $response->assertJsonStructure([
             'data' => [
                 0 => [
@@ -286,15 +286,42 @@ class StudentExamResultFlowTest extends TestCase
                     'status',
                     'total_score',
                     'total_marks',
+                ],
+            ],
+        ]);
+
+        // Verify first question (MCQ) has choice-based result fields
+        $response->assertJsonStructure([
+            'data' => [
+                0 => [
                     'questions' => [
                         0 => [
                             'question_id',
+                            'type',
                             'marks_available',
                             'marks_awarded',
                             'is_correct',
                             'selected_options',
-                            'text_answer',
                             'options',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Verify second question (FITB) has text-based result fields
+        $response->assertJsonStructure([
+            'data' => [
+                0 => [
+                    'questions' => [
+                        1 => [
+                            'question_id',
+                            'type',
+                            'marks_available',
+                            'marks_awarded',
+                            'is_correct',
+                            'text_answer',
+                            'acceptable_answers',
                         ],
                     ],
                 ],

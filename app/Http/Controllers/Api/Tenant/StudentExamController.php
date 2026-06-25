@@ -194,7 +194,7 @@ class StudentExamController extends Controller
      */
     public function show(Request $request, string $id): JsonResponse
     {
-        $exam = Exam::with(['subject', 'classLevel'])->findOrFail($id);
+        $exam = Exam::with(['subject', 'classLevel'])->withCount('examQuestions as question_count')->findOrFail($id);
 
         $lastAttempt = ExamAttempt::forExam($exam->id)
             ->forStudent($request->user('tenant')->id)

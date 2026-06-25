@@ -6,7 +6,9 @@ namespace App\Data\Question;
 
 class FitbQuestionData extends QuestionData
 {
-    /** @var array<int, FitbAcceptableAnswerData> */
+    /**
+     * @var array<int, array{content: string, case_sensitive: bool}>
+     */
     public readonly array $acceptable_answers;
 
     public function __construct(

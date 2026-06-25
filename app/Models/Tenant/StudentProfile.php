@@ -49,6 +49,21 @@ class StudentProfile extends Model
         return $this->belongsTo(ClassArm::class);
     }
 
+    public function latestCompletedExamAttempt(): BelongsTo
+    {
+        return $this->belongsTo(
+            ExamAttempt::class,
+            'user_id',
+            'student_id',
+        )->ofMany(
+            [
+                'submitted_at' => 'max',
+                'id' => 'max',
+            ],
+            fn ($query) => $query->completed(),
+        );
+    }
+
     public static function generateAdmissionNumber(): string
     {
         $year = date('Y');
@@ -60,10 +75,14 @@ class StudentProfile extends Model
 
         $nextCount = 1;
 
-        if ($lastProfile && preg_match('/(\d+)$/', $lastProfile->admission_number, $matches)) {
+        if (
+            $lastProfile &&
+            preg_match('/(\d+)$/', $lastProfile->admission_number, $matches)
+        ) {
             $nextCount = (int) $matches[1] + 1;
         }
 
-        return "STU/{$year}/".str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
+        return "STU/{$year}/".
+            str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
     }
 }

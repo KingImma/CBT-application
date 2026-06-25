@@ -20,7 +20,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ExamAttempt extends Model
 {
-    use BelongsToSessionTerm, HasBroadcasting, HasGrading, HasLifecycle, HasUuids, HasValidation;
+    use BelongsToSessionTerm,
+        HasBroadcasting,
+        HasGrading,
+        HasLifecycle,
+        HasUuids,
+        HasValidation;
 
     private const SECONDS_PER_MINUTE = 60;
 
@@ -90,6 +95,15 @@ class ExamAttempt extends Model
         return $query->where('student_id', $studentId);
     }
 
+    public function scopeCompleted(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            ExamAttemptStatus::Graded,
+            ExamAttemptStatus::Timed_out,
+            ExamAttemptStatus::Disqualified,
+        ]);
+    }
+
     /**
      * Check if this attempt has exceeded its time limit.
      *
@@ -120,7 +134,7 @@ class ExamAttempt extends Model
      */
     private function getDeadlineTimestamp(): int
     {
-        return $this->started_at->getTimestamp()
-            + ($this->exam->duration_minutes * self::SECONDS_PER_MINUTE);
+        return $this->started_at->getTimestamp() +
+            $this->exam->duration_minutes * self::SECONDS_PER_MINUTE;
     }
 }

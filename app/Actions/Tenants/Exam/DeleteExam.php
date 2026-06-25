@@ -28,7 +28,7 @@ class DeleteExam
         throw_if(
             $exam->isPublished(),
             DomainException::class,
-            'Cannot delete a pubished exam.'
+            'Cannot delete a published exam.'
         );
 
         throw_if(

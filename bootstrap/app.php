@@ -60,12 +60,11 @@ return Application::configure(basePath: dirname(__DIR__))
             ThrottleRequestsWithRedis::class,
             AuthenticatesSessions::class,
 
-            // --- YOUR CUSTOM PRIORITY INJECTION ---
-            InitializeTenancyByHeader::class, // Force DB switch first
-            Authenticate::class,       // Then run auth:tenant
-            EnsureUserIsActive::class,        // Then check if active
+            InitializeTenancyByHeader::class,
+            Authenticate::class,
+            EnsureUserIsActive::class,
             SubstituteBindings::class,
-            Authorize::class,          // Spatie role checks
+            Authorize::class,
         ]);
 
         $middleware->alias([
@@ -80,14 +79,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
-        // Prevent auth middleware from redirecting to non-existent login route
         Authenticate::redirectUsing(function ($request) {
             return null;
         });
     })
     ->withExceptions(function (Exceptions $exceptions) {
-
-        // Force JSON responses for all API routes natively
         $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
             return $request->is('api/*') || $request->expectsJson();
         });

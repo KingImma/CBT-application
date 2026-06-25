@@ -6,7 +6,9 @@ namespace App\Data\Question;
 
 class TrueFalseQuestionData extends QuestionData
 {
-    /** @var array<int, QuestionOptionData> */
+    /**
+     * @var array<int, array{id: string, label: ?string, content: string, image_url: ?string, is_correct: bool, order: ?int, match_pair: ?string, case_sensitive: ?bool}>
+     */
     public readonly array $options;
 
     public function __construct(

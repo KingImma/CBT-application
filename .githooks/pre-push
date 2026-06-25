@@ -4,7 +4,7 @@ set -e
 
 echo "Running PHPStan static analysis..."
 
-vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --no-progress --debug
+vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --debug
 
 exit_code=$?
 

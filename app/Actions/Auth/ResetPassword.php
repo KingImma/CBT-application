@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Mail\PasswordChangedMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class ResetPassword
 {
@@ -23,5 +25,10 @@ class ResetPassword
         $user->update(['password' => Hash::make($newPassword)]);
 
         $user->tokens()->delete();
+
+        Mail::to($user->email)->send(new PasswordChangedMail(
+            firstName: $user->first_name,
+            schoolName: tenant('name') ?? 'EduCBT',
+        ));
     }
 }

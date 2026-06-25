@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Actions\Tenants\SessionTerm\ResolveCurrentSessionTerm;
+use App\Events\ExamActivated;
+use App\Listeners\SendExamActivatedNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
@@ -38,7 +41,13 @@ class AppServiceProvider extends ServiceProvider
             Mail::alwaysTo($overrideEmail);
         }
 
-        // 2. Password reset URL override for multi-tenant
+        // 2. Register event listeners
+        Event::listen(
+            ExamActivated::class,
+            SendExamActivatedNotification::class,
+        );
+
+        // 3. Password reset URL override for multi-tenant
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
             $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
             $tenantHandle = tenant('handle');

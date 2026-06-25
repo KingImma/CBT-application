@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property-read Subject|null $subject
+ * @property-read ClassLevel|null $classLevel
+ */
 class Question extends Model
 {
     use BelongsToSessionTerm, HasLifecycle, HasUuids, SoftDeletes;

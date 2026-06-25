@@ -20,9 +20,11 @@ class McqQuestionData extends QuestionData
         bool $is_active,
         ?string $subject_id,
         ?string $class_level_id,
+        ?string $class_level_name,
+        ?string $subject_name,
         array $options,
     ) {
-        parent::__construct($id, $type, $content, $image_url, $default_marks, $is_active, $subject_id, $class_level_id);
+        parent::__construct($id, $type, $content, $image_url, $default_marks, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
         $this->options = $options;
     }
 }

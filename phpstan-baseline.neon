@@ -396,17 +396,7 @@ parameters:
 			count: 1
 			path: app/Actions/Tenants/Exam/ManageExamSession.php
 
-		-
-			message: '#^Parameter \#3 \$marksOverride of method App\\Actions\\Tenants\\Exam\\Questions\\AddExamQuestion\:\:performAddition\(\) expects float\|null, App\\Data\\Exam\\Input\\AddQuestionData given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Actions/Tenants/Exam/Questions/AddExamQuestion.php
 
-		-
-			message: '#^Variable \$data on left side of \?\? is never defined\.$#'
-			identifier: nullCoalesce.variable
-			count: 1
-			path: app/Actions/Tenants/Exam/Questions/AddExamQuestion.php
 
 		-
 			message: '#^Call to an undefined method App\\Actions\\Tenants\\Exam\\Questions\\DeleteExamQuestion\:\:ensureExamQuestionIsDeletable\(\)\.$#'

@@ -20,9 +20,11 @@ class FitbQuestionData extends QuestionData
         bool $is_active,
         ?string $subject_id,
         ?string $class_level_id,
+        ?string $class_level_name,
+        ?string $subject_name,
         array $acceptable_answers,
     ) {
-        parent::__construct($id, $type, $content, $image_url, $default_marks, $is_active, $subject_id, $class_level_id);
+        parent::__construct($id, $type, $content, $image_url, $default_marks, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
         $this->acceptable_answers = $acceptable_answers;
     }
 }

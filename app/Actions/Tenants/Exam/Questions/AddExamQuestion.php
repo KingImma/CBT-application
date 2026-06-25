@@ -49,7 +49,7 @@ class AddExamQuestion
         );
     }
 
-    private function performAddition(Exam $exam, Question $question, ?float $marksOverride): ExamQuestion
+    private function performAddition(Exam $exam, Question $question, AddQuestionData $data): ExamQuestion
     {
         $maxOrder = $exam->examQuestions()->max('order') ?? 0;
 

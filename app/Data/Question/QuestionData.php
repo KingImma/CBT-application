@@ -19,6 +19,8 @@ abstract class QuestionData extends Resource
         public readonly bool $is_active,
         public readonly ?string $subject_id,
         public readonly ?string $class_level_id,
+        public readonly ?string $class_level_name,
+        public readonly ?string $subject_name,
     ) {}
 
     public static function fromQuestion(Question $question): static
@@ -33,6 +35,8 @@ abstract class QuestionData extends Resource
                 is_active: (bool) $question->is_active,
                 subject_id: $question->subject_id,
                 class_level_id: $question->class_level_id,
+                class_level_name: $question->classLevel?->name,
+                subject_name: $question->subject?->name,
                 options: $question->options->map(fn ($o) => [
                     'id' => $o->id,
                     'label' => $o->label,
@@ -53,6 +57,8 @@ abstract class QuestionData extends Resource
                 is_active: (bool) $question->is_active,
                 subject_id: $question->subject_id,
                 class_level_id: $question->class_level_id,
+                class_level_name: $question->classLevel?->name,
+                subject_name: $question->subject?->name,
                 options: $question->options->map(fn ($o) => [
                     'id' => $o->id,
                     'label' => $o->label,
@@ -73,6 +79,8 @@ abstract class QuestionData extends Resource
                 is_active: (bool) $question->is_active,
                 subject_id: $question->subject_id,
                 class_level_id: $question->class_level_id,
+                class_level_name: $question->classLevel?->name,
+                subject_name: $question->subject?->name,
                 acceptable_answers: $question->options
                     ->filter(fn ($o) => (bool) $o->is_correct)
                     ->map(fn ($o) => [

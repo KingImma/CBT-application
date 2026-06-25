@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Mail\Data;
 
-use App\Models\ExamAttempt;
+use App\Models\Tenant\ExamAttempt;
+
 
 class ExamResultMailData
 {

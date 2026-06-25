@@ -19,6 +19,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property-read Subject|null $subject
+ * @property-read ClassLevel|null $classLevel
+ */
+
 class Exam extends Model
 {
     use HasAttempts, HasBroadcasting, HasFactory, HasLifecycle, HasUuids, HasValidation, SoftDeletes;

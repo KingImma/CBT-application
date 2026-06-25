@@ -1934,17 +1934,7 @@ parameters:
 			count: 1
 			path: app/Http/Controllers/Api/Tenant/StudentExamController.php
 
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/Tenant/StudentExamController.php
 
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\Tenant\\ExamAttempt\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Http/Controllers/Api/Tenant/StudentExamController.php
 
 		-
 			message: '#^Parameter \#2 \$examQuestion of static method App\\Data\\Exam\\Output\\ResultQuestionData\:\:fromAnswer\(\) expects App\\Models\\Tenant\\ExamQuestion, Illuminate\\Database\\Eloquent\\Model given\.$#'
@@ -1952,11 +1942,6 @@ parameters:
 			count: 2
 			path: app/Http/Controllers/Api/Tenant/StudentExamController.php
 
-		-
-			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,App\\Models\\Tenant\\ExamAttempt\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Http/Controllers/Api/Tenant/StudentExamController.php
 
 		-
 			message: '#^Unable to resolve the template type TKey in call to function collect$#'

@@ -7,7 +7,7 @@ namespace App\Actions\Tenants\Exam;
 use App\Data\Exam\Input\UpdateExamData;
 use App\Models\Tenant\Exam;
 use DomainException;
-use Illuminate\Support\Facade\DB;
+use Illuminate\Support\Facades\DB;
 
 class UpdateExam
 {

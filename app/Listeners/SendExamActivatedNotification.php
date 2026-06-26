@@ -23,7 +23,8 @@ class SendExamActivatedNotification
             ->chunk(100, function ($students) use ($exam, $schoolName) {
                 foreach ($students as $student) {
                     if ($student->user && $student->user->email) {
-                        Mail::to($student->user->email)->send(new ExamActivatedMail(
+                        $recipient = config('mail.override_address') ?: $student->user->email;
+                        Mail::to($recipient)->send(new ExamActivatedMail(
                             exam: $exam,
                             studentName: $student->user->first_name,
                             schoolName: $schoolName,

@@ -26,7 +26,8 @@ class ResetPassword
 
         $user->tokens()->delete();
 
-        Mail::to($user->email)->send(new PasswordChangedMail(
+        $recipient = config('mail.override_address') ?: $user->email;
+        Mail::to($recipient)->send(new PasswordChangedMail(
             firstName: $user->first_name,
             schoolName: tenant('name') ?? 'EduCBT',
         ));

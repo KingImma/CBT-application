@@ -12,10 +12,11 @@ trait HasAttempts
     public function expectedAttempts(): int
     {
         return User::role(RoleType::Student->value)
-            ->whereHas('studentProfile', function ($q) {
-                $q->where('class_level_id', $this->class_level_id);
+            ->where("is_active", true)
+            ->whereHas("studentProfile", function ($q) {
+                $q->where("class_level_id", $this->class_level_id);
                 if ($this->class_arm_id) {
-                    $q->where('class_arm_id', $this->class_arm_id);
+                    $q->where("class_arm_id", $this->class_arm_id);
                 }
             })
             ->count();
@@ -31,7 +32,7 @@ trait HasAttempts
         $expected = $this->expectedAttempts();
 
         return $expected > 0
-            ? round($this->actualAttempts() / $expected * 100, 2)
+            ? round(($this->actualAttempts() / $expected) * 100, 2)
             : 0.0;
     }
 }

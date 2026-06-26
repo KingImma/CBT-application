@@ -17,36 +17,52 @@ use Illuminate\Support\Facades\DB;
 
 final class FinalizeAttempt
 {
-    public function __construct(
-        private ExamSessionStateStore $stateStore,
-    ) {}
+    public function __construct(private ExamSessionStateStore $stateStore) {}
 
-    public function execute(ExamAttempt $attempt, ?User $actor = null, ?string $reason = null): ExamAttempt
-    {
-        if ($reason === 'stale_heartbeat') {
-            ExamAttemptGuard::assertCanTransitionTo($attempt, ExamAttemptStatus::Timed_out);
+    public function execute(
+        ExamAttempt $attempt,
+        ?User $actor = null,
+        ?string $reason = null,
+    ): ExamAttempt {
+        if ($reason === "stale_heartbeat") {
+            ExamAttemptGuard::assertCanTransitionTo(
+                $attempt,
+                ExamAttemptStatus::Timed_out,
+            );
 
-            return DB::transaction(function () use ($attempt) {
+            $attempt = DB::transaction(function () use ($attempt) {
                 $attempt->status = ExamAttemptStatus::Timed_out->value;
                 $attempt->submitted_at = now();
-                $attempt->time_spent_seconds = (int) now()->diffInSeconds($attempt->started_at);
+                $attempt->time_spent_seconds = (int) now()->diffInSeconds(
+                    $attempt->started_at,
+                );
                 $attempt->save();
 
-                event(new ExamAttemptsUpdated(
-                    examId: $attempt->exam_id,
-                    completedAttempts: 0,
-                    expectedAttempts: 0,
-                    status: ExamStatus::Active,
-                    tenantId: (string) tenant('id'),
-                ));
+                event(
+                    new ExamAttemptsUpdated(
+                        examId: $attempt->exam_id,
+                        completedAttempts: 0,
+                        expectedAttempts: 0,
+                        status: ExamStatus::Active,
+                        tenantId: (string) tenant("id"),
+                    ),
+                );
 
                 $this->clearSessionState($attempt);
 
                 return $attempt->fresh();
             });
+
+            GradeExamAttempt::dispatch($attempt->id, (string) tenant("id"));
+
+            return $attempt;
         }
 
-        ExamAttemptGuard::assertCanTransitionTo($attempt, ExamAttemptStatus::Submitted, $actor);
+        ExamAttemptGuard::assertCanTransitionTo(
+            $attempt,
+            ExamAttemptStatus::Submitted,
+            $actor,
+        );
 
         $attempt = DB::transaction(function () use ($attempt) {
             $attempt->status = ExamAttemptStatus::Submitted->value;
@@ -56,7 +72,7 @@ final class FinalizeAttempt
             return $attempt->fresh();
         });
 
-        GradeExamAttempt::dispatch($attempt->id, (string) tenant('id'));
+        GradeExamAttempt::dispatch($attempt->id, (string) tenant("id"));
 
         $this->notifySessionSubmitted($attempt);
 
@@ -65,29 +81,33 @@ final class FinalizeAttempt
 
     private function clearSessionState(ExamAttempt $attempt): void
     {
-        $tenantId = (string) tenant('id');
+        $tenantId = (string) tenant("id");
 
         $this->stateStore->destroy($tenantId, $attempt->id);
 
-        event(new ExamSessionStateUpdated(
-            attemptId: $attempt->id,
-            tenantId: $tenantId,
-            timeRemainingSeconds: 0,
-            connectionAlive: false,
-        ));
+        event(
+            new ExamSessionStateUpdated(
+                attemptId: $attempt->id,
+                tenantId: $tenantId,
+                timeRemainingSeconds: 0,
+                connectionAlive: false,
+            ),
+        );
     }
 
     private function notifySessionSubmitted(ExamAttempt $attempt): void
     {
-        $tenantId = (string) tenant('id');
+        $tenantId = (string) tenant("id");
 
-        event(new ExamSessionStateUpdated(
-            attemptId: $attempt->id,
-            tenantId: $tenantId,
-            timeRemainingSeconds: $attempt->getTimeRemainingSeconds(),
-            lastActivityAt: now()->toIso8601String(),
-            connectionAlive: false,
-        ));
+        event(
+            new ExamSessionStateUpdated(
+                attemptId: $attempt->id,
+                tenantId: $tenantId,
+                timeRemainingSeconds: $attempt->getTimeRemainingSeconds(),
+                lastActivityAt: now()->toIso8601String(),
+                connectionAlive: false,
+            ),
+        );
 
         $this->stateStore->destroy($tenantId, $attempt->id);
     }

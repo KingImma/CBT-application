@@ -13,31 +13,39 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasBroadcasting, HasFactory, HasLifecycle, HasRoles, HasUuids, Notifiable, SoftDeletes;
+    use HasApiTokens,
+        HasBroadcasting,
+        HasFactory,
+        HasLifecycle,
+        HasRoles,
+        HasUuids,
+        Notifiable,
+        SoftDeletes;
 
     protected $fillable = [
-        'first_name',
-        'last_name',
-        'email',
-        'phone',
-        'password',
-        'is_active',
-        'role',
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "password",
+        "is_active",
+        "role",
     ];
 
-    protected $guard_name = 'tenant';
+    protected $guard_name = "tenant";
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ["password", "remember_token"];
 
     protected $casts = [
-        'password' => 'hashed',
-        'email_verified_at' => 'datetime',
-        'is_active' => 'boolean',
+        "password" => "hashed",
+        "email_verified_at" => "datetime",
+        "is_active" => "boolean",
     ];
 
     /**
@@ -45,7 +53,7 @@ class User extends Authenticatable
      */
     public function isRole(string $role): bool
     {
-        if (method_exists($this, 'hasRole')) {
+        if (method_exists($this, "hasRole")) {
             return $this->hasRole(strtolower($role));
         }
 
@@ -67,17 +75,17 @@ class User extends Authenticatable
      */
     public function teacherAssignments(): HasMany
     {
-        return $this->hasMany(TeacherSubjectAssignment::class, 'user_id');
+        return $this->hasMany(TeacherSubjectAssignment::class, "user_id");
     }
 
     public function assignedClasses(): HasMany
     {
-        return $this->hasMany(ClassArm::class, 'assigned_teacher_id');
+        return $this->hasMany(ClassArm::class, "assigned_teacher_id");
     }
 
     public function assignedLevels(): HasMany
     {
-        return $this->hasMany(TeacherLevelAssignment::class, 'user_id');
+        return $this->hasMany(TeacherLevelAssignment::class, "user_id");
     }
 
     /**
@@ -86,16 +94,16 @@ class User extends Authenticatable
     public function scopeWithStatus($query, string $status): void
     {
         switch ($status) {
-            case 'archived':
+            case "archived":
                 $query->onlyTrashed();
                 break;
-            case 'inactive':
-                $query->where('is_active', false);
+            case "inactive":
+                $query->where("is_active", false);
                 break;
-            case 'active':
-                $query->where('is_active', true);
+            case "active":
+                $query->where("is_active", true);
                 break;
-            case 'all':
+            case "all":
                 $query->withTrashed();
                 break;
         }
@@ -107,15 +115,19 @@ class User extends Authenticatable
     public function scopeSearch(
         $query,
         ?string $search,
-        array $searchFields = ['first_name', 'last_name', 'email']
+        array $searchFields = ["first_name", "last_name", "email"],
     ): void {
-        if (! $search) {
+        if (!$search) {
             return;
         }
 
         $query->where(function ($q) use ($search, $searchFields) {
             foreach ($searchFields as $field) {
-                $q->orWhere($field, 'ilike', "%{$search}%");
+                $q->orWhere(
+                    DB::raw("LOWER(" . $field . ")"),
+                    "like",
+                    "%" . mb_strtolower($search) . "%",
+                );
             }
         });
     }

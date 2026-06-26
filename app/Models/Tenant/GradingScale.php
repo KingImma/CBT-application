@@ -13,21 +13,19 @@ class GradingScale extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = [
-        'name',
-        'grades',
-        'is_default',
-    ];
+    protected $fillable = ["name", "grades", "is_default"];
 
     protected $casts = [
-        'grades' => 'array',
-        'is_default' => 'boolean',
+        "grades" => "array",
+        "is_default" => "boolean",
     ];
 
     public function setAsDefault(): self
     {
         DB::transaction(function () {
-            static::where('is_default', true)->update(['is_default' => false]);
+            static::where("is_default", true)
+                ->lockForUpdate()
+                ->update(["is_default" => false]);
             $this->is_default = true;
         });
 
@@ -36,6 +34,6 @@ class GradingScale extends Model
 
     public function canDelete(): bool
     {
-        return ! $this->is_default;
+        return !$this->is_default;
     }
 }

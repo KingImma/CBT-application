@@ -21,41 +21,47 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Exam extends Model
 {
-    use HasAttempts, HasBroadcasting, HasFactory, HasLifecycle, HasUuids, HasValidation, SoftDeletes;
+    use HasAttempts,
+        HasBroadcasting,
+        HasFactory,
+        HasLifecycle,
+        HasUuids,
+        HasValidation,
+        SoftDeletes;
 
     protected $fillable = [
-        'title',
-        'subject_id',
-        'class_level_id',
-        'class_arm_id',
-        'term_id',
-        'type',
-        'status',
-        'duration_minutes',
-        'total_marks',
-        'pass_mark',
-        'max_attempts',
-        'scheduled_start',
-        'instructions',
-        'settings',
-        'created_by',
+        "title",
+        "subject_id",
+        "class_level_id",
+        "class_arm_id",
+        "term_id",
+        "type",
+        "status",
+        "duration_minutes",
+        "total_marks",
+        "pass_mark",
+        "max_attempts",
+        "scheduled_start",
+        "instructions",
+        "settings",
+        "created_by",
     ];
 
-    protected $appends = ['is_published'];
+    protected $appends = ["is_published"];
 
     protected $casts = [
-        'status' => ExamStatus::class,
-        'scheduled_start' => 'datetime',
-        'approved_at' => 'datetime',
-        'published_at' => 'datetime',
-        'settings' => ExamSettings::class,
-        'duration_minutes' => 'integer',
-        'total_marks' => 'decimal:2',
-        'pass_mark' => 'decimal:2',
-        'max_attempts' => 'integer',
-        'expected_attempts' => 'integer',
-        'completed_attempts' => 'integer',
-        'window_end' => 'datetime',
+        "status" => ExamStatus::class,
+        "scheduled_start" => "datetime",
+        "approved_at" => "datetime",
+        "published_at" => "datetime",
+        "settings" => ExamSettings::class,
+        "duration_minutes" => "integer",
+        "total_marks" => "decimal:2",
+        "pass_mark" => "decimal:2",
+        "max_attempts" => "integer",
+        "expected_attempts" => "integer",
+        "completed_attempts" => "integer",
+        "window_end" => "datetime",
     ];
 
     public function term(): BelongsTo
@@ -80,7 +86,7 @@ class Exam extends Model
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, "created_by");
     }
 
     public function examQuestions(): HasMany
@@ -95,21 +101,21 @@ class Exam extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', ExamStatus::Active);
+        return $query->where("status", ExamStatus::Active);
     }
 
     public function scopeActiveAndStarted(Builder $query): Builder
     {
         return $query
-            ->where('status', ExamStatus::Active)
-            ->where('scheduled_start', '<=', now());
+            ->where("status", ExamStatus::Active)
+            ->where("scheduled_start", "<=", now());
     }
 
     public function scopeWindowExpired(Builder $query): Builder
     {
         return $query
-            ->where('status', ExamStatus::Active)
-            ->where('window_end', '<', now());
+            ->where("status", ExamStatus::Active)
+            ->where("window_end", "<", now());
     }
 
     public function isOwnedBy(User $user): bool
@@ -124,9 +130,44 @@ class Exam extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return match ($user->role) {
-            RoleType::Teacher->value => $query->where('created_by', $user->id),
+        return match (true) {
+            $user->hasRole(RoleType::SchoolAdmin->value) => $query,
+            $user->hasRole(RoleType::Teacher->value) => $this->scopeForTeacher(
+                $query,
+                $user,
+            ),
             default => $query,
         };
+    }
+
+    private function scopeForTeacher(Builder $query, User $user): Builder
+    {
+        $teacherSubjectIds = $user->teacherAssignments()->pluck("subject_id");
+        $teacherLevelIds = $user->assignedLevels()->pluck("class_level_id");
+
+        return $query->where(function (Builder $q) use (
+            $user,
+            $teacherSubjectIds,
+            $teacherLevelIds,
+        ) {
+            // Own exams
+            $q->where("created_by", $user->id);
+
+            // Exams matching assigned subjects and class levels
+            if (
+                $teacherSubjectIds->isNotEmpty() &&
+                $teacherLevelIds->isNotEmpty()
+            ) {
+                $q->orWhere(function (Builder $q) use (
+                    $teacherSubjectIds,
+                    $teacherLevelIds,
+                ) {
+                    $q->whereIn("subject_id", $teacherSubjectIds)->whereIn(
+                        "class_level_id",
+                        $teacherLevelIds,
+                    );
+                });
+            }
+        });
     }
 }

@@ -15,13 +15,11 @@ use Illuminate\Support\Facades\DB;
 
 class ExamGradingAction
 {
-    public function __construct(
-        private QuestionGrader $questionGrader,
-    ) {}
+    public function __construct(private QuestionGrader $questionGrader) {}
 
     public function execute(ExamAttempt $attempt): ExamAttempt
     {
-        return DB::transaction(fn () => $this->performGrading($attempt));
+        return DB::transaction(fn() => $this->performGrading($attempt));
     }
 
     private function performGrading(ExamAttempt $attempt): ExamAttempt
@@ -29,24 +27,31 @@ class ExamGradingAction
         $exam = $attempt->exam;
 
         // Eager load questions to prevent N+1 queries inside the grading loop
-        $answers = $attempt->answers()->with('question.options')->get();
-        $examQuestions = $exam->examQuestions()->get()->keyBy('question_id');
+        $answers = $attempt->answers()->with("question.options")->get();
+        $examQuestions = $exam->examQuestions()->get()->keyBy("question_id");
 
         $runningTotal = 0.0;
-        $maxTime = 0;
+        $runningTime = 0;
 
         foreach ($answers as $answer) {
             $marksAwarded = $this->gradeSingleAnswer($answer, $examQuestions);
 
             $runningTotal += $marksAwarded;
-            $maxTime = max($maxTime, $answer->time_spent_seconds ?? 0);
+            $runningTime += $answer->time_spent_seconds ?? 0;
         }
 
-        return $this->finalizeAttempt($attempt, $runningTotal, $maxTime, (float) $exam->total_marks);
+        return $this->finalizeAttempt(
+            $attempt,
+            $runningTotal,
+            $runningTime,
+            (float) $exam->total_marks,
+        );
     }
 
-    private function gradeSingleAnswer(ExamAnswer $answer, Collection $examQuestions): float
-    {
+    private function gradeSingleAnswer(
+        ExamAnswer $answer,
+        Collection $examQuestions,
+    ): float {
         $isCorrect = $this->questionGrader->isCorrect(
             questionType: $answer->question->type,
             options: $answer->question->options,
@@ -58,30 +63,44 @@ class ExamGradingAction
 
         if ($isCorrect) {
             $examQuestion = $examQuestions->get($answer->question_id);
-            $marksAwarded = (float) ($examQuestion?->getEffectiveMarks() ?? $answer->question->default_marks);
+            $marksAwarded =
+                (float) ($examQuestion?->getEffectiveMarks() ??
+                    $answer->question->default_marks);
         }
 
         // updateQuietly prevents firing model events on every single answer update
         $answer->updateQuietly([
-            'is_correct' => $isCorrect,
-            'marks_awarded' => $marksAwarded,
+            "is_correct" => $isCorrect,
+            "marks_awarded" => $marksAwarded,
         ]);
 
         return $marksAwarded;
     }
 
-    private function finalizeAttempt(ExamAttempt $attempt, float $runningTotal, int $maxTime, float $totalExamMarks): ExamAttempt
-    {
-        $percentageScore = CalculateScore::execute($runningTotal, $totalExamMarks);
+    private function finalizeAttempt(
+        ExamAttempt $attempt,
+        float $runningTotal,
+        int $runningTime,
+        float $totalExamMarks,
+    ): ExamAttempt {
+        $percentageScore = CalculateScore::execute(
+            $runningTotal,
+            $totalExamMarks,
+        );
 
-        $defaultScale = GradingScale::where('is_default', true)->first();
-        $grade = ResolveGrade::execute($percentageScore, $defaultScale?->grades);
+        $defaultScale = GradingScale::where("is_default", true)->first();
+        $grade = ResolveGrade::execute(
+            $percentageScore,
+            $defaultScale?->grades,
+        );
 
         $attempt->update([
-            'time_spent_seconds' => $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
-            'total_score' => $runningTotal,
-            'percentage_score' => $percentageScore,
-            'grade' => $grade,
+            "time_spent_seconds" =>
+                $runningTime ?:
+                (int) now()->diffInSeconds($attempt->started_at),
+            "total_score" => $runningTotal,
+            "percentage_score" => $percentageScore,
+            "grade" => $grade,
         ]);
 
         return $attempt->fresh();

@@ -22,7 +22,7 @@ class DeleteExamQuestion
         DB::transaction(fn () => $this->performDeletion($exam, $question));
     }
 
-    private function ensureExamQuesionIsDeletable(Exam $exam): void
+    private function ensureExamQuestionIsDeletable(Exam $exam): void
     {
         throw_unless(
             $exam->isDraft(),
@@ -39,6 +39,6 @@ class DeleteExamQuestion
 
         $examQuesion->delete();
 
-        $this->recomputeMarks($exam);
+        $this->recomputeMarks->execute($exam);
     }
 }

@@ -391,135 +391,139 @@ class StudentExamController extends Controller
     }
 
     /**
-     * Save an answer for a question in an attempt.
-     *
-     * Validation branches by question type:
-     * - MCQ / TrueFalse: requires selected_option_ids, rejects text_answer.
-     * - FillInBlank: requires text_answer, rejects selected_option_ids.
-     *
-     * @subgroup Answering
-     *
-     * @urlParam attemptId string required The attempt UUID.
-     * @urlParam questionId string required The question UUID.
-     *
-     * @bodyParam selected_option_ids array Required for MCQ/TrueFalse. No-example
-     * @bodyParam text_answer string Required for FillInBlank. No-example
-     * @bodyParam time_spent_seconds int Time spent on this question. No-example
-     *
-     * @responseField data.id string The answer UUID.
-     * @responseField data.question_id string The question UUID.
-     * @responseField data.selected_option_ids array|null Selected options (MCQ/TF only).
-     * @responseField data.text_answer string|null Student's text answer (FITB only).
-     */
+    * Save an answer for a question in an attempt.
+    *
+    * $questionId in the URL = ExamQuestion.id (the `id` field from StudentQuestionData).
+    * We resolve through ExamQuestion → Question to get the correct question_id FK for storage.
+    */
     public function saveAnswer(
         Request $request,
         string $attemptId,
         string $questionId,
     ): JsonResponse {
         $attempt = ExamAttempt::findOrFail($attemptId);
-        $this->authorize("saveAnswer", $attempt);
+        $this->authorize('saveAnswer', $attempt);
 
-        $question = Question::findOrFail($questionId);
+        // $questionId = ExamQuestion.id (what StudentQuestionData exposes as `id`)
+        // Must resolve to actual Question to get correct FK for exam_answers.question_id.
+        // Scope to exam_id for security — prevents cross-exam answer injection.
+        $examQuestion = ExamQuestion::where('exam_id', $attempt->exam_id)
+            ->where('id', $questionId)
+            ->with('question.options')
+            ->firstOrFail();
+
+        $question = $examQuestion->question;
 
         $rules = $this->answerRulesByType($question->type);
-        $rules["time_spent_seconds"] = ["sometimes", "integer", "min:0"];
+        $rules['time_spent_seconds'] = ['sometimes', 'integer', 'min:0'];
 
         $validated = $request->validate($rules);
 
-        $answer = $this->answerAction->save($attempt, $questionId, $validated);
+        // Pass $question->id (Question PK), NOT $questionId (ExamQuestion PK).
+        // This is the FK that exam_answers.question_id must store for grading to work.
+        $answer = $this->answerAction->save($attempt, $question->id, $validated);
 
-        return ApiResponse::success($answer, "Answer saved.");
+        return ApiResponse::success($answer, 'Answer saved.');
     }
 
     /**
-     * Bulk save answers for an attempt.
-     *
-     * Each answer's validation branches by the question's type.
-     *
-     * @subgroup Answering
-     *
-     * @urlParam attemptId string required The attempt UUID.
-     *
-     * @bodyParam answers array required Array of answers. No-example
-     * @bodyParam answers.*.question_id string required The question UUID. No-example
-     * @bodyParam answers.*.selected_option_ids array Required for MCQ/TrueFalse. No-example
-     * @bodyParam answers.*.text_answer string Required for FillInBlank. No-example
-     * @bodyParam answers.*.time_spent_seconds int Time spent on this question. No-example
-     */
+    * Bulk save answers for an attempt.
+    *
+    * answers.*.question_id in the body may be ExamQuestion.id OR Question.id depending
+    * on client implementation. Resolve both cases through ExamQuestion to normalize to
+    * actual Question.id before storage.
+    */
     public function bulkSave(Request $request, string $attemptId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
-        $this->authorize("saveAnswer", $attempt);
+        $this->authorize('saveAnswer', $attempt);
 
         $validated = $request->validate([
-            "answers" => ["required", "array"],
-            "answers.*.question_id" => ["required", "uuid"],
-            "answers.*.selected_option_ids" => [
-                "sometimes",
-                "nullable",
-                "array",
-            ],
-            "answers.*.selected_option_ids.*" => ["uuid"],
-            "answers.*.text_answer" => [
-                "sometimes",
-                "nullable",
-                "string",
-                "max:2000",
-            ],
-            "answers.*.time_spent_seconds" => ["sometimes", "integer", "min:0"],
+            'answers' => ['required', 'array'],
+            'answers.*.question_id' => ['required', 'uuid'],
+            'answers.*.selected_option_ids' => ['sometimes', 'nullable', 'array'],
+            'answers.*.selected_option_ids.*' => ['uuid'],
+            'answers.*.text_answer' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'answers.*.time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        // Validate each answer against its question type
-        $questionIds = array_unique(
-            array_column($validated["answers"], "question_id"),
-        );
-        $questions = Question::whereIn("id", $questionIds)->get()->keyBy("id");
+        $submittedIds = array_unique(array_column($validated['answers'], 'question_id'));
 
-        foreach ($validated["answers"] as $i => $answer) {
-            $question = $questions->get($answer["question_id"]);
+        // Dual-mode resolution: client may send ExamQuestion.id OR Question.id.
+        // Build ExamQuestion map keyed by ExamQuestion.id AND by question_id.
+        $examQuestions = ExamQuestion::where('exam_id', $attempt->exam_id)
+            ->whereIn('id', $submittedIds)            // ExamQuestion.id submissions
+            ->orWhere(function ($q) use ($attempt, $submittedIds) {
+                $q->where('exam_id', $attempt->exam_id)
+                    ->whereIn('question_id', $submittedIds); // Question.id submissions
+            })
+            ->with('question.options')
+            ->get();
 
-            if ($question === null) {
+        // Keyed by ExamQuestion.id for URL-style lookups
+        $byExamQuestionId = $examQuestions->keyBy('id');
+        // Keyed by question_id for direct Question.id lookups
+        $byQuestionId = $examQuestions->keyBy('question_id');
+
+        // Resolve and normalise each answer to actual Question.id before type-checking
+        $resolvedAnswers = [];
+
+        foreach ($validated['answers'] as $answer) {
+            $submittedId = $answer['question_id'];
+
+            if ($byExamQuestionId->has($submittedId)) {
+                $question = $byExamQuestionId->get($submittedId)->question;
+            } elseif ($byQuestionId->has($submittedId)) {
+                $question = $byQuestionId->get($submittedId)->question;
+            } else {
                 return ApiResponse::error(
-                    "Question {$answer["question_id"]} not found.",
+                    "Question {$submittedId} not found in this exam.",
                     422,
                 );
             }
 
-            $hasOptions = isset($answer["selected_option_ids"]);
-            $hasText = isset($answer["text_answer"]);
+            if ($question === null) {
+                return ApiResponse::error("Question {$submittedId} could not be resolved.", 422);
+            }
+
+            $hasOptions = isset($answer['selected_option_ids']);
+            $hasText    = isset($answer['text_answer']);
 
             if ($question->type === QuestionType::FillInBlank->value) {
                 if ($hasOptions) {
                     return ApiResponse::error(
-                        "Question {$answer["question_id"]} is FillInBlank; selected_option_ids not accepted.",
+                        "Question {$submittedId} is FillInBlank; selected_option_ids not accepted.",
                         422,
                     );
                 }
-                if (!$hasText) {
+                if (! $hasText) {
                     return ApiResponse::error(
-                        "Question {$answer["question_id"]} requires text_answer.",
+                        "Question {$submittedId} requires text_answer.",
                         422,
                     );
                 }
             } else {
                 if ($hasText) {
                     return ApiResponse::error(
-                        "Question {$answer["question_id"]} is choice-based; text_answer not accepted.",
+                        "Question {$submittedId} is choice-based; text_answer not accepted.",
                         422,
                     );
                 }
-                if (!$hasOptions) {
+                if (! $hasOptions) {
                     return ApiResponse::error(
-                        "Question {$answer["question_id"]} requires selected_option_ids.",
+                        "Question {$submittedId} requires selected_option_ids.",
                         422,
                     );
                 }
             }
+
+            // Normalise question_id to actual Question.id before forwarding to the action
+            $resolvedAnswers[] = array_merge($answer, ['question_id' => $question->id]);
         }
 
-        $this->answerAction->bulkSave($attempt, $validated["answers"]);
+        $this->answerAction->bulkSave($attempt, $resolvedAnswers);
 
-        return ApiResponse::message("Answers saved.");
+        return ApiResponse::message('Answers saved.');
     }
 
     /**

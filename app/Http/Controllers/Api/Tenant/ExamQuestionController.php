@@ -95,7 +95,7 @@ class ExamQuestionController extends Controller
     {
         $this->authorize('manageQuestions', $exam);
 
-        $examQuestion = $action->execute($data, $exam, $question);
+        $examQuestion = $action->execute($exam, $question, $data);
 
         return ApiResponse::success(
             $examQuestion->load('question'),

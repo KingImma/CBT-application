@@ -38,26 +38,22 @@ class UpdateExamQuestion
         );
     }
 
-    private function performUpdate(
-        Exam $exam,
-        Question $question,
-        UpdateExamQuestionData $data,
-    ): ExamQuestion {
-        $examQuestion = $exam
-            ->examQuestions()
-            ->where("question_id", $question->id)
+    private function performUpdate(Exam $exam, Question $question, UpdateExamQuestionData $data): ExamQuestion
+    {
+        $examQuestion = $exam->examQuestions()
+            ->where('question_id', $question->id)
             ->firstOrFail();
-
+    
         $payload = $data->toArray();
-
-        if (array_key_exists("marks", $payload) && $payload["marks"] === null) {
-            $payload["marks"] = $question->default_marks;
+    
+        if (array_key_exists('marks', $payload) && $payload['marks'] === null) {
+            $payload['marks'] = $question->default_marks;
         }
-
+    
         $examQuestion->update($payload);
-
+    
         $this->recomputeMarks->execute($exam);
-
+    
         return $examQuestion->fresh();
     }
 }

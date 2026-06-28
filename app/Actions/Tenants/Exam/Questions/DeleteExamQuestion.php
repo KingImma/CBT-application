@@ -33,12 +33,12 @@ class DeleteExamQuestion
 
     private function performDeletion(Exam $exam, Question $question): void
     {
-        $examQuesion = $exam->examQuestions()
+        $examQuestion = $exam->examQuestions()
             ->where('question_id', $question->id)
             ->firstOrFail();
-
-        $examQuesion->delete();
-
+    
+        $examQuestion->delete();
+    
         $this->recomputeMarks->execute($exam);
     }
 }

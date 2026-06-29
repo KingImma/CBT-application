@@ -36,5 +36,6 @@ final class McqStudentQuestionData extends StudentQuestionData
             image_url: $image_url,
         );
         $this->options = $options;
+        $this->allow_multiple_answers = $allow_multiple_answers;
     }
 }

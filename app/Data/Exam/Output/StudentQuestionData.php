@@ -41,6 +41,7 @@ abstract class StudentQuestionData extends Data
                     'id' => $o->id,
                     'content' => $o->content,
                 ])->toArray(),
+                allow_multiple_answers: $question->options->where('is_correct', true)->count() > 1
             ),
             QuestionType::TrueFalse->value => new TrueFalseStudentQuestionData(
                 id: $examQuestion->id,

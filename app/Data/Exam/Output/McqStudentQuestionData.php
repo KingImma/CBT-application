@@ -24,6 +24,7 @@ final class McqStudentQuestionData extends StudentQuestionData
         string $content,
         ?string $image_url,
         array $options,
+        bool $allow_multiple_answers,
     ) {
         parent::__construct(
             id: $id,

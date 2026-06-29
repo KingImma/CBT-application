@@ -23,8 +23,10 @@ class McqQuestionData extends QuestionData
         ?string $class_level_name,
         ?string $subject_name,
         array $options,
+        bool $allow_multiple_answers,
     ) {
         parent::__construct($id, $type, $content, $image_url, $default_marks, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
         $this->options = $options;
+        $this->allow_multiple_answers = $allow_multiple_answers;
     }
 }

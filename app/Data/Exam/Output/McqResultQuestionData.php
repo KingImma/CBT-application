@@ -26,6 +26,7 @@ final class McqResultQuestionData extends ResultQuestionData
         bool $is_correct,
         array $options,
         array $selected_options,
+        bool $allow_multiple_answers,
     ) {
         parent::__construct(
             question_id: $question_id,
@@ -38,6 +39,7 @@ final class McqResultQuestionData extends ResultQuestionData
         );
         $this->options = $options;
         $this->selected_options = $selected_options;
+        $this->allow_multiple_answers = $allow_multiple_answers;
     }
 
     public static function fromAnswer(
@@ -67,6 +69,8 @@ final class McqResultQuestionData extends ResultQuestionData
             'is_correct' => (bool) $opt->is_correct,
         ])->toArray();
 
+        $correctCount = $question->options->filter(fn($opt) => $opt->is_correct)->count();
+
         return new self(
             question_id: $question->id,
             type: $question->type,
@@ -77,6 +81,7 @@ final class McqResultQuestionData extends ResultQuestionData
             is_correct: (bool) $answer->is_correct,
             options: $allOptions,
             selected_options: $selectedOptions,
+            allow_multiple_answers: $correctCount > 1
         );
     }
 }

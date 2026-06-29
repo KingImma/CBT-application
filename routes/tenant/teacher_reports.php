@@ -1,11 +1,14 @@
 <?php
 
-declare(strict_types=1);
-
 use App\Http\Controllers\Api\Tenant\TeacherExamReportController;
 use Illuminate\Support\Facades\Route;
 
-Route::get(
-    'class-arms/{armId}/exams/{exam}/report',
-    [TeacherExamReportController::class, 'show']
-)->middleware('permission:view_results,tenant');
+Route::prefix('reports')->group(function () {
+    
+    // Exam-level reports (Class summaries, grading statistics)
+    Route::get('exams/{exam}', [TeacherExamReportController::class, 'examSummary']);
+    
+    // Student-level reports (Viewing a specific student's attempt history)
+    Route::get('students/{student}/results', [TeacherExamReportController::class, 'studentResults']);
+
+});

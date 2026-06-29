@@ -26,6 +26,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Models\Tenant\ExamQuestion;
 
 /**
  * @group Student Portal

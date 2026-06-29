@@ -26,8 +26,8 @@ Route::prefix('exams/{exam}/questions')
         Route::get('/', 'index');
         Route::post('/', 'store');
         Route::post('/randomize', 'randomize');
-        Route::patch('/{question}', 'update');
-        Route::delete('/{question}', 'destroy');
+        Route::patch('/{examQuestion}', 'update');
+        Route::delete('/{examQuestion}', 'destroy');
         Route::post('/reorder', 'reorder');
     });
 

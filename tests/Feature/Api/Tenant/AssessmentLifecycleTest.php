@@ -430,8 +430,12 @@ class AssessmentLifecycleTest extends TestCase
         ]);
         $addResponse->assertStatus(201);
 
+        $examQuestion = ExamQuestion::where('exam_id', $exam->id)
+            ->where('question_id', $question->id)
+            ->firstOrFail();
+
         // Remove the question
-        $response = $this->deleteJson("/api/exams/{$exam->id}/questions/{$question->id}");
+        $response = $this->deleteJson("/api/exams/{$exam->id}/questions/{$examQuestion->id}");
         $response->assertStatus(200);
         $this->assertEquals(0, $exam->fresh()->examQuestions()->count());
     }

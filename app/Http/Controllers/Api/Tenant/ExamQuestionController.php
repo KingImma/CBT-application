@@ -16,6 +16,7 @@ use App\Data\Exam\Input\UpdateExamQuestionData;
 use App\Data\Exam\Output\ExamQuestionData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -91,11 +92,17 @@ class ExamQuestionController extends Controller
      *
      * @subgroup Exam Questions
      */
-    public function update(UpdateExamQuestionData $data, Exam $exam, Question $question, UpdateExamQuestion $action): JsonResponse
-    {
+    public function update(
+        UpdateExamQuestionData $data,
+        Exam $exam,
+        ExamQuestion $examQuestion,  // FIX: was Question $question — model binding resolved wrong model
+        UpdateExamQuestion $action,
+    ): JsonResponse {
         $this->authorize('manageQuestions', $exam);
 
-        $examQuestion = $action->execute($exam, $question, $data);
+        abort_if($examQuestion->exam_id !== $exam->id, 403, 'ExamQuestion does not belong to this exam.');
+
+        $examQuestion = $action->execute($exam, $examQuestion, $data);
 
         return ApiResponse::success(
             $examQuestion->load('question'),
@@ -108,11 +115,14 @@ class ExamQuestionController extends Controller
      *
      * @subgroup Exam Questions
      */
-    public function destroy(Exam $exam, Question $question, DeleteExamQuestion $action): JsonResponse
-    {
+    public function destroy(
+        Exam $exam,
+        ExamQuestion $examQuestion,  // FIX: was Question $question — model binding resolved wrong model
+        DeleteExamQuestion $action,
+    ): JsonResponse {
         $this->authorize('manageQuestions', $exam);
 
-        $action->execute($exam, $question);
+        $action->execute($exam, $examQuestion);
 
         return ApiResponse::message('Question removed from exam.');
     }
@@ -122,8 +132,11 @@ class ExamQuestionController extends Controller
      *
      * @subgroup Exam Questions
      */
-    public function reorder(ReorderQuestionsData $data, Exam $exam, ReorderExamQuestions $action): JsonResponse
-    {
+    public function reorder(
+        ReorderQuestionsData $data,
+        Exam $exam,
+        ReorderExamQuestions $action,
+    ): JsonResponse {
         $this->authorize('manageQuestions', $exam);
 
         $action->execute($exam, $data);

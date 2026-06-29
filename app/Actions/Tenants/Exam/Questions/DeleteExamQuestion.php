@@ -6,7 +6,7 @@ namespace App\Actions\Tenants\Exam\Questions;
 
 use App\Exceptions\Domain\Exam\ExamStateTransitionException;
 use App\Models\Tenant\Exam;
-use App\Models\Tenant\Question;
+use App\Models\Tenant\ExamQuestion;
 use Illuminate\Support\Facades\DB;
 
 class DeleteExamQuestion
@@ -15,11 +15,11 @@ class DeleteExamQuestion
         private RecomputeExamTotalMarks $recomputeMarks
     ) {}
 
-    public function execute(Exam $exam, Question $question): void
+    public function execute(Exam $exam, ExamQuestion $examQuestion): void
     {
         $this->ensureExamQuestionIsDeletable($exam);
 
-        DB::transaction(fn () => $this->performDeletion($exam, $question));
+        DB::transaction(fn () => $this->performDeletion($exam, $examQuestion));
     }
 
     private function ensureExamQuestionIsDeletable(Exam $exam): void
@@ -31,14 +31,10 @@ class DeleteExamQuestion
         );
     }
 
-    private function performDeletion(Exam $exam, Question $question): void
+    private function performDeletion(Exam $exam, ExamQuestion $examQuestion): void
     {
-        $examQuestion = $exam->examQuestions()
-            ->where('question_id', $question->id)
-            ->firstOrFail();
-    
         $examQuestion->delete();
-    
+
         $this->recomputeMarks->execute($exam);
     }
 }

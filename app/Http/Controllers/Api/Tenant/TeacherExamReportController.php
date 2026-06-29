@@ -21,7 +21,6 @@ class TeacherExamReportController extends Controller
      */
     public function examSummary(Exam $exam, BuildExamClassReport $buildReportAction): JsonResponse
     {
-        // Utilizes your existing action to build the aggregated class report
         $report = $buildReportAction->execute($exam);
 
         return ApiResponse::success(
@@ -31,7 +30,7 @@ class TeacherExamReportController extends Controller
     }
 
     /**
-     * Retrieve all graded/completed exam results for a specific student.
+     * Retrieve all finalized exam results for a specific student.
      */
     public function studentResults(Request $request, string $studentId): JsonResponse
     {
@@ -40,14 +39,12 @@ class TeacherExamReportController extends Controller
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        // Ensure the ID belongs to a valid student in this tenant
         $student = User::where('id', $studentId)
             ->where('role', 'student') 
             ->firstOrFail();
 
         $perPage = (int) ($validated['per_page'] ?? 20);
 
-        // Fetch the student's attempts with the necessary relational data
         $attempts = ExamAttempt::with([
             'exam.subject',
             'exam.classLevel',
@@ -56,8 +53,10 @@ class TeacherExamReportController extends Controller
         ])
             ->where('student_id', $student->id)
             ->whereIn('status', [
-                ExamAttemptStatus::Completed->value,
                 ExamAttemptStatus::Graded->value,
+                ExamAttemptStatus::Disqualified->value,
+                ExamAttemptStatus::Timed_out->value,
+                ExamAttemptStatus::Failed->value,
             ])
             ->when(
                 isset($validated['exam_id']),

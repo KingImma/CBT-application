@@ -48,14 +48,12 @@ class PasswordController extends Controller
      */
     public function forgot(ForgotPasswordRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $credentials = $request->validated();
 
-        // Resolve school name from tenant config for the email template
         $schoolName = config('tenant.school_name', 'EduCBT');
 
-        $this->sendOtp->execute($validated['email'], $schoolName);
+        $this->sendOtp->execute($credentials['email'], $schoolName);
 
-        // Always return 200 — never reveal whether the email exists
         return ApiResponse::message('If that email is registered, you will receive a reset code.');
     }
 
@@ -73,11 +71,11 @@ class PasswordController extends Controller
      */
     public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $otpCredentials = $request->validated();
 
         $resetToken = $this->verifyOtp->execute(
-            $validated['email'],
-            $validated['otp']
+            $otpCredentials['email'],
+            $otpCredentials['otp']
         );
 
         return ApiResponse::success([

@@ -85,7 +85,6 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        // If we are in a tenant DB, pull the tenant user. Otherwise, pull super admin.
         $user = tenant() ? $request->user('tenant') : $request->user('super_admin');
 
         if (! $user) {
@@ -123,7 +122,7 @@ class AuthController extends Controller
             'tenant_handle' => tenant('handle'),
         ];
 
-        $roleData = match ($role) {
+        $roleSpecificProfile = match ($role) {
             RoleType::Teacher->value => $this->buildTeacherRoleData($user),
             RoleType::Student->value => [
                 'student_profile' => $user->studentProfile ? [
@@ -144,7 +143,7 @@ class AuthController extends Controller
             default => [],
         };
 
-        $finalPayload = array_merge($sessionData, $roleData);
+        $finalPayload = array_merge($sessionData, $roleSpecificProfile);
 
         return ApiResponse::success($finalPayload, 'Profile retrieved successfully.');
     }

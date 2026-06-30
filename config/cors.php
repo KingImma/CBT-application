@@ -25,7 +25,7 @@ return [
     ],
 
     'allowed_origins_patterns' => [
-        '/^https:\/\/.*\.educbt\.name\.ng$/',
+        '/^https:\/\/([a-zA-Z0-9-]+\.)*educbt\.name\.ng$/',
     ],
 
     'allowed_headers' => ['*'],

@@ -178,7 +178,7 @@ class TeacherController extends Controller
             ])
         );
 
-        $merged = $subjectTeacherSubjects->concat(
+        $combinedSubjectAssignments = $subjectTeacherSubjects->concat(
             $classTeacherSubjects->reject(fn ($classTeacherSubject) => $subjectTeacherSubjects->contains(
                 fn ($subjectTeacherSubject) => $subjectTeacherSubject['subject']->id === $classTeacherSubject['subject']->id
                     && $subjectTeacherSubject['class_level']->id === $classTeacherSubject['class_level']->id
@@ -186,7 +186,7 @@ class TeacherController extends Controller
             )
         )->values();
 
-        return ApiResponse::success($merged, 'Teacher subjects retrieved.');
+        return ApiResponse::success($combinedSubjectAssignments, 'Teacher subjects retrieved.');
     }
 
     /**

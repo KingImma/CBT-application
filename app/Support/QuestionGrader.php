@@ -51,11 +51,7 @@ class QuestionGrader
 
     private function gradeFillInTheBlank(Collection $options, ?string $textAnswer): bool
     {
-        if ($textAnswer === null) {
-            return false;
-        }
-
-        $studentAnswer = trim($textAnswer);
+        $studentAnswer = trim($textAnswer ?? '');
 
         if ($studentAnswer === '') {
             return false;

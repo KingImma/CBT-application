@@ -1,27 +1,28 @@
 #!/bin/sh
-set -e
+set -eux
 
-echo "==> Running migrations..."
+echo "===== ENTRYPOINT STARTED ====="
+
+php -v
+php artisan --version
+
+echo "Running migrations..."
 php artisan migrate --force
 
-echo "==> Running tenant migrations..."
+echo "Running tenant migrations..."
 php artisan tenants:migrate --force
 
-echo "==> Seeding central DB..."
+echo "Running seeders..."
 php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=SubscriptionPlanSeeder --force
-# echo "==> Clearing Spatie permission cache..."
-# php artisan cache:forget spatie.permission.cache
 
-# php artisan tenants:backfill-user-roles 
+# php artisan scribe:generate
 
-echo "==> Generating API documentation (Scribe)..."
-php artisan scribe:generate
-
-echo "==> Starting Redis Queue Worker in the background..."
+echo "Starting queue..."
 php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 &
 
-echo "==> Starting Web Server..."
+echo "Starting php-fpm..."
 php-fpm -D
 
+echo "Starting nginx..."
 exec nginx -g "daemon off;"

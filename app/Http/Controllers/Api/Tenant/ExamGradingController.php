@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Tenants\Exam\ExamGradingAction;
+use App\Data\Exam\Output\ExamResultData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Support\ApiResponse;
-use App\Transformers\Tenant\ExamResultData;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 /**
  * @group Exam Administration
@@ -26,8 +25,11 @@ class ExamGradingController extends Controller
      *
      * @urlParam attemptId string required The attempt UUID.
      */
-    public function recomputeScore(Exam $exam, ExamAttempt $attempt, ExamGradingAction $action): JsonResponse
-    {
+    public function recomputeScore(
+        Exam $exam,
+        ExamAttempt $attempt,
+        ExamGradingAction $action,
+    ): JsonResponse {
         $this->authorize('grade', $exam);
 
         $gradedAttempt = $action->execute($attempt);

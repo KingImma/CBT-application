@@ -37,18 +37,25 @@ abstract class QuestionData extends Resource
                 class_level_id: $question->class_level_id,
                 class_level_name: $question->classLevel?->name,
                 subject_name: $question->subject?->name,
-                options: $question->options->map(fn ($o) => [
-                    'id' => $o->id,
-                    'label' => $o->label,
-                    'content' => $o->content,
-                    'image_url' => $o->image_url,
-                    'is_correct' => (bool) $o->is_correct,
-                    'order' => (int) $o->order,
-                    'match_pair' => $o->match_pair,
-                    'case_sensitive' => $o->case_sensitive,
-                ])->values()->toArray(),
+                options: $question->options
+                    ->map(
+                        fn ($o) => [
+                            'id' => $o->id,
+                            'label' => $o->label,
+                            'content' => $o->content,
+                            'image_url' => $o->image_url,
+                            'is_correct' => (bool) $o->is_correct,
+                            'order' => (int) $o->order,
+                            'match_pair' => $o->match_pair,
+                            'case_sensitive' => $o->case_sensitive,
+                        ],
+                    )
+                    ->values()
+                    ->toArray(),
                 // Evaluate the correct count inline
-                allow_multiple_answers: collect($examQuestion->question->options)->filter(fn($o) => (bool) $o['is_correct'])->count() > 1,
+                allow_multiple_answers: $question->options
+                    ->filter(fn ($o) => (bool) $o->is_correct)
+                    ->count() > 1,
             ),
             QuestionType::TrueFalse->value => new TrueFalseQuestionData(
                 id: $question->id,
@@ -61,16 +68,21 @@ abstract class QuestionData extends Resource
                 class_level_id: $question->class_level_id,
                 class_level_name: $question->classLevel?->name,
                 subject_name: $question->subject?->name,
-                options: $question->options->map(fn ($o) => [
-                    'id' => $o->id,
-                    'label' => $o->label,
-                    'content' => $o->content,
-                    'image_url' => $o->image_url,
-                    'is_correct' => (bool) $o->is_correct,
-                    'order' => (int) $o->order,
-                    'match_pair' => $o->match_pair,
-                    'case_sensitive' => $o->case_sensitive,
-                ])->values()->toArray(),
+                options: $question->options
+                    ->map(
+                        fn ($o) => [
+                            'id' => $o->id,
+                            'label' => $o->label,
+                            'content' => $o->content,
+                            'image_url' => $o->image_url,
+                            'is_correct' => (bool) $o->is_correct,
+                            'order' => (int) $o->order,
+                            'match_pair' => $o->match_pair,
+                            'case_sensitive' => $o->case_sensitive,
+                        ],
+                    )
+                    ->values()
+                    ->toArray(),
             ),
             QuestionType::FillInBlank->value => new FitbQuestionData(
                 id: $question->id,
@@ -85,12 +97,22 @@ abstract class QuestionData extends Resource
                 subject_name: $question->subject?->name,
                 acceptable_answers: $question->options
                     ->filter(fn ($o) => (bool) $o->is_correct)
-                    ->map(fn ($o) => [
-                        'content' => $o->content,
-                        'case_sensitive' => (bool) ($o->match_pair ? json_decode($o->match_pair, true)['case_sensitive'] ?? false : false),
-                    ])->values()->toArray(),
+                    ->map(
+                        fn ($o) => [
+                            'content' => $o->content,
+                            'case_sensitive' => (bool) ($o->match_pair
+                                ? json_decode($o->match_pair, true)[
+                                        'case_sensitive'
+                                    ] ?? false
+                                : false),
+                        ],
+                    )
+                    ->values()
+                    ->toArray(),
             ),
-            default => throw new \InvalidArgumentException("Unknown question type: {$question->type}"),
+            default => throw new \InvalidArgumentException(
+                "Unknown question type: {$question->type}",
+            ),
         };
     }
 }

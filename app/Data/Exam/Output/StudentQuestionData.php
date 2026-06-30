@@ -24,7 +24,8 @@ abstract class StudentQuestionData extends Data
     public static function fromExamQuestion(ExamQuestion $examQuestion): static
     {
         $question = $examQuestion->question;
-        $marks = $examQuestion->marks !== null ? (float) $examQuestion->marks : null;
+        $marks =
+            $examQuestion->marks !== null ? (float) $examQuestion->marks : null;
         $order = (int) $examQuestion->order;
 
         return match ($question->type) {
@@ -37,11 +38,17 @@ abstract class StudentQuestionData extends Data
                 type: $question->type,
                 content: $question->content,
                 image_url: $question->image_url,
-                options: $question->options->map(fn ($o) => [
-                    'id' => $o->id,
-                    'content' => $o->content,
-                ])->toArray(),
-                allow_multiple_answers: collect($examQuestion->question->options)->filter(fn($o) => (bool) $o['is_correct'])->count() > 1,
+                options: $question->options
+                    ->map(
+                        fn ($o) => [
+                            'id' => $o->id,
+                            'content' => $o->content,
+                        ],
+                    )
+                    ->toArray(),
+                allow_multiple_answers: $question->options
+                    ->filter(fn ($o) => (bool) $o->is_correct)
+                    ->count() > 1,
             ),
             QuestionType::TrueFalse->value => new TrueFalseStudentQuestionData(
                 id: $examQuestion->id,
@@ -52,10 +59,14 @@ abstract class StudentQuestionData extends Data
                 type: $question->type,
                 content: $question->content,
                 image_url: $question->image_url,
-                options: $question->options->map(fn ($o) => [
-                    'id' => $o->id,
-                    'content' => $o->content,
-                ])->toArray(),
+                options: $question->options
+                    ->map(
+                        fn ($o) => [
+                            'id' => $o->id,
+                            'content' => $o->content,
+                        ],
+                    )
+                    ->toArray(),
             ),
             QuestionType::FillInBlank->value => new FitbStudentQuestionData(
                 id: $examQuestion->id,
@@ -67,7 +78,9 @@ abstract class StudentQuestionData extends Data
                 content: $question->content,
                 image_url: $question->image_url,
             ),
-            default => throw new \InvalidArgumentException("Unknown question type: {$question->type}"),
+            default => throw new \InvalidArgumentException(
+                "Unknown question type: {$question->type}",
+            ),
         };
     }
 
@@ -75,8 +88,9 @@ abstract class StudentQuestionData extends Data
      * @param  iterable<int, ExamQuestion>  $examQuestions
      * @return list<StudentQuestionData>
      */
-    public static function collectFromExamQuestions(iterable $examQuestions): array
-    {
+    public static function collectFromExamQuestions(
+        iterable $examQuestions,
+    ): array {
         $result = [];
         foreach ($examQuestions as $eq) {
             $result[] = self::fromExamQuestion($eq);

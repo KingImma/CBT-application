@@ -50,6 +50,7 @@ class ExamAttempt extends Model
         'time_spent_seconds' => 'integer',
         'total_score' => 'decimal:2',
         'percentage_score' => 'decimal:2',
+        'status' => ExamAttemptStatus::class,
         'suspicious_events' => 'array',
         'settings' => ExamAttemptSettings::class,
     ];

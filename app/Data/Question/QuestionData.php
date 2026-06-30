@@ -26,34 +26,30 @@ abstract class QuestionData extends Resource
     public static function fromQuestion(Question $question): static
     {
         return match ($question->type) {
-            QuestionType::Mcq->value => function () use ($question) {
-                // Calculate correct option count once for both fields
-                $correctCount = $question->options->filter(fn($o) => (bool) $o->is_correct)->count();
-                
-                return new McqQuestionData(
-                    id: $question->id,
-                    type: $question->type,
-                    content: $question->content,
-                    image_url: $question->image_url,
-                    default_marks: (float) $question->default_marks,
-                    is_active: (bool) $question->is_active,
-                    subject_id: $question->subject_id,
-                    class_level_id: $question->class_level_id,
-                    class_level_name: $question->classLevel?->name,
-                    subject_name: $question->subject?->name,
-                    options: $question->options->map(fn ($o) => [
-                        'id' => $o->id,
-                        'label' => $o->label,
-                        'content' => $o->content,
-                        'image_url' => $o->image_url,
-                        'is_correct' => (bool) $o->is_correct,
-                        'order' => (int) $o->order,
-                        'match_pair' => $o->match_pair,
-                        'case_sensitive' => $o->case_sensitive,
-                    ])->values()->toArray(),
-                    allow_multiple_answers: $correctCount > 1,
-                );
-            }(),
+            QuestionType::Mcq->value => new McqQuestionData(
+                id: $question->id,
+                type: $question->type,
+                content: $question->content,
+                image_url: $question->image_url,
+                default_marks: (float) $question->default_marks,
+                is_active: (bool) $question->is_active,
+                subject_id: $question->subject_id,
+                class_level_id: $question->class_level_id,
+                class_level_name: $question->classLevel?->name,
+                subject_name: $question->subject?->name,
+                options: $question->options->map(fn ($o) => [
+                    'id' => $o->id,
+                    'label' => $o->label,
+                    'content' => $o->content,
+                    'image_url' => $o->image_url,
+                    'is_correct' => (bool) $o->is_correct,
+                    'order' => (int) $o->order,
+                    'match_pair' => $o->match_pair,
+                    'case_sensitive' => $o->case_sensitive,
+                ])->values()->toArray(),
+                // Evaluate the correct count inline
+                allow_multiple_answers: collect($examQuestion->question->options)->filter(fn($o) => (bool) $o['is_correct'])->count() > 1,
+            ),
             QuestionType::TrueFalse->value => new TrueFalseQuestionData(
                 id: $question->id,
                 type: $question->type,

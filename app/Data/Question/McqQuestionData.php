@@ -11,6 +11,8 @@ class McqQuestionData extends QuestionData
      */
     public readonly array $options;
 
+    public readonly bool $allow_multiple_answers;
+
     public function __construct(
         string $id,
         string $type,

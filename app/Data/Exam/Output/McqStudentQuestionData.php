@@ -14,6 +14,8 @@ final class McqStudentQuestionData extends StudentQuestionData
      */
     public readonly array $options;
 
+    public readonly bool $allow_multiple_answers;
+
     public function __construct(
         string $id,
         string $exam_id,

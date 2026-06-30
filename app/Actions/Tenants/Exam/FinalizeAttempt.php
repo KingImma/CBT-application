@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 final class FinalizeAttempt
 {
-    public function __construct(private ExamSessionStateStore $stateStore) {}
+    public function __construct(private ExamSessionStateStore $stateStore){}
 
     public function execute(
         ExamAttempt $attempt,

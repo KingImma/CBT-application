@@ -16,6 +16,8 @@ final class McqResultQuestionData extends ResultQuestionData
     /** @var array<int, array{id: string, label: ?string, content: string, image_url: ?string, is_correct: bool}> */
     public readonly array $selected_options;
 
+    public readonly bool $allow_multiple_answers;
+
     public function __construct(
         string $question_id,
         string $type,
@@ -81,7 +83,7 @@ final class McqResultQuestionData extends ResultQuestionData
             is_correct: (bool) $answer->is_correct,
             options: $allOptions,
             selected_options: $selectedOptions,
-            allow_multiple_answers: $correctCount > 1
+            allow_multiple_answers: collect($examQuestion->question->options)->filter(fn($o) => (bool) $o['is_correct'])->count() > 1,
         );
     }
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace App\Data\Console\Commands;
 
 use App\Enums\RoleType;
 use App\Models\Tenant;

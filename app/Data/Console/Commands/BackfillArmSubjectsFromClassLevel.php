@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace App\Data\Console\Commands;
 
 use App\Models\Tenant;
 use App\Models\Tenant\ClassLevel;

@@ -27,8 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        PermissionRegistrar::class;
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        // PermissionRegistrar::class;
+        // app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Allow access to the Swagger docs in production environments
         Gate::define('viewApiDocs', function ($user = null) {

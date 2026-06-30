@@ -6,6 +6,9 @@ echo "===== ENTRYPOINT STARTED ====="
 php -v
 php artisan --version
 
+echo "Clearing permission cache..."
+php artisan permission:cache-reset
+
 echo "Running migrations..."
 php artisan migrate --force
 

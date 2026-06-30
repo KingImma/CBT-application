@@ -32,7 +32,9 @@ Route::prefix('exams/{exam}/questions')
     });
 
 Route::prefix('exams/{exam}/grading')
+    ->middleware('role:teacher|school_admin,tenant')
     ->controller(ExamGradingController::class)
     ->group(function () {
         Route::post('/attempts/{attempt}/recompute-score', 'recomputeScore');
+        Route::get('/attempts/{attempt}/result', 'viewAttemptResult');
     });

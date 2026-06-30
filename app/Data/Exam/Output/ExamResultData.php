@@ -29,28 +29,40 @@ class ExamResultData extends Resource
     public static function fromAttempt(ExamAttempt $attempt): self
     {
         // Ensure relations are loaded to avoid N+1 queries
-        $attempt->load(['exam', 'answers.question', 'exam.examQuestions.question']);
+        $attempt->load([
+            'exam',
+            'answers.question',
+            'exam.examQuestions.question',
+        ]);
 
         return new self(
             attempt_id: $attempt->id,
             exam_id: $attempt->exam_id,
             exam_title: $attempt->exam->title,
-            status: $attempt->status->value,
+            status: $attempt->status,
             attempt_number: $attempt->attempt_number,
             total_score: (float) $attempt->total_score,
             total_marks: (float) $attempt->exam->total_marks,
-            percentage_score: $attempt->percentage_score ? (float) $attempt->percentage_score : null,
+            percentage_score: $attempt->percentage_score
+                ? (float) $attempt->percentage_score
+                : null,
             grade: $attempt->grade,
             submitted_at: $attempt->submitted_at?->toIso8601String(),
             time_spent_seconds: $attempt->time_spent_seconds,
-            questions: $attempt->answers->map(function ($answer) use ($attempt) {
-                // Find the exam question configuration for this answer
-                $examQuestion = $attempt->exam->examQuestions
-                    ->where('question_id', $answer->question_id)
-                    ->first();
+            questions: $attempt->answers
+                ->map(function ($answer) use ($attempt) {
+                    // Find the exam question configuration for this answer
+                    $examQuestion = $attempt->exam->examQuestions
+                        ->where('question_id', $answer->question_id)
+                        ->first();
 
-                return ResultQuestionData::fromAnswer($answer, $examQuestion, $answer->question);
-            })->toArray()
+                    return ResultQuestionData::fromAnswer(
+                        $answer,
+                        $examQuestion,
+                        $answer->question,
+                    );
+                })
+                ->toArray(),
         );
     }
 }

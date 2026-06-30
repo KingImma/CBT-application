@@ -18,10 +18,8 @@ class ExamAttemptData extends Resource
         public readonly ?string $started_at,
         public readonly ?string $submitted_at,
         public readonly ?int $time_spent_seconds,
-        #[WhenLoaded('student')]
-        public readonly mixed $student,
-        #[WhenLoaded('exam')]
-        public readonly mixed $exam,
+        #[WhenLoaded('student')] public readonly mixed $student,
+        #[WhenLoaded('exam')] public readonly mixed $exam,
     ) {}
 
     public function getId(): string

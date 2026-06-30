@@ -42,12 +42,16 @@ COPY composer.json composer.lock ./
 # present at this layer, so classmap optimisation would be incomplete).
 RUN composer install \
     --no-dev \
-    --no-interaction \
     --prefer-dist \
-    --optimize-autoloader
+    --no-interaction \
+    --no-scripts
 
 # Copy the rest of the application and set correct ownership in one layer
 COPY --chown=www-data:www-data . .
+
+RUN composer dump-autoload --optimize
+
+RUN php artisan package:discover --ansi
 
 # Ensure storage and bootstrap cache directories are writable by the web process
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \

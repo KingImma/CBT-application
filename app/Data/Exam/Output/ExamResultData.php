@@ -62,7 +62,8 @@ class ExamResultData extends Resource
                         $answer->question,
                     );
                 })
-                ->toArray(),
+                ->values()
+                ->all(),
         );
     }
 }

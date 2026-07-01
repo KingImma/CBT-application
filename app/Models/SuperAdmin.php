@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
 
 class SuperAdmin extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasUuids;
+    use HasApiTokens, HasFactory, HasUuids, Notifiable;
 
     protected $table = 'super_admins';
 
@@ -35,5 +36,10 @@ class SuperAdmin extends Authenticatable
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        return "superadmin.{$this->id}";
     }
 }

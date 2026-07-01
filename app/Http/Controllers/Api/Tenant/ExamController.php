@@ -160,8 +160,25 @@ class ExamController extends Controller
     public function activate(Exam $exam, Request $request, ActivateExam $action): JsonResponse
     {
         $this->authorize('activate', $exam);
-
         $exam = $action->execute($exam, $request->user('tenant')->id);
+
+        $students = $exam->attempts()
+            ->with('user')
+            ->get()
+            ->pluck('user')
+            ->filter();
+
+        $notification = new InAppNotification(
+            title: 'Exam Activated',
+            message: "The exam {$exam->title} is now active.",
+            type: 'success',
+            action: [
+                'url' => "/student/exams/{$exam->id}",
+                'label' => 'View Exam',
+            ]
+        );
+
+        Notification::send($students, $notification);
 
         return ApiResponse::success($exam, 'Exam activated.');
     }

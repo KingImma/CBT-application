@@ -88,47 +88,8 @@ class User extends Authenticatable
         return $this->hasMany(TeacherLevelAssignment::class, "user_id");
     }
 
-    /**
-     * Scope to filter users by status (active, inactive, archived, all).
-     */
-    public function scopeWithStatus($query, string $status): void
+    public function receivesBroadcastNotificationsOn(): string
     {
-        switch ($status) {
-            case "archived":
-                $query->onlyTrashed();
-                break;
-            case "inactive":
-                $query->where("is_active", false);
-                break;
-            case "active":
-                $query->where("is_active", true);
-                break;
-            case "all":
-                $query->withTrashed();
-                break;
-        }
-    }
-
-    /**
-     * Scope to search users by multiple fields.
-     */
-    public function scopeSearch(
-        $query,
-        ?string $search,
-        array $searchFields = ["first_name", "last_name", "email"],
-    ): void {
-        if (!$search) {
-            return;
-        }
-
-        $query->where(function ($q) use ($search, $searchFields) {
-            foreach ($searchFields as $field) {
-                $q->orWhere(
-                    DB::raw("LOWER(" . $field . ")"),
-                    "like",
-                    "%" . mb_strtolower($search) . "%",
-                );
-            }
-        });
+        return "tenant.{$this->tenant_id}.users.{$this->id}";
     }
 }

@@ -1,27 +1,53 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::table('notifications', function (Blueprint $table) {
-            $table->dropIndex(['notifications_notifiable_type_notifiable_id_index']);
+            $table->dropIndex([
+                'notifiable_type',
+                'notifiable_id',
+            ]);
         });
 
-        DB::statement('ALTER TABLE notifications ALTER COLUMN notifiable_id TYPE uuid USING notifiable_id::uuid;');
+        DB::statement(
+            'ALTER TABLE notifications ALTER COLUMN notifiable_id TYPE UUID USING notifiable_id::uuid'
+        );
 
         Schema::table('notifications', function (Blueprint $table) {
-            $table->index(['notifiable_type', 'notifiable_id']);
+            $table->index([
+                'notifiable_type',
+                'notifiable_id',
+            ]);
         });
     }
 
     public function down(): void
     {
-        // Cannot reliably reverse UUID back to bigint without data loss.
+        Schema::table('notifications', function (Blueprint $table) {
+            $table->dropIndex([
+                'notifiable_type',
+                'notifiable_id',
+            ]);
+        });
+
+        DB::statement(
+            'ALTER TABLE notifications ALTER COLUMN notifiable_id TYPE BIGINT USING notifiable_id::text::bigint'
+        );
+
+        Schema::table('notifications', function (Blueprint $table) {
+            $table->index([
+                'notifiable_type',
+                'notifiable_id',
+            ]);
+        });
     }
 };

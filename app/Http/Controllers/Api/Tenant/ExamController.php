@@ -15,9 +15,11 @@ use App\Data\Exam\Output\ExamData;
 use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
+use App\Notifications\InAppNotification;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Spatie\QueryBuilder\QueryBuilder;
 
 /**
@@ -39,23 +41,34 @@ class ExamController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) $request->get('per_page', 20);
-        $user = $request->user('tenant');
+        $perPage = (int) $request->get("per_page", 20);
+        $user = $request->user("tenant");
 
         $exams = QueryBuilder::for(
             Exam::query()
                 ->visibleTo($user)
-                ->with(['subject', 'classLevel', 'classArm', 'term', 'creator:id,first_name,last_name'])
+                ->with([
+                    "subject",
+                    "classLevel",
+                    "classArm",
+                    "term",
+                    "creator:id,first_name,last_name",
+                ]),
         )
-            ->allowedFilters('status', 'subject_id', 'class_level_id', 'class_arm_id')
-            ->defaultSort('-created_at')
-            ->withCount('examQuestions as question_count')
+            ->allowedFilters(
+                "status",
+                "subject_id",
+                "class_level_id",
+                "class_arm_id",
+            )
+            ->defaultSort("-created_at")
+            ->withCount("examQuestions as question_count")
             ->paginate($perPage);
 
         return ApiResponse::paginated(
             $exams,
-            'Exams retrieved successfully.',
-            ExamData::collect($exams->getCollection())
+            "Exams retrieved successfully.",
+            ExamData::collect($exams->getCollection()),
         );
     }
 
@@ -64,15 +77,18 @@ class ExamController extends Controller
      *
      * @subgroup Exam Management
      */
-    public function store(CreateExamData $data, Request $request, CreateExam $action): JsonResponse
-    {
-        $this->authorize('create', Exam::class);
+    public function store(
+        CreateExamData $data,
+        Request $request,
+        CreateExam $action,
+    ): JsonResponse {
+        $this->authorize("create", Exam::class);
 
-        $exam = $action->execute($data, $request->user('tenant')->id);
+        $exam = $action->execute($data, $request->user("tenant")->id);
 
         return ApiResponse::created(
-            $exam->load(['subject', 'classLevel']),
-            'Exam created.',
+            $exam->load(["subject", "classLevel"]),
+            "Exam created.",
         );
     }
 
@@ -85,20 +101,22 @@ class ExamController extends Controller
      */
     public function show(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize("view", $exam);
 
-        $exam->load([
-            'subject',
-            'classLevel',
-            'classArm',
-            'term',
-            'creator:id,first_name,last_name',
-            'examQuestions.question.options',
-        ])->loadCount('examQuestions as question_count');
+        $exam
+            ->load([
+                "subject",
+                "classLevel",
+                "classArm",
+                "term",
+                "creator:id,first_name,last_name",
+                "examQuestions.question.options",
+            ])
+            ->loadCount("examQuestions as question_count");
 
         return ApiResponse::success(
             ExamData::from($exam),
-            'Exam retrieved successfully.',
+            "Exam retrieved successfully.",
         );
     }
 
@@ -109,15 +127,18 @@ class ExamController extends Controller
      *
      * @urlParam id string required The exam UUID.
      */
-    public function update(UpdateExamData $data, Exam $exam, UpdateExam $action): JsonResponse
-    {
-        $this->authorize('update', $exam);
+    public function update(
+        UpdateExamData $data,
+        Exam $exam,
+        UpdateExam $action,
+    ): JsonResponse {
+        $this->authorize("update", $exam);
 
         $exam = $action->execute($exam, $data);
 
         return ApiResponse::success(
-            $exam->load(['subject', 'classLevel']),
-            'Exam updated.',
+            $exam->load(["subject", "classLevel"]),
+            "Exam updated.",
         );
     }
 
@@ -130,11 +151,11 @@ class ExamController extends Controller
      */
     public function destroy(Exam $exam, DeleteExam $action): JsonResponse
     {
-        $this->authorize('delete', $exam);
+        $this->authorize("delete", $exam);
 
         $action->execute($exam);
 
-        return ApiResponse::message('Exam deleted.');
+        return ApiResponse::message("Exam deleted.");
     }
 
     /**
@@ -142,13 +163,15 @@ class ExamController extends Controller
      *
      * @subgroup Exam Workflow
      */
-    public function submitForReview(Exam $exam, SubmitExamForReview $action): JsonResponse
-    {
-        $this->authorize('submitForReview', $exam);
+    public function submitForReview(
+        Exam $exam,
+        SubmitExamForReview $action,
+    ): JsonResponse {
+        $this->authorize("submitForReview", $exam);
 
         $exam = $action->execute($exam);
 
-        return ApiResponse::success($exam, 'Exam submitted for review.');
+        return ApiResponse::success($exam, "Exam submitted for review.");
     }
 
     /**
@@ -157,30 +180,34 @@ class ExamController extends Controller
      *
      * @subgroup Exam Workflow
      */
-    public function activate(Exam $exam, Request $request, ActivateExam $action): JsonResponse
-    {
-        $this->authorize('activate', $exam);
-        $exam = $action->execute($exam, $request->user('tenant')->id);
+    public function activate(
+        Exam $exam,
+        Request $request,
+        ActivateExam $action,
+    ): JsonResponse {
+        $this->authorize("activate", $exam);
+        $exam = $action->execute($exam, $request->user("tenant")->id);
 
-        $students = $exam->attempts()
-            ->with('user')
+        $students = $exam
+            ->attempts()
+            ->with("student")
             ->get()
-            ->pluck('user')
+            ->pluck("student")
             ->filter();
 
         $notification = new InAppNotification(
-            title: 'Exam Activated',
+            title: "Exam Activated",
             message: "The exam {$exam->title} is now active.",
-            type: 'success',
+            type: "success",
             action: [
-                'url' => "/student/exams/{$exam->id}",
-                'label' => 'View Exam',
-            ]
+                "url" => "/student/exams/{$exam->id}",
+                "label" => "View Exam",
+            ],
         );
 
         Notification::send($students, $notification);
 
-        return ApiResponse::success($exam, 'Exam activated.');
+        return ApiResponse::success($exam, "Exam activated.");
     }
 
     /**
@@ -192,7 +219,7 @@ class ExamController extends Controller
      */
     public function publish(Exam $exam): JsonResponse
     {
-        $this->authorize('publish', $exam);
+        $this->authorize("publish", $exam);
 
         try {
             $exam->publish();
@@ -201,7 +228,7 @@ class ExamController extends Controller
             return ApiResponse::error($e->getMessage(), 422);
         }
 
-        return ApiResponse::success($exam, 'Exam published.');
+        return ApiResponse::success($exam, "Exam published.");
     }
 
     /**
@@ -213,12 +240,12 @@ class ExamController extends Controller
      */
     public function publishResults(Exam $exam): JsonResponse
     {
-        $this->authorize('publishResults', $exam);
+        $this->authorize("publishResults", $exam);
 
         $exam->publish();
         $exam->save();
 
-        return ApiResponse::success($exam, 'Results published.');
+        return ApiResponse::success($exam, "Results published.");
     }
 
     /**
@@ -231,12 +258,12 @@ class ExamController extends Controller
      */
     public function unpublishResults(Exam $exam): JsonResponse
     {
-        $this->authorize('unpublishResults', $exam);
+        $this->authorize("unpublishResults", $exam);
 
         $exam->unpublish();
         $exam->save();
 
-        return ApiResponse::success($exam, 'Results unpublished.');
+        return ApiResponse::success($exam, "Results unpublished.");
     }
 
     /**
@@ -249,7 +276,7 @@ class ExamController extends Controller
      */
     public function forceComplete(Exam $exam): JsonResponse
     {
-        $this->authorize('forceComplete', $exam);
+        $this->authorize("forceComplete", $exam);
 
         try {
             $exam->complete();
@@ -259,8 +286,8 @@ class ExamController extends Controller
         }
 
         return ApiResponse::success(
-            ExamData::from($exam->load(['subject', 'classLevel'])),
-            'Exam ended successfully.'
+            ExamData::from($exam->load(["subject", "classLevel"])),
+            "Exam ended successfully.",
         );
     }
 }

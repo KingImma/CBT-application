@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Tenant\User\Concerns;
 
 use App\Enums\RoleType;
+use Illuminate\Database\Eloquent\Builder;
 
 trait HasLifecycle
 {
@@ -25,6 +26,28 @@ trait HasLifecycle
     public function isActive(): bool
     {
         return $this->is_active;
+    }
+
+    public function scopeWithStatus(Builder $query, string $status): Builder
+    {
+        return match ($status) {
+            'active' => $query->where('is_active', true),
+            'inactive' => $query->where('is_active', false),
+            default => $query,
+        };
+    }
+
+    public function scopeSearch(Builder $query, string $search, array $searchFields = ['first_name', 'last_name', 'email']): Builder
+    {
+        if ($search === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($search, $searchFields) {
+            foreach ($searchFields as $field) {
+                $q->orWhere($field, 'ilike', "%{$search}%");
+            }
+        });
     }
 
     public function isStudent(): bool

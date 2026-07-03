@@ -8,7 +8,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-class DeleteAction
+final class DeleteAction
 {
     /**
      * @param  Closure(Model):void  $guard  throw to abort

@@ -21,6 +21,11 @@ final class UpdateAction
             $guard($model, $data);
             $model->update($prepare($model, $data));
             $fresh = $model->fresh();
+
+            if ($fresh === null) {
+                throw new \RuntimeException('Model no longer exists after update.');
+            }
+
             $after?->__invoke($fresh, $data);
 
             return $fresh;

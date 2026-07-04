@@ -4,37 +4,30 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam\Questions;
 
-use App\Exceptions\Domain\Exam\ExamStateTransitionException;
+use App\Actions\Base\DeleteAction;
+use App\Actions\Tenants\Exam\ExamQuestionGuards;
 use App\Models\Tenant\Exam;
-use App\Models\Tenant\ExamQuestion;
-use Illuminate\Support\Facades\DB;
+use App\Models\Tenant\Question;
 
-class DeleteExamQuestion
+final class DeleteExamQuestion
 {
     public function __construct(
-        private RecomputeExamTotalMarks $recomputeMarks
+        private DeleteAction            $action,
+        private RecomputeExamTotalMarks $recompute,
     ) {}
 
-    public function execute(Exam $exam, ExamQuestion $examQuestion): void
+    public function execute(Exam $exam, Question $question): void
     {
-        $this->ensureExamQuestionIsDeletable($exam);
+        ExamQuestionGuards::isDraft('Questions can only be removed from draft exams.')($exam);
 
-        DB::transaction(fn () => $this->performDeletion($exam, $examQuestion));
-    }
+        $examQuestion = $exam->examQuestions()
+            ->where('question_id', $question->id)
+            ->firstOrFail();
 
-    private function ensureExamQuestionIsDeletable(Exam $exam): void
-    {
-        throw_unless(
-            $exam->isDraft(),
-            ExamStateTransitionException::class,
-            'Questions can only be removed from draft exams.'
+        $this->action->execute(
+            $examQuestion,
+            guard: fn ($eq) => null,  // guard ran above
+            after: fn ($eq) => $this->recompute->execute($exam),
         );
-    }
-
-    private function performDeletion(Exam $exam, ExamQuestion $examQuestion): void
-    {
-        $examQuestion->delete();
-
-        $this->recomputeMarks->execute($exam);
     }
 }

@@ -46,9 +46,9 @@ class StudentController extends Controller
         $status = $request->query('status', 'active');
 
         $students = $queries->forList()
-            ->tap(fn ($q) => $queries->search($q, $request->query('search')))
+            ->tap(fn ($q) => $queries->search($q, is_string($request->query('search')) ? $request->query('search') : null))
             ->tap(fn ($q) => $queries->filterByClass($q, $request->class_level_id, $request->class_arm_id))
-            ->withStatus($status)
+            ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
             ->orderBy('last_name')
             ->paginate(50);
 

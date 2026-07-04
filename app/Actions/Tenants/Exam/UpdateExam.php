@@ -4,41 +4,33 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Actions\Base\UpdateAction;
 use App\Data\Exam\Input\UpdateExamData;
 use App\Models\Tenant\Exam;
-use DomainException;
-use Illuminate\Support\Facades\DB;
 
-class UpdateExam
+final class UpdateExam
 {
-    public function execute(Exam $exam, UpdateExamData $data): Exam
+    public function __construct(private UpdateAction $action) {}
+
+    public function execute(Exam $exam, UpdateExamData $dto): Exam
     {
-        $this->ensureExamIsUpdatable($exam);
+        return $this->action->execute(
+            $exam,
+            ['dto' => $dto],
+            guard: ExamGuards::isDraft(),
+            prepare: function (Exam $e, array $d) {
+                $payload = $d['dto']->toArray();
 
-        return DB::transaction(fn () => $this->performUpdate($exam, $data));
-    }
+                // flatten nested settings for partial JSON-column update
+                if (isset($payload['settings']) && is_array($payload['settings'])) {
+                    foreach ($payload['settings'] as $k => $v) {
+                        $payload["settings->{$k}"] = $v;
+                    }
+                    unset($payload['settings']);
+                }
 
-    private function ensureExamIsUpdatable(Exam $exam): void
-    {
-        throw_unless($exam->isDraft(), new DomainException('Only draft exams can be updated'));
-    }
-
-    private function performUpdate(Exam $exam, UpdateExamData $data): Exam
-    {
-        // 1. Convert the DTO to an array inside the Action
-        $payload = $data->toArray();
-
-        // 2. Handle the Eloquent JSON column flattening
-        if (isset($payload['settings']) && is_array($payload['settings'])) {
-            foreach ($payload['settings'] as $key => $value) {
-                $payload["settings->{$key}"] = $value;
-            }
-            unset($payload['settings']);
-        }
-
-        // 3. Execute the update
-        $exam->update($payload);
-
-        return $exam->fresh();
+                return $payload;
+            },
+        );
     }
 }

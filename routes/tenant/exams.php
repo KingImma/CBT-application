@@ -12,7 +12,6 @@ Route::apiResource('exams', ExamController::class);
 Route::prefix('exams/{exam}')->controller(ExamController::class)->group(function () {
     Route::post('/submit-for-review', 'submitForReview');
     Route::post('/activate', 'activate');
-    Route::post('/publish', 'publish');
     Route::post('/publish-results', 'publishResults');
     Route::post('/unpublish-results', 'unpublishResults');
 

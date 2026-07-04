@@ -18,10 +18,17 @@ class StudentQuery
 
     public function search(Builder $query, ?string $search): Builder
     {
-        return $query->when($search, function ($query) use ($search) {
-            $query->search($search, ['first_name', 'last_name', 'email'])
-                ->orWhereHas('studentProfile', fn ($p) => $p->where('admission_number', 'ilike', "%{$search}%")
-                );
+        if ($search === null || trim($search) === '') {
+            return $query;
+        }
+
+        $search = trim($search);
+
+        return $query->where(function (Builder $q) use ($search): void {
+            $q->where('first_name', 'ilike', "%{$search}%")
+                ->orWhere('last_name', 'ilike', "%{$search}%")
+                ->orWhere('email', 'ilike', "%{$search}%")
+                ->orWhereHas('studentProfile', fn ($p) => $p->where('admission_number', 'ilike', "%{$search}%"));
         });
     }
 

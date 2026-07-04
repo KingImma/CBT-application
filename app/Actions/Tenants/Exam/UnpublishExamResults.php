@@ -4,17 +4,24 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Actions\Base\UpdateAction;
+use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
-use Illuminate\Support\Facades\DB;
 
-class UnpublishExamResults
+final class UnpublishExamResults
 {
-    public function execute(Exam $exam): Exam
-    {
-        return DB::transaction(function () use ($exam) {
-            $exam->unpublish()->save();
+  public function __construct(private UpdateAction $action) {}
 
-            return $exam->fresh();
-        });
-    }
+  public function execute(Exam $exam): Exam
+  {
+    return $this->action->execute(
+      $exam,
+      [],
+      guard: ExamGuards::isPublished(),
+      prepare: fn (Exam $e, array $d) => [
+        'status'     => ExamStatus::Completed->value,
+        'published_at' => null,
+      ],
+    );
+  }
 }

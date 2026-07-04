@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Actions\Base\UpdateAction;
 use App\Models\Tenant\Exam;
-use Illuminate\Support\Facades\DB;
+use App\Enums\ExamStatus;
 
-class SubmitExamForReview
+final class SubmitExamForReview
 {
+    public function __construct(private UpdateAction $action) {}
+
     public function execute(Exam $exam): Exam
     {
-        return DB::transaction(function () use ($exam) {
-            $exam->submitForReview()->save();
-
-            return $exam->fresh();
-        });
+        return $this->action->execute(
+            $exam,
+            [],
+            guard: ExamGuards::canSubmitForReview(),
+            prepare: fn (Exam $e, array $d) => [
+                'status' => ExamStatus::Submitted->value,
+            ],
+        );
     }
 }

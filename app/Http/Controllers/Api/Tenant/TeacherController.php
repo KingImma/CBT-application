@@ -52,8 +52,16 @@ class TeacherController extends Controller
                 'assignedClasses.classLevel',
                 'assignedClasses.subjects',
             ])
-            ->search($search)
-            ->withStatus($status)
+            ->when($search !== null && trim($search) !== '', function ($query) use ($search) {
+                $search = trim($search);
+
+                return $query->where(function ($q) use ($search) {
+                    $q->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%")
+                        ->orWhere('email', 'ilike', "%{$search}%");
+                });
+            })
+            ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
             ->orderBy('last_name')
             ->paginate(20);
 

@@ -9,45 +9,39 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\SchoolSetting;
 use DomainException;
 
-class RecomputeExamTotalMarks
+/**
+ * Pure utility — recomputes total_marks from live examQuestions.
+ * Called after every question add/update/delete/randomize.
+ * Not a CRUD action — no base primitive needed.
+ */
+final class RecomputeExamTotalMarks
 {
-    private const SETTING_KEY_EXAM_MAX_SCORE = 'exam_max_score';
-
-    private const SETTING_KEY_ASSESSMENT_MAX_SCORE = 'assessment_max_score';
-
     public function execute(Exam $exam): void
     {
-        $total = $exam->examQuestions()->get()->sum(fn ($eq) => $eq->getEffectiveMarks());
+        $total = (float) $exam->examQuestions()
+            ->get()
+            ->sum(fn ($eq) => $eq->getEffectiveMarks());
 
-        $this->ensureWithinSchoolMaximum($exam, (float) $total);
+        $this->assertWithinSchoolMax($exam, $total);
 
         $exam->update(['total_marks' => $total]);
     }
 
-    private function ensureWithinSchoolMaximum(Exam $exam, float $total): void
+    private function assertWithinSchoolMax(Exam $exam, float $total): void
     {
-        $settingKey = $exam->type === ExamType::Exam->value
-            ? self::SETTING_KEY_EXAM_MAX_SCORE
-            : self::SETTING_KEY_ASSESSMENT_MAX_SCORE;
+        $key = $exam->type === ExamType::Exam->value
+            ? 'exam_max_score'
+            : 'assessment_max_score';
 
-        $schoolMax = SchoolSetting::where('key', $settingKey)->value('value');
+        $max = SchoolSetting::where('key', $key)->value('value');
 
-        if ($schoolMax === null) {
+        if ($max === null) {
             return;
         }
 
-        $schoolMaxFloat = (float) $schoolMax;
+        $max = (float) $max;
 
-        throw_if(
-            $schoolMaxFloat <= 0,
-            DomainException::class,
-            "School maximum score for {$exam->type} is not configured correctly."
-        );
-
-        throw_if(
-            $total > $schoolMaxFloat,
-            DomainException::class,
-            "Total marks cannot exceed school maximum of {$schoolMax} for {$exam->type}."
-        );
+        throw_if($max <= 0, new DomainException("School max score for {$exam->type} is not configured."));
+        throw_if($total > $max, new DomainException("Total marks ({$total}) exceeds school max of {$max} for {$exam->type}."));
     }
 }

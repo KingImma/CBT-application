@@ -4,46 +4,23 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam;
 
+use App\Actions\Base\DeleteAction;
 use App\Models\Tenant\Exam;
-use DomainException;
-use Illuminate\Support\Facades\DB;
 
-class DeleteExam
+final class DeleteExam
 {
+    public function __construct(private DeleteAction $action){}
+
     public function execute(Exam $exam): void
     {
-        $this->ensureExamIsDeletable($exam);
-
-        DB::transaction(fn () => $this->performDeletion($exam));
-    }
-
-    private function ensureExamIsDeletable(Exam $exam): void
-    {
-        throw_if(
-            $exam->isActive(),
-            DomainException::class,
-            'Cannot delete an active exam.'
+        $this->action->execute(
+            $exam,
+            guard: ExamGuards::canDelete(),
+            cascade: function (Exam $e) {
+                $e->attempts()->each(fn ($attempt) => $attempt->answers()->delete());
+                $e->attempts()->delete();
+                $e->examQuestions()->delete();
+            },
         );
-
-        throw_if(
-            $exam->isPublished(),
-            DomainException::class,
-            'Cannot delete a published exam.'
-        );
-
-        throw_if(
-            $exam->isCompleted(),
-            DomainException::class,
-            "Cannot delete an exam with {$exam->completed_attempts} completed attempt(s). Results would be permanently lost."
-        );
-    }
-
-    private function performDeletion(Exam $exam): void
-    {
-        $exam->attempts()->delete();
-
-        $exam->examQuestions()->delete();
-
-        $exam->delete();
     }
 }

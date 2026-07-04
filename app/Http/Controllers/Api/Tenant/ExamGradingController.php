@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ExamGradingAction;
+use App\Actions\Tenants\Exam\Attempts\GradeExamAttempt;
 use App\Data\Exam\Output\ExamResultData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
@@ -12,41 +12,34 @@ use App\Models\Tenant\ExamAttempt;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
-/**
- * @group Exam Administration
- * APIs for scheduling CBT sessions, attaching questions, live monitoring, and grading.
- */
 class ExamGradingController extends Controller
 {
+    public function __construct(private GradeExamAttempt $gradeAttempt) {}
+
     /**
-     * Recompute the score for an exam attempt.
-     *
-     * @subgroup Exam Grading
-     *
-     * @urlParam attemptId string required The attempt UUID.
+     * Recompute a single attempt's score.
+     * Useful after a manual answer correction or a grading-rule change.
      */
-    public function recomputeScore(
-        Exam $exam,
-        ExamAttempt $attempt,
-        ExamGradingAction $action,
-    ): JsonResponse {
+    public function recomputeScore(Exam $exam, ExamAttempt $attempt): JsonResponse
+    {
         $this->authorize('grade', $exam);
 
-        $gradedAttempt = $action->execute($attempt);
+        $graded = $this->gradeAttempt->execute($attempt);
 
-        return ApiResponse::success($gradedAttempt, 'Score recomputed.');
+        return ApiResponse::success($graded, 'Score recomputed.');
     }
 
-    public function viewAttemptResult(Exam $exam, ExamAttempt $attempt)
+    /**
+     * Full per-question breakdown for one attempt — the teacher's
+     * "show your working" view, distinct from the student's own result view.
+     */
+    public function viewAttemptResult(Exam $exam, ExamAttempt $attempt): JsonResponse
     {
-        // 1. Authorize: Ensure the teacher has access to view this exam
         $this->authorize('view', $exam);
 
-        // 2. Return the data structure mapped through the Resource
-        // The fromAttempt method handles the logic of loading relations
-        // and mapping answers to your ResultQuestionData objects.
-        return response()->json([
-            'data' => ExamResultData::fromAttempt($attempt),
-        ]);
+        return ApiResponse::success(
+            ExamResultData::fromAttempt($attempt),
+            'Attempt result retrieved.'
+        );
     }
 }

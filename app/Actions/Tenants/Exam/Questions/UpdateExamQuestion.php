@@ -4,48 +4,37 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Exam\Questions;
 
+use App\Actions\Base\UpdateAction;
+use App\Actions\Tenants\Exam\ExamQuestionGuards;
 use App\Data\Exam\Input\UpdateExamQuestionData;
-use App\Exceptions\Domain\Exam\ExamStateTransitionException;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamQuestion;
-use Illuminate\Support\Facades\DB;
+use App\Models\Tenant\Question;
 
-class UpdateExamQuestion
+final class UpdateExamQuestion
 {
     public function __construct(
-        private RecomputeExamTotalMarks $recomputeMarks
+        private UpdateAction            $action,
+        private RecomputeExamTotalMarks $recompute,
     ) {}
 
-    public function execute(Exam $exam, ExamQuestion $examQuestion, UpdateExamQuestionData $data): ExamQuestion
+    public function execute(Exam $exam, Question $question, UpdateExamQuestionData $data): ExamQuestion
     {
-        $this->ensureExamQuestionIsUpdatable($exam);
+        ExamQuestionGuards::isDraft('Questions can only be modified in a draft exam.')($exam);
 
-        return DB::transaction(fn () => $this->performUpdate($exam, $examQuestion, $data));
-    }
+        $examQuestion = $exam->examQuestions()
+            ->where('question_id', $question->id)
+            ->firstOrFail();
 
-    private function ensureExamQuestionIsUpdatable(Exam $exam): void
-    {
-        throw_unless(
-            $exam->isDraft(),
-            ExamStateTransitionException::class,
-            'Questions can only be modified in draft exams.'
+        return $this->action->execute(
+            $examQuestion,
+            ['exam' => $exam, 'question' => $question, 'data' => $data],
+            guard: fn ($eq, $d) => null,
+            prepare: fn (ExamQuestion $eq, array $d) => array_filter([
+                'marks' => $d['data']->marks ?? $d['question']->default_marks,
+                'order' => $d['data']->order ?? $eq->order,
+            ], fn ($v) => $v !== null),
+            after: fn (ExamQuestion $eq, array $d) => $this->recompute->execute($d['exam'])
         );
-    }
-
-    private function performUpdate(Exam $exam, ExamQuestion $examQuestion, UpdateExamQuestionData $data): ExamQuestion
-    {
-        $payload = $data->toArray();
-
-        // When marks is explicitly nulled, fall back to the question's default.
-        // Load question lazily here — only one question, acceptable cost.
-        if (array_key_exists('marks', $payload) && $payload['marks'] === null) {
-            $payload['marks'] = $examQuestion->question->default_marks;
-        }
-
-        $examQuestion->update($payload);
-
-        $this->recomputeMarks->execute($exam);
-
-        return $examQuestion->fresh();
     }
 }

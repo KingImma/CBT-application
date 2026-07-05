@@ -78,7 +78,7 @@ class ImportStudents extends CsvImport
                 } else {
                     $existing->whereHas(
                         'studentProfile',
-                        fn ($q) => $q->where($key, $value),
+                        fn ($q) => $q->where($key, $key === 'admission_number' ? strtoupper($value) : $value),
                     );
                 }
             }
@@ -108,16 +108,19 @@ class ImportStudents extends CsvImport
 
         foreach ($rows as $rn => $row) {
             $data = $row['data'];
-            $admissionNumber =
+            $admissionNumber = strtoupper(
                 $data['admission_number'] ??
-                $this->student->generateAdmissionNumber();
+                $this->student->generateAdmissionNumber()
+            );
             $email = $data['email'] ?? $admissionNumber.'@student.edu';
 
             if (in_array($rn, $duplicateKeys)) {
                 if ($this->overwriteExisting) {
                     $existingUser = User::role(RoleType::Student->value)
-                        ->where('email', $email)
-                        ->orWhereHas('studentProfile', fn ($q) => $q->where('admission_number', $admissionNumber))
+                        ->where(function ($q) use ($email, $admissionNumber) {
+                            $q->where('email', $email)
+                                ->orWhereHas('studentProfile', fn ($q2) => $q2->where('admission_number', $admissionNumber));
+                        })
                         ->first();
 
                     if ($existingUser) {
@@ -138,6 +141,8 @@ class ImportStudents extends CsvImport
                         }
 
                         $updated++;
+                    }else {
+                        $skipped++;
                     }
 
                     continue;

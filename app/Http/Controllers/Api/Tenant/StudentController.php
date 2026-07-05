@@ -25,6 +25,7 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -390,23 +391,40 @@ class StudentController extends Controller
             return $this->buildImportResponse($result, true);
         }
 
-        $storedPath = $file->store('imports', 'local');
+        try {
+            $storedPath = $file->store('imports', 'local');
 
-        $importLog = ImportLog::create([
-            'type' => RoleType::Student->value,
-            'filename' => $file->getClientOriginalName(),
-            'status' => 'pending',
-            'meta' => [
-                'stored_path' => $storedPath,
-                'overwrite_existing' => $validated['overwrite_existing'] ?? 'skip',
-            ],
-            'created_by' => auth()->id(),
-        ]);
+            $importLog = ImportLog::create([
+                'type' => RoleType::Student->value,
+                'filename' => $file->getClientOriginalName(),
+                'status' => 'pending',
+                'meta' => [
+                    'stored_path' => $storedPath,
+                    'overwrite_existing' => $validated['overwrite_existing'] ?? 'skip',
+                    'class_level_id' => $validated['class_level_id'] ?? null,
+                ],
+                'created_by' => auth()->id(),
+            ]);
 
-        ProcessStudentImportJob::dispatch(
-            $importLog->id,
-            tenant()->id,
-        );
+
+            ProcessStudentImportJob::dispatch(
+                $importLog->id,
+                tenant()->id,
+            );
+        } catch (\Throwable $e) {
+            if (isset($storedPath)) {
+                Storage::disk('local')->delete($storedPath);
+            }
+
+            if (isset($importLog)) {
+                $importLog->delete();
+            }
+
+            return ApiResponse::error(
+                'Failed to queue import: '.$e->getMessage(),
+                500,
+            );
+        }
 
         return ApiResponse::success(
             [
@@ -422,7 +440,7 @@ class StudentController extends Controller
     {
         $this->authorize('importStudents', User::class);
 
-        $log = ImportLog::findOrFail($importLogId);
+        $log = ImportLog::where('type', RoleType::Student->value)->findOrFail($importLogId);
 
         return ApiResponse::success(
             [

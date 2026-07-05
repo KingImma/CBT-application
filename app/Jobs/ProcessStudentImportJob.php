@@ -45,22 +45,28 @@ class ProcessStudentImportJob implements ShouldQueue
 
             try {
                 $meta = $log->meta;
-                $overwriteExisting = ($meta['overwrite_existing'] ?? 'skip') === 'update';
+                $storedPath = Storage::disk('local')->path($meta['stored_path']);
 
-                $result = $importStudents->processFromParsedRows(
-                    $meta['rows'],
-                    $overwriteExisting,
+                $result = $importStudents->execute(
+                    [
+                        'overwrite_existing' => $meta['overwrite_existing'] ?? 'skip',
+                        'class_level_id' => $meta['class_level_id'] ?? null,
+                        'class_arm_id' => $meta['class_arm_id'] ?? null,
+                    ],
+                    $storedPath,
+                    false,
                 );
 
                 $log->update([
-                    'status' => 'completed',
+                    'status' => $result->isSuccess() ? 'completed' : 'failed',
+                    'total_rows' => $result->getTotalRows(),
                     'imported' => $result->getImported(),
                     'skipped' => $result->getSkipped(),
                     'updated' => $result->getUpdated(),
                     'errors' => $result->getErrors(),
                     'completed_at' => now(),
                 ]);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $log->update([
                     'status' => 'failed',
                     'errors' => [['message' => $e->getMessage()]],

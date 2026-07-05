@@ -43,32 +43,37 @@ class UserPolicy
 
     public function revokeTeacher(User $user, User $teacher): bool
     {
-        return $teacher->is_active && ! $teacher->trashed();
+        return $user->hasRole(RoleType::SchoolAdmin->value)
+            && $teacher->is_active
+            && ! $teacher->trashed();
     }
 
     public function restoreTeacher(User $user, User $teacher): bool
     {
-        return $teacher->trashed();
+        return $user->hasRole(RoleType::SchoolAdmin->value) && $teacher->trashed();
     }
 
     public function importTeachers(User $user): bool
     {
-        return true;
+        return $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
     public function viewStudent(User $user, User $student): bool
     {
-        return true;
+        return $user->hasRole(RoleType::Teacher->value) || $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
     public function createStudent(User $user): bool
     {
-        return true;
+        return $user->hasRole(RoleType::Teacher->value) || $user->hasRole(RoleType::SchoolAdmin->value);
     }
+
 
     public function updateStudent(User $user, User $student): bool
     {
-        return true;
+        return ($user->hasRole(RoleType::Teacher->value) || $user->hasRole(RoleType::SchoolAdmin->value))
+            && $student->is_active
+            && ! $student->trashed();
     }
 
     public function deleteStudent(User $user, User $student): bool
@@ -78,26 +83,28 @@ class UserPolicy
 
     public function revokeStudent(User $user, User $student): bool
     {
-        return $student->is_active && ! $student->trashed();
+        return $user->hasRole(RoleType::SchoolAdmin->value)
+            && $student->is_active
+            && ! $student->trashed();
     }
 
     public function restoreStudent(User $user, User $student): bool
     {
-        return $student->trashed();
+        return $user->hasRole(RoleType::SchoolAdmin->value) && $student->trashed();
     }
 
     public function reassignClass(User $user, User $student): bool
     {
-        return true;
+        return $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
     public function bulkResetPasswords(User $user): bool
     {
-        return true;
+        return $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
     public function importStudents(User $user): bool
     {
-        return true;
+        return $user->hasRole(RoleType::SchoolAdmin->value);
     }
 }

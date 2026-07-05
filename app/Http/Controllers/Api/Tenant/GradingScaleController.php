@@ -24,13 +24,13 @@ class GradingScaleController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) $request->get("per_page", 20);
+        $perPage = (int) $request->get('per_page', 20);
 
         return ApiResponse::success(
             GradingScaleData::collect(
-                GradingScale::orderByDesc("is_default")->paginate($perPage),
+                GradingScale::orderByDesc('is_default')->paginate($perPage),
             ),
-            "Grading scales retrieved successfully.",
+            'Grading scales retrieved successfully.',
         );
     }
 
@@ -50,29 +50,29 @@ class GradingScaleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            "name" => ["required", "string", "max:100"],
-            "is_default" => ["boolean"],
-            "grades" => ["required", "array", "min:1"],
-            "grades.*.label" => ["required", "string"],
-            "grades.*.min_score" => ["required", "numeric", "min:0", "max:100"],
-            "grades.*.max_score" => ["required", "numeric", "min:0", "max:100"],
-            "grades.*.remark" => ["nullable", "string"],
+            'name' => ['required', 'string', 'max:100'],
+            'is_default' => ['boolean'],
+            'grades' => ['required', 'array', 'min:1'],
+            'grades.*.label' => ['required', 'string'],
+            'grades.*.min_score' => ['required', 'numeric', 'min:0', 'max:100'],
+            'grades.*.max_score' => ['required', 'numeric', 'min:0', 'max:100'],
+            'grades.*.remark' => ['nullable', 'string'],
         ]);
 
-        $error = $this->validateGradeRanges($validated["grades"]);
+        $error = $this->validateGradeRanges($validated['grades']);
         if ($error !== null) {
             return ApiResponse::error($error, 422);
         }
 
         $scale = GradingScale::create($validated);
 
-        if (!empty($validated["is_default"])) {
+        if (! empty($validated['is_default'])) {
             $scale->setAsDefault()->save();
         }
 
         return ApiResponse::created(
             GradingScaleData::from($scale),
-            "Grading scale created.",
+            'Grading scale created.',
         );
     }
 
@@ -89,7 +89,7 @@ class GradingScaleController extends Controller
 
         return ApiResponse::success(
             GradingScaleData::from($scale),
-            "Grading scale retrieved successfully.",
+            'Grading scale retrieved successfully.',
         );
     }
 
@@ -113,27 +113,27 @@ class GradingScaleController extends Controller
         $scale = GradingScale::findOrFail($id);
 
         $validated = $request->validate([
-            "name" => ["sometimes", "string", "max:100"],
-            "is_default" => ["sometimes", "boolean"],
-            "grades" => ["sometimes", "array", "min:1"],
-            "grades.*.label" => ["required_with:grades", "string"],
-            "grades.*.min_score" => [
-                "required_with:grades",
-                "numeric",
-                "min:0",
-                "max:100",
+            'name' => ['sometimes', 'string', 'max:100'],
+            'is_default' => ['sometimes', 'boolean'],
+            'grades' => ['sometimes', 'array', 'min:1'],
+            'grades.*.label' => ['required_with:grades', 'string'],
+            'grades.*.min_score' => [
+                'required_with:grades',
+                'numeric',
+                'min:0',
+                'max:100',
             ],
-            "grades.*.max_score" => [
-                "required_with:grades",
-                "numeric",
-                "min:0",
-                "max:100",
+            'grades.*.max_score' => [
+                'required_with:grades',
+                'numeric',
+                'min:0',
+                'max:100',
             ],
-            "grades.*.remark" => ["nullable", "string"],
+            'grades.*.remark' => ['nullable', 'string'],
         ]);
 
-        $error = !empty($validated["grades"])
-            ? $this->validateGradeRanges($validated["grades"])
+        $error = ! empty($validated['grades'])
+            ? $this->validateGradeRanges($validated['grades'])
             : null;
 
         if ($error !== null) {
@@ -142,13 +142,13 @@ class GradingScaleController extends Controller
 
         $scale->update($validated);
 
-        if (!empty($validated["is_default"])) {
+        if (! empty($validated['is_default'])) {
             $scale->setAsDefault()->save();
         }
 
         return ApiResponse::success(
             GradingScaleData::from($scale->fresh()),
-            "Grading scale updated.",
+            'Grading scale updated.',
         );
     }
 
@@ -163,53 +163,53 @@ class GradingScaleController extends Controller
     {
         $scale = GradingScale::findOrFail($id);
 
-        if (!$scale->canDelete()) {
+        if (! $scale->canDelete()) {
             return ApiResponse::error(
-                "Cannot delete the default grading scale. Set another as default first.",
+                'Cannot delete the default grading scale. Set another as default first.',
                 422,
             );
         }
 
         $scale->delete();
 
-        return ApiResponse::message("Grading scale deleted.");
+        return ApiResponse::message('Grading scale deleted.');
     }
 
     private function validateGradeRanges(array $grades): ?string
     {
         $labels = [];
         foreach ($grades as $g) {
-            if ($g["min_score"] > $g["max_score"]) {
-                return "Grade {$g["label"]}: minimum score ({$g["min_score"]}) cannot exceed maximum score ({$g["max_score"]}).";
+            if ($g['min_score'] > $g['max_score']) {
+                return "Grade {$g['label']}: minimum score ({$g['min_score']}) cannot exceed maximum score ({$g['max_score']}).";
             }
 
-            if (in_array($g["label"], $labels)) {
-                return "Duplicate grade label '{$g["label"]}' found. Each label must be unique.";
+            if (in_array($g['label'], $labels)) {
+                return "Duplicate grade label '{$g['label']}' found. Each label must be unique.";
             }
-            $labels[] = $g["label"];
+            $labels[] = $g['label'];
         }
 
-        $sorted = collect($grades)->sortBy("min_score")->values();
+        $sorted = collect($grades)->sortBy('min_score')->values();
 
         // Must cover from 0 to 100
-        if ($sorted->first()["min_score"] > 0) {
-            return "Grade ranges must start at 0 (lowest score boundary).";
+        if ($sorted->first()['min_score'] > 0) {
+            return 'Grade ranges must start at 0 (lowest score boundary).';
         }
 
-        if ($sorted->last()["max_score"] < 100) {
-            return "Grade ranges must end at 100 (highest score boundary).";
+        if ($sorted->last()['max_score'] < 100) {
+            return 'Grade ranges must end at 100 (highest score boundary).';
         }
 
         for ($i = 0; $i < $sorted->count() - 1; $i++) {
             $current = $sorted[$i];
             $next = $sorted[$i + 1];
 
-            if ($current["max_score"] >= $next["min_score"]) {
-                return "Grade ranges overlap: '{$current["label"]}' ({$current["min_score"]}-{$current["max_score"]}) and '{$next["label"]}' ({$next["min_score"]}-{$next["max_score"]}).";
+            if ($current['max_score'] >= $next['min_score']) {
+                return "Grade ranges overlap: '{$current['label']}' ({$current['min_score']}-{$current['max_score']}) and '{$next['label']}' ({$next['min_score']}-{$next['max_score']}).";
             }
 
-            if ($next["min_score"] - $current["max_score"] > 1) {
-                return "Gap between grade ranges: '{$current["label"]}' ends at {$current["max_score"]} but '{$next["label"]}' starts at {$next["min_score"]}.";
+            if ($next['min_score'] - $current['max_score'] > 1) {
+                return "Gap between grade ranges: '{$current['label']}' ends at {$current['max_score']} but '{$next['label']}' starts at {$next['min_score']}.";
             }
         }
 

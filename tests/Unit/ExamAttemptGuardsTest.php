@@ -6,7 +6,6 @@ use App\Actions\Tenants\Exam\ExamAttemptGuards;
 use App\Enums\ExamAttemptStatus;
 use App\Exceptions\Domain\ExamAttempt\AttemptCannotBeSubmittedException;
 use App\Models\Tenant\ExamAttempt;
-use App\Models\Tenant\User;
 use Tests\TestCase;
 
 class ExamAttemptGuardsTest extends TestCase

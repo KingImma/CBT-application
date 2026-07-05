@@ -9,11 +9,13 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\Question;
+use App\Models\Tenant\User;
 use App\Policies\Tenant\ClassArmPolicy;
 use App\Policies\Tenant\ExamAnswerPolicy;
 use App\Policies\Tenant\ExamAttemptPolicy;
 use App\Policies\Tenant\ExamPolicy;
 use App\Policies\Tenant\QuestionPolicy;
+use App\Policies\Tenant\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -24,6 +26,7 @@ class AuthServiceProvider extends ServiceProvider
         ExamAnswer::class => ExamAnswerPolicy::class,
         ExamAttempt::class => ExamAttemptPolicy::class,
         Question::class => QuestionPolicy::class,
+        User::class => UserPolicy::class,
     ];
 
     public function boot(): void

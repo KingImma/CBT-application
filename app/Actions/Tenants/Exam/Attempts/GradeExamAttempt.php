@@ -16,12 +16,11 @@ use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\GradingScale;
 use App\Support\QuestionGrader;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class GradeExamAttempt
 {
     public function __construct(
-        private UpdateAction  $action,
+        private UpdateAction $action,
         private QuestionGrader $grader,
     ) {}
 
@@ -38,34 +37,34 @@ final class GradeExamAttempt
 
     private function computeScores(ExamAttempt $attempt, Exam $exam): array
     {
-        $answers       = ExamAnswer::with('question.options')->where('attempt_id', $attempt->id)->get();
+        $answers = ExamAnswer::with('question.options')->where('attempt_id', $attempt->id)->get();
         $examQuestions = $exam->examQuestions()->get()->keyBy('question_id');
 
         ['total' => $total, 'maxTime' => $maxTime] = $this->gradeAnswers($answers, $examQuestions);
 
         $percentage = CalculateScore::execute($total, (float) $exam->total_marks);
-        $grade      = ResolveGrade::execute($percentage, GradingScale::where('is_default', true)->first()?->grades);
+        $grade = ResolveGrade::execute($percentage, GradingScale::where('is_default', true)->first()?->grades);
 
         return [
-            'status'             => ExamAttemptStatus::Graded->value,
-            'total_score'        => $total,
-            'percentage_score'   => $percentage,
-            'grade'              => $grade,
+            'status' => ExamAttemptStatus::Graded->value,
+            'total_score' => $total,
+            'percentage_score' => $percentage,
+            'grade' => $grade,
             'time_spent_seconds' => $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
         ];
     }
 
     private function gradeAnswers(Collection $answers, Collection $examQuestions): array
     {
-        $total   = 0.0;
+        $total = 0.0;
         $maxTime = 0;
 
         foreach ($answers as $answer) {
             $isCorrect = $this->grader->isCorrect(
                 questionType: $answer->question->type,
-                options:      $answer->question->options,
-                selectedIds:  $answer->selected_option_ids ?? [],
-                textAnswer:   $answer->text_answer,
+                options: $answer->question->options,
+                selectedIds: $answer->selected_option_ids ?? [],
+                textAnswer: $answer->text_answer,
             );
 
             $marks = $isCorrect
@@ -74,8 +73,8 @@ final class GradeExamAttempt
 
             $answer->updateQuietly(['is_correct' => $isCorrect, 'marks_awarded' => $marks]);
 
-            $total   += $marks;
-            $maxTime  = max($maxTime, $answer->time_spent_seconds ?? 0);
+            $total += $marks;
+            $maxTime = max($maxTime, $answer->time_spent_seconds ?? 0);
         }
 
         return ['total' => $total, 'maxTime' => $maxTime];
@@ -94,11 +93,11 @@ final class GradeExamAttempt
         }
 
         event(new ExamAttemptsUpdated(
-            examId:            $exam->id,
+            examId: $exam->id,
             completedAttempts: $exam->completed_attempts,
-            expectedAttempts:  $exam->expected_attempts,
-            status:            $shouldComplete ? ExamStatus::Completed : ExamStatus::Active,
-            tenantId:          (string) tenant('id'),
+            expectedAttempts: $exam->expected_attempts,
+            status: $shouldComplete ? ExamStatus::Completed : ExamStatus::Active,
+            tenantId: (string) tenant('id'),
         ));
     }
 }

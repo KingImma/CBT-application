@@ -30,10 +30,10 @@ use Illuminate\Validation\Rule;
 class StudentExamController extends Controller
 {
     public function __construct(
-        private StartExamAttempt      $startAttempt,
-        private FinalizeAttempt       $finalizeAttempt,
-        private RecordExamAnswer      $recordAnswer,
-        private GetExamQuestions      $getQuestions,
+        private StartExamAttempt $startAttempt,
+        private FinalizeAttempt $finalizeAttempt,
+        private RecordExamAnswer $recordAnswer,
+        private GetExamQuestions $getQuestions,
         private ExamSessionStateStore $stateStore,
     ) {}
 
@@ -67,7 +67,7 @@ class StudentExamController extends Controller
 
     public function start(Request $request, string $id): JsonResponse
     {
-        $exam    = Exam::findOrFail($id);
+        $exam = Exam::findOrFail($id);
         $student = $request->user('tenant');
 
         try {
@@ -84,9 +84,9 @@ class StudentExamController extends Controller
         $questionsData = $this->getQuestions->execute($attempt);
 
         return ApiResponse::created([
-            'attempt'   => $attempt,
+            'attempt' => $attempt,
             'questions' => StudentQuestionData::collectFromExamQuestions($questionsData['questions']),
-            'order'     => $questionsData['order'],
+            'order' => $questionsData['order'],
         ], 'Exam started.');
     }
 
@@ -100,10 +100,10 @@ class StudentExamController extends Controller
         $questionsData = $this->getQuestions->execute($attempt);
 
         return ApiResponse::success([
-            'attempt'                => $attempt,
-            'questions'              => StudentQuestionData::collectFromExamQuestions($questionsData['questions']),
-            'order'                  => $questionsData['order'],
-            'answers'                => ExamAnswer::where('attempt_id', $attempt->id)->get()->keyBy('question_id'),
+            'attempt' => $attempt,
+            'questions' => StudentQuestionData::collectFromExamQuestions($questionsData['questions']),
+            'order' => $questionsData['order'],
+            'answers' => ExamAnswer::where('attempt_id', $attempt->id)->get()->keyBy('question_id'),
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
         ], 'Active attempt retrieved.');
     }
@@ -118,10 +118,10 @@ class StudentExamController extends Controller
         $questionsData = $this->getQuestions->execute($attempt);
 
         return ApiResponse::success([
-            'exam_id'                => $id,
-            'attempt_id'             => $attempt->id,
-            'questions'              => StudentQuestionData::collectFromExamQuestions($questionsData['questions']),
-            'order'                  => $questionsData['order'],
+            'exam_id' => $id,
+            'attempt_id' => $attempt->id,
+            'questions' => StudentQuestionData::collectFromExamQuestions($questionsData['questions']),
+            'order' => $questionsData['order'],
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
         ], 'Questions retrieved.');
     }
@@ -141,10 +141,10 @@ class StudentExamController extends Controller
         $questionsData = $this->getQuestions->execute($attempt);
 
         return ApiResponse::success([
-            'exam_id'                => $attempt->exam_id,
-            'attempt_id'             => $attempt->id,
-            'questions'              => StudentQuestionData::collectFromExamQuestions($questionsData['questions']),
-            'order'                  => $questionsData['order'],
+            'exam_id' => $attempt->exam_id,
+            'attempt_id' => $attempt->id,
+            'questions' => StudentQuestionData::collectFromExamQuestions($questionsData['questions']),
+            'order' => $questionsData['order'],
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
         ], 'Questions retrieved.');
     }
@@ -171,11 +171,11 @@ class StudentExamController extends Controller
 
     public function saveAnswer(Request $request, string $attemptId, string $questionId): JsonResponse
     {
-        $attempt  = ExamAttempt::findOrFail($attemptId);
+        $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
         $question = Question::findOrFail($questionId);
-        $rules    = $this->answerRules($question->type);
+        $rules = $this->answerRules($question->type);
         $rules['time_spent_seconds'] = ['sometimes', 'integer', 'min:0'];
 
         $answer = $this->recordAnswer->save($attempt, $questionId, $request->validate($rules));
@@ -188,13 +188,13 @@ class StudentExamController extends Controller
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
-        $validated   = $request->validate([
-            'answers'                         => ['required', 'array'],
-            'answers.*.question_id'           => ['required', 'uuid'],
-            'answers.*.selected_option_ids'   => ['sometimes', 'nullable', 'array'],
+        $validated = $request->validate([
+            'answers' => ['required', 'array'],
+            'answers.*.question_id' => ['required', 'uuid'],
+            'answers.*.selected_option_ids' => ['sometimes', 'nullable', 'array'],
             'answers.*.selected_option_ids.*' => ['uuid'],
-            'answers.*.text_answer'           => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'answers.*.time_spent_seconds'    => ['sometimes', 'integer', 'min:0'],
+            'answers.*.text_answer' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'answers.*.time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
         $questions = Question::whereIn('id', array_column($validated['answers'], 'question_id'))
@@ -206,9 +206,9 @@ class StudentExamController extends Controller
                 return ApiResponse::error("Question {$ans['question_id']} not found.", 422);
             }
 
-            $isFitb     = $q->type === QuestionType::FillInBlank->value;
+            $isFitb = $q->type === QuestionType::FillInBlank->value;
             $hasOptions = isset($ans['selected_option_ids']);
-            $hasText    = isset($ans['text_answer']);
+            $hasText = isset($ans['text_answer']);
 
             if ($isFitb && $hasOptions) {
                 return ApiResponse::error("Question {$ans['question_id']} is FillInBlank; selected_option_ids not accepted.", 422);
@@ -234,7 +234,7 @@ class StudentExamController extends Controller
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
-        $answer    = ExamAnswer::where('attempt_id', $attemptId)->where('question_id', $questionId)->firstOrFail();
+        $answer = ExamAnswer::where('attempt_id', $attemptId)->where('question_id', $questionId)->firstOrFail();
         $isFlagged = $this->recordAnswer->toggleFlag($answer);
 
         return ApiResponse::success(['is_flagged' => $isFlagged], 'Flag toggled.');
@@ -267,20 +267,20 @@ class StudentExamController extends Controller
 
         if ($cached !== null) {
             return ApiResponse::success([
-                'attempt_id'             => $cached->attemptId,
+                'attempt_id' => $cached->attemptId,
                 'time_remaining_seconds' => $cached->timeRemainingSeconds,
-                'last_answer_id'         => $cached->lastAnswerId,
-                'last_activity_at'       => $cached->lastActivityAt,
-                'connection_alive'       => $cached->connectionAlive,
+                'last_answer_id' => $cached->lastAnswerId,
+                'last_activity_at' => $cached->lastActivityAt,
+                'connection_alive' => $cached->connectionAlive,
             ]);
         }
 
         return ApiResponse::success([
-            'attempt_id'             => $attempt->id,
+            'attempt_id' => $attempt->id,
             'time_remaining_seconds' => $attempt->getTimeRemainingSeconds(),
-            'last_answer_id'         => null,
-            'last_activity_at'       => null,
-            'connection_alive'       => false,
+            'last_answer_id' => null,
+            'last_activity_at' => null,
+            'connection_alive' => false,
         ]);
     }
 
@@ -292,7 +292,7 @@ class StudentExamController extends Controller
         $this->authorize('saveAnswer', $attempt);
 
         $validated = $request->validate([
-            'type'     => ['required', 'string', Rule::in(array_column(SuspiciousEventType::cases(), 'value'))],
+            'type' => ['required', 'string', Rule::in(array_column(SuspiciousEventType::cases(), 'value'))],
             'metadata' => ['sometimes', 'array'],
         ]);
 
@@ -324,7 +324,7 @@ class StudentExamController extends Controller
             return $eq ? ResultQuestionData::fromAnswer($answer, $eq, $answer->question) : null;
         })->filter()->values();
 
-        $data              = ExamAttemptData::from($attempt)->toArray();
+        $data = ExamAttemptData::from($attempt)->toArray();
         $data['questions'] = $questions->toArray();
 
         return ApiResponse::success($data, 'Result retrieved.');
@@ -333,7 +333,7 @@ class StudentExamController extends Controller
     public function results(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'exam_id'  => ['sometimes', 'uuid', 'exists:exams,id'],
+            'exam_id' => ['sometimes', 'uuid', 'exists:exams,id'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
@@ -349,19 +349,19 @@ class StudentExamController extends Controller
             $examQuestions = $attempt->exam->examQuestions->keyBy('question_id');
 
             return [
-                'attempt_id'      => $attempt->id,
-                'exam_id'         => $attempt->exam_id,
-                'exam_title'      => $attempt->exam->title,
-                'exam_subject'    => $attempt->exam->subject?->name,
-                'status'          => $attempt->status,
-                'attempt_number'  => $attempt->attempt_number,
-                'total_score'     => (float) $attempt->total_score,
-                'total_marks'     => (float) $attempt->exam->total_marks,
-                'percentage_score'=> (float) $attempt->percentage_score,
-                'grade'           => $attempt->grade,
-                'submitted_at'    => $attempt->submitted_at?->toIso8601String(),
+                'attempt_id' => $attempt->id,
+                'exam_id' => $attempt->exam_id,
+                'exam_title' => $attempt->exam->title,
+                'exam_subject' => $attempt->exam->subject?->name,
+                'status' => $attempt->status,
+                'attempt_number' => $attempt->attempt_number,
+                'total_score' => (float) $attempt->total_score,
+                'total_marks' => (float) $attempt->exam->total_marks,
+                'percentage_score' => (float) $attempt->percentage_score,
+                'grade' => $attempt->grade,
+                'submitted_at' => $attempt->submitted_at?->toIso8601String(),
                 'time_spent_seconds' => $attempt->time_spent_seconds,
-                'questions'       => $attempt->answers->map(function ($answer) use ($examQuestions) {
+                'questions' => $attempt->answers->map(function ($answer) use ($examQuestions) {
                     $eq = $examQuestions->get($answer->question->id);
 
                     return $eq ? ResultQuestionData::fromAnswer($answer, $eq, $answer->question) : null;
@@ -377,14 +377,14 @@ class StudentExamController extends Controller
         if ($questionType === QuestionType::FillInBlank->value) {
             return [
                 'selected_option_ids' => ['prohibited'],
-                'text_answer'         => ['required', 'string', 'max:2000'],
+                'text_answer' => ['required', 'string', 'max:2000'],
             ];
         }
 
         return [
-            'selected_option_ids'   => ['required', 'array', 'min:1'],
+            'selected_option_ids' => ['required', 'array', 'min:1'],
             'selected_option_ids.*' => ['uuid'],
-            'text_answer'           => ['prohibited'],
+            'text_answer' => ['prohibited'],
         ];
     }
 }

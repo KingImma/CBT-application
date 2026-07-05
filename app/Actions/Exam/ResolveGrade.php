@@ -15,18 +15,18 @@ class ResolveGrade
         }
 
         // Sort by min_score to ensure reliable iteration order
-        $sorted = collect($grades)->sortBy("min_score")->values()->all();
+        $sorted = collect($grades)->sortBy('min_score')->values()->all();
 
         foreach ($sorted as $grade) {
             if (
-                $percentageScore >= $grade["min_score"] &&
-                $percentageScore <= $grade["max_score"]
+                $percentageScore >= $grade['min_score'] &&
+                $percentageScore <= $grade['max_score']
             ) {
-                return $grade["label"];
+                return $grade['label'];
             }
         }
 
         // Fallback: return the lowest grade (covers gaps below 0 or above 100)
-        return $sorted[0]["label"] ?? "Ungraded";
+        return $sorted[0]['label'] ?? 'Ungraded';
     }
 }

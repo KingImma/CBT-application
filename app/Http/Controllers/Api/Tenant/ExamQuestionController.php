@@ -24,9 +24,9 @@ use Illuminate\Http\Request;
 class ExamQuestionController extends Controller
 {
     public function __construct(
-        private AddExamQuestion      $addQuestion,
-        private UpdateExamQuestion   $updateQuestion,
-        private DeleteExamQuestion   $deleteQuestion,
+        private AddExamQuestion $addQuestion,
+        private UpdateExamQuestion $updateQuestion,
+        private DeleteExamQuestion $deleteQuestion,
         private ReorderExamQuestions $reorderQuestions,
         private RandomizeExamQuestions $randomizeQuestions,
     ) {}
@@ -98,7 +98,7 @@ class ExamQuestionController extends Controller
 
         return ApiResponse::success([
             'total_marks' => $exam->total_marks,
-            'questions'   => $exam->examQuestions()->with('question.options')->orderBy('order')->get(),
+            'questions' => $exam->examQuestions()->with('question.options')->orderBy('order')->get(),
         ], 'Questions randomized.');
     }
 }

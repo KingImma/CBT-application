@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -29,23 +28,23 @@ class User extends Authenticatable
         SoftDeletes;
 
     protected $fillable = [
-        "first_name",
-        "last_name",
-        "email",
-        "phone",
-        "password",
-        "is_active",
-        "role",
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'password',
+        'is_active',
+        'role',
     ];
 
-    protected $guard_name = "tenant";
+    protected $guard_name = 'tenant';
 
-    protected $hidden = ["password", "remember_token"];
+    protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
-        "password" => "hashed",
-        "email_verified_at" => "datetime",
-        "is_active" => "boolean",
+        'password' => 'hashed',
+        'email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -53,7 +52,7 @@ class User extends Authenticatable
      */
     public function isRole(string $role): bool
     {
-        if (method_exists($this, "hasRole")) {
+        if (method_exists($this, 'hasRole')) {
             return $this->hasRole(strtolower($role));
         }
 
@@ -75,17 +74,17 @@ class User extends Authenticatable
      */
     public function teacherAssignments(): HasMany
     {
-        return $this->hasMany(TeacherSubjectAssignment::class, "user_id");
+        return $this->hasMany(TeacherSubjectAssignment::class, 'user_id');
     }
 
     public function assignedClasses(): HasMany
     {
-        return $this->hasMany(ClassArm::class, "assigned_teacher_id");
+        return $this->hasMany(ClassArm::class, 'assigned_teacher_id');
     }
 
     public function assignedLevels(): HasMany
     {
-        return $this->hasMany(TeacherLevelAssignment::class, "user_id");
+        return $this->hasMany(TeacherLevelAssignment::class, 'user_id');
     }
 
     public function receivesBroadcastNotificationsOn(): string

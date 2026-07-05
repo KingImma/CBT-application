@@ -18,6 +18,7 @@ use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\Term;
 use App\Models\Tenant\User;
 use App\Notifications\InAppNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -47,84 +48,84 @@ class ExamActivationNotificationTest extends TestCase
     {
         parent::setUp();
 
-        Config::set("queue.default", "sync");
+        Config::set('queue.default', 'sync');
 
         $this->tenant = Tenant::factory()->create();
         tenancy()->initialize($this->tenant);
 
         $this->subject = Subject::create([
-            "name" => "Mathematics",
-            "code" => "MATH101",
+            'name' => 'Mathematics',
+            'code' => 'MATH101',
         ]);
 
         $this->classLevel = ClassLevel::create([
-            "name" => "Grade 10",
-            "slug" => "grade-10",
+            'name' => 'Grade 10',
+            'slug' => 'grade-10',
         ]);
 
         $this->classArm = ClassArm::create([
-            "name" => "Grade 10 A",
-            "class_level_id" => $this->classLevel->id,
+            'name' => 'Grade 10 A',
+            'class_level_id' => $this->classLevel->id,
         ]);
 
         $this->academicSession = AcademicSession::create([
-            "name" => "2025/2026",
-            "start_date" => "2025-09-01",
-            "end_date" => "2026-08-31",
-            "is_current" => true,
+            'name' => '2025/2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-08-31',
+            'is_current' => true,
         ]);
 
         $this->term = Term::create([
-            "name" => "First Term",
-            "academic_session_id" => $this->academicSession->id,
-            "start_date" => "2025-09-01",
-            "end_date" => "2025-12-20",
-            "is_current" => true,
+            'name' => 'First Term',
+            'academic_session_id' => $this->academicSession->id,
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-20',
+            'is_current' => true,
         ]);
 
         $this->admin = User::create([
-            "first_name" => "Admin",
-            "last_name" => "User",
-            "email" => "admin@test.com",
-            "password" => bcrypt("password"),
-            "role" => RoleType::SchoolAdmin->value,
-            "is_active" => true,
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'admin@test.com',
+            'password' => bcrypt('password'),
+            'role' => RoleType::SchoolAdmin->value,
+            'is_active' => true,
         ]);
-        $this->admin->assignRole("school_admin");
+        $this->admin->assignRole('school_admin');
 
         $this->teacher = User::create([
-            "first_name" => "Teacher",
-            "last_name" => "One",
-            "email" => "teacher1@test.com",
-            "password" => bcrypt("password"),
-            "role" => RoleType::Teacher->value,
-            "is_active" => true,
+            'first_name' => 'Teacher',
+            'last_name' => 'One',
+            'email' => 'teacher1@test.com',
+            'password' => bcrypt('password'),
+            'role' => RoleType::Teacher->value,
+            'is_active' => true,
         ]);
-        $this->teacher->assignRole("teacher");
+        $this->teacher->assignRole('teacher');
 
         $this->student = User::create([
-            "first_name" => "Student",
-            "last_name" => "One",
-            "email" => "student@test.com",
-            "password" => bcrypt("password"),
-            "role" => RoleType::Student->value,
-            "is_active" => true,
+            'first_name' => 'Student',
+            'last_name' => 'One',
+            'email' => 'student@test.com',
+            'password' => bcrypt('password'),
+            'role' => RoleType::Student->value,
+            'is_active' => true,
         ]);
-        $this->student->assignRole("student");
+        $this->student->assignRole('student');
 
         $this->student->studentProfile()->create([
-            "class_level_id" => $this->classLevel->id,
-            "class_arm_id" => $this->classArm->id,
-            "guardian_email" => "guardian@test.com",
-            "admission_number" => "STU001",
+            'class_level_id' => $this->classLevel->id,
+            'class_arm_id' => $this->classArm->id,
+            'guardian_email' => 'guardian@test.com',
+            'admission_number' => 'STU001',
         ]);
 
         TeacherSubjectAssignment::create([
-            "user_id" => $this->teacher->id,
-            "subject_id" => $this->subject->id,
-            "class_level_id" => $this->classLevel->id,
-            "class_arm_id" => $this->classArm->id,
-            "academic_session_id" => $this->academicSession->id,
+            'user_id' => $this->teacher->id,
+            'subject_id' => $this->subject->id,
+            'class_level_id' => $this->classLevel->id,
+            'class_arm_id' => $this->classArm->id,
+            'academic_session_id' => $this->academicSession->id,
         ]);
     }
 
@@ -137,7 +138,7 @@ class ExamActivationNotificationTest extends TestCase
 
     protected function actingAsTenant(User $user): static
     {
-        Sanctum::actingAs($user, ["*"], "tenant");
+        Sanctum::actingAs($user, ['*'], 'tenant');
 
         return $this;
     }
@@ -145,44 +146,44 @@ class ExamActivationNotificationTest extends TestCase
     protected function createDraftExam(): Exam
     {
         return Exam::create([
-            "title" => "Test Exam",
-            "subject_id" => $this->subject->id,
-            "class_level_id" => $this->classLevel->id,
-            "class_arm_id" => $this->classArm->id,
-            "term_id" => $this->term->id,
-            "type" => "exam",
-            "status" => "draft",
-            "duration_minutes" => 60,
-            "pass_mark" => 50.0,
-            "total_marks" => 0,
-            "max_attempts" => 1,
-            "scheduled_start" => now()->addDay(),
-            "created_by" => $this->teacher->id,
-            "settings" => ["require_attendance" => false],
+            'title' => 'Test Exam',
+            'subject_id' => $this->subject->id,
+            'class_level_id' => $this->classLevel->id,
+            'class_arm_id' => $this->classArm->id,
+            'term_id' => $this->term->id,
+            'type' => 'exam',
+            'status' => 'draft',
+            'duration_minutes' => 60,
+            'pass_mark' => 50.0,
+            'total_marks' => 0,
+            'max_attempts' => 1,
+            'scheduled_start' => now()->addDay(),
+            'created_by' => $this->teacher->id,
+            'settings' => ['require_attendance' => false],
         ]);
     }
 
     protected function addQuestionToExam(Exam $exam): Question
     {
         $question = Question::create([
-            "content" => "What is 2+2?",
-            "type" => "mcq",
-            "default_marks" => 5,
-            "subject_id" => $this->subject->id,
-            "class_level_id" => $this->classLevel->id,
-            "created_by" => $this->teacher->id,
-            "is_active" => true,
-            "academic_session_id" => $this->academicSession->id,
-            "term_id" => $this->term->id,
+            'content' => 'What is 2+2?',
+            'type' => 'mcq',
+            'default_marks' => 5,
+            'subject_id' => $this->subject->id,
+            'class_level_id' => $this->classLevel->id,
+            'created_by' => $this->teacher->id,
+            'is_active' => true,
+            'academic_session_id' => $this->academicSession->id,
+            'term_id' => $this->term->id,
         ]);
 
         $exam->examQuestions()->create([
-            "question_id" => $question->id,
-            "order" => $exam->examQuestions()->max("order") + 1,
-            "marks" => 5.0,
+            'question_id' => $question->id,
+            'order' => $exam->examQuestions()->max('order') + 1,
+            'marks' => 5.0,
         ]);
 
-        $exam->update(["total_marks" => $exam->examQuestions()->sum("marks")]);
+        $exam->update(['total_marks' => $exam->examQuestions()->sum('marks')]);
 
         return $question;
     }
@@ -208,11 +209,11 @@ class ExamActivationNotificationTest extends TestCase
         $exam = $this->createSubmittedExam();
 
         ExamAttempt::create([
-            "exam_id" => $exam->id,
-            "student_id" => $this->student->id,
-            "attempt_number" => 1,
-            "status" => ExamAttemptStatus::InProgress->value,
-            "started_at" => now(),
+            'exam_id' => $exam->id,
+            'student_id' => $this->student->id,
+            'attempt_number' => 1,
+            'status' => ExamAttemptStatus::InProgress->value,
+            'started_at' => now(),
         ]);
 
         Notification::fake();
@@ -221,7 +222,7 @@ class ExamActivationNotificationTest extends TestCase
         $response = $this->postJson("/api/exams/{$exam->id}/activate");
 
         $response->assertStatus(200);
-        $response->assertJsonPath("data.status", "active");
+        $response->assertJsonPath('data.status', 'active');
 
         Notification::assertSentTo(
             [$this->student],
@@ -229,13 +230,13 @@ class ExamActivationNotificationTest extends TestCase
             function (InAppNotification $notification, array $channels) use (
                 $exam,
             ) {
-                return $notification->title === "Exam Activated" &&
+                return $notification->title === 'Exam Activated' &&
                     $notification->message ===
                         "The exam {$exam->title} is now active." &&
-                    $notification->type === "success" &&
-                    $notification->action["url"] ===
+                    $notification->type === 'success' &&
+                    $notification->action['url'] ===
                         "/student/exams/{$exam->id}" &&
-                    $notification->action["label"] === "View Exam";
+                    $notification->action['label'] === 'View Exam';
             },
         );
     }
@@ -245,11 +246,11 @@ class ExamActivationNotificationTest extends TestCase
         $exam = $this->createSubmittedExam();
 
         ExamAttempt::create([
-            "exam_id" => $exam->id,
-            "student_id" => $this->student->id,
-            "attempt_number" => 1,
-            "status" => ExamAttemptStatus::InProgress->value,
-            "started_at" => now(),
+            'exam_id' => $exam->id,
+            'student_id' => $this->student->id,
+            'attempt_number' => 1,
+            'status' => ExamAttemptStatus::InProgress->value,
+            'started_at' => now(),
         ]);
 
         $this->actingAsTenant($this->admin);
@@ -263,19 +264,19 @@ class ExamActivationNotificationTest extends TestCase
         $notification = $this->student->notifications->first();
 
         $this->assertEquals(InAppNotification::class, $notification->type);
-        $this->assertEquals("Exam Activated", $notification->data["title"]);
+        $this->assertEquals('Exam Activated', $notification->data['title']);
         $this->assertStringContainsString(
             $exam->title,
-            $notification->data["message"],
+            $notification->data['message'],
         );
-        $this->assertEquals("success", $notification->data["type"]);
+        $this->assertEquals('success', $notification->data['type']);
         $this->assertEquals(
             "/student/exams/{$exam->id}",
-            $notification->data["action"]["url"],
+            $notification->data['action']['url'],
         );
         $this->assertEquals(
-            "View Exam",
-            $notification->data["action"]["label"],
+            'View Exam',
+            $notification->data['action']['label'],
         );
 
         // Verify it's unread initially — read-it-later semantics
@@ -287,11 +288,11 @@ class ExamActivationNotificationTest extends TestCase
         $exam = $this->createSubmittedExam();
 
         ExamAttempt::create([
-            "exam_id" => $exam->id,
-            "student_id" => $this->student->id,
-            "attempt_number" => 1,
-            "status" => ExamAttemptStatus::InProgress->value,
-            "started_at" => now(),
+            'exam_id' => $exam->id,
+            'student_id' => $this->student->id,
+            'attempt_number' => 1,
+            'status' => ExamAttemptStatus::InProgress->value,
+            'started_at' => now(),
         ]);
 
         $this->actingAsTenant($this->admin);
@@ -304,31 +305,31 @@ class ExamActivationNotificationTest extends TestCase
 
         $this->assertNotNull(
             $this->student->notifications->first()->read_at,
-            "read_at should be set after markAsRead()",
+            'read_at should be set after markAsRead()',
         );
     }
 
     public function test_multiple_students_each_get_their_own_notification(): void
     {
         $studentTwo = User::create([
-            "first_name" => "Student",
-            "last_name" => "Two",
-            "email" => "student2@test.com",
-            "password" => bcrypt("password"),
-            "role" => RoleType::Student->value,
-            "is_active" => true,
+            'first_name' => 'Student',
+            'last_name' => 'Two',
+            'email' => 'student2@test.com',
+            'password' => bcrypt('password'),
+            'role' => RoleType::Student->value,
+            'is_active' => true,
         ]);
-        $studentTwo->assignRole("student");
+        $studentTwo->assignRole('student');
 
         $exam = $this->createSubmittedExam();
 
         foreach ([$this->student, $studentTwo] as $student) {
             ExamAttempt::create([
-                "exam_id" => $exam->id,
-                "student_id" => $student->id,
-                "attempt_number" => 1,
-                "status" => ExamAttemptStatus::InProgress->value,
-                "started_at" => now(),
+                'exam_id' => $exam->id,
+                'student_id' => $student->id,
+                'attempt_number' => 1,
+                'status' => ExamAttemptStatus::InProgress->value,
+                'started_at' => now(),
             ]);
         }
 
@@ -342,8 +343,8 @@ class ExamActivationNotificationTest extends TestCase
         $this->assertCount(1, $this->student->notifications);
         $this->assertCount(1, $studentTwo->notifications);
         $this->assertEquals(
-            $this->student->notifications->first()->data["title"],
-            $studentTwo->notifications->first()->data["title"],
+            $this->student->notifications->first()->data['title'],
+            $studentTwo->notifications->first()->data['title'],
         );
     }
 
@@ -354,7 +355,7 @@ class ExamActivationNotificationTest extends TestCase
         $this->assertSame(
             "tenant.{$this->student->tenant_id}.users.{$this->student->id}",
             $channel,
-            "Broadcast channel must match routes/channels.php authorization",
+            'Broadcast channel must match routes/channels.php authorization',
         );
     }
 
@@ -362,8 +363,8 @@ class ExamActivationNotificationTest extends TestCase
     {
         $channel = $this->student->receivesBroadcastNotificationsOn();
 
-        $this->assertStringStartsWith("tenant.", $channel);
-        $this->assertStringContainsString(".users.", $channel);
+        $this->assertStringStartsWith('tenant.', $channel);
+        $this->assertStringContainsString('.users.', $channel);
         $this->assertStringEndsWith(
             (string) $this->student->id,
             $channel,
@@ -387,9 +388,9 @@ class ExamActivationNotificationTest extends TestCase
 
         $this->assertTrue(
             $reflection->implementsInterface(
-                \Illuminate\Contracts\Queue\ShouldQueue::class,
+                ShouldQueue::class,
             ),
-            "InAppNotification must implement ShouldQueue so notifications are processed asynchronously.",
+            'InAppNotification must implement ShouldQueue so notifications are processed asynchronously.',
         );
     }
 }

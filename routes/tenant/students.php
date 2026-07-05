@@ -22,6 +22,8 @@ Route::middleware('role:teacher|school_admin,tenant')->group(function () {
 Route::middleware('role:school_admin,tenant')->group(function () {
     Route::post('students/import', [StudentController::class, 'importCsv'])
         ->middleware(['permission:manage_students,tenant']);
+    Route::get('students/import/{importLog}', [StudentController::class, 'importStatus'])
+        ->middleware(['permission:manage_students,tenant']);
     Route::post('students/bulk-reset-passwords', [StudentController::class, 'bulkResetPasswords']);
     Route::post('students', [StudentController::class, 'store']);
     Route::match(['put', 'patch'], 'students/{student}', [StudentController::class, 'update']);

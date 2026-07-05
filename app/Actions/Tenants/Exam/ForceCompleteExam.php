@@ -10,18 +10,18 @@ use App\Models\Tenant\Exam;
 
 final class ForceCompleteExam
 {
-  public function __construct(private UpdateAction $action) {}
+    public function __construct(private UpdateAction $action) {}
 
-  public function execute(Exam $exam): Exam
-  {
-    return $this->action->execute(
-      $exam,
-      [],
-      guard: ExamGuards::canComplete(),
-      prepare: fn (Exam $e, array $d) => [
-        'status'     => ExamStatus::Completed->value,
-        'window_end' => now(),
-      ],
-    );
-  }
+    public function execute(Exam $exam): Exam
+    {
+        return $this->action->execute(
+            $exam,
+            [],
+            guard: ExamGuards::canComplete(),
+            prepare: fn (Exam $e, array $d) => [
+                'status' => ExamStatus::Completed->value,
+                'window_end' => now(),
+            ],
+        );
+    }
 }

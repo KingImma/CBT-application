@@ -19,6 +19,6 @@ class StoreExamRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->hasRole("school_admin") ?? false;
+        return $this->user()?->hasRole('school_admin') ?? false;
     }
 }

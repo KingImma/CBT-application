@@ -39,7 +39,7 @@ final class ExamAttemptStatusTransition
 
     public static function assertAllowed(string $from, string $to): void
     {
-        if (!self::isAllowed($from, $to)) {
+        if (! self::isAllowed($from, $to)) {
             throw new ExamAttemptStatusTransitionException(
                 "Illegal status transition from {$from} to {$to}",
             );

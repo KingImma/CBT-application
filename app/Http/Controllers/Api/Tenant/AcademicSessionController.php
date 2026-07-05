@@ -25,13 +25,13 @@ class AcademicSessionController extends Controller
      */
     public function index(): JsonResponse
     {
-        $sessions = AcademicSession::with("terms")
-            ->orderByDesc("start_date")
+        $sessions = AcademicSession::with('terms')
+            ->orderByDesc('start_date')
             ->get();
 
         return ApiResponse::success(
             AcademicSessionData::collect($sessions),
-            "Academic sessions retrieved successfully.",
+            'Academic sessions retrieved successfully.',
         );
     }
 
@@ -48,22 +48,22 @@ class AcademicSessionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            "name" => [
-                "required",
-                "string",
-                "max:100",
-                "unique:academic_sessions,name",
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                'unique:academic_sessions,name',
             ],
-            "start_date" => ["required", "date"],
-            "end_date" => ["required", "date", "after:start_date"],
-            "is_current" => ["sometimes", "boolean"],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
+            'is_current' => ['sometimes', 'boolean'],
         ]);
 
         $session = AcademicSession::create($validated);
 
         return ApiResponse::created(
             AcademicSessionData::from($session),
-            "Academic session created.",
+            'Academic session created.',
         );
     }
 
@@ -76,11 +76,11 @@ class AcademicSessionController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $session = AcademicSession::with("terms")->findOrFail($id);
+        $session = AcademicSession::with('terms')->findOrFail($id);
 
         return ApiResponse::success(
             AcademicSessionData::from($session),
-            "Academic session retrieved successfully.",
+            'Academic session retrieved successfully.',
         );
     }
 
@@ -101,22 +101,22 @@ class AcademicSessionController extends Controller
         $session = AcademicSession::findOrFail($id);
 
         $validated = $request->validate([
-            "name" => [
-                "sometimes",
-                "string",
-                "max:100",
-                "unique:academic_sessions,name," . $id,
+            'name' => [
+                'sometimes',
+                'string',
+                'max:100',
+                'unique:academic_sessions,name,'.$id,
             ],
-            "start_date" => ["sometimes", "date"],
-            "end_date" => ["sometimes", "date", "after:start_date"],
-            "is_current" => ["sometimes", "boolean"],
+            'start_date' => ['sometimes', 'date'],
+            'end_date' => ['sometimes', 'date', 'after:start_date'],
+            'is_current' => ['sometimes', 'boolean'],
         ]);
 
         $session->update($validated);
 
         return ApiResponse::success(
-            AcademicSessionData::from($session->fresh("terms")),
-            "Academic session updated.",
+            AcademicSessionData::from($session->fresh('terms')),
+            'Academic session updated.',
         );
     }
 
@@ -133,14 +133,14 @@ class AcademicSessionController extends Controller
 
         if ($session->terms()->exists()) {
             return ApiResponse::error(
-                "Cannot delete a session with existing terms. Delete the terms first.",
+                'Cannot delete a session with existing terms. Delete the terms first.',
                 422,
             );
         }
 
         $session->delete();
 
-        return ApiResponse::message("Academic session deleted.");
+        return ApiResponse::message('Academic session deleted.');
     }
 
     /**
@@ -158,8 +158,8 @@ class AcademicSessionController extends Controller
         } catch (SessionAlreadyCurrentException $e) {
             return ApiResponse::success(
                 [
-                    "session" => AcademicSessionData::from(
-                        $session->load("terms"),
+                    'session' => AcademicSessionData::from(
+                        $session->load('terms'),
                     ),
                 ],
                 $e->getMessage(),
@@ -168,8 +168,8 @@ class AcademicSessionController extends Controller
 
         return ApiResponse::success(
             [
-                "session" => AcademicSessionData::from(
-                    $session->fresh("terms"),
+                'session' => AcademicSessionData::from(
+                    $session->fresh('terms'),
                 ),
             ],
             "'{$session->name}' is now the current academic session.",

@@ -9,7 +9,7 @@ use App\Models\Tenant\Exam;
 
 final class DeleteExam
 {
-    public function __construct(private DeleteAction $action){}
+    public function __construct(private DeleteAction $action) {}
 
     public function execute(Exam $exam): void
     {

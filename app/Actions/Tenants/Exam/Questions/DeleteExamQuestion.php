@@ -12,7 +12,7 @@ use App\Models\Tenant\Question;
 final class DeleteExamQuestion
 {
     public function __construct(
-        private DeleteAction            $action,
+        private DeleteAction $action,
         private RecomputeExamTotalMarks $recompute,
     ) {}
 

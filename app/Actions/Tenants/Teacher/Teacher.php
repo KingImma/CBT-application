@@ -4,55 +4,77 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Teacher;
 
-use App\Actions\Tenants\Concerns\CreatesTenantUser;
+use App\Actions\Base\CreateAction;
+use App\Actions\Base\UpdateAction;
 use App\Actions\Tenants\TenantUsers\SyncTenantUser;
 use App\Enums\RoleType;
 use App\Models\Tenant\TeacherProfile;
 use App\Models\Tenant\User;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class Teacher
 {
-    use CreatesTenantUser;
-
-    public function __construct(private SyncTenantUser $syncTenantUser) {}
-
-    protected function profileRelation(): string
-    {
-        return 'teacherProfile';
-    }
+    public function __construct(
+        private SyncTenantUser $syncTenantUser,
+        private CreateAction $createAction,
+        private UpdateAction $updateAction,
+    ) {}
 
     public function create(array $data): array
     {
-        return DB::transaction(function () use ($data) {
-            $password = $data['password'] ?? config('app.teacher_default_password', 'teach12345');
+        $password = $data['password'] ?? config('app.teacher_default_password', 'teach12345');
 
-            $user = $this->createUser($data, RoleType::Teacher->value, $password);
+        $user = $this->createAction->execute(
+            User::class,
+            ['data' => $data, 'password' => $password, 'role' => RoleType::Teacher],
+            prepare: fn (array $d) => [
+                'first_name' => $d['data']['first_name'],
+                'last_name' => $d['data']['last_name'],
+                'email' => $d['data']['email'],
+                'password' => Hash::make($d['password']),
+                'phone' => $d['data']['phone'] ?? null,
+                'role' => $d['role']->value,
+                'is_active' => true,
+            ],
+            after: function (User $user, array $d) {
+                $user->assignRole(RoleType::Teacher->value);
+                $this->syncTenantUser->execute($user->email, RoleType::Teacher->value);
 
-            $this->createProfile($user, 'teacherProfile', [
-                'qualification' => $data['qualification'] ?? null,
-                'staff_id' => $data['staff_id'] ?? $this->generateStaffId(),
-                'class_level_id' => $data['class_level_id'] ?? null,
-            ]);
+                $user->teacherProfile()->create([
+                    'qualification' => $d['data']['qualification'] ?? null,
+                    'staff_id' => $d['data']['staff_id'] ?? $this->generateStaffId(),
+                    'class_level_id' => $d['data']['class_level_id'] ?? null,
+                ]);
+            },
+        );
 
-            $this->assignRoleAndSyncIndex($user, RoleType::Teacher->value, $this->syncTenantUser);
-
-            return [
-                'user' => $user,
-                'password' => $password,
-            ];
-        });
+        return ['user' => $user, 'password' => $password];
     }
 
     public function update(array $data, string $userId): User
     {
         $user = User::role(RoleType::Teacher->value)->findOrFail($userId);
 
-        DB::transaction(function () use ($user, $data) {
-            $this->updateUserAndProfile($user, $data, ['qualification', 'staff_id', 'class_level_id']);
-        });
+        return $this->updateAction->execute(
+            $user,
+            ['data' => $data],
+            guard: TeacherGuards::canUpdate(),
+            prepare: fn (User $user, array $d) => collect($d['data'])
+                ->only(['first_name', 'last_name', 'email', 'phone'])
+                ->toArray(),
+            after: function (User $user, array $d) {
+                $profileData = collect($d['data'])
+                    ->only(['qualification', 'staff_id', 'class_level_id'])
+                    ->toArray();
 
-        return $user->fresh('teacherProfile');
+                if (! empty($profileData)) {
+                    $user->teacherProfile()->updateOrCreate(
+                        ['user_id' => $user->id],
+                        $profileData
+                    );
+                }
+            },
+        );
     }
 
     public function generateStaffId(): string

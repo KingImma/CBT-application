@@ -28,12 +28,13 @@ class AutoSubmitExpiredExams extends Command
 
         if ($tenants->isEmpty()) {
             $this->warn('No active tenants found.');
+
             return self::SUCCESS;
         }
 
         foreach ($tenants as $tenant) {
             $tenant->run(function () {
-                // Note: Removed the whereHas('exam.duration_minutes') check so we 
+                // Note: Removed the whereHas('exam.duration_minutes') check so we
                 // can also catch exams that only rely on window_end.
                 ExamAttempt::with('exam')
                     ->where('status', ExamAttemptStatus::InProgress->value)

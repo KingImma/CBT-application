@@ -1,0 +1,3 @@
+first_name,last_name,email,phone,class_level,class_arm,gender,date_of_birth,guardian_email
+Bob,Brown,bob@school.com,08011111111,JSS 1,A,male,2012-01-15,parent.bob@email.com
+Alice,Green,alice@school.com,08022222222,SS 2,B,female,2008-06-20,parent.alice@email.com

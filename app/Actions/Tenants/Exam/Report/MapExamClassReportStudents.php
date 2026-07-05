@@ -21,31 +21,31 @@ final class MapExamClassReportStudents
     public function execute(Exam $exam, Collection $students, Collection $attemptsByStudentId): Collection
     {
         return $students->map(function (StudentProfile $profile) use ($exam, $attemptsByStudentId) {
-            $user    = $profile->user;
+            $user = $profile->user;
             $attempt = $attemptsByStudentId->get($user->id);
 
             if ($attempt === null) {
                 return new ExamClassReportStudentRowData(
-                    student_id:    $user->id,
-                    student_name:  $user->first_name . ' ' . $user->last_name,
-                    score:         null,
-                    percentage:    null,
-                    grade:         null,
+                    student_id: $user->id,
+                    student_name: $user->first_name.' '.$user->last_name,
+                    score: null,
+                    percentage: null,
+                    grade: null,
                     result_status: 'not_attempted',
-                    submitted_at:  null,
-                    completed_at:  null,
+                    submitted_at: null,
+                    completed_at: null,
                 );
             }
 
             return new ExamClassReportStudentRowData(
-                student_id:    $user->id,
-                student_name:  $user->first_name . ' ' . $user->last_name,
-                score:         $attempt->total_score !== null ? (float) $attempt->total_score : null,
-                percentage:    $attempt->percentage_score !== null ? (float) $attempt->percentage_score : null,
-                grade:         $attempt->grade,
+                student_id: $user->id,
+                student_name: $user->first_name.' '.$user->last_name,
+                score: $attempt->total_score !== null ? (float) $attempt->total_score : null,
+                percentage: $attempt->percentage_score !== null ? (float) $attempt->percentage_score : null,
+                grade: $attempt->grade,
                 result_status: $this->resolveStatus($attempt, $exam),
-                submitted_at:  $attempt->submitted_at?->toIso8601String(),
-                completed_at:  $attempt->submitted_at?->toIso8601String(),
+                submitted_at: $attempt->submitted_at?->toIso8601String(),
+                completed_at: $attempt->submitted_at?->toIso8601String(),
             );
         })->values();
     }
@@ -53,11 +53,11 @@ final class MapExamClassReportStudents
     private function resolveStatus(ExamAttempt $attempt, Exam $exam): string
     {
         return match ($attempt->status) {
-            ExamAttemptStatus::Graded       => $this->passOrFail($attempt, $exam),
-            ExamAttemptStatus::Timed_out    => 'timed_out',
+            ExamAttemptStatus::Graded => $this->passOrFail($attempt, $exam),
+            ExamAttemptStatus::Timed_out => 'timed_out',
             ExamAttemptStatus::Disqualified => 'disqualified',
-            ExamAttemptStatus::Grading      => 'grading',
-            default                         => 'not_attempted',
+            ExamAttemptStatus::Grading => 'grading',
+            default => 'not_attempted',
         };
     }
 

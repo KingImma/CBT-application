@@ -104,10 +104,10 @@ class QuestionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $this->authorize('createForClass', [Question::class, $request->input('class_level_id')]);
-    
+
         $validated = $request->validate([
-            'type'           => ['required', 'string', Rule::in(array_column(QuestionType::cases(), 'value'))],
-            'subject_id'     => [
+            'type' => ['required', 'string', Rule::in(array_column(QuestionType::cases(), 'value'))],
+            'subject_id' => [
                 'required', 'uuid', 'exists:subjects,id',
                 function ($attribute, $value, $fail) use ($request) {
                     $classLevelId = $request->input('class_level_id');
@@ -123,49 +123,49 @@ class QuestionController extends Controller
                 },
             ],
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
-            'content'        => ['required', 'string'],
-            'default_marks'  => ['required', 'numeric', 'min:0.5', 'max:100'],
-            'image_url'      => ['nullable', 'url', 'max:500'],
+            'content' => ['required', 'string'],
+            'default_marks' => ['required', 'numeric', 'min:0.5', 'max:100'],
+            'image_url' => ['nullable', 'url', 'max:500'],
         ] + $this->optionRulesForType($request->input('type', '')));
-    
+
         $type = $validated['type'];
-    
+
         // Validate correct-option count against type rules
         $correctOptionError = $this->validateCorrectOptionCount($type, $validated['options'] ?? []);
         if ($correctOptionError !== null) {
             return ApiResponse::error($correctOptionError, 422);
         }
-    
+
         $question = DB::transaction(function () use ($validated, $request, $type) {
             $question = Question::create([
-                'subject_id'     => $validated['subject_id'],
+                'subject_id' => $validated['subject_id'],
                 'class_level_id' => $validated['class_level_id'],
-                'type'           => $type,
-                'content'        => $validated['content'],
-                'default_marks'  => $validated['default_marks'],
-                'image_url'      => $validated['image_url'] ?? null,
-                'is_active'      => true,
-                'usage_count'    => 0,
-                'created_by'     => $request->user('tenant')->id,
+                'type' => $type,
+                'content' => $validated['content'],
+                'default_marks' => $validated['default_marks'],
+                'image_url' => $validated['image_url'] ?? null,
+                'is_active' => true,
+                'usage_count' => 0,
+                'created_by' => $request->user('tenant')->id,
             ]);
-    
+
             foreach ($validated['options'] as $i => $opt) {
                 // FITB: all options are acceptable answers — is_correct always true
                 $isCorrect = $type === QuestionType::FillInBlank->value ? true : $opt['is_correct'];
-    
+
                 QuestionOption::create([
                     'question_id' => $question->id,
-                    'label'       => $opt['label'] ?? null,
-                    'content'     => $opt['content'],
-                    'is_correct'  => $isCorrect,
-                    'order'       => $opt['order'] ?? $i,
-                    'match_pair'  => $opt['match_pair'] ?? null,
+                    'label' => $opt['label'] ?? null,
+                    'content' => $opt['content'],
+                    'is_correct' => $isCorrect,
+                    'order' => $opt['order'] ?? $i,
+                    'match_pair' => $opt['match_pair'] ?? null,
                 ]);
             }
-    
+
             return $question;
         });
-    
+
         return ApiResponse::created(
             $question->load(['options', 'classLevel']),
             'Question created.'
@@ -210,40 +210,40 @@ class QuestionController extends Controller
     {
         $question = Question::findOrFail($id);
         $this->authorize('update', $question);
-    
+
         $baseRules = [
-            'content'       => ['sometimes', 'string'],
+            'content' => ['sometimes', 'string'],
             'default_marks' => ['sometimes', 'numeric', 'min:0.5', 'max:100'],
-            'image_url'     => ['sometimes', 'nullable', 'url', 'max:500'],
-            'is_active'     => ['sometimes', 'boolean'],
+            'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
+            'is_active' => ['sometimes', 'boolean'],
         ];
-    
+
         $optionRules = [];
         if ($request->has('options')) {
             if ($question->type === QuestionType::FillInBlank->value) {
                 $optionRules = [
-                    'options'              => ['sometimes', 'array', 'min:1'],
-                    'options.*.id'         => ['nullable', 'uuid'],
-                    'options.*.content'    => ['required_with:options', 'string'],
+                    'options' => ['sometimes', 'array', 'min:1'],
+                    'options.*.id' => ['nullable', 'uuid'],
+                    'options.*.content' => ['required_with:options', 'string'],
                     'options.*.is_correct' => ['prohibited'],
-                    'options.*.order'      => ['nullable', 'integer'],
-                    'options.*.label'      => ['nullable', 'string', 'max:10'],
+                    'options.*.order' => ['nullable', 'integer'],
+                    'options.*.label' => ['nullable', 'string', 'max:10'],
                     'options.*.match_pair' => ['nullable', 'string', 'max:255'],
                 ];
             } else {
                 $optionRules = [
-                    'options'              => ['sometimes', 'array', 'min:2'],
-                    'options.*.id'         => ['nullable', 'uuid'],
-                    'options.*.content'    => ['required_with:options', 'string'],
+                    'options' => ['sometimes', 'array', 'min:2'],
+                    'options.*.id' => ['nullable', 'uuid'],
+                    'options.*.content' => ['required_with:options', 'string'],
                     'options.*.is_correct' => ['required_with:options', 'boolean'],
-                    'options.*.order'      => ['nullable', 'integer'],
-                    'options.*.label'      => ['nullable', 'string', 'max:10'],
+                    'options.*.order' => ['nullable', 'integer'],
+                    'options.*.label' => ['nullable', 'string', 'max:10'],
                 ];
             }
         }
-    
+
         $validated = $request->validate(array_merge($baseRules, $optionRules));
-    
+
         // Validate correct-option count if options are included in the update
         if (isset($validated['options'])) {
             $correctOptionError = $this->validateCorrectOptionCount(
@@ -254,33 +254,33 @@ class QuestionController extends Controller
                 return ApiResponse::error($correctOptionError, 422);
             }
         }
-    
+
         DB::transaction(function () use ($question, $validated) {
             $question->update(collect($validated)->except('options')->toArray());
-    
+
             if (isset($validated['options'])) {
                 $keptOptionIds = collect($validated['options'])->pluck('id')->filter()->toArray();
                 $question->options()->whereNotIn('id', $keptOptionIds)->delete();
-    
+
                 foreach ($validated['options'] as $index => $opt) {
                     $isCorrect = $question->type === QuestionType::FillInBlank->value
                         ? true
                         : $opt['is_correct'];
-    
+
                     QuestionOption::updateOrCreate(
                         ['id' => $opt['id'] ?? null, 'question_id' => $question->id],
                         [
-                            'content'    => $opt['content'],
+                            'content' => $opt['content'],
                             'is_correct' => $isCorrect,
-                            'label'      => $opt['label'] ?? null,
-                            'order'      => $opt['order'] ?? $index,
+                            'label' => $opt['label'] ?? null,
+                            'order' => $opt['order'] ?? $index,
                             'match_pair' => $opt['match_pair'] ?? null,
                         ]
                     );
                 }
             }
         });
-    
+
         return ApiResponse::success($question->fresh(['options']), 'Question updated.');
     }
 
@@ -358,45 +358,45 @@ class QuestionController extends Controller
     }
 
     /**
-    * Validate correct-option count against question type rules.
-    *
-    * Returns an error message string, or null when valid.
-    *
-    * Rules:
-    *   FillInBlank  — skip (all options are acceptable answers by definition)
-    *   TrueFalse    — exactly 1 correct (maxCorrectOptions = 1)
-    *   MCQ          — ≥1 correct, but not ALL options correct
-    */
+     * Validate correct-option count against question type rules.
+     *
+     * Returns an error message string, or null when valid.
+     *
+     * Rules:
+     *   FillInBlank  — skip (all options are acceptable answers by definition)
+     *   TrueFalse    — exactly 1 correct (maxCorrectOptions = 1)
+     *   MCQ          — ≥1 correct, but not ALL options correct
+     */
     private function validateCorrectOptionCount(string $type, array $options): ?string
     {
         $questionType = QuestionType::tryFrom($type);
-    
+
         // FITB doesn't use is_correct for MCQ-style checking
         if ($questionType === null || $questionType === QuestionType::FillInBlank) {
             return null;
         }
-    
-        $totalCount   = count($options);
+
+        $totalCount = count($options);
         $correctCount = collect($options)->where('is_correct', true)->count();
-    
+
         // At least one correct required for all choice-based types
         if ($correctCount === 0) {
             return "At least one correct option is required for {$type}.";
         }
-    
+
         $maxCorrect = $questionType->maxCorrectOptions();
-    
+
         // TrueFalse: maxCorrectOptions() = 1, so enforce exactly 1
         if ($maxCorrect !== null && $correctCount > $maxCorrect) {
             return "{$type} allows at most {$maxCorrect} correct option(s). Got {$correctCount}.";
         }
-    
+
         // MCQ: maxCorrectOptions() = null (no enum-defined cap), but all-correct is nonsensical —
         // it would mean there is no wrong answer, making the question unanswerable for grading.
         if ($questionType === QuestionType::Mcq && $correctCount === $totalCount) {
             return 'MCQ cannot have all options marked as correct. At least one option must be incorrect.';
         }
-    
+
         return null;
     }
 }

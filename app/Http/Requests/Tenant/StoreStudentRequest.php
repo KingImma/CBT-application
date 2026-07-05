@@ -29,18 +29,18 @@ class StoreStudentRequest extends FormRequest
         $validator->after(function ($validator) {
             $data = $validator->getData();
 
-            if (isset($data["class_level_id"], $data["class_arm_id"])) {
-                $arm = ClassArm::find($data["class_arm_id"]);
+            if (isset($data['class_level_id'], $data['class_arm_id'])) {
+                $arm = ClassArm::find($data['class_arm_id']);
 
                 if (
                     $arm !== null &&
-                    $arm->class_level_id !== $data["class_level_id"]
+                    $arm->class_level_id !== $data['class_level_id']
                 ) {
                     $validator
                         ->errors()
                         ->add(
-                            "class_arm_id",
-                            "The selected class arm does not belong to the selected class level.",
+                            'class_arm_id',
+                            'The selected class arm does not belong to the selected class level.',
                         );
                 }
             }

@@ -48,7 +48,7 @@ class GradeExamAttemptJob implements ShouldQueue
 
         if ($tenant === null) {
             Log::warning('GradeExamAttemptJob: tenant not found', [
-                'tenant_id'  => $this->tenantId,
+                'tenant_id' => $this->tenantId,
                 'attempt_id' => $this->attemptId,
             ]);
 
@@ -115,8 +115,8 @@ class GradeExamAttemptJob implements ShouldQueue
 
                 Log::error('GradeExamAttemptJob failed permanently', [
                     'attempt_id' => $this->attemptId,
-                    'tenant_id'  => $this->tenantId,
-                    'error'      => $e->getMessage(),
+                    'tenant_id' => $this->tenantId,
+                    'error' => $e->getMessage(),
                 ]);
             });
         });

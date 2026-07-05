@@ -37,11 +37,28 @@ abstract class CsvImport
             }
 
             $rows = $parsed['rows'];
+
+            $referenceErrors = [];
+            $rows = $this->resolveReferences($rows, $referenceErrors);
+            if ($referenceErrors !== []) {
+                return new ImportResult(
+                    success: false,
+                    message: 'Invalid references in CSV data.',
+                    errors: $referenceErrors,
+                    totalRows: $parsed['totalRows'],
+                    canProceed: false,
+                );
+            }
+
+            $parsed['totalRows'] = count($rows) + count($parsed['errors']);
             $duplicateResult = $this->checkDuplicates($rows, $parsed['totalRows'], $validated);
             if ($duplicateResult !== null) {
                 return $duplicateResult;
             }
-            $duplicateByRow = $duplicateResult ?? [];
+
+            $duplicateByRow = $this->overwriteExisting
+                ? $this->buildDuplicateIndex($rows)
+                : [];
 
             if ($dryRun) {
                 return new ImportResult(
@@ -69,6 +86,16 @@ abstract class CsvImport
             }
 
             $rowNumber = count($rows) + count($errors) + 1;
+
+            if (count($headers) !== count($raw)) {
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'errors' => ['_columns' => ['Column count mismatch: expected '.count($headers).', got '.count($raw).'.']],
+                ];
+
+                continue;
+            }
+
             $data = $this->normalizeRow(array_combine($headers, $raw));
 
             $validator = Validator::make($data, $this->schemaClass()::validatorRules());
@@ -120,6 +147,11 @@ abstract class CsvImport
 
     abstract protected function processRows(array $rows, array $duplicateByRow): ImportResult;
 
+    protected function resolveReferences(array $rows, array &$errors): array
+    {
+        return $rows;
+    }
+
     protected function readHeaders($handle): array
     {
         $raw = fgetcsv($handle);
@@ -154,6 +186,8 @@ abstract class CsvImport
             updated: $updated,
         );
     }
+
+    protected bool $overwriteExisting = false;
 
     private ?string $lastFileErrorMessage = null;
 
@@ -229,7 +263,9 @@ abstract class CsvImport
 
         $duplicateByRow = $this->buildDuplicateIndex($rows);
 
-        $hasDuplicatesWithoutOverwrite = $duplicateByRow !== [] && ($validated['overwrite_existing'] ?? null) !== 'update';
+        $this->overwriteExisting = ($validated['overwrite_existing'] ?? null) === 'update';
+
+        $hasDuplicatesWithoutOverwrite = $duplicateByRow !== [] && ! $this->overwriteExisting;
 
         if ($hasDuplicatesWithoutOverwrite) {
             return new ImportResult(

@@ -17,17 +17,17 @@ final class RecordExamAnswer
 
     public function save(ExamAttempt $attempt, string $questionId, array $payload): ExamAnswer
     {
-      (ExamAttemptGuards::isInProgress())($attempt);
+        (ExamAttemptGuards::isInProgress())($attempt);
 
-      if ($attempt->getTimeRemainingSeconds() <=0) {
-        throw new \RuntimeException('Exam time has expired');
-      }
+        if ($attempt->getTimeRemainingSeconds() <= 0) {
+            throw new \RuntimeException('Exam time has expired');
+        }
 
-      $answer = $this->upsertWithRetry($attempt, $questionId, $payload);
+        $answer = $this->upsertWithRetry($attempt, $questionId, $payload);
 
-      $this->touchSessionState($attempt);
+        $this->touchSessionState($attempt);
 
-      return $answer;
+        return $answer;
     }
 
     public function bulkSave(ExamAttempt $attempt, array $answers): array
@@ -52,50 +52,50 @@ final class RecordExamAnswer
 
     public function toggleFlag(ExamAnswer $answer): bool
     {
-      return DB::transaction(function () use ($answer) {
-        $answer->is_flagged = ! $answer->is_flagged;
-        $answer->save();
+        return DB::transaction(function () use ($answer) {
+            $answer->is_flagged = ! $answer->is_flagged;
+            $answer->save();
 
-        return $answer->is_flagged;
-      });
+            return $answer->is_flagged;
+        });
     }
 
     private function upsertWithRetry(ExamAttempt $attempt, string $questionId, array $payload, int $tries = 3): ExamAnswer
     {
-      $attemptCount = 0;
+        $attemptCount = 0;
 
-      while (true) {
-        try {
-            return DB::transaction(fn () => ExamAnswer::updateOrCreate(
-                ['attempt_id' => $attempt->id, 'question_id' => $questionId],
-                [
-                    'selected_option_ids' => $payload['selected_option_ids'] ?? null,
-                    'text_answer'         => $payload['text_answer'] ?? null,
-                    'answered_at'         => now(),
-                    'time_spent_seconds'  => abs((int) now()->diffInSeconds($attempt->started_at, true)),
-                ]
-            ));
-        } catch (QueryException $e) {
-            if ($e->getCode() !== '23505' || ++$attemptCount >= $tries) {
-                throw $e;
+        while (true) {
+            try {
+                return DB::transaction(fn () => ExamAnswer::updateOrCreate(
+                    ['attempt_id' => $attempt->id, 'question_id' => $questionId],
+                    [
+                        'selected_option_ids' => $payload['selected_option_ids'] ?? null,
+                        'text_answer' => $payload['text_answer'] ?? null,
+                        'answered_at' => now(),
+                        'time_spent_seconds' => abs((int) now()->diffInSeconds($attempt->started_at, true)),
+                    ]
+                ));
+            } catch (QueryException $e) {
+                if ($e->getCode() !== '23505' || ++$attemptCount >= $tries) {
+                    throw $e;
+                }
+                usleep(50_000);
             }
-            usleep(50_000);
         }
-      }
     }
 
     private function touchSessionState(ExamAttempt $attempt): void
     {
-      $tenantId  = (string) tenant('id');
-      $remaining = $attempt->getTimeRemainingSeconds();
+        $tenantId = (string) tenant('id');
+        $remaining = $attempt->getTimeRemainingSeconds();
 
-      $this->stateStore->touch($tenantId, $attempt->id, $remaining);
+        $this->stateStore->touch($tenantId, $attempt->id, $remaining);
 
-      event(new ExamSessionStateUpdated(
-          attemptId: $attempt->id,
-          tenantId: $tenantId,
-          timeRemainingSeconds: $remaining,
-          connectionAlive: true,
-      ));
+        event(new ExamSessionStateUpdated(
+            attemptId: $attempt->id,
+            tenantId: $tenantId,
+            timeRemainingSeconds: $remaining,
+            connectionAlive: true,
+        ));
     }
 }

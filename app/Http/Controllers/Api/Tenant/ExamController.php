@@ -17,12 +17,12 @@ use App\Data\Exam\Input\UpdateExamData;
 use App\Data\Exam\Output\ExamData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
+use App\Notifications\InAppNotification;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Spatie\QueryBuilder\QueryBuilder;
-use App\Notifications\InAppNotification;
 use Illuminate\Support\Facades\Notification;
+use Spatie\QueryBuilder\QueryBuilder;
 
 /**
  * @group Exam Administration
@@ -31,13 +31,13 @@ use Illuminate\Support\Facades\Notification;
 class ExamController extends Controller
 {
     public function __construct(
-        private CreateExam           $createExam,
-        private UpdateExam           $updateExam,
-        private DeleteExam           $deleteExam,
-        private SubmitExamForReview  $submitForReview,
-        private ActivateExam         $activateExam,
-        private ForceCompleteExam    $forceComplete,
-        private PublishExamResults   $publishResults,
+        private CreateExam $createExam,
+        private UpdateExam $updateExam,
+        private DeleteExam $deleteExam,
+        private SubmitExamForReview $submitForReview,
+        private ActivateExam $activateExam,
+        private ForceCompleteExam $forceComplete,
+        private PublishExamResults $publishResults,
         private UnpublishExamResults $unpublishResults,
     ) {}
 
@@ -158,18 +158,18 @@ class ExamController extends Controller
 
         $students = $exam
             ->attempts()
-            ->with("student")
+            ->with('student')
             ->get()
-            ->pluck("student")
+            ->pluck('student')
             ->filter();
 
         $notification = new InAppNotification(
-            title: "Exam Activated",
+            title: 'Exam Activated',
             message: "The exam {$exam->title} is now active.",
-            type: "success",
+            type: 'success',
             action: [
-                "url" => "/student/exams/{$exam->id}",
-                "label" => "View Exam",
+                'url' => "/student/exams/{$exam->id}",
+                'label' => 'View Exam',
             ],
         );
 

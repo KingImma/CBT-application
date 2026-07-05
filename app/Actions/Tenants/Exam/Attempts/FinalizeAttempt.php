@@ -19,7 +19,7 @@ use App\Support\Exam\ExamSessionStateStore;
 final class FinalizeAttempt
 {
     public function __construct(
-        private UpdateAction          $action,
+        private UpdateAction $action,
         private ExamSessionStateStore $stateStore,
     ) {}
 
@@ -37,7 +37,7 @@ final class FinalizeAttempt
             ['actor' => $actor],
             guard: ExamAttemptGuards::canSubmit($actor),
             prepare: fn (ExamAttempt $a, array $d) => [
-                'status'       => ExamAttemptStatus::Submitted->value,
+                'status' => ExamAttemptStatus::Submitted->value,
                 'submitted_at' => now(),
             ],
             after: function (ExamAttempt $a, array $d) {
@@ -58,8 +58,8 @@ final class FinalizeAttempt
             // Guard: must still be InProgress (scheduler may double-fire)
             guard: ExamAttemptGuards::isInProgress(),
             prepare: fn (ExamAttempt $a, array $d) => [
-                'status'           => ExamAttemptStatus::Timed_out->value,
-                'submitted_at'     => now(),
+                'status' => ExamAttemptStatus::Timed_out->value,
+                'submitted_at' => now(),
                 'time_spent_seconds' => (int) now()->diffInSeconds($a->started_at),
             ],
             after: function (ExamAttempt $a, array $d) {

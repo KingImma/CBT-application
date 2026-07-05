@@ -57,7 +57,7 @@ final class ExamGuards
 
     public static function isDraft(): Closure
     {
-       return fn (Exam $e) => throw_unless($e->isDraft(), new ExamStateTransitionException('Only draft exams can be updated'));
+        return fn (Exam $e) => throw_unless($e->isDraft(), new ExamStateTransitionException('Only draft exams can be updated'));
     }
 
     public static function canDelete(): Closure
@@ -68,8 +68,8 @@ final class ExamGuards
             throw_if(
                 $e->completed_attempts > 0,
                 new ExamCannotBeDeletedException(
-                    "Cannot delete an exam with {$e->completed_attempts} completed attempt(s).\n" .
-                    "Results would be permanently lost"
+                    "Cannot delete an exam with {$e->completed_attempts} completed attempt(s).\n".
+                    'Results would be permanently lost'
                 )
             );
         };

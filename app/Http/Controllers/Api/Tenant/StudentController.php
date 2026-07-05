@@ -17,6 +17,8 @@ use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
+use App\Jobs\ProcessStudentImportJob;
+use App\Models\Tenant\ImportLog;
 use App\Models\Tenant\User;
 use App\Queries\StudentQuery;
 use App\Support\ApiResponse;
@@ -153,6 +155,9 @@ class StudentController extends Controller
      */
     public function reassignClass(Request $request, string $id, Student $action): JsonResponse
     {
+        $student = User::role(RoleType::Student->value)->findOrFail($id);
+        $this->authorize('reassignClass', $student);
+
         $validated = $request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'class_arm_id' => ['nullable', 'uuid', 'exists:class_arms,id'],
@@ -175,6 +180,7 @@ class StudentController extends Controller
     public function revoke(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
         $student = User::role(RoleType::Student->value)->findOrFail($id);
+        $this->authorize('revokeStudent', $student);
 
         DB::transaction(function () use ($student, $removeTenantUserIndex) {
             $student->deactivate()->save();
@@ -200,6 +206,7 @@ class StudentController extends Controller
     public function restore(SyncTenantUser $syncTenantUser, string $id): JsonResponse
     {
         $student = User::withTrashed()->role(RoleType::Student->value)->findOrFail($id);
+        $this->authorize('restoreStudent', $student);
 
         if (! $student->trashed()) {
             return ApiResponse::error('This student is already active and has not been deleted.', 422);
@@ -224,6 +231,7 @@ class StudentController extends Controller
     public function destroy(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
         $student = User::withTrashed()->role(RoleType::Student->value)->findOrFail($id);
+        $this->authorize('deleteStudent', $student);
 
         DB::transaction(function () use ($student, $removeTenantUserIndex) {
             $student->studentProfile()->delete();
@@ -245,6 +253,8 @@ class StudentController extends Controller
      */
     public function bulkResetPasswords(ResetUserPassword $resetUserPassword, Request $request): JsonResponse
     {
+        $this->authorize('bulkResetPasswords', User::class);
+
         $validated = $request->validate([
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'class_arm_id' => ['nullable', 'uuid', 'exists:class_arms,id'],
@@ -354,6 +364,8 @@ class StudentController extends Controller
      */
     public function importCsv(Request $request): JsonResponse
     {
+        $this->authorize('importStudents', User::class);
+
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
             'dry_run' => ['required', 'in:true,false,1,0'],
@@ -366,9 +378,68 @@ class StudentController extends Controller
         $file = $request->file('file');
         $path = $file->getRealPath();
 
-        $result = app(ImportStudents::class)->execute($validated, $path, $dryRun);
+        if ($dryRun) {
+            $result = app(ImportStudents::class)->execute($validated, $path, true);
 
-        return $this->buildImportResponse($result, $dryRun);
+            return $this->buildImportResponse($result, true);
+        }
+
+        $result = app(ImportStudents::class)->execute($validated, $path, true);
+
+        if ($result->hasBlockingErrors()) {
+            return $this->buildImportResponse($result, true);
+        }
+
+        $storedPath = $file->store('imports', 'local');
+
+        $importLog = ImportLog::create([
+            'type' => RoleType::Student->value,
+            'filename' => $file->getClientOriginalName(),
+            'status' => 'pending',
+            'meta' => [
+                'stored_path' => $storedPath,
+                'overwrite_existing' => $validated['overwrite_existing'] ?? 'skip',
+            ],
+            'created_by' => auth()->id(),
+        ]);
+
+        ProcessStudentImportJob::dispatch(
+            $importLog->id,
+            tenant()->id,
+        );
+
+        return ApiResponse::success(
+            [
+                'import_log_id' => $importLog->id,
+                'status' => 'pending',
+            ],
+            'Import queued successfully.',
+            202,
+        );
+    }
+
+    public function importStatus(string $importLogId): JsonResponse
+    {
+        $this->authorize('importStudents', User::class);
+
+        $log = ImportLog::findOrFail($importLogId);
+
+        return ApiResponse::success(
+            [
+                'id' => $log->id,
+                'type' => $log->type,
+                'filename' => $log->filename,
+                'status' => $log->status,
+                'total_rows' => $log->total_rows,
+                'imported' => $log->imported,
+                'skipped' => $log->skipped,
+                'updated' => $log->updated,
+                'errors' => $log->errors,
+                'completed_at' => $log->completed_at,
+                'created_at' => $log->created_at,
+            ],
+            'Import status retrieved.',
+        );
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse

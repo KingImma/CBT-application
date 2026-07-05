@@ -18,8 +18,8 @@ final class RandomizeExamQuestions
 {
     public function __construct(private RecomputeExamTotalMarks $recompute) {}
 
-   public function execute(Exam $exam, int $count): void
-   {
+    public function execute(Exam $exam, int $count): void
+    {
         ExamQuestionGuards::isDraft('Questions can only be randomized for draft exams.')($exam);
 
         $existingIds = $exam->examQuestions()->pluck('question_id');
@@ -41,12 +41,12 @@ final class RandomizeExamQuestions
             $exam->examQuestions()->createMany(
                 $questions->map(fn ($q, $i) => [
                     'question_id' => $q->id,
-                    'order'       => $maxOrder + $i + 1,
-                    'marks'       => $q->default_marks,
+                    'order' => $maxOrder + $i + 1,
+                    'marks' => $q->default_marks,
                 ])->toArray()
             );
 
             $this->recompute->execute($exam);
         });
-   }
+    }
 }

@@ -14,7 +14,7 @@ use App\Models\Tenant\Question;
 final class AddExamQuestion
 {
     public function __construct(
-        private CreateAction            $action,
+        private CreateAction $action,
         private RecomputeExamTotalMarks $recompute,
     ) {}
 
@@ -29,10 +29,10 @@ final class AddExamQuestion
             ExamQuestion::class,
             ['exam' => $exam, 'question' => $question, 'data' => $data],
             prepare: fn (array $d) => [
-                'exam_id'   => $d['exam']->id,
+                'exam_id' => $d['exam']->id,
                 'question_id' => $d['question']->id,
-                'order'       => ($d['exam']->examQuestions()->max('order') ?? 0) + 1,
-                'marks'       => $d['data']->marks_override ?? $d['question']->default_marks,
+                'order' => ($d['exam']->examQuestions()->max('order') ?? 0) + 1,
+                'marks' => $d['data']->marks_override ?? $d['question']->default_marks,
             ],
             after: fn (ExamQuestion $eq, array $d) => $this->recompute->execute($d['exam']),
         );

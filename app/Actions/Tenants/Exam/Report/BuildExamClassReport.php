@@ -12,8 +12,8 @@ use App\Models\Tenant\Exam;
 final class BuildExamClassReport
 {
     public function __construct(
-        private ExamClassReportQuery       $query,
-        private ComputeExamClassSummary    $computeSummary,
+        private ExamClassReportQuery $query,
+        private ComputeExamClassSummary $computeSummary,
         private MapExamClassReportStudents $mapStudents,
     ) {}
 
@@ -22,7 +22,7 @@ final class BuildExamClassReport
         $data = $this->query->execute($arm, $exam);
 
         return new ExamClassReportData(
-            summary:  $this->computeSummary->execute($exam, $arm, $data->students, $data->attemptsByStudentId),
+            summary: $this->computeSummary->execute($exam, $arm, $data->students, $data->attemptsByStudentId),
             students: $this->mapStudents->execute($exam, $data->students, $data->attemptsByStudentId)->all(),
         );
     }

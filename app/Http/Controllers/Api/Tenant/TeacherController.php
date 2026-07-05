@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Actions\Auth\ResetUserPassword;
+use App\Actions\Import\ImportTeachers;
 use App\Actions\Tenants\Teacher\Teacher;
 use App\Actions\Tenants\TenantUsers\RemoveTenantUserIndex;
 use App\Actions\Tenants\TenantUsers\SyncTenantUser;
@@ -14,7 +15,11 @@ use App\Data\Teacher\TeacherData;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\StoreTeacherRequest;
+use App\Http\Requests\Tenant\UpdateTeacherRequest;
+use App\Jobs\ProcessTeacherImportJob;
 use App\Models\Tenant\ClassArm;
+use App\Models\Tenant\ImportLog;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
 use App\Support\ApiResponse;
@@ -85,19 +90,9 @@ class TeacherController extends Controller
      * @bodyParam staff_id string nullable Unique staff ID. No-example
      * @bodyParam class_level_id string nullable Assigned class level UUID. No-example
      */
-    public function store(Teacher $action, Request $request): JsonResponse
+    public function store(StoreTeacherRequest $request, Teacher $action): JsonResponse
     {
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'qualification' => ['nullable', 'string', 'max:255'],
-            'staff_id' => ['nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id'],
-            'class_level_id' => ['nullable', 'uuid', 'exists:class_levels,id'],
-        ]);
-
-        $result = $action->create($validated);
+        $result = $action->create($request->validated());
 
         broadcast(new ActivityFeedEvent(
             channelType: 'school_admin',
@@ -212,19 +207,9 @@ class TeacherController extends Controller
      * @bodyParam staff_id string nullable Staff ID. No-example
      * @bodyParam class_level_id string nullable Class level UUID. No-example
      */
-    public function update(Teacher $action, Request $request, string $id): JsonResponse
+    public function update(UpdateTeacherRequest $request, Teacher $action, string $id): JsonResponse
     {
-        $validated = $request->validate([
-            'first_name' => ['sometimes', 'string', 'max:100'],
-            'last_name' => ['sometimes', 'string', 'max:100'],
-            'email' => ['sometimes', 'email', 'unique:users,email,'.$id],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
-            'qualification' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'staff_id' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teacher_profiles,staff_id,'.$id],
-            'class_level_id' => ['sometimes', 'nullable', 'uuid', 'exists:class_levels,id'],
-        ]);
-
-        $teacher = $action->update($validated, $id);
+        $teacher = $action->update($request->validated(), $id);
 
         return ApiResponse::success(TeacherData::from($teacher), 'Teacher updated successfully.');
     }
@@ -239,6 +224,7 @@ class TeacherController extends Controller
     public function revoke(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
         $teacher = User::role(RoleType::Teacher->value)->findOrFail($id);
+        $this->authorize('revokeTeacher', $teacher);
 
         DB::transaction(function () use ($teacher, $removeTenantUserIndex) {
             $teacher->deactivate()->save();
@@ -262,6 +248,7 @@ class TeacherController extends Controller
     public function destroy(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
         $teacher = User::withTrashed()->role(RoleType::Teacher->value)->findOrFail($id);
+        $this->authorize('deleteTeacher', $teacher);
 
         DB::transaction(function () use ($teacher, $removeTenantUserIndex) {
             $teacher->teacherProfile()->delete();
@@ -284,6 +271,7 @@ class TeacherController extends Controller
     public function restore(SyncTenantUser $syncTenantUser, string $id): JsonResponse
     {
         $teacher = User::withTrashed()->role(RoleType::Teacher->value)->findOrFail($id);
+        $this->authorize('restoreTeacher', $teacher);
 
         if (! $teacher->trashed()) {
             return ApiResponse::error('This teacher is already active and has not been deleted.', 422);
@@ -353,6 +341,8 @@ class TeacherController extends Controller
      */
     public function importCsv(Request $request): JsonResponse
     {
+        $this->authorize('importTeachers', User::class);
+
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
             'dry_run' => ['required', 'in:true,false,1,0'],
@@ -364,9 +354,68 @@ class TeacherController extends Controller
         $file = $request->file('file');
         $path = $file->getRealPath();
 
-        $result = app(ImportTeachers::class)->execute($validated, $path, $dryRun);
+        if ($dryRun) {
+            $result = app(ImportTeachers::class)->execute($validated, $path, true);
 
-        return $this->buildImportResponse($result, $dryRun);
+            return $this->buildImportResponse($result, true);
+        }
+
+        $result = app(ImportTeachers::class)->execute($validated, $path, true);
+
+        if ($result->hasBlockingErrors()) {
+            return $this->buildImportResponse($result, true);
+        }
+
+        $storedPath = $file->store('imports', 'local');
+
+        $importLog = ImportLog::create([
+            'type' => RoleType::Teacher->value,
+            'filename' => $file->getClientOriginalName(),
+            'status' => 'pending',
+            'meta' => [
+                'stored_path' => $storedPath,
+                'overwrite_existing' => $validated['overwrite_existing'] ?? 'skip',
+            ],
+            'created_by' => auth()->id(),
+        ]);
+
+        ProcessTeacherImportJob::dispatch(
+            $importLog->id,
+            tenant()->id,
+        );
+
+        return ApiResponse::success(
+            [
+                'import_log_id' => $importLog->id,
+                'status' => 'pending',
+            ],
+            'Import queued successfully.',
+            202,
+        );
+    }
+
+    public function importStatus(string $importLogId): JsonResponse
+    {
+        $this->authorize('importTeachers', User::class);
+
+        $log = ImportLog::findOrFail($importLogId);
+
+        return ApiResponse::success(
+            [
+                'id' => $log->id,
+                'type' => $log->type,
+                'filename' => $log->filename,
+                'status' => $log->status,
+                'total_rows' => $log->total_rows,
+                'imported' => $log->imported,
+                'skipped' => $log->skipped,
+                'updated' => $log->updated,
+                'errors' => $log->errors,
+                'completed_at' => $log->completed_at,
+                'created_at' => $log->created_at,
+            ],
+            'Import status retrieved.',
+        );
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse

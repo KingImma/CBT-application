@@ -11,49 +11,49 @@ use Illuminate\Support\Collection;
 
 final class GetExamQuestions
 {
-  public function execute(ExamAttempt $attempt): array
-  {
-    $questions = ExamQuestion::where('exam_id', $attempt->exam_id)
-        ->with('question.options')
-        ->orderBy('order')
-        ->get();
+    public function execute(ExamAttempt $attempt): array
+    {
+        $questions = ExamQuestion::where('exam_id', $attempt->exam_id)
+            ->with('question.options')
+            ->orderBy('order')
+            ->get();
 
-    $questionIds = $questions->pluck('question.id')->toArray();
+        $questionIds = $questions->pluck('question.id')->toArray();
 
-    if (! $attempt->exam->settings->getRandomizeQuestions()) {
-        return $this->result($questions, $questionIds);
+        if (! $attempt->exam->settings->getRandomizeQuestions()) {
+            return $this->result($questions, $questionIds);
+        }
+
+        return $this->randomizedResult($attempt, $questions, $questionIds);
     }
 
-    return $this->randomizedResult($attempt, $questions, $questionIds);
-  }
+    private function randomizedResult(ExamAttempt $attempt, Collection $questions, array $questionIds): array
+    {
+        $savedOrder = $attempt->settings?->getQuestionOrder();
 
-  private function randomizedResult(ExamAttempt $attempt, Collection $questions, array $questionIds): array
-  {
-      $savedOrder = $attempt->settings?->getQuestionOrder();
+        // Order already persisted for this attempt — honour it (reconnect path)
+        if (! empty($savedOrder)) {
+            return $this->result($this->sortByOrder($questions, $savedOrder), $savedOrder);
+        }
 
-      // Order already persisted for this attempt — honour it (reconnect path)
-      if (! empty($savedOrder)) {
-          return $this->result($this->sortByOrder($questions, $savedOrder), $savedOrder);
-      }
+        // First load — shuffle and persist so order is stable across reconnects
+        shuffle($questionIds);
 
-      // First load — shuffle and persist so order is stable across reconnects
-      shuffle($questionIds);
+        $attempt->settings = new ExamAttemptSettings(questionOrder: $questionIds);
+        $attempt->save();
 
-      $attempt->settings = new ExamAttemptSettings(questionOrder: $questionIds);
-      $attempt->save();
+        return $this->result($this->sortByOrder($questions, $questionIds), $questionIds);
+    }
 
-      return $this->result($this->sortByOrder($questions, $questionIds), $questionIds);
-  }
+    private function sortByOrder(Collection $questions, array $order): Collection
+    {
+        return $questions
+            ->sortBy(fn (ExamQuestion $eq) => array_search($eq->question->id, $order, true))
+            ->values();
+    }
 
-  private function sortByOrder(Collection $questions, array $order): Collection
-  {
-    return $questions
-      ->sortBy(fn (ExamQuestion $eq) => array_search($eq->question->id, $order, true))
-      ->values();
-  }
-
-  private function result(Collection $questions, array $order): array
-  {
-    return ['questions' => $questions, 'order' => $order];
-  }
+    private function result(Collection $questions, array $order): array
+    {
+        return ['questions' => $questions, 'order' => $order];
+    }
 }

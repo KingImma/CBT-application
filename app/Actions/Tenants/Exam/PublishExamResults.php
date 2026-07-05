@@ -10,19 +10,19 @@ use App\Models\Tenant\Exam;
 
 final class PublishExamResults
 {
-  public function __construct(private UpdateAction $action) {}
+    public function __construct(private UpdateAction $action) {}
 
-  public function execute(Exam $exam): Exam
-  {
-    return $this->action->execute(
-      $exam,
-      [],
-      guard: ExamGuards::isCompleted(),
-      prepare: fn (Exam $e, array $d) => [
-        'status'     => ExamStatus::Published->value,
-        'published_at' => now(),
-      ],
-      // after: fn (Exam $e, array $d) => event(new ResultReleased($e)),
-    );
-  }
+    public function execute(Exam $exam): Exam
+    {
+        return $this->action->execute(
+            $exam,
+            [],
+            guard: ExamGuards::isCompleted(),
+            prepare: fn (Exam $e, array $d) => [
+                'status' => ExamStatus::Published->value,
+                'published_at' => now(),
+            ],
+            // after: fn (Exam $e, array $d) => event(new ResultReleased($e)),
+        );
+    }
 }

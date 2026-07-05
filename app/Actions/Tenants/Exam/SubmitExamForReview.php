@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Actions\Tenants\Exam;
 
 use App\Actions\Base\UpdateAction;
-use App\Models\Tenant\Exam;
 use App\Enums\ExamStatus;
+use App\Models\Tenant\Exam;
 
 final class SubmitExamForReview
 {

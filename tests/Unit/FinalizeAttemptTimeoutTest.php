@@ -11,7 +11,6 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Support\Exam\ExamSessionStateStore;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -85,8 +84,8 @@ class FinalizeAttemptTimeoutTest extends TestCase
         ]);
         $attempt->status = ExamAttemptStatus::InProgress;
 
-        $updateAction = new UpdateAction();
-        $stateStore = new ExamSessionStateStore();
+        $updateAction = new UpdateAction;
+        $stateStore = new ExamSessionStateStore;
         $action = new FinalizeAttempt($updateAction, $stateStore);
 
         $action->execute($attempt, null, 'stale_heartbeat');

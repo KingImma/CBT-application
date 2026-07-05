@@ -14,7 +14,7 @@ use App\Models\Tenant\Question;
 final class UpdateExamQuestion
 {
     public function __construct(
-        private UpdateAction            $action,
+        private UpdateAction $action,
         private RecomputeExamTotalMarks $recompute,
     ) {}
 

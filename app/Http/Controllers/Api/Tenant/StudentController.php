@@ -17,15 +17,12 @@ use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
-use App\Jobs\ProcessStudentImportJob;
-use App\Models\Tenant\ImportLog;
 use App\Models\Tenant\User;
 use App\Queries\StudentQuery;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -385,79 +382,9 @@ class StudentController extends Controller
             return $this->buildImportResponse($result, true);
         }
 
-        $result = app(ImportStudents::class)->execute($validated, $path, true);
+        $result = app(ImportStudents::class)->execute($validated, $path, false);
 
-        if ($result->hasBlockingErrors()) {
-            return $this->buildImportResponse($result, true);
-        }
-
-        try {
-            $storedPath = $file->store('imports', 'local');
-
-            $importLog = ImportLog::create([
-                'type' => RoleType::Student->value,
-                'filename' => $file->getClientOriginalName(),
-                'status' => 'pending',
-                'meta' => [
-                    'stored_path' => $storedPath,
-                    'overwrite_existing' => $validated['overwrite_existing'] ?? 'skip',
-                    'class_level_id' => $validated['class_level_id'] ?? null,
-                ],
-                'created_by' => auth()->id(),
-            ]);
-
-
-            ProcessStudentImportJob::dispatch(
-                $importLog->id,
-                tenant()->id,
-            );
-        } catch (\Throwable $e) {
-            if (isset($storedPath)) {
-                Storage::disk('local')->delete($storedPath);
-            }
-
-            if (isset($importLog)) {
-                $importLog->delete();
-            }
-
-            return ApiResponse::error(
-                'Failed to queue import: '.$e->getMessage(),
-                500,
-            );
-        }
-
-        return ApiResponse::success(
-            [
-                'import_log_id' => $importLog->id,
-                'status' => 'pending',
-            ],
-            'Import queued successfully.',
-            202,
-        );
-    }
-
-    public function importStatus(string $importLogId): JsonResponse
-    {
-        $this->authorize('importStudents', User::class);
-
-        $log = ImportLog::where('type', RoleType::Student->value)->findOrFail($importLogId);
-
-        return ApiResponse::success(
-            [
-                'id' => $log->id,
-                'type' => $log->type,
-                'filename' => $log->filename,
-                'status' => $log->status,
-                'total_rows' => $log->total_rows,
-                'imported' => $log->imported,
-                'skipped' => $log->skipped,
-                'updated' => $log->updated,
-                'errors' => $log->errors,
-                'completed_at' => $log->completed_at,
-                'created_at' => $log->created_at,
-            ],
-            'Import status retrieved.',
-        );
+        return $this->buildImportResponse($result, false);
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse

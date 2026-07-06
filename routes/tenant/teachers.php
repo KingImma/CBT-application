@@ -9,7 +9,6 @@ Route::middleware('role:school_admin,tenant')->group(function () {
     // Static routes must be registered before apiResource to avoid capture by the `show` route
     Route::get('teachers/import-template', [TeacherController::class, 'downloadImportTemplate']);
     Route::post('teachers/import', [TeacherController::class, 'importCsv'])->middleware(['permission:manage_teachers,tenant']);
-    Route::get('teachers/import/{importLog}', [TeacherController::class, 'importStatus'])->middleware(['permission:manage_teachers,tenant']);
 
     Route::apiResource('teachers', TeacherController::class);
 

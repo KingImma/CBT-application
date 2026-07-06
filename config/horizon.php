@@ -253,7 +253,7 @@ return [
 
             'supervisor-default' => [
                 'connection' => 'horizon-redis',
-                'queue' => ['default', 'notifications', 'emails', 'imports'],
+                'queue' => ['default', 'notifications', 'emails'],
                 'balance' => 'simple',
                 'maxProcesses' => 3,
                 'tries' => 3,
@@ -264,7 +264,7 @@ return [
         'testing' => [
             'supervisor-1' => [
                 'connection' => 'horizon-redis',
-                'queue' => ['default', 'tenant-provisioning', 'imports'],
+                'queue' => ['default', 'tenant-provisioning'],
                 'balance' => 'simple',
                 'maxProcesses' => 1,
                 'tries' => 1,

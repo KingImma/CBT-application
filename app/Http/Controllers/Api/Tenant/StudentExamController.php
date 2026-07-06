@@ -169,16 +169,19 @@ class StudentExamController extends Controller
 
     // ── Answering ─────────────────────────────────────────────────────────────
 
-    public function saveAnswer(Request $request, string $attemptId, string $questionId): JsonResponse
+    public function saveAnswer(Request $request, string $attemptId, string $examQuestionId): JsonResponse
     {
         $attempt = ExamAttempt::findOrFail($attemptId);
         $this->authorize('saveAnswer', $attempt);
 
-        $question = Question::findOrFail($questionId);
+        $examQuestion = ExamQuestion::where('exam_id', $attempt->exam_id)
+                ->findOrFail($examQuestionId);
+
+        $question = $examQuestion->question;
         $rules = $this->answerRules($question->type);
         $rules['time_spent_seconds'] = ['sometimes', 'integer', 'min:0'];
 
-        $answer = $this->recordAnswer->save($attempt, $questionId, $request->validate($rules));
+        $answer = $this->recordAnswer->save($attempt, $question->id, $request->validate($rules));
 
         return ApiResponse::success($answer, 'Answer saved.');
     }
@@ -197,34 +200,51 @@ class StudentExamController extends Controller
             'answers.*.time_spent_seconds' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $questions = Question::whereIn('id', array_column($validated['answers'], 'question_id'))
-            ->get()->keyBy('id');
+        // Extract the incoming IDs (which are ExamQuestion IDs, not Question IDs)
+        $examQuestionIds = array_column($validated['answers'], 'question_id');
+
+        // Fetch the mapping and eager-load the actual questions
+        $examQuestions = ExamQuestion::with('question')
+            ->where('exam_id', $attempt->exam_id)
+            ->whereIn('id', $examQuestionIds)
+            ->get()
+            ->keyBy('id');
+
+        $transformedAnswers = [];
 
         foreach ($validated['answers'] as $ans) {
-            $q = $questions->get($ans['question_id']);
-            if (! $q) {
-                return ApiResponse::error("Question {$ans['question_id']} not found.", 422);
+            $examQuestionId = $ans['question_id'];
+            $examQuestion = $examQuestions->get($examQuestionId);
+
+            if (! $examQuestion || ! $examQuestion->question) {
+                return ApiResponse::error("Question {$examQuestionId} not found in this exam.", 422);
             }
 
+            $q = $examQuestion->question;
             $isFitb = $q->type === QuestionType::FillInBlank->value;
             $hasOptions = isset($ans['selected_option_ids']);
             $hasText = isset($ans['text_answer']);
 
             if ($isFitb && $hasOptions) {
-                return ApiResponse::error("Question {$ans['question_id']} is FillInBlank; selected_option_ids not accepted.", 422);
+                return ApiResponse::error("Question {$examQuestionId} is FillInBlank; selected_option_ids not accepted.", 422);
             }
             if ($isFitb && ! $hasText) {
-                return ApiResponse::error("Question {$ans['question_id']} requires text_answer.", 422);
+                return ApiResponse::error("Question {$examQuestionId} requires text_answer.", 422);
             }
             if (! $isFitb && $hasText) {
-                return ApiResponse::error("Question {$ans['question_id']} is choice-based; text_answer not accepted.", 422);
+                return ApiResponse::error("Question {$examQuestionId} is choice-based; text_answer not accepted.", 422);
             }
             if (! $isFitb && ! $hasOptions) {
-                return ApiResponse::error("Question {$ans['question_id']} requires selected_option_ids.", 422);
+                return ApiResponse::error("Question {$examQuestionId} requires selected_option_ids.", 422);
             }
+
+            // Remap the ID to the underlying Question ID for the persistence layer
+            $ans['question_id'] = $q->id;
+            $transformedAnswers[] = $ans;
         }
 
-        $this->recordAnswer->bulkSave($attempt, $validated['answers']);
+        // Pass the transformed payload to the action
+        $this->recordAnswer->bulkSave($attempt, $transformedAnswers);
 
         return ApiResponse::message('Answers saved.');
     }

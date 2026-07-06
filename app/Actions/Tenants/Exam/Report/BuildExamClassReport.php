@@ -6,6 +6,7 @@ namespace App\Actions\Tenants\Exam\Report;
 
 use App\Data\Exam\Output\ExamClassReportData;
 use App\Models\Tenant\ClassArm;
+use App\Queries\ExamClassReportQuery;
 use App\Models\Tenant\Exam;
 
 /** Composition root for the class report: query → summarise → map students. */

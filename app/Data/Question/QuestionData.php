@@ -14,13 +14,14 @@ abstract class QuestionData extends Resource
         public readonly string $id,
         public readonly string $type,
         public readonly string $content,
-        public readonly ?string $image_url,
-        public readonly float $default_marks,
-        public readonly bool $is_active,
-        public readonly ?string $subject_id,
-        public readonly ?string $class_level_id,
-        public readonly ?string $class_level_name,
-        public readonly ?string $subject_name,
+        public readonly string $content_format = 'plain_text',
+        public readonly ?string $image_url = null,
+        public readonly float $default_marks = 0,
+        public readonly bool $is_active = true,
+        public readonly ?string $subject_id = null,
+        public readonly ?string $class_level_id = null,
+        public readonly ?string $class_level_name = null,
+        public readonly ?string $subject_name = null,
     ) {}
 
     public static function fromQuestion(Question $question): static
@@ -30,6 +31,7 @@ abstract class QuestionData extends Resource
                 id: $question->id,
                 type: $question->type,
                 content: $question->content,
+                content_format: $question->content_format ?? 'plain_text',
                 image_url: $question->image_url,
                 default_marks: (float) $question->default_marks,
                 is_active: (bool) $question->is_active,
@@ -43,6 +45,7 @@ abstract class QuestionData extends Resource
                             'id' => $o->id,
                             'label' => $o->label,
                             'content' => $o->content,
+                            'content_format' => $o->content_format ?? 'plain_text',
                             'image_url' => $o->image_url,
                             'is_correct' => (bool) $o->is_correct,
                             'order' => (int) $o->order,
@@ -61,6 +64,7 @@ abstract class QuestionData extends Resource
                 id: $question->id,
                 type: $question->type,
                 content: $question->content,
+                content_format: $question->content_format ?? 'plain_text',
                 image_url: $question->image_url,
                 default_marks: (float) $question->default_marks,
                 is_active: (bool) $question->is_active,
@@ -74,6 +78,7 @@ abstract class QuestionData extends Resource
                             'id' => $o->id,
                             'label' => $o->label,
                             'content' => $o->content,
+                            'content_format' => $o->content_format ?? 'plain_text',
                             'image_url' => $o->image_url,
                             'is_correct' => (bool) $o->is_correct,
                             'order' => (int) $o->order,
@@ -88,6 +93,7 @@ abstract class QuestionData extends Resource
                 id: $question->id,
                 type: $question->type,
                 content: $question->content,
+                content_format: $question->content_format ?? 'plain_text',
                 image_url: $question->image_url,
                 default_marks: (float) $question->default_marks,
                 is_active: (bool) $question->is_active,
@@ -100,6 +106,7 @@ abstract class QuestionData extends Resource
                     ->map(
                         fn ($o) => [
                             'content' => $o->content,
+                            'content_format' => $o->content_format ?? 'plain_text',
                             'case_sensitive' => (bool) ($o->match_pair
                                 ? json_decode($o->match_pair, true)[
                                         'case_sensitive'

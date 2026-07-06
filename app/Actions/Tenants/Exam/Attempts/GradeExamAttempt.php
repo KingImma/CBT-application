@@ -16,6 +16,7 @@ use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\GradingScale;
 use App\Support\QuestionGrader;
 use Illuminate\Support\Collection;
+use App\Actions\Tenants\Exam\Attempts\ExamAttemptGuards;
 
 final class GradeExamAttempt
 {

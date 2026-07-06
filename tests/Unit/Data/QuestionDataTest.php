@@ -30,6 +30,7 @@ function makeQuestion(array $attributes = []): Question
     $q->id = $attributes['id'] ?? 'q-uuid-1';
     $q->type = $attributes['type'] ?? 'mcq';
     $q->content = $attributes['content'] ?? 'Test question';
+    $q->content_format = $attributes['content_format'] ?? 'plain_text';
     $q->image_url = $attributes['image_url'] ?? null;
     $q->default_marks = $attributes['default_marks'] ?? 1;
     $q->is_active = $attributes['is_active'] ?? true;
@@ -62,6 +63,7 @@ function makeOption(array $attrs = []): QuestionOption
     $o->id = $attrs['id'] ?? 'opt-'.fake()->uuid();
     $o->label = $attrs['label'] ?? null;
     $o->content = $attrs['content'] ?? 'Option';
+    $o->content_format = $attrs['content_format'] ?? 'plain_text';
     $o->image_url = $attrs['image_url'] ?? null;
     $o->is_correct = $attrs['is_correct'] ?? false;
     $o->order = $attrs['order'] ?? 1;
@@ -121,6 +123,8 @@ it(
             ->toBe('mcq')
             ->and($result->content)
             ->toBe('Test question')
+            ->and($result->content_format)
+            ->toBe('plain_text')
             ->and($result->default_marks)
             ->toBe(1.0)
             ->and($result->is_active)
@@ -430,6 +434,76 @@ it('preserves options order as provided by the relation', function () {
         ->toBe('B')
         ->and($result->options[2]['label'])
         ->toBe('C');
+});
+
+it('maps content_format as latex when set on question', function () {
+    $question = makeQuestion([
+        'content' => '\frac{x^2}{y^2}',
+        'content_format' => 'latex',
+        'subject_id' => 'subj-uuid-1',
+        'class_level_id' => 'cl-uuid-1',
+    ]);
+    $question->setRelation(
+        'options',
+        collect([
+            makeOption([
+                'label' => 'A',
+                'content' => '\sqrt{4}',
+                'is_correct' => true,
+                'order' => 1,
+            ]),
+            makeOption([
+                'label' => 'B',
+                'content' => '\sqrt{9}',
+                'is_correct' => false,
+                'order' => 2,
+            ]),
+        ]),
+    );
+
+    $result = QuestionData::fromQuestion($question);
+
+    expect($result)
+        ->toBeInstanceOf(McqQuestionData::class)
+        ->and($result->content_format)
+        ->toBe('latex')
+        ->and($result->content)
+        ->toBe('\frac{x^2}{y^2}');
+});
+
+it('maps content_format as latex when set on options', function () {
+    $question = makeQuestion([
+        'subject_id' => 'subj-uuid-1',
+        'class_level_id' => 'cl-uuid-1',
+    ]);
+    $question->setRelation(
+        'options',
+        collect([
+            makeOption([
+                'label' => 'A',
+                'content' => '\alpha + \beta',
+                'content_format' => 'latex',
+                'is_correct' => true,
+                'order' => 1,
+            ]),
+            makeOption([
+                'label' => 'B',
+                'content' => 'Plain text',
+                'content_format' => 'plain_text',
+                'is_correct' => false,
+                'order' => 2,
+            ]),
+        ]),
+    );
+
+    $result = QuestionData::fromQuestion($question);
+
+    expect($result->options[0]['content_format'])
+        ->toBe('latex')
+        ->and($result->options[0]['content'])
+        ->toBe('\alpha + \beta')
+        ->and($result->options[1]['content_format'])
+        ->toBe('plain_text');
 });
 
 it(

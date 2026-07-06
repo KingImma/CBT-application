@@ -85,6 +85,7 @@ class QuestionController extends Controller
             return [
                 'options' => ['required', 'array', 'min:1'],
                 'options.*.content' => ['required', 'string'],
+                'options.*.content_format' => ['nullable', 'string', 'in:plain_text,latex'],
                 'options.*.is_correct' => ['prohibited'],
                 'options.*.order' => ['nullable', 'integer'],
                 'options.*.label' => ['nullable', 'string', 'max:10'],
@@ -95,6 +96,7 @@ class QuestionController extends Controller
         return [
             'options' => ['required', 'array', 'min:2'],
             'options.*.content' => ['required', 'string'],
+            'options.*.content_format' => ['nullable', 'string', 'in:plain_text,latex'],
             'options.*.is_correct' => ['required', 'boolean'],
             'options.*.order' => ['nullable', 'integer'],
             'options.*.label' => ['nullable', 'string', 'max:10'],
@@ -124,6 +126,7 @@ class QuestionController extends Controller
             ],
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'content' => ['required', 'string'],
+            'content_format' => ['sometimes', 'string', 'in:plain_text,latex'],
             'default_marks' => ['required', 'numeric', 'min:0.5', 'max:100'],
             'image_url' => ['nullable', 'url', 'max:500'],
         ] + $this->optionRulesForType($request->input('type', '')));
@@ -157,6 +160,7 @@ class QuestionController extends Controller
                     'question_id' => $question->id,
                     'label' => $opt['label'] ?? null,
                     'content' => $opt['content'],
+                    'content_format' => $opt['content_format'] ?? 'plain_text',
                     'is_correct' => $isCorrect,
                     'order' => $opt['order'] ?? $i,
                     'match_pair' => $opt['match_pair'] ?? null,
@@ -213,6 +217,7 @@ class QuestionController extends Controller
 
         $baseRules = [
             'content' => ['sometimes', 'string'],
+            'content_format' => ['sometimes', 'string', 'in:plain_text,latex'],
             'default_marks' => ['sometimes', 'numeric', 'min:0.5', 'max:100'],
             'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'is_active' => ['sometimes', 'boolean'],
@@ -225,6 +230,7 @@ class QuestionController extends Controller
                     'options' => ['sometimes', 'array', 'min:1'],
                     'options.*.id' => ['nullable', 'uuid'],
                     'options.*.content' => ['required_with:options', 'string'],
+                    'options.*.content_format' => ['nullable', 'string', 'in:plain_text,latex'],
                     'options.*.is_correct' => ['prohibited'],
                     'options.*.order' => ['nullable', 'integer'],
                     'options.*.label' => ['nullable', 'string', 'max:10'],
@@ -235,6 +241,7 @@ class QuestionController extends Controller
                     'options' => ['sometimes', 'array', 'min:2'],
                     'options.*.id' => ['nullable', 'uuid'],
                     'options.*.content' => ['required_with:options', 'string'],
+                    'options.*.content_format' => ['nullable', 'string', 'in:plain_text,latex'],
                     'options.*.is_correct' => ['required_with:options', 'boolean'],
                     'options.*.order' => ['nullable', 'integer'],
                     'options.*.label' => ['nullable', 'string', 'max:10'],
@@ -271,6 +278,7 @@ class QuestionController extends Controller
                         ['id' => $opt['id'] ?? null, 'question_id' => $question->id],
                         [
                             'content' => $opt['content'],
+                            'content_format' => $opt['content_format'] ?? 'plain_text',
                             'is_correct' => $isCorrect,
                             'label' => $opt['label'] ?? null,
                             'order' => $opt['order'] ?? $index,

@@ -15,6 +15,7 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use App\Support\Exam\ExamSessionStateStore;
+use App\Actions\Tenants\Exam\Attempts\ExamAttemptGuards;
 
 final class FinalizeAttempt
 {

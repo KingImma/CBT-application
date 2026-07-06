@@ -12,24 +12,26 @@ final class FitbResultQuestionData extends ResultQuestionData
 {
     public readonly ?string $text_answer;
 
-    /** @var array<int, array{content: string, case_sensitive: bool}> */
+    /** @var array<int, array{content: string, content_format: string, case_sensitive: bool}> */
     public readonly array $acceptable_answers;
 
     public function __construct(
         string $question_id,
         string $type,
         string $content,
-        ?string $image_url,
-        float $marks_available,
-        float $marks_awarded,
-        bool $is_correct,
-        ?string $text_answer,
-        array $acceptable_answers,
+        string $content_format = 'plain_text',
+        ?string $image_url = null,
+        float $marks_available = 0,
+        float $marks_awarded = 0,
+        bool $is_correct = false,
+        ?string $text_answer = null,
+        array $acceptable_answers = [],
     ) {
         parent::__construct(
             question_id: $question_id,
             type: $type,
             content: $content,
+            content_format: $content_format,
             image_url: $image_url,
             marks_available: $marks_available,
             marks_awarded: $marks_awarded,
@@ -48,6 +50,7 @@ final class FitbResultQuestionData extends ResultQuestionData
             ->filter(fn ($o) => (bool) $o->is_correct)
             ->map(fn ($o) => [
                 'content' => $o->content,
+                'content_format' => $o->content_format ?? 'plain_text',
                 'case_sensitive' => (bool) ($o->match_pair
                     ? json_decode($o->match_pair, true)['case_sensitive'] ?? false
                     : false),
@@ -59,6 +62,7 @@ final class FitbResultQuestionData extends ResultQuestionData
             question_id: $question->id,
             type: $question->type,
             content: $question->content,
+            content_format: $question->content_format ?? 'plain_text',
             image_url: $question->image_url,
             marks_available: (float) ($examQuestion->getEffectiveMarks() ?? $question->default_marks),
             marks_awarded: (float) ($answer->marks_awarded ?? 0),

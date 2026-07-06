@@ -16,10 +16,11 @@ abstract class ResultQuestionData extends Data
         public readonly string $question_id,
         public readonly string $type,
         public readonly string $content,
-        public readonly ?string $image_url,
-        public readonly float $marks_available,
-        public readonly float $marks_awarded,
-        public readonly bool $is_correct,
+        public readonly string $content_format = 'plain_text',
+        public readonly ?string $image_url = null,
+        public readonly float $marks_available = 0,
+        public readonly float $marks_awarded = 0,
+        public readonly bool $is_correct = false,
     ) {}
 
     public static function fromAnswer(

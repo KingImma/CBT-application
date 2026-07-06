@@ -7,6 +7,7 @@ namespace App\Actions\Tenants\Exam;
 use App\Actions\Base\UpdateAction;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
+use App\Actions\Tenants\Exam\ExamGuards;
 
 final class SubmitExamForReview
 {

@@ -10,6 +10,7 @@ use App\Models\Tenant\ExamAttempt;
 use App\Support\Exam\ExamSessionStateStore;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use App\Actions\Tenants\Exam\Attempts\ExamAttemptGuards;
 
 final class RecordExamAnswer
 {

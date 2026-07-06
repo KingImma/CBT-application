@@ -15,16 +15,17 @@ class FitbQuestionData extends QuestionData
         string $id,
         string $type,
         string $content,
-        ?string $image_url,
-        float $default_marks,
-        bool $is_active,
-        ?string $subject_id,
-        ?string $class_level_id,
-        ?string $class_level_name,
-        ?string $subject_name,
-        array $acceptable_answers,
+        string $content_format = 'plain_text',
+        ?string $image_url = null,
+        float $default_marks = 0,
+        bool $is_active = true,
+        ?string $subject_id = null,
+        ?string $class_level_id = null,
+        ?string $class_level_name = null,
+        ?string $subject_name = null,
+        array $acceptable_answers = [],
     ) {
-        parent::__construct($id, $type, $content, $image_url, $default_marks, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
+        parent::__construct($id, $type, $content, $content_format, $image_url, $default_marks, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
         $this->acceptable_answers = $acceptable_answers;
     }
 }

@@ -12,10 +12,11 @@ class QuestionOptionData extends Resource
         public readonly string $id,
         public readonly ?string $label,
         public readonly string $content,
-        public readonly ?string $image_url,
-        public readonly bool $is_correct,
-        public readonly ?int $order,
-        public readonly ?string $match_pair,
-        public readonly ?bool $case_sensitive,
+        public readonly string $content_format = 'plain_text',
+        public readonly ?string $image_url = null,
+        public readonly bool $is_correct = false,
+        public readonly ?int $order = null,
+        public readonly ?string $match_pair = null,
+        public readonly ?bool $case_sensitive = null,
     ) {}
 }

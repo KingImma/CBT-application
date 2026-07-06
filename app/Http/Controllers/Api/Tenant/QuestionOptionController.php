@@ -49,6 +49,7 @@ class QuestionOptionController extends Controller
             $validated = $request->validate([
                 'label' => ['nullable', 'string', 'max:10'],
                 'content' => ['required', 'string'],
+                'content_format' => ['nullable', 'string', 'in:plain_text,latex'],
                 'image_url' => ['nullable', 'url', 'max:500'],
                 'is_correct' => ['prohibited'],
                 'order' => ['nullable', 'integer'],
@@ -66,6 +67,7 @@ class QuestionOptionController extends Controller
             $validated = $request->validate([
                 'label' => ['nullable', 'string', 'max:10'],
                 'content' => ['required', 'string'],
+                'content_format' => ['nullable', 'string', 'in:plain_text,latex'],
                 'image_url' => ['nullable', 'url', 'max:500'],
                 'is_correct' => ['required', 'boolean'],
                 'order' => ['nullable', 'integer'],
@@ -126,6 +128,7 @@ class QuestionOptionController extends Controller
             $validated = $request->validate([
                 'label' => ['sometimes', 'nullable', 'string', 'max:10'],
                 'content' => ['sometimes', 'string'],
+                'content_format' => ['sometimes', 'string', 'in:plain_text,latex'],
                 'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
                 'is_correct' => ['prohibited'],
                 'order' => ['sometimes', 'integer'],
@@ -138,6 +141,7 @@ class QuestionOptionController extends Controller
             $validated = $request->validate([
                 'label' => ['sometimes', 'nullable', 'string', 'max:10'],
                 'content' => ['sometimes', 'string'],
+                'content_format' => ['sometimes', 'string', 'in:plain_text,latex'],
                 'image_url' => ['sometimes', 'nullable', 'url', 'max:500'],
                 'is_correct' => ['sometimes', 'boolean'],
                 'order' => ['sometimes', 'integer'],

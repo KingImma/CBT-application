@@ -10,10 +10,10 @@ use App\Models\Tenant\Question;
 
 final class McqResultQuestionData extends ResultQuestionData
 {
-    /** @var array<int, array{id: string, label: ?string, content: string, image_url: ?string, is_correct: bool}> */
+    /** @var array<int, array{id: string, label: ?string, content: string, content_format: string, image_url: ?string, is_correct: bool}> */
     public readonly array $options;
 
-    /** @var array<int, array{id: string, label: ?string, content: string, image_url: ?string, is_correct: bool}> */
+    /** @var array<int, array{id: string, label: ?string, content: string, content_format: string, image_url: ?string, is_correct: bool}> */
     public readonly array $selected_options;
 
     public readonly bool $allow_multiple_answers;
@@ -22,18 +22,20 @@ final class McqResultQuestionData extends ResultQuestionData
         string $question_id,
         string $type,
         string $content,
-        ?string $image_url,
-        float $marks_available,
-        float $marks_awarded,
-        bool $is_correct,
-        array $options,
-        array $selected_options,
-        bool $allow_multiple_answers,
+        string $content_format = 'plain_text',
+        ?string $image_url = null,
+        float $marks_available = 0,
+        float $marks_awarded = 0,
+        bool $is_correct = false,
+        array $options = [],
+        array $selected_options = [],
+        bool $allow_multiple_answers = false,
     ) {
         parent::__construct(
             question_id: $question_id,
             type: $type,
             content: $content,
+            content_format: $content_format,
             image_url: $image_url,
             marks_available: $marks_available,
             marks_awarded: $marks_awarded,
@@ -58,6 +60,7 @@ final class McqResultQuestionData extends ResultQuestionData
                         'id' => $optionsMap[$optionId]->id,
                         'label' => $optionsMap[$optionId]->label,
                         'content' => $optionsMap[$optionId]->content,
+                        'content_format' => $optionsMap[$optionId]->content_format ?? 'plain_text',
                         'image_url' => $optionsMap[$optionId]->image_url,
                         'is_correct' => (bool) $optionsMap[$optionId]->is_correct,
                     ]
@@ -73,6 +76,7 @@ final class McqResultQuestionData extends ResultQuestionData
                     'id' => $opt->id,
                     'label' => $opt->label,
                     'content' => $opt->content,
+                    'content_format' => $opt->content_format ?? 'plain_text',
                     'image_url' => $opt->image_url,
                     'is_correct' => (bool) $opt->is_correct,
                 ],
@@ -87,6 +91,7 @@ final class McqResultQuestionData extends ResultQuestionData
             question_id: $question->id,
             type: $question->type,
             content: $question->content,
+            content_format: $question->content_format ?? 'plain_text',
             image_url: $question->image_url,
             marks_available: (float) ($examQuestion->getEffectiveMarks() ??
                 $question->default_marks),

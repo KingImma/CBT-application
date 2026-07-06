@@ -16,9 +16,10 @@ abstract class StudentQuestionData extends Data
         public readonly string $question_id,
         public readonly string $type,
         public readonly string $content,
-        public readonly ?string $image_url,
-        public readonly int $order,
-        public readonly ?float $marks,
+        public readonly string $content_format = 'plain_text',
+        public readonly ?string $image_url = null,
+        public readonly int $order = 0,
+        public readonly ?float $marks = null,
     ) {}
 
     public static function fromExamQuestion(ExamQuestion $examQuestion): static
@@ -37,12 +38,14 @@ abstract class StudentQuestionData extends Data
                 marks: $marks,
                 type: $question->type,
                 content: $question->content,
+                content_format: $question->content_format ?? 'plain_text',
                 image_url: $question->image_url,
                 options: $question->options
                     ->map(
                         fn ($o) => [
                             'id' => $o->id,
                             'content' => $o->content,
+                            'content_format' => $o->content_format ?? 'plain_text',
                         ],
                     )
                     ->toArray(),
@@ -58,12 +61,14 @@ abstract class StudentQuestionData extends Data
                 marks: $marks,
                 type: $question->type,
                 content: $question->content,
+                content_format: $question->content_format ?? 'plain_text',
                 image_url: $question->image_url,
                 options: $question->options
                     ->map(
                         fn ($o) => [
                             'id' => $o->id,
                             'content' => $o->content,
+                            'content_format' => $o->content_format ?? 'plain_text',
                         ],
                     )
                     ->toArray(),
@@ -76,6 +81,7 @@ abstract class StudentQuestionData extends Data
                 marks: $marks,
                 type: $question->type,
                 content: $question->content,
+                content_format: $question->content_format ?? 'plain_text',
                 image_url: $question->image_url,
             ),
             default => throw new \InvalidArgumentException(

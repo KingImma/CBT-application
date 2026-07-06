@@ -24,9 +24,10 @@ final class McqStudentQuestionData extends StudentQuestionData
         ?float $marks,
         string $type,
         string $content,
-        ?string $image_url,
-        array $options,
-        bool $allow_multiple_answers,
+        string $content_format = 'plain_text',
+        ?string $image_url = null,
+        array $options = [],
+        bool $allow_multiple_answers = false,
     ) {
         parent::__construct(
             id: $id,
@@ -36,6 +37,7 @@ final class McqStudentQuestionData extends StudentQuestionData
             marks: $marks,
             type: $type,
             content: $content,
+            content_format: $content_format,
             image_url: $image_url,
         );
         $this->options = $options;

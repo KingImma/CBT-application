@@ -22,6 +22,7 @@ class QuestionOption extends Model
         'question_id',
         'label',
         'content',
+        'content_format',
         'image_url',
         'is_correct',
         'order',

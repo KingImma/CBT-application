@@ -26,6 +26,7 @@ class Question extends Model
         'class_level_id',
         'type',
         'content',
+        'content_format',
         'default_marks',
         'image_url',
         'is_active',

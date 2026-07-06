@@ -6,6 +6,7 @@ namespace App\Actions\Tenants\Exam;
 
 use App\Actions\Base\DeleteAction;
 use App\Models\Tenant\Exam;
+use App\Actions\Tenants\Exam\ExamGuards;
 
 final class DeleteExam
 {

@@ -75,12 +75,12 @@ final class ExamAttemptGuards
         );
     }
 
-    /** Attempt must be Submitted before grading can begin */
+    /** Attempt must be in Grading (claimed by async job) before scoring can begin */
     public static function canGrade(): Closure
     {
         return fn (ExamAttempt $attempt) => throw_unless(
-            self::statusMatches($attempt->status, ExamAttemptStatus::Submitted),
-            new RuntimeException('Only submitted attempts can be graded.')
+            self::statusMatches($attempt->status, ExamAttemptStatus::Grading),
+            new RuntimeException('Only attempts claimed for grading can be graded.')
         );
     }
 

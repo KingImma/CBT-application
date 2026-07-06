@@ -69,17 +69,25 @@ class GradeExamAttemptJob implements ShouldQueue
                     return null;
                 }
 
+                $currentStatus = ExamAttemptStatus::tryFrom(
+                    $attempt->status,
+                );
+
                 if (
-                    !ExamAttemptGuards::statusMatches(
-                        $attempt->status,
-                        ExamAttemptStatus::Submitted,
-                    )
+                    $currentStatus !== ExamAttemptStatus::Submitted
+                    && $currentStatus !== ExamAttemptStatus::Grading
                 ) {
+                    Log::debug("GradeExamAttemptJob: skipping attempt {$this->attemptId} — unexpected status", [
+                        "status" => $attempt->status,
+                    ]);
+
                     return null;
                 }
 
-                $attempt->status = ExamAttemptStatus::Grading->value;
-                $attempt->save();
+                if ($currentStatus === ExamAttemptStatus::Submitted) {
+                    $attempt->status = ExamAttemptStatus::Grading->value;
+                    $attempt->save();
+                }
 
                 return $attempt;
             });
@@ -88,8 +96,6 @@ class GradeExamAttemptJob implements ShouldQueue
                 return;
             }
 
-            // canGrade() guard (Actions\...\ExamAttemptGuards) now requires
-            // Grading, not Submitted — see companion fix below.
             $gradeAttempt->execute($claimed->fresh());
         });
     }

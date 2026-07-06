@@ -7,6 +7,7 @@ namespace App\Actions\Tenants\Exam\Attempts;
 use App\Actions\Base\UpdateAction;
 use App\Actions\Exam\CalculateScore;
 use App\Actions\Exam\ResolveGrade;
+use App\Actions\Tenants\Exam\ExamAttemptGuards;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Events\ExamAttemptsUpdated;
@@ -28,34 +29,54 @@ final class GradeExamAttempt
     {
         return $this->action->execute(
             $attempt,
-            ['exam' => $attempt->exam],
+            ["exam" => $attempt->exam],
             guard: ExamAttemptGuards::canGrade(),
-            prepare: fn (ExamAttempt $a, array $d) => $this->computeScores($a, $d['exam']),
-            after: fn (ExamAttempt $a, array $d) => $this->updateExamCompletion($a, $d['exam']),
+            prepare: fn(ExamAttempt $a, array $d) => $this->computeScores(
+                $a,
+                $d["exam"],
+            ),
+            after: fn(ExamAttempt $a, array $d) => $this->updateExamCompletion(
+                $a,
+                $d["exam"],
+            ),
         );
     }
 
     private function computeScores(ExamAttempt $attempt, Exam $exam): array
     {
-        $answers = ExamAnswer::with('question.options')->where('attempt_id', $attempt->id)->get();
-        $examQuestions = $exam->examQuestions()->get()->keyBy('question_id');
+        $answers = ExamAnswer::with("question.options")
+            ->where("attempt_id", $attempt->id)
+            ->get();
+        $examQuestions = $exam->examQuestions()->get()->keyBy("question_id");
 
-        ['total' => $total, 'maxTime' => $maxTime] = $this->gradeAnswers($answers, $examQuestions);
+        ["total" => $total, "maxTime" => $maxTime] = $this->gradeAnswers(
+            $answers,
+            $examQuestions,
+        );
 
-        $percentage = CalculateScore::execute($total, (float) $exam->total_marks);
-        $grade = ResolveGrade::execute($percentage, GradingScale::where('is_default', true)->first()?->grades);
+        $percentage = CalculateScore::execute(
+            $total,
+            (float) $exam->total_marks,
+        );
+        $grade = ResolveGrade::execute(
+            $percentage,
+            GradingScale::where("is_default", true)->first()?->grades,
+        );
 
         return [
-            'status' => ExamAttemptStatus::Graded->value,
-            'total_score' => $total,
-            'percentage_score' => $percentage,
-            'grade' => $grade,
-            'time_spent_seconds' => $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
+            "status" => ExamAttemptStatus::Graded->value,
+            "total_score" => $total,
+            "percentage_score" => $percentage,
+            "grade" => $grade,
+            "time_spent_seconds" =>
+                $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
         ];
     }
 
-    private function gradeAnswers(Collection $answers, Collection $examQuestions): array
-    {
+    private function gradeAnswers(
+        Collection $answers,
+        Collection $examQuestions,
+    ): array {
         $total = 0.0;
         $maxTime = 0;
 
@@ -68,36 +89,48 @@ final class GradeExamAttempt
             );
 
             $marks = $isCorrect
-                ? (float) ($examQuestions->get($answer->question_id)?->getEffectiveMarks() ?? $answer->question->default_marks)
+                ? (float) ($examQuestions
+                    ->get($answer->question_id)
+                    ?->getEffectiveMarks() ?? $answer->question->default_marks)
                 : 0.0;
 
-            $answer->updateQuietly(['is_correct' => $isCorrect, 'marks_awarded' => $marks]);
+            $answer->updateQuietly([
+                "is_correct" => $isCorrect,
+                "marks_awarded" => $marks,
+            ]);
 
             $total += $marks;
             $maxTime = max($maxTime, $answer->time_spent_seconds ?? 0);
         }
 
-        return ['total' => $total, 'maxTime' => $maxTime];
+        return ["total" => $total, "maxTime" => $maxTime];
     }
 
-    private function updateExamCompletion(ExamAttempt $attempt, Exam $exam): void
-    {
-        $exam->increment('completed_attempts');
+    private function updateExamCompletion(
+        ExamAttempt $attempt,
+        Exam $exam,
+    ): void {
+        $exam->increment("completed_attempts");
         $exam->refresh();
 
-        $shouldComplete = $exam->completed_attempts >= $exam->expected_attempts
-            || ($exam->window_end !== null && now()->gte($exam->window_end));
+        $shouldComplete =
+            $exam->completed_attempts >= $exam->expected_attempts ||
+            ($exam->window_end !== null && now()->gte($exam->window_end));
 
         if ($shouldComplete) {
-            $exam->update(['status' => ExamStatus::Completed]);
+            $exam->update(["status" => ExamStatus::Completed]);
         }
 
-        event(new ExamAttemptsUpdated(
-            examId: $exam->id,
-            completedAttempts: $exam->completed_attempts,
-            expectedAttempts: $exam->expected_attempts,
-            status: $shouldComplete ? ExamStatus::Completed : ExamStatus::Active,
-            tenantId: (string) tenant('id'),
-        ));
+        event(
+            new ExamAttemptsUpdated(
+                examId: $exam->id,
+                completedAttempts: $exam->completed_attempts,
+                expectedAttempts: $exam->expected_attempts,
+                status: $shouldComplete
+                    ? ExamStatus::Completed
+                    : ExamStatus::Active,
+                tenantId: (string) tenant("id"),
+            ),
+        );
     }
 }

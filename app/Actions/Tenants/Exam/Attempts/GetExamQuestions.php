@@ -8,7 +8,6 @@ use App\Data\Values\ExamAttemptSettings;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamQuestion;
 use Illuminate\Support\Collection;
-use App\Actions\Tenants\Exam\Attempts\ExamAttemptGuards;
 
 final class GetExamQuestions
 {

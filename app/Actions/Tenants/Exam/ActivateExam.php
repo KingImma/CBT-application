@@ -8,7 +8,6 @@ use App\Actions\Base\UpdateAction;
 use App\Enums\ExamStatus;
 use App\Events\ExamActivated;
 use App\Models\Tenant\Exam;
-use App\Actions\Tenants\Exam\ExamGuards;
 
 final class ActivateExam
 {

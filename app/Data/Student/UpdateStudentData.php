@@ -35,7 +35,7 @@ class UpdateStudentData extends Data
         public Optional|string|null $admission_number,
         #[Nullable, Date]
         public Optional|string|null $date_of_birth,
-        #[Nullable, In(['male', 'female'])]
+        #[Nullable, In(['male', 'female', 'other'])]
         public Optional|string|null $gender,
         #[Nullable, Email, Max(255)]
         public Optional|string|null $guardian_email,

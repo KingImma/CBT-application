@@ -35,7 +35,7 @@ class CreateStudentData extends Data
         public ?string $admission_number,
         #[Nullable, Date]
         public ?string $date_of_birth,
-        #[Nullable, In(['male', 'female'])]
+        #[Nullable, In(['male', 'female', 'other'])]
         public ?string $gender,
         #[Nullable, Email, Max(255)]
         public ?string $guardian_email,

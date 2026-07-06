@@ -14,15 +14,17 @@ class ResetUserPassword
 {
     public function execute(Authenticatable $user, string $newPassword): void
     {
-        $user->update(['password' => Hash::make($newPassword)]);
+        $user->update(["password" => Hash::make($newPassword)]);
 
         $user->tokens()->delete();
 
         /** @var User|\App\Models\Tenant\User $user */
-        $recipient = config('mail.override_address') ?: $user->email;
-        Mail::to($recipient)->send(new PasswordChangedMail(
-            firstName: $user->first_name,
-            schoolName: tenant('name') ?? 'EduCBT',
-        ));
+        $recipient = config("mail.override_address") ?: $user->email;
+        Mail::to($recipient)->queue(
+            new PasswordChangedMail(
+                firstName: $user->first_name,
+                schoolName: tenant("name") ?? "EduCBT",
+            ),
+        );
     }
 }

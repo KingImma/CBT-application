@@ -29,34 +29,44 @@ class SendOtp
 
         if ($attempts >= self::RATE_LIMIT_MAX) {
             throw ValidationException::withMessages([
-                'email' => 'Too many reset requests. Please wait before trying again.',
+                "email" =>
+                    "Too many reset requests. Please wait before trying again.",
             ]);
         }
 
         $userModel = $this->resolveUserModel();
-        $user = $userModel::where('email', $email)->first();
+        $user = $userModel::where("email", $email)->first();
 
         if ($user) {
-            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            DB::table("password_reset_tokens")
+                ->where("email", $email)
+                ->delete();
 
-            $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $otp = str_pad(
+                (string) random_int(0, 999999),
+                6,
+                "0",
+                STR_PAD_LEFT,
+            );
 
-            DB::table('password_reset_tokens')->insert([
-                'email' => $email,
-                'token' => hash('sha256', $otp),
-                'attempts' => 0,
-                'expires_at' => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
-                'created_at' => now(),
+            DB::table("password_reset_tokens")->insert([
+                "email" => $email,
+                "token" => hash("sha256", $otp),
+                "attempts" => 0,
+                "expires_at" => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
+                "created_at" => now(),
             ]);
 
             $toEmail = $this->resolveMailRecipient($email);
-            Mail::to($toEmail)->send(new PasswordResetOtpMail($otp, $schoolName));
+            Mail::to($toEmail)->queue(
+                new PasswordResetOtpMail($otp, $schoolName),
+            );
         }
 
         Cache::put(
             $rateLimitKey,
             $attempts + 1,
-            now()->addMinutes(self::RATE_LIMIT_WINDOW_MIN)
+            now()->addMinutes(self::RATE_LIMIT_WINDOW_MIN),
         );
     }
 
@@ -64,9 +74,9 @@ class SendOtp
     {
         $email = strtolower(trim($email));
 
-        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw ValidationException::withMessages([
-                'email' => 'A valid email address is required.',
+                "email" => "A valid email address is required.",
             ]);
         }
 
@@ -80,7 +90,7 @@ class SendOtp
 
     private function resolveMailRecipient(string $email): string
     {
-        $overrideAddress = config('mail.override_address');
+        $overrideAddress = config("mail.override_address");
 
         if (is_string($overrideAddress)) {
             $overrideAddress = trim($overrideAddress);
@@ -88,8 +98,13 @@ class SendOtp
 
         $recipient = $overrideAddress ?: $email;
 
-        if (! is_string($recipient) || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-            throw new RuntimeException('MAIL_OVERRIDE_ADDRESS must be a valid email address when set.');
+        if (
+            !is_string($recipient) ||
+            !filter_var($recipient, FILTER_VALIDATE_EMAIL)
+        ) {
+            throw new RuntimeException(
+                "MAIL_OVERRIDE_ADDRESS must be a valid email address when set.",
+            );
         }
 
         return $recipient;

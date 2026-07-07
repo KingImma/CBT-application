@@ -22,7 +22,7 @@ php artisan db:seed --class=SubscriptionPlanSeeder --force
 # php artisan scribe:generate
 
 echo "Starting queue..."
-php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 >> /var/www/html/storage/logs/laravel.log 2>&1 &
+php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 > /proc/1/fd/1 2>&1 &
 
 echo "Starting php-fpm..."
 php-fpm -D

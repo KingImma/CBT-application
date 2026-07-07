@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Middleware\InitializeTenancyByHeader;
 use Illuminate\Support\Facades\Broadcast;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -60,16 +59,3 @@ Route::controller(PasswordController::class)
             'change',
         );
     });
-
-Route::get('/debug-logs', function () {
-    $path = storage_path('logs/laravel.log');
-
-    if (!File::exists($path)) {
-        return response('No log file generated yet.', 200)
-            ->header('Content-Type', 'text/plain');
-    }
-
-    // Return the log file as plain text so it's readable in the browser
-    return response(File::get($path), 200)
-        ->header('Content-Type', 'text/plain');
-});

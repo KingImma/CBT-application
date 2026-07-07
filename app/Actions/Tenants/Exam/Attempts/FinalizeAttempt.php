@@ -15,12 +15,14 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use App\Support\Exam\ExamSessionStateStore;
+use App\Actions\Tenants\Exam\Attempts\GradeExamAttempt;
 
 final class FinalizeAttempt
 {
     public function __construct(
         private UpdateAction $action,
         private ExamSessionStateStore $stateStore,
+        private GradeExamAttempt $gradeAttempt,
     ) {}
 
     public function execute(ExamAttempt $attempt, ?User $actor = null, string $reason = 'submit'): ExamAttempt
@@ -41,13 +43,30 @@ final class FinalizeAttempt
                 'submitted_at' => now(),
             ],
             after: function (ExamAttempt $a, array $d) {
-                // Dispatch async grading — attempt status moves Submitted→Grading→Graded in job
                 GradeExamAttemptJob::dispatch($a->id, (string) tenant('id'));
                 $this->destroySessionState($a);
             },
         );
 
         return $updated;
+    }
+
+    private function gradingAttempt(ExamAttempt $attempt): void
+    {
+        $attempt->update(['status' => ExamAttemptStatus::Grading->value]);
+
+        try{
+            $this->gradeAttempt->execute($attempt->fresh());
+        }catch (\Throwable $e){
+            $attempt->update(['status' => ExamAttemptStatus::Failed->value]);
+
+            Log::error('Synchronous grading failed', [
+                'attempt_id' => $attempt->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
     }
 
     private function timeout(ExamAttempt $attempt): ExamAttempt

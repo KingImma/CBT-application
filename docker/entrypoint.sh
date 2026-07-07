@@ -22,7 +22,8 @@ php artisan db:seed --class=SubscriptionPlanSeeder --force
 # php artisan scribe:generate
 
 echo "Starting queue..."
-php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 &
+# Pipe background output to Docker's stdout so it appears in Render logs
+php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 > /proc/1/fd/1 2>&1 &
 
 echo "Starting php-fpm..."
 php-fpm -D

@@ -61,7 +61,7 @@ Route::controller(PasswordController::class)
         );
     });
 
-    Route::get('/debug-logs', function () {
+Route::get('/debug-logs', function () {
     $path = storage_path('logs/laravel.log');
 
     if (!File::exists($path)) {

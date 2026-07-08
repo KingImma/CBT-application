@@ -68,7 +68,6 @@ class UserPolicy
         return $user->hasRole(RoleType::Teacher->value) || $user->hasRole(RoleType::SchoolAdmin->value);
     }
 
-
     public function updateStudent(User $user, User $student): bool
     {
         return ($user->hasRole(RoleType::Teacher->value) || $user->hasRole(RoleType::SchoolAdmin->value))

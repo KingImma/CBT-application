@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ExamAttempt extends Model
 {
@@ -76,6 +77,11 @@ class ExamAttempt extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(ExamAnswer::class, 'attempt_id');
+    }
+
+    public function result(): HasOne
+    {
+        return $this->hasOne(ExamResult::class, 'exam_attempt_id');
     }
 
     // Scopes

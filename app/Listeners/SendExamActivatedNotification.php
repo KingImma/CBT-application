@@ -14,20 +14,20 @@ class SendExamActivatedNotification
     public function handle(ExamActivated $event): void
     {
         $exam = $event->exam;
-        $schoolName = tenant("name") ?? "EduCBT";
+        $schoolName = tenant('name') ?? 'EduCBT';
 
         StudentProfile::query()
-            ->where("class_level_id", $exam->class_level_id)
+            ->where('class_level_id', $exam->class_level_id)
             ->when(
                 $exam->class_arm_id,
-                fn($q) => $q->where("class_arm_id", $exam->class_arm_id),
+                fn ($q) => $q->where('class_arm_id', $exam->class_arm_id),
             )
-            ->with("user")
+            ->with('user')
             ->chunk(100, function ($students) use ($exam, $schoolName) {
                 foreach ($students as $student) {
                     if ($student->user && $student->user->email) {
                         $recipient =
-                            config("mail.override_address") ?:
+                            config('mail.override_address') ?:
                             $student->user->email;
                         Mail::to($recipient)->queue(
                             new ExamActivatedMail(

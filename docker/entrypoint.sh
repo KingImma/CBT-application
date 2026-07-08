@@ -19,10 +19,19 @@ echo "Running seeders..."
 php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=SubscriptionPlanSeeder --force
 
+echo "Running stuck grading jobs"
+php artisan exams:recover-stuck-grading
+
+echo "backfill results for already graded atempts"
+php artisan exams:backfill-results
+
 # php artisan scribe:generate
 
-echo "Starting queue..."
-php artisan queue:work redis --queue=default,emails --tries=3 --timeout=120 > /proc/1/fd/1 2>&1 &
+echo "Starting Horizon..."
+php artisan horizon > /proc/1/fd/1 2>&1 &
+
+echo "Verify Horizon Running"
+php artisan horizon:status
 
 echo "Starting php-fpm..."
 php-fpm -D

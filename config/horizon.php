@@ -237,7 +237,7 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
                 'tries' => 3,
-                'timeout' => 60,
+                'timeout' => 300,
             ],
         ],
 
@@ -253,11 +253,11 @@ return [
 
             'supervisor-default' => [
                 'connection' => 'horizon-redis',
-                'queue' => ['default', 'notifications', 'emails'],
+                'queue' => ['default', 'notifications', 'emails', 'exams'],
                 'balance' => 'simple',
                 'maxProcesses' => 3,
                 'tries' => 3,
-                'timeout' => 60,
+                'timeout' => 300,
             ],
         ],
 

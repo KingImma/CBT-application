@@ -15,7 +15,6 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use App\Support\Exam\ExamSessionStateStore;
-use App\Actions\Tenants\Exam\Attempts\GradeExamAttempt;
 
 final class FinalizeAttempt
 {
@@ -55,9 +54,9 @@ final class FinalizeAttempt
     {
         $attempt->update(['status' => ExamAttemptStatus::Grading->value]);
 
-        try{
+        try {
             $this->gradeAttempt->execute($attempt->fresh());
-        }catch (\Throwable $e){
+        } catch (\Throwable $e) {
             $attempt->update(['status' => ExamAttemptStatus::Failed->value]);
 
             Log::error('Synchronous grading failed', [

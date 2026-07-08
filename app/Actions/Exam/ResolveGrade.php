@@ -6,15 +6,16 @@ namespace App\Actions\Exam;
 
 class ResolveGrade
 {
+    private const string UNGRADED = 'N/A';
+
     public static function execute(
         float $percentageScore,
         ?array $grades,
-    ): ?string {
+    ): string {
         if ($grades === null || $grades === []) {
-            return null;
+            return self::UNGRADED;
         }
 
-        // Sort by min_score to ensure reliable iteration order
         $sorted = collect($grades)->sortBy('min_score')->values()->all();
 
         foreach ($sorted as $grade) {
@@ -26,7 +27,6 @@ class ResolveGrade
             }
         }
 
-        // Fallback: return the lowest grade (covers gaps below 0 or above 100)
-        return $sorted[0]['label'] ?? 'Ungraded';
+        return $sorted[0]['label'] ?? self::UNGRADED;
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Tenants\Exam\Attempts;
 
 use App\Actions\Base\CreateAction;
+use App\Actions\Tenants\Exam\ExamAttemptGuards;
 use App\Enums\ExamAttemptStatus;
 use App\Events\ExamSessionStateUpdated;
 use App\Models\Tenant\Exam;
@@ -12,7 +13,6 @@ use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use App\Support\Exam\ExamSessionState;
 use App\Support\Exam\ExamSessionStateStore;
-use App\Actions\Tenants\Exam\ExamAttemptGuards;
 
 final class StartExamAttempt
 {

@@ -18,17 +18,17 @@ class ResetPassword
         $email = $this->decodeResetToken->execute($resetToken);
 
         $userModel = tenant() ? \App\Models\Tenant\User::class : User::class;
-        $user = $userModel::where("email", $email)->firstOrFail();
+        $user = $userModel::where('email', $email)->firstOrFail();
 
-        $user->update(["password" => Hash::make($newPassword)]);
+        $user->update(['password' => Hash::make($newPassword)]);
 
         $user->tokens()->delete();
 
-        $recipient = config("mail.override_address") ?: $user->email;
+        $recipient = config('mail.override_address') ?: $user->email;
         Mail::to($recipient)->queue(
             new PasswordChangedMail(
                 firstName: $user->first_name,
-                schoolName: tenant("name") ?? "EduCBT",
+                schoolName: tenant('name') ?? 'EduCBT',
             ),
         );
     }

@@ -56,6 +56,7 @@ class Student
                 ]);
             },
         );
+
         return ['user' => $user, 'password' => $password];
     }
 

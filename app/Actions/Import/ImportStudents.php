@@ -141,7 +141,7 @@ class ImportStudents extends CsvImport
                         }
 
                         $updated++;
-                    }else {
+                    } else {
                         $skipped++;
                     }
 

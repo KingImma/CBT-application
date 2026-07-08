@@ -14,9 +14,11 @@ use App\Events\ExamAttemptsUpdated;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
+use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\GradingScale;
 use App\Support\QuestionGrader;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final class GradeExamAttempt
 {
@@ -27,58 +29,71 @@ final class GradeExamAttempt
 
     public function execute(ExamAttempt $attempt): ExamAttempt
     {
-        return $this->action->execute(
+        $guard = ExamAttemptGuards::canGrade();
+        $guard($attempt);
+
+        $grades = $this->computeAndScore($attempt);
+
+        $graded = $this->action->execute(
             $attempt,
-            ["exam" => $attempt->exam],
-            guard: ExamAttemptGuards::canGrade(),
-            prepare: fn(ExamAttempt $a, array $d) => $this->computeScores(
-                $a,
-                $d["exam"],
-            ),
-            after: fn(ExamAttempt $a, array $d) => $this->updateExamCompletion(
-                $a,
-                $d["exam"],
-            ),
+            ['grades' => $grades],
+            guard: $guard,
+            prepare: fn (ExamAttempt $a, array $d) => $d['grades'],
+            after: fn (ExamAttempt $a, array $d) => $this->onGraded($a, $d['grades']),
         );
+
+        return $graded;
     }
 
-    private function computeScores(ExamAttempt $attempt, Exam $exam): array
+    private function onGraded(ExamAttempt $attempt, array $grades): void
     {
-        $answers = ExamAnswer::with("question.options")
-            ->where("attempt_id", $attempt->id)
-            ->get();
-        $examQuestions = $exam->examQuestions()->get()->keyBy("question_id");
+        $exam = $grades['exam'];
 
-        ["total" => $total, "maxTime" => $maxTime] = $this->gradeAnswers(
-            $answers,
-            $examQuestions,
+        $result = ExamResult::updateOrCreate(
+            ['exam_attempt_id' => $attempt->id],
+            [
+                'student_id' => $attempt->student_id,
+                'exam_id' => $exam->id,
+                'subject_id' => $exam->subject_id,
+                'term_id' => $exam->term_id,
+                'academic_session_id' => $attempt->academic_session_id ?? $exam->term?->academic_session_id,
+                'total_score' => $grades['total_score'],
+                'percentage_score' => $grades['percentage_score'],
+                'grade' => $grades['grade'],
+                'objective_score' => $grades['objective_score'] ?? null,
+                'theory_score' => $grades['theory_score'] ?? null,
+                'passed' => $exam->pass_mark !== null
+                    ? (float) ($grades['percentage_score'] ?? 0) >= (float) $exam->pass_mark
+                    : null,
+                'graded_at' => now(),
+            ],
         );
 
-        $percentage = CalculateScore::execute(
-            $total,
-            (float) $exam->total_marks,
-        );
-        $grade = ResolveGrade::execute(
-            $percentage,
-            GradingScale::where("is_default", true)->first()?->grades,
-        );
-
-        return [
-            "status" => ExamAttemptStatus::Graded->value,
-            "total_score" => $total,
-            "percentage_score" => $percentage,
-            "grade" => $grade,
-            "time_spent_seconds" =>
-                $maxTime ?: (int) now()->diffInSeconds($attempt->started_at),
-        ];
+        if ($result->wasRecentlyCreated) {
+            $this->updateExamCompletion($attempt, $exam);
+        }
     }
 
-    private function gradeAnswers(
-        Collection $answers,
-        Collection $examQuestions,
-    ): array {
+    private function computeAndScore(ExamAttempt $attempt): array
+    {
+        $exam = $attempt->exam;
+
+        Log::debug('GradeExamAttempt: scoring started', [
+            'attempt_id' => $attempt->id,
+            'exam_id' => $exam->id,
+        ]);
+
+        $answers = ExamAnswer::with('question.options')
+            ->where('attempt_id', $attempt->id)
+            ->get();
+
+        $examQuestions = $exam->examQuestions()->get()->keyBy('question_id');
+
         $total = 0.0;
+        $objectiveTotal = 0.0;
+        $theoryTotal = 0.0;
         $maxTime = 0;
+        $gradedAnswers = [];
 
         foreach ($answers as $answer) {
             $isCorrect = $this->grader->isCorrect(
@@ -94,23 +109,91 @@ final class GradeExamAttempt
                     ?->getEffectiveMarks() ?? $answer->question->default_marks)
                 : 0.0;
 
-            $answer->updateQuietly([
-                "is_correct" => $isCorrect,
-                "marks_awarded" => $marks,
-            ]);
+            $type = $answer->question->type;
+            if (in_array($type, ['mcq', 'true_false', 'fill_in_blank'], true)) {
+                $objectiveTotal += $marks;
+            } else {
+                $theoryTotal += $marks;
+            }
+
+            $gradedAnswers[] = [
+                'id' => $answer->id,
+                'is_correct' => $isCorrect,
+                'marks_awarded' => $marks,
+            ];
 
             $total += $marks;
             $maxTime = max($maxTime, $answer->time_spent_seconds ?? 0);
         }
 
-        return ["total" => $total, "maxTime" => $maxTime];
+        $this->batchUpdateAnswers($gradedAnswers);
+
+        $percentage = CalculateScore::execute(
+            $total,
+            (float) $exam->total_marks,
+        );
+
+        $grade = ResolveGrade::execute(
+            $percentage,
+            GradingScale::where('is_default', true)->first()?->grades,
+        );
+
+        Log::debug('GradeExamAttempt: scoring complete', [
+            'attempt_id' => $attempt->id,
+            'total' => $total,
+            'percentage' => $percentage,
+            'grade' => $grade,
+        ]);
+
+        return [
+            'status' => ExamAttemptStatus::Graded->value,
+            'total_score' => $total,
+            'percentage_score' => $percentage,
+            'grade' => $grade,
+            'objective_score' => $objectiveTotal,
+            'theory_score' => $theoryTotal,
+            'time_spent_seconds' => $maxTime ?: (int) ($attempt->submitted_at ?? now())->diffInSeconds($attempt->started_at),
+            'exam' => $exam,
+        ];
+    }
+
+    private function batchUpdateAnswers(array $gradedAnswers): void
+    {
+        if ($gradedAnswers === []) {
+            return;
+        }
+
+        $ids = [];
+        $caseSql = '';
+        $bindings = [];
+
+        foreach ($gradedAnswers as $i => $data) {
+            $ids[] = (string) $data['id'];
+            $isCorrect = $data['is_correct'] ? 'true' : 'false';
+            $marks = (string) (float) $data['marks_awarded'];
+            $caseSql .= "WHEN ? THEN {$isCorrect} ";
+            $bindings[] = $data['id'];
+        }
+
+        $sql = 'UPDATE exam_answers SET is_correct = CASE id '.$caseSql.'ELSE is_correct END, ';
+        $caseSql = '';
+        foreach ($gradedAnswers as $data) {
+            $marks = (string) (float) $data['marks_awarded'];
+            $caseSql .= "WHEN ? THEN {$marks} ";
+            $bindings[] = $data['id'];
+        }
+        $sql .= 'marks_awarded = CASE id '.$caseSql.'ELSE marks_awarded END ';
+        $sql .= 'WHERE id IN ('.implode(',', array_fill(0, count($ids), '?')).')';
+        $bindings = array_merge($bindings, $ids);
+
+        DB::update($sql, $bindings);
     }
 
     private function updateExamCompletion(
         ExamAttempt $attempt,
         Exam $exam,
     ): void {
-        $exam->increment("completed_attempts");
+        $exam->increment('completed_attempts');
         $exam->refresh();
 
         $shouldComplete =
@@ -118,7 +201,7 @@ final class GradeExamAttempt
             ($exam->window_end !== null && now()->gte($exam->window_end));
 
         if ($shouldComplete) {
-            $exam->update(["status" => ExamStatus::Completed]);
+            $exam->update(['status' => ExamStatus::Completed]);
         }
 
         event(
@@ -129,7 +212,7 @@ final class GradeExamAttempt
                 status: $shouldComplete
                     ? ExamStatus::Completed
                     : ExamStatus::Active,
-                tenantId: (string) tenant("id"),
+                tenantId: (string) tenant('id'),
             ),
         );
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Actions\Tenants\Exam\Attempts\GradeExamAttempt as GradeExamAttemptAction;
-use App\Actions\Tenants\Exam\ExamAttemptGuards;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\ExamAttempt;
@@ -41,31 +40,47 @@ class GradeExamAttemptJob implements ShouldQueue
     public function __construct(
         public readonly string $attemptId,
         public readonly string $tenantId,
-    ) {}
+    ) {
+        $this->onQueue('exams');
+    }
 
     public function handle(GradeExamAttemptAction $gradeAttempt): void
     {
+        Log::debug('GradeExamAttemptJob: handle started', [
+            'attempt_id' => $this->attemptId,
+            'tenant_id' => $this->tenantId,
+        ]);
+
         $tenant = Tenant::find($this->tenantId);
 
         if ($tenant === null) {
-            Log::warning("GradeExamAttemptJob: tenant not found", [
-                "tenant_id" => $this->tenantId,
-                "attempt_id" => $this->attemptId,
+            Log::warning('GradeExamAttemptJob: tenant not found', [
+                'tenant_id' => $this->tenantId,
+                'attempt_id' => $this->attemptId,
             ]);
 
             return;
         }
 
         $tenant->run(function () use ($gradeAttempt) {
-            // Claim the row first — this is the missing half of the pipeline.
-            // Runs in its own short transaction so the lock is released before
-            // the (potentially slower) grading transaction begins.
+            Log::debug('GradeExamAttemptJob: tenant context initialized', [
+                'attempt_id' => $this->attemptId,
+            ]);
+
             $claimed = DB::transaction(function () {
-                $attempt = ExamAttempt::where("id", $this->attemptId)
+                Log::debug('GradeExamAttemptJob: claim phase started', [
+                    'attempt_id' => $this->attemptId,
+                ]);
+
+                $attempt = ExamAttempt::where('id', $this->attemptId)
                     ->lockForUpdate()
                     ->first();
 
                 if ($attempt === null) {
+                    Log::warning('GradeExamAttemptJob: attempt not found', [
+                        'attempt_id' => $this->attemptId,
+                    ]);
+
                     return null;
                 }
 
@@ -78,7 +93,7 @@ class GradeExamAttemptJob implements ShouldQueue
                     && $currentStatus !== ExamAttemptStatus::Grading
                 ) {
                     Log::debug("GradeExamAttemptJob: skipping attempt {$this->attemptId} — unexpected status", [
-                        "status" => $attempt->status,
+                        'status' => $attempt->status,
                     ]);
 
                     return null;
@@ -87,6 +102,11 @@ class GradeExamAttemptJob implements ShouldQueue
                 if ($currentStatus === ExamAttemptStatus::Submitted) {
                     $attempt->status = ExamAttemptStatus::Grading->value;
                     $attempt->save();
+
+                    Log::debug('GradeExamAttemptJob: claimed attempt for grading', [
+                        'attempt_id' => $this->attemptId,
+                        'new_status' => ExamAttemptStatus::Grading->value,
+                    ]);
                 }
 
                 return $attempt;
@@ -96,7 +116,15 @@ class GradeExamAttemptJob implements ShouldQueue
                 return;
             }
 
+            Log::debug('GradeExamAttemptJob: grading phase started', [
+                'attempt_id' => $this->attemptId,
+            ]);
+
             $gradeAttempt->execute($claimed->fresh());
+
+            Log::debug('GradeExamAttemptJob: grading phase completed', [
+                'attempt_id' => $this->attemptId,
+            ]);
         });
     }
 
@@ -108,15 +136,27 @@ class GradeExamAttemptJob implements ShouldQueue
      */
     public function failed(\Throwable $e): void
     {
+        Log::error('GradeExamAttemptJob failed permanently', [
+            'attempt_id' => $this->attemptId,
+            'tenant_id' => $this->tenantId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
         $tenant = Tenant::find($this->tenantId);
 
         if ($tenant === null) {
+            Log::error('GradeExamAttemptJob: cannot recover attempt — tenant not found in failed handler', [
+                'tenant_id' => $this->tenantId,
+                'attempt_id' => $this->attemptId,
+            ]);
+
             return;
         }
 
-        $tenant->run(function () use ($e) {
-            DB::transaction(function () use ($e) {
-                $attempt = ExamAttempt::where("id", $this->attemptId)
+        $tenant->run(function () {
+            DB::transaction(function () {
+                $attempt = ExamAttempt::where('id', $this->attemptId)
                     ->lockForUpdate()
                     ->first();
 
@@ -128,12 +168,6 @@ class GradeExamAttemptJob implements ShouldQueue
                     $attempt->status = ExamAttemptStatus::Failed->value;
                     $attempt->save();
                 }
-
-                Log::error("GradeExamAttemptJob failed permanently", [
-                    "attempt_id" => $this->attemptId,
-                    "tenant_id" => $this->tenantId,
-                    "error" => $e->getMessage(),
-                ]);
             });
         });
     }

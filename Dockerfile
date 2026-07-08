@@ -60,6 +60,8 @@ COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 
 EXPOSE 10000
 
+COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
+
 # Entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

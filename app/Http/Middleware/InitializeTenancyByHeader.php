@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Support\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Stancl\Tenancy\Tenancy;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,13 +20,15 @@ class InitializeTenancyByHeader
     {
         $handle = $request->header('X-Tenant');
 
-        // If no header is present, assume this is a Super Admin request
-        // and proceed using the central database.
         if (! $handle) {
             return $next($request);
         }
 
-        $tenant = Tenant::where('handle', $handle)->first();
+        $tenant = Cache::remember(
+            "tenant:handle:{$handle}",
+            3600,
+            fn () => Tenant::where('handle', $handle)->first()
+        );
 
         if (! $tenant) {
             return ApiResponse::error("School '{$handle}' not found.", 404);
@@ -35,7 +38,6 @@ class InitializeTenancyByHeader
             return ApiResponse::error('This school account is inactive.', 403);
         }
 
-        // Header exists and school is valid: hot-swap the database
         $this->tenancy->initialize($tenant);
 
         return $next($request);

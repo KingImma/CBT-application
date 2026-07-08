@@ -13,11 +13,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
+use App\Models\Tenant\Concerns\HasCacheInvalidation;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
-    use HasBroadcasting, HasDatabase, HasDomains, HasFactory, HasLifecycle, HasValidation, SoftDeletes;
+    use HasBroadcasting, HasCacheInvalidation, HasDatabase, HasDomains, HasFactory, HasLifecycle, HasValidation, SoftDeletes;
 
     protected $table = 'tenants';
 

@@ -22,27 +22,19 @@ php artisan db:seed --class=SubscriptionPlanSeeder --force
 # echo "Running stuck grading jobs"
 # php artisan exams:recover-stuck-grading
 
-# echo "Backfill results for already graded attempts"
+# echo "backfill results for already graded atempts"
 # php artisan exams:backfill-results
+
+# php artisan scribe:generate
+
+echo "Starting Horizon..."
+php artisan horizon > /proc/1/fd/1 2>&1 &
+
+echo "Verify Horizon Running"
+php artisan horizon:status
 
 echo "Starting php-fpm..."
 php-fpm -D
 
 echo "Starting nginx..."
-nginx -g "daemon off;" &
-
-# Wait for Nginx to fully start (CRITICAL for port scan)
-sleep 3
-
-echo "Starting Horizon in background..."
-nohup php artisan horizon > /proc/1/fd/1 2>&1 &
-
-echo "Verify Horizon Running"
-sleep 2
-php artisan horizon:status || true
-
-echo "===== ENTRYPOINT COMPLETE - CONTAINER STAYING ALIVE ====="
-
-# Keep the container alive (Nginx is already running in background)
-# This script exits, but Nginx+Horizon continue running
-wait
+exec nginx -g "daemon off;"

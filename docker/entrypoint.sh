@@ -30,8 +30,20 @@ php artisan db:seed --class=SubscriptionPlanSeeder --force
 echo "Starting Horizon..."
 php artisan horizon > /proc/1/fd/1 2>&1 &
 
-echo "Verify Horizon Running"
-php artisan horizon:status
+echo "Verify Horizon Running..."
+horizon_ok=0
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if php artisan horizon:status 2>/dev/null | grep -qi "running"; then
+    echo "Horizon confirmed running."
+    horizon_ok=1
+    break
+  fi
+  sleep 1
+done
+
+if [ "$horizon_ok" -eq 0 ]; then
+  echo "WARNING: Horizon did not report running in time. Continuing anyway (non-fatal)."
+fi
 
 echo "Starting php-fpm..."
 php-fpm -D

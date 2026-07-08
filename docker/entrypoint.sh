@@ -13,7 +13,7 @@ echo "Running migrations..."
 php artisan migrate --force
 
 echo "Running tenant migrations..."
-php artisan tenants:migrate --force
+php artisan tenants:migrate --force < /dev/null
 
 echo "Running seeders..."
 php artisan db:seed --class=AdminUserSeeder --force

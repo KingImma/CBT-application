@@ -34,7 +34,7 @@ http {
         image/svg+xml;
 
     server {
-        listen ${PORT:-10000} default_server;
+        listen ${PORT} default_server;
         server_name _;
         root /var/www/html/public;
 
@@ -42,7 +42,6 @@ http {
 
         charset     utf-8;
 
-        # Versioned static assets — cache for 1 year with immutable flag
         location /build/ {
             expires 1y;
             add_header Cache-Control "public, immutable";

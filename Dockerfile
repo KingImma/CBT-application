@@ -3,6 +3,7 @@ FROM php:8.3-fpm-alpine
 # System dependencies
 RUN apk add --no-cache \
     nginx \
+    gettext \
     postgresql-dev \
     zip \
     unzip \
@@ -38,8 +39,6 @@ WORKDIR /var/www/html
 # Copy composer files first for layer caching
 COPY composer.json composer.lock ./
 
-# Install dependencies without generating the autoloader yet (app files are not
-# present at this layer, so classmap optimisation would be incomplete).
 RUN composer install \
     --no-dev \
     --prefer-dist \
@@ -53,12 +52,11 @@ RUN composer dump-autoload --optimize
 
 RUN php artisan package:discover --ansi
 
-# Ensure storage and bootstrap cache directories are writable by the web process
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Nginx config
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+# Nginx config template (substituted at runtime, not build time)
+COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 
 EXPOSE 10000
 

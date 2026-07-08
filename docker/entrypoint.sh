@@ -49,4 +49,6 @@ echo "Starting php-fpm..."
 php-fpm -D
 
 echo "Starting nginx..."
+export PORT=${PORT:-10000}
+envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 exec nginx -g "daemon off;"

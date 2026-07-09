@@ -99,6 +99,9 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
     })
+    ->withCommands([
+    __DIR__.'/../app/Data/Console/Commands',
+    ])
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
             return $request->is('api/*') || $request->expectsJson();

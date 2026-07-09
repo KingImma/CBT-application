@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Data\Console\Commands;
 
-use App\Actions\Tenants\Exam\FinalizeAttempt;
+use App\Actions\Tenants\Exam\Attempts\FinalizeAttempt;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\ExamAttempt;

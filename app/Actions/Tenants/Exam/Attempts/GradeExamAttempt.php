@@ -32,17 +32,21 @@ final class GradeExamAttempt
         $guard = ExamAttemptGuards::canGrade();
         $guard($attempt);
 
-        $grades = $this->computeAndScore($attempt);
+        // Own transaction boundary — grading is one atomic unit. If anything
+        // throws below, answers/exam_result/completed_attempts writes all
+        // roll back together. Control returns to FinalizeAttempt::submit()
+        // AFTER this rollback completes, so its Failed-status write is safe.
+        return DB::transaction(function () use ($attempt, $guard) {
+            $grades = $this->computeAndScore($attempt);
 
-        $graded = $this->action->execute(
-            $attempt,
-            ['grades' => $grades],
-            guard: $guard,
-            prepare: fn (ExamAttempt $a, array $d) => $d['grades'],
-            after: fn (ExamAttempt $a, array $d) => $this->onGraded($a, $d['grades']),
-        );
-
-        return $graded;
+            return $this->action->execute(
+                $attempt,
+                ['grades' => $grades],
+                guard: $guard,
+                prepare: fn (ExamAttempt $a, array $d) => $d['grades'],
+                after: fn (ExamAttempt $a, array $d) => $this->onGraded($a, $d['grades']),
+            );
+        });
     }
 
     private function onGraded(ExamAttempt $attempt, array $grades): void
@@ -128,10 +132,7 @@ final class GradeExamAttempt
 
         $this->batchUpdateAnswers($gradedAnswers);
 
-        $percentage = CalculateScore::execute(
-            $total,
-            (float) $exam->total_marks,
-        );
+        $percentage = CalculateScore::execute($total, (float) $exam->total_marks);
 
         $grade = ResolveGrade::execute(
             $percentage,
@@ -152,7 +153,7 @@ final class GradeExamAttempt
             'grade' => $grade,
             'objective_score' => $objectiveTotal,
             'theory_score' => $theoryTotal,
-            'time_spent_seconds' => $maxTime ?: (int) ($attempt->submitted_at ?? now())->diffInSeconds($attempt->started_at),
+            'time_spent_seconds' => $maxTime ?: (int) abs(($attempt->submitted_at ?? now())->diffInSeconds($attempt->started_at)),
             'exam' => $exam,
         ];
     }
@@ -167,10 +168,9 @@ final class GradeExamAttempt
         $caseSql = '';
         $bindings = [];
 
-        foreach ($gradedAnswers as $i => $data) {
+        foreach ($gradedAnswers as $data) {
             $ids[] = (string) $data['id'];
             $isCorrect = $data['is_correct'] ? 'true' : 'false';
-            $marks = (string) (float) $data['marks_awarded'];
             $caseSql .= "WHEN ? THEN {$isCorrect} ";
             $bindings[] = $data['id'];
         }
@@ -189,10 +189,8 @@ final class GradeExamAttempt
         DB::update($sql, $bindings);
     }
 
-    private function updateExamCompletion(
-        ExamAttempt $attempt,
-        Exam $exam,
-    ): void {
+    private function updateExamCompletion(ExamAttempt $attempt, Exam $exam): void
+    {
         $exam->increment('completed_attempts');
         $exam->refresh();
 
@@ -204,16 +202,12 @@ final class GradeExamAttempt
             $exam->update(['status' => ExamStatus::Completed]);
         }
 
-        event(
-            new ExamAttemptsUpdated(
-                examId: $exam->id,
-                completedAttempts: $exam->completed_attempts,
-                expectedAttempts: $exam->expected_attempts,
-                status: $shouldComplete
-                    ? ExamStatus::Completed
-                    : ExamStatus::Active,
-                tenantId: (string) tenant('id'),
-            ),
-        );
+        event(new ExamAttemptsUpdated(
+            examId: $exam->id,
+            completedAttempts: $exam->completed_attempts,
+            expectedAttempts: $exam->expected_attempts,
+            status: $shouldComplete ? ExamStatus::Completed : ExamStatus::Active,
+            tenantId: (string) tenant('id'),
+        ));
     }
 }

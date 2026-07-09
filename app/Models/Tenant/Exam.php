@@ -45,6 +45,8 @@ class Exam extends Model
         'instructions',
         'settings',
         'created_by',
+        'window_end',
+        'expected_attempts',
     ];
 
     protected $appends = ['is_published'];

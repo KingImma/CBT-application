@@ -9,7 +9,6 @@ use App\Exceptions\Domain\Exam\ExamCannotBeActivatedException;
 use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
 use App\Exceptions\Domain\Exam\ExamCannotBeSubmittedException;
 use App\Exceptions\Domain\Exam\ExamStateTransitionException;
-use Illuminate\Support\Facades\DB;
 
 trait HasLifecycle
 {
@@ -21,6 +20,7 @@ trait HasLifecycle
         );
 
         $this->status = ExamStatus::Submitted;
+        $this->save();
 
         return $this;
     }
@@ -38,13 +38,12 @@ trait HasLifecycle
 
         $expectedAttempts = $this->expectedAttempts();
 
-        DB::transaction(function () use ($userId, $windowEnd, $expectedAttempts) {
-            $this->status = ExamStatus::Active;
-            $this->approved_by = $userId;
-            $this->approved_at = now();
-            $this->window_end = $windowEnd;
-            $this->expected_attempts = $expectedAttempts;
-        });
+        $this->status = ExamStatus::Active;
+        $this->approved_by = $userId;
+        $this->approved_at = now();
+        $this->window_end = $windowEnd;
+        $this->expected_attempts = $expectedAttempts;
+        $this->save();
 
         return $this;
     }
@@ -58,6 +57,7 @@ trait HasLifecycle
 
         $this->status = ExamStatus::Completed;
         $this->window_end = now();
+        $this->save();
 
         return $this;
     }
@@ -71,6 +71,7 @@ trait HasLifecycle
 
         $this->status = ExamStatus::Draft;
         $this->rejection_reason = $reason;
+        $this->save();
 
         return $this;
     }
@@ -82,9 +83,9 @@ trait HasLifecycle
             ExamStateTransitionException::class,
             'An exam can only be published once it is completed.'
         );
-
         $this->status = ExamStatus::Published;
         $this->published_at = now();
+        $this->save();
 
         return $this;
     }
@@ -99,6 +100,7 @@ trait HasLifecycle
 
         $this->status = ExamStatus::Completed;
         $this->published_at = null;
+        $this->save();
 
         return $this;
     }

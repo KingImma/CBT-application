@@ -20,6 +20,8 @@ final class PublishExamResults
             guard: ExamGuards::isCompleted(),
             prepare: fn (Exam $e, array $d) => [
                 'status' => ExamStatus::Published->value,
+            ],
+            force: fn (Exam $e, array $d) => [
                 'published_at' => now(),
             ],
             // after: fn (Exam $e, array $d) => event(new ResultReleased($e)),

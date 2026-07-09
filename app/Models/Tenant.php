@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\StatusType;
 use App\Models\Tenant\Concerns\HasBroadcasting;
+use App\Models\Tenant\Concerns\HasCacheInvalidation;
 use App\Models\Tenant\Concerns\HasLifecycle;
 use App\Models\Tenant\Concerns\HasValidation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
-use App\Models\Tenant\Concerns\HasCacheInvalidation;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
 class Tenant extends BaseTenant implements TenantWithDatabase

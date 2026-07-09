@@ -20,6 +20,8 @@ final class UnpublishExamResults
             guard: ExamGuards::isPublished(),
             prepare: fn (Exam $e, array $d) => [
                 'status' => ExamStatus::Completed->value,
+            ],
+            force: fn (Exam $e, array $d) => [
                 'published_at' => null,
             ],
         );

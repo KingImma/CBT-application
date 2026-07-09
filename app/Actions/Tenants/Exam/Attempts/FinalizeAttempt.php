@@ -10,11 +10,11 @@ use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Events\ExamAttemptsUpdated;
 use App\Events\ExamSessionStateUpdated;
-use App\Jobs\GradeExamAttemptJob;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use App\Support\Exam\ExamSessionStateStore;
+use Illuminate\Support\Facades\Log;
 
 final class FinalizeAttempt
 {
@@ -31,41 +31,46 @@ final class FinalizeAttempt
             : $this->submit($attempt, $actor);
     }
 
+    /**
+     * Submit is a two-stage unit of work, deliberately NOT wrapped in one
+     * outer transaction:
+     *   Stage 1 — status: InProgress -> Submitted -> Grading (small, safe, committed immediately)
+     *   Stage 2 — grading itself, owns its OWN transaction inside GradeExamAttempt::execute()
+     * If Stage 2 throws, its internal transaction rolls back cleanly (no partial
+     * scores/answers persisted), and the Failed-status write below runs as a
+     * fresh, independent query — not nested inside Stage 2's rolled-back transaction.
+     * This is what keeps failure-recovery durable.
+     */
     private function submit(ExamAttempt $attempt, ?User $actor): ExamAttempt
     {
-        $updated = $this->action->execute(
-            $attempt,
-            ['actor' => $actor],
-            guard: ExamAttemptGuards::canSubmit($actor),
-            prepare: fn (ExamAttempt $a, array $d) => [
-                'status' => ExamAttemptStatus::Submitted->value,
-                'submitted_at' => now(),
-            ],
-            after: function (ExamAttempt $a, array $d) {
-                GradeExamAttemptJob::dispatch($a->id, (string) tenant('id'));
-                $this->destroySessionState($a);
-            },
-        );
+        ExamAttemptGuards::canSubmit($actor)($attempt, ['actor' => $actor]);
 
-        return $updated;
-    }
+        $attempt->update([
+            'status' => ExamAttemptStatus::Submitted->value,
+            'submitted_at' => now(),
+        ]);
 
-    private function gradingAttempt(ExamAttempt $attempt): void
-    {
-        $attempt->update(['status' => ExamAttemptStatus::Grading->value]);
+        $attempt->update([
+            'status' => ExamAttemptStatus::Grading->value,
+        ]);
 
         try {
             $this->gradeAttempt->execute($attempt->fresh());
         } catch (\Throwable $e) {
-            $attempt->update(['status' => ExamAttemptStatus::Failed->value]);
+            // Runs AFTER GradeExamAttempt's internal transaction has already
+            // rolled back and released control here — this is its own commit.
+            $attempt->fresh()->update(['status' => ExamAttemptStatus::Failed->value]);
 
-            Log::error('Synchronous grading failed', [
+            Log::error('Exam grading failed', [
                 'attempt_id' => $attempt->id,
-                'error' => $e->getMessage(),
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-
-            throw $e;
+        } finally {
+            $this->destroySessionState($attempt);
         }
+
+        return $attempt->fresh();
     }
 
     private function timeout(ExamAttempt $attempt): ExamAttempt
@@ -73,7 +78,6 @@ final class FinalizeAttempt
         return $this->action->execute(
             $attempt,
             [],
-            // Guard: must still be InProgress (scheduler may double-fire)
             guard: ExamAttemptGuards::isInProgress(),
             prepare: fn (ExamAttempt $a, array $d) => [
                 'status' => ExamAttemptStatus::Timed_out->value,

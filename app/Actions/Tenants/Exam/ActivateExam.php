@@ -21,10 +21,12 @@ final class ActivateExam
             guard: ExamGuards::canActivate(),
             prepare: fn (Exam $e, array $d) => [
                 'status' => ExamStatus::Active->value,
-                'approved_by' => $d['user_id'],
-                'approved_at' => now(),
                 'window_end' => $e->scheduled_start->copy()->addMinutes($e->duration_minutes * 2),
                 'expected_attempts' => $e->expectedAttempts(),
+            ],
+            force: fn (Exam $e, array $d) => [
+                'approved_by' => $d['user_id'],
+                'approved_at' => now(),
             ],
             after: fn (Exam $e, array $d) => event(new ExamActivated($e)),
         );

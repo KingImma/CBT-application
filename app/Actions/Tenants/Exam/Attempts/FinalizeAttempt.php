@@ -31,16 +31,6 @@ final class FinalizeAttempt
             : $this->submit($attempt, $actor);
     }
 
-    /**
-     * Submit is a two-stage unit of work, deliberately NOT wrapped in one
-     * outer transaction:
-     *   Stage 1 — status: InProgress -> Submitted -> Grading (small, safe, committed immediately)
-     *   Stage 2 — grading itself, owns its OWN transaction inside GradeExamAttempt::execute()
-     * If Stage 2 throws, its internal transaction rolls back cleanly (no partial
-     * scores/answers persisted), and the Failed-status write below runs as a
-     * fresh, independent query — not nested inside Stage 2's rolled-back transaction.
-     * This is what keeps failure-recovery durable.
-     */
     private function submit(ExamAttempt $attempt, ?User $actor): ExamAttempt
     {
         ExamAttemptGuards::canSubmit($actor)($attempt, ['actor' => $actor]);

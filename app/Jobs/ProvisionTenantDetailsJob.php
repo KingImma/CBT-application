@@ -108,28 +108,22 @@ class ProvisionTenantDetailsJob implements ShouldQueue
 
     private function applyGradingScale(): void
     {
-        if (empty($this->curriculumData['gradingScale'])) {
+        $scaleName = $this->curriculumData['gradingScale'] ?? 'Standard A-F';
+
+        $exists = DB::table('grading_scales')->where('name', $scaleName)->exists();
+
+        if ($exists) {
+            DB::table('grading_scales')->update(['is_default' => false]);
+            DB::table('grading_scales')->where('name', $scaleName)->update(['is_default' => true]);
             return;
         }
 
         DB::table('grading_scales')->update(['is_default' => false]);
-
-        $scaleName = $this->curriculumData['gradingScale'];
-        $exists = DB::table('grading_scales')->where('name', $scaleName)->exists();
-
-        if ($exists) {
-            DB::table('grading_scales')
-                ->where('name', $scaleName)
-                ->update(['is_default' => true]);
-
-            return;
-        }
-
         DB::table('grading_scales')->insert([
             'id' => Str::uuid()->toString(),
             'name' => $scaleName,
             'is_default' => true,
-            'grades' => json_encode([]),
+            'grades' => json_encode(self::DEFAULT_GRADES),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -158,4 +152,13 @@ class ProvisionTenantDetailsJob implements ShouldQueue
             );
         }
     }
+
+    private const DEFAULT_GRADES = [
+    ['label' => 'A', 'min_score' => 70, 'max_score' => 100, 'remark' => 'Excellent'],
+    ['label' => 'B', 'min_score' => 60, 'max_score' => 69,  'remark' => 'Very Good'],
+    ['label' => 'C', 'min_score' => 50, 'max_score' => 59,  'remark' => 'Good'],
+    ['label' => 'D', 'min_score' => 45, 'max_score' => 49,  'remark' => 'Pass'],
+    ['label' => 'E', 'min_score' => 40, 'max_score' => 44,  'remark' => 'Fair'],
+    ['label' => 'F', 'min_score' => 0,  'max_score' => 39,  'remark' => 'Fail'],
+    ];
 }

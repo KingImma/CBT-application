@@ -45,7 +45,7 @@ Broadcast::channel('exam-session.{attemptId}', function ($user, string $attemptI
 
 // Tenant Users (Admin, Teacher, Student)
 Broadcast::channel('tenant.{tenantId}.users.{userId}', function (User $user, string $tenantId, string $userId) {
-    return (string) $user->tenant_id === $tenantId && (string) $user->id === $userId;
+    return (string) tenant('id') === $tenantId && (string) $user->id === $userId;
 });
 
 // Super Admins

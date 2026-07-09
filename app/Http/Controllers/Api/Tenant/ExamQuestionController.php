@@ -9,6 +9,7 @@ use App\Actions\Tenants\Exam\Questions\DeleteExamQuestion;
 use App\Actions\Tenants\Exam\Questions\RandomizeExamQuestions;
 use App\Actions\Tenants\Exam\Questions\ReorderExamQuestions;
 use App\Actions\Tenants\Exam\Questions\UpdateExamQuestion;
+use App\Models\Tenant\ExamQuestion;
 use App\Data\Exam\Input\AddQuestionData;
 use App\Data\Exam\Input\RandomizeQuestionsData;
 use App\Data\Exam\Input\ReorderQuestionsData;
@@ -60,21 +61,25 @@ class ExamQuestionController extends Controller
         );
     }
 
-    public function update(UpdateExamQuestionData $data, Exam $exam, Question $question): JsonResponse
+    public function update(UpdateExamQuestionData $data, Exam $exam, string $examQuestion): JsonResponse
     {
         $this->authorize('manageQuestions', $exam);
 
+        $eq = $this->resolveExamQuestion($exam, $examQuestion);
+
         return ApiResponse::success(
-            $this->updateQuestion->execute($exam, $question, $data)->load('question'),
+            $this->updateQuestion->execute($exam, $eq->question, $data)->load('question'),
             'Exam question updated.'
         );
     }
 
-    public function destroy(Exam $exam, Question $question): JsonResponse
+    public function destroy(Exam $exam, string $examQuestion): JsonResponse
     {
         $this->authorize('manageQuestions', $exam);
 
-        $this->deleteQuestion->execute($exam, $question);
+        $eq = $this->resolveExamQuestion($exam, $examQuestion);
+
+        $this->deleteQuestion->execute($exam, $eq->question);
 
         return ApiResponse::message('Question removed from exam.');
     }
@@ -100,5 +105,11 @@ class ExamQuestionController extends Controller
             'total_marks' => $exam->total_marks,
             'questions' => $exam->examQuestions()->with('question.options')->orderBy('order')->get(),
         ], 'Questions randomized.');
+    }
+
+    private function resolveExamQuestion(Exam $exam, string $identifier): ExamQuestion
+    {
+        return $exam->examQuestions()->where('id', $identifier)->first()
+            ?? $exam->examQuestions()->where('question_id', $identifier)->firstOrFail();
     }
 }

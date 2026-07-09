@@ -19,6 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Spatie\Permission\Middleware\PermissionMiddleware;
@@ -29,9 +30,24 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
         then: function () {
+
+            // Broadcasting auth — tenant users
+            // Resulting path: /api/broadcasting/auth
+            Broadcast::routes([
+                'prefix' => 'api',
+                'middleware' => ['api', 'tenant.header', 'auth:tenant', 'user.active'],
+            ]);
+
+            // Broadcasting auth — super admins
+            // Resulting path: /api/super-admin/broadcasting/auth
+            Broadcast::routes([
+                'prefix' => 'api/super-admin',
+                'middleware' => ['api', 'auth:super_admin', 'super-admin'],
+            ]);
+
+            require base_path('routes/channels.php');
 
             // 1. Public API Routes
             Route::middleware('api')

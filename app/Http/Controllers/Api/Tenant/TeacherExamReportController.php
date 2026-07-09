@@ -65,6 +65,7 @@ class TeacherExamReportController extends Controller
                 'attempt_id' => $attempt->id,
                 'exam_id' => $attempt->exam_id,
                 'exam_title' => $attempt->exam->title,
+                'exam_subject' => $attempt->exam->subject->name,
                 'status' => $attempt->status,
                 'attempt_number' => $attempt->attempt_number,
                 'total_score' => (float) $attempt->total_score,

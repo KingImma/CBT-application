@@ -19,8 +19,8 @@ echo "Running seeders..."
 php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=SubscriptionPlanSeeder --force
 
-php artisan tenants:backfill-grading-scale
-php artisan exams:recompute-grades
+# php artisan tenants:backfill-grading-scale
+# php artisan exams:recompute-grades
 
 # echo "Running stuck grading jobs"
 # php artisan exams:recover-stuck-grading

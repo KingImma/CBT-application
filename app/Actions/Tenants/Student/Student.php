@@ -52,6 +52,8 @@ class Student
                     'admission_number' => $admissionNumber,
                     'date_of_birth' => $d['data']['date_of_birth'] ?? null,
                     'gender' => $d['data']['gender'] ?? null,
+                    'guardian_name' => $d['data']['guardian_name'] ?? null,
+                    'guardian_phone' => $d['data']['guardian_phone'] ?? null,
                     'guardian_email' => $d['data']['guardian_email'] ?? null,
                 ]);
             },

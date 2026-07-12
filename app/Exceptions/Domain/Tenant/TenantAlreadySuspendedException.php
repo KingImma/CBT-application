@@ -9,4 +9,6 @@ use App\Exceptions\Domain\BaseDomainException;
 class TenantAlreadySuspendedException extends BaseDomainException
 {
     protected $message = 'Tenant is already suspended.';
+
+    protected int $httpStatus = 409;
 }

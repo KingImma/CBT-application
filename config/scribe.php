@@ -117,12 +117,12 @@ return [
 
         'extra_info' => <<<'AUTH'
             All endpoints (except authentication & onboarding) require a Sanctum Bearer token.
-            
+
             **How to authenticate:**
             1. Call `POST /api/auth/login` with your `identifier` and `password`.
             2. The response will include an `access_token`.
             3. Pass this token as a Bearer token in the `Authorization` header for all subsequent requests.
-            
+
             **For tenants (schools):** Use the tenant's subdomain URL and a tenant user's credentials (admin, teacher, or student).
             **For super admins:** Use the central domain URL and super admin credentials.
             AUTH,

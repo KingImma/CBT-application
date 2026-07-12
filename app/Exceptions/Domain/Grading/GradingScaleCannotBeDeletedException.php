@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain\Grading;
 
-use Exception;
+use App\Exceptions\Domain\BaseDomainException;
 
-class GradingScaleCannotBeDeletedException extends Exception
+class GradingScaleCannotBeDeletedException extends BaseDomainException
 {
-    public function __construct(string $message = 'Cannot delete the default grading scale.', int $code = 422, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
+    protected $message = 'Grading scale cannot be deleted in its current state.';
 }

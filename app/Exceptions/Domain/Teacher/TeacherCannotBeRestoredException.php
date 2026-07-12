@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain\Teacher;
 
-use Exception;
+use App\Exceptions\Domain\BaseDomainException;
 
-class TeacherCannotBeRestoredException extends Exception
+class TeacherCannotBeRestoredException extends BaseDomainException
 {
-    public function __construct(string $message = 'Teacher cannot be restored in their current state.', int $code = 422, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
+    protected $message = 'Teacher cannot be restored in their current state.';
 }

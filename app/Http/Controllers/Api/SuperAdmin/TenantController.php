@@ -7,8 +7,6 @@ namespace App\Http\Controllers\Api\SuperAdmin;
 use App\Actions\SuperAdmin\CreateTenant;
 use App\Data\Tenant\TenantData;
 use App\Events\ActivityFeedEvent;
-use App\Exceptions\Domain\Tenant\TenantAlreadyActiveException;
-use App\Exceptions\Domain\Tenant\TenantAlreadySuspendedException;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Support\ApiResponse;
@@ -146,11 +144,7 @@ class TenantController extends Controller
     {
         $tenant = Tenant::findOrFail($id);
 
-        try {
-            $tenant->suspend()->save();
-        } catch (TenantAlreadySuspendedException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $tenant->suspend()->save();
 
         return ApiResponse::success(
             TenantData::from($tenant),
@@ -169,11 +163,7 @@ class TenantController extends Controller
     {
         $tenant = Tenant::findOrFail($id);
 
-        try {
-            $tenant->reinstate()->save();
-        } catch (TenantAlreadyActiveException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        $tenant->reinstate()->save();
 
         return ApiResponse::success(
             TenantData::from($tenant),

@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain\Teacher;
 
-use Exception;
+use App\Exceptions\Domain\BaseDomainException;
 
-class TeacherCannotBeUpdatedException extends Exception
+class TeacherCannotBeUpdatedException extends BaseDomainException
 {
-    public function __construct(string $message = 'Teacher cannot be updated in their current state.', int $code = 422, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
+    protected $message = 'Teacher cannot be updated in thier current state.';
 }

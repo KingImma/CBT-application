@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Domain\Student;
 
-use Exception;
+use App\Exceptions\Domain\BaseDomainException;
 
-class StudentCannotBeDeletedException extends Exception
+class StudentCannotBeDeletedException extends BaseDomainException
 {
-    public function __construct(string $message = 'Student cannot be deleted in their current state.', int $code = 422, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
+    protected $message = 'Student cannot be deleted in their current state.';
 }

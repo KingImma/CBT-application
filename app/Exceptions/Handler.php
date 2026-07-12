@@ -111,15 +111,10 @@ class Handler extends ExceptionHandler
         // ── Rate limiting ───────────────────────────────────────────────────
         if ($e instanceof ThrottleRequestsException) {
             return ApiResponse::error(
-                'Slow down — you are sending requests too quickly.',
+                'Too many requests.',
                 429,
                 meta: ['retry_after' => $e->getHeaders()['Retry-After'] ?? 60]
             );
-        }
-
-        // ── Tenant slug conflict ────────────────────────────────────────────
-        if ($e instanceof TenantSlugAlreadyTakenException) {
-            return ApiResponse::error($e->getMessage(), 409);
         }
 
         // ── Plan limit exceeded ─────────────────────────────────────────────
@@ -132,7 +127,7 @@ class Handler extends ExceptionHandler
             return ApiResponse::error(
                 $e->getMessage(),
                 422,
-                meta: ['results' => ['succeeded' => $e->succeeded, 'failed' => $e->failed, 'failures' => $e->failures]]
+                meta: ['results' => $e->getResults()]
             );
         }
 

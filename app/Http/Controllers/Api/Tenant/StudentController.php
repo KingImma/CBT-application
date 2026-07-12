@@ -17,12 +17,14 @@ use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
+use App\Jobs\ImportStudentsJob;
 use App\Models\Tenant\User;
 use App\Queries\StudentQuery;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -382,9 +384,19 @@ class StudentController extends Controller
             return $this->buildImportResponse($result, true);
         }
 
-        $result = app(ImportStudents::class)->execute($validated, $path, false);
+        // The upload's real path is request-scoped and deleted afterwards, so
+        // persist it before handing the work to the queue.
+        $storedPath = Storage::disk('local')->path(
+            $file->store('imports', 'local'),
+        );
 
-        return $this->buildImportResponse($result, false);
+        ImportStudentsJob::dispatch(
+            tenant('id'),
+            $storedPath,
+            collect($validated)->except(['file', 'dry_run'])->toArray(),
+        );
+
+        return ApiResponse::message('Student import queued. You will be notified when it finishes.', 202);
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse

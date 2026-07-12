@@ -21,13 +21,14 @@ class ImportTeachersJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public string $queue = 'imports';
-
     public int $tries = 3;
 
     public int $backoff = 30;
 
-    public function __construct(private readonly string $importJobId) {}
+    public function __construct(private readonly string $importJobId)
+    {
+        $this->queue = 'imports';
+    }
 
     public function handle(): void
     {

@@ -22,8 +22,6 @@ class ImportStudentsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public string $queue = 'imports';
-
     public int $tries = 3;
 
     public int $backoff = 30;
@@ -33,7 +31,10 @@ class ImportStudentsJob implements ShouldQueue
         return [(new WithoutOverlapping($this->importJobId))->releaseAfter(60)];
     }
 
-    public function __construct(private readonly string $importJobId) {}
+    public function __construct(private readonly string $importJobId)
+    {
+        $this->queue = 'imports';
+    }
 
     public function handle(): void
     {

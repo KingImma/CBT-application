@@ -40,3 +40,17 @@ Schedule::command('exams:complete-expired')
     ->onFailure(function () {
         Log::channel('slack')->error('Complete expired exams failed');
     });
+
+// Recover stuck jobs
+Schedule::command('imports:recover-stuck --minutes=15')
+    ->everyFiveMinutes()
+    ->onFailure(function () {
+        Log::channel('slack')->error('Recover stuck imports failed');
+    });
+
+// Purge expired jobs
+Schedule::command('imports:purge-expired')
+    ->daily()
+    ->onFailure(function () {
+        Log::channel('slack')->error('Purge expired imports failed');
+    });

@@ -24,7 +24,7 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -352,17 +352,7 @@ class StudentController extends Controller
         ]);
     }
 
-    /**
-     * Import students from a CSV file.
-     *
-     * @subgroup Import/Export
-     *
-     * @bodyParam file file required The CSV file (max 5MB). No-example
-     * @bodyParam dry_run string required Set to "true" to preview without saving. No-example
-     * @bodyParam overwrite_existing string nullable How to handle existing records: skip, update. No-example
-     * @bodyParam class_level_id string nullable Default class level UUID for new students. No-example
-     */
-    public function importCsv(Request $request): JsonResponse
+   public function importCsv(Request $request): JsonResponse
     {
         $this->authorize('importStudents', User::class);
 
@@ -384,17 +374,28 @@ class StudentController extends Controller
             return $this->buildImportResponse($result, true);
         }
 
-        // The upload's real path is request-scoped and deleted afterwards, so
-        // persist it before handing the work to the queue.
-        $storedPath = Storage::disk('local')->path(
-            $file->store('imports', 'local'),
-        );
+        $importJobId = Str::uuid()->toString();
+        $central = config('tenancy.database.central_connection');
 
-        ImportStudentsJob::dispatch(
-            tenant('id'),
-            $storedPath,
-            collect($validated)->except(['file', 'dry_run'])->toArray(),
-        );
+        DB::connection($central)->table('import_jobs')->insert([
+            'id' => $importJobId,
+            'tenant_id' => tenant('id'),
+            'type' => 'student',
+            'status' => 'pending',
+            'file_contents' => file_get_contents($path),
+            'meta' => json_encode(collect($validated)->except(['file', 'dry_run'])->toArray()),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            ImportStudentsJob::dispatch($importJobId);
+        } catch (\Throwable $e) {
+            Log::error('ImportStudentsJob dispatch failed, row will be recovered by scheduled sweep', [
+                'import_job_id' => $importJobId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return ApiResponse::message('Student import queued. You will be notified when it finishes.', 202);
     }

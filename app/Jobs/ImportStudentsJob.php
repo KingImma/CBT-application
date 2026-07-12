@@ -7,62 +7,112 @@ namespace App\Jobs;
 use App\Actions\Import\ImportStudents;
 use App\Data\Results\ImportResult;
 use App\Events\ActivityFeedEvent;
-use App\Models\Tenant;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 
-/**
- * Queue transport for the student CSV import. Re-establishes the tenant
- * database context lost when the job leaves the request, then runs the
- * existing ImportStudents action unchanged and notifies the school admin
- * when the work is done.
- */
 class ImportStudentsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public string $queue = 'imports';
+
     public int $tries = 3;
 
-    /**
-     * @param  array<string, mixed>  $validated
-     */
-    public function __construct(
-        public readonly string $tenantId,
-        public readonly string $path,
-        public readonly array $validated,
-    ) {
-        $this->onQueue('default');
+    public int $backoff = 30;
+
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping($this->importJobId))->releaseAfter(60)];
     }
+
+    public function __construct(private readonly string $importJobId) {}
 
     public function handle(): void
     {
-        $tenant = Tenant::find($this->tenantId);
+        $central = config('tenancy.database.central_connection');
 
-        if ($tenant === null) {
-            Log::warning('ImportStudentsJob: tenant not found', ['tenant_id' => $this->tenantId]);
+        $claimed = DB::connection($central)->transaction(function () use ($central) {
+            $row = DB::connection($central)
+                ->table('import_jobs')
+                ->where('id', $this->importJobId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($row === null || $row->status === 'completed') {
+                return null;
+            }
+
+            DB::connection($central)
+                ->table('import_jobs')
+                ->where('id', $this->importJobId)
+                ->update(['status' => 'processing', 'updated_at' => now()]);
+
+            return $row;
+        });
+
+        if ($claimed === null) {
+            Log::info('ImportStudentsJob: skipped — already completed or row missing', [
+                'import_job_id' => $this->importJobId,
+            ]);
 
             return;
         }
 
-        $tenant->run(function () {
-            $result = app(ImportStudents::class)->execute($this->validated, $this->path, false);
+        tenancy()->initialize($claimed->tenant_id);
 
-            $this->notifyComplete($result);
-        });
+        $tempPath = null;
 
-        $this->cleanupFile();
+        try {
+            $tempPath = tempnam(sys_get_temp_dir(), 'student_import_');
+            throw_if($tempPath === false, new RuntimeException('Failed to create temp file for student import.'));
+
+            $written = file_put_contents($tempPath, $claimed->file_contents);
+            throw_if($written === false, new RuntimeException('Failed to write import file to disk.'));
+
+            $validated = json_decode($claimed->meta, true);
+            $validated['dry_run'] = 'false';
+
+            $result = app(ImportStudents::class)->execute($validated, $tempPath, false);
+
+            DB::connection($central)
+                ->table('import_jobs')
+                ->where('id', $this->importJobId)
+                ->update(['status' => 'completed', 'updated_at' => now()]);
+
+            try {
+                $this->notifyComplete($result, $claimed->tenant_id);
+            } catch (\Throwable $e) {
+                Log::error('Failed to send student import completion notification', [
+                    'import_job_id' => $this->importJobId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            DB::connection($central)
+                ->table('import_jobs')
+                ->where('id', $this->importJobId)
+                ->delete();
+        } finally {
+            if ($tempPath !== null && file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
+            tenancy()->end();
+        }
     }
 
-    public function notifyComplete(ImportResult $result): void
+    public function notifyComplete(ImportResult $result, string $tenantId): void
     {
         event(new ActivityFeedEvent(
             channelType: 'school_admin',
-            channelId: $this->tenantId,
+            channelId: $tenantId,
             action: 'student_import_completed',
             description: 'Student import completed.',
             meta: [
@@ -76,19 +126,21 @@ class ImportStudentsJob implements ShouldQueue
 
     public function failed(Throwable $e): void
     {
-        Log::error('ImportStudentsJob failed permanently', [
-            'tenant_id' => $this->tenantId,
-            'path' => $this->path,
+        $central = config('tenancy.database.central_connection');
+
+        DB::connection($central)
+            ->table('import_jobs')
+            ->where('id', $this->importJobId)
+            ->update([
+                'status' => 'failed',
+                'retain_until' => now()->addDays(3),
+                'updated_at' => now(),
+            ]);
+
+        Log::error('Students import failed permanently', [
+            'import_job_id' => $this->importJobId,
             'error' => $e->getMessage(),
+            'retained_until' => now()->addDays(3)->toIso8601String(),
         ]);
-
-        $this->cleanupFile();
-    }
-
-    private function cleanupFile(): void
-    {
-        if (file_exists($this->path)) {
-            @unlink($this->path);
-        }
     }
 }

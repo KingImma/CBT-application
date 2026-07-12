@@ -25,7 +25,7 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -330,15 +330,6 @@ class TeacherController extends Controller
         ]);
     }
 
-    /**
-     * Import teachers from a CSV file.
-     *
-     * @subgroup Import/Export
-     *
-     * @bodyParam file file required The CSV file (max 5MB). No-example
-     * @bodyParam dry_run string required Set to "true" to preview without saving. No-example
-     * @bodyParam overwrite_existing string nullable How to handle existing records: skip, update. No-example
-     */
     public function importCsv(Request $request): JsonResponse
     {
         $this->authorize('importTeachers', User::class);
@@ -360,17 +351,30 @@ class TeacherController extends Controller
             return $this->buildImportResponse($result, true);
         }
 
-        // The upload's real path is request-scoped and deleted afterwards, so
-        // persist it before handing the work to the queue.
-        $storedPath = Storage::disk('local')->path(
-            $file->store('imports', 'local'),
-        );
+        $importJobId = Str::uuid()->toString();
+        $central = config('tenancy.database.central_connection');
 
-        ImportTeachersJob::dispatch(
-            tenant('id'),
-            $storedPath,
-            collect($validated)->except(['file', 'dry_run'])->toArray(),
-        );
+        DB::connection($central)->table('import_jobs')->insert([
+            'id' => $importJobId,
+            'tenant_id' => tenant('id'),
+            'type' => 'teacher',
+            'status' => 'pending',
+            'file_contents' => file_get_contents($path),
+            'meta' => json_encode(collect($validated)->except(['file', 'dry_run'])->toArray()),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            ImportTeachersJob::dispatch($importJobId);
+        } catch (\Throwable $e) {
+            // Row already durably persisted as 'pending' — imports:recover-stuck
+            // sweep picks it up on next scheduled run even if dispatch failed now.
+            Log::error('ImportTeachersJob dispatch failed, row will be recovered by scheduled sweep', [
+                'import_job_id' => $importJobId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return ApiResponse::message('Teacher import queued. You will be notified when it finishes.', 202);
     }

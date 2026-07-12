@@ -8,10 +8,12 @@ use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\ExamType;
 use App\Enums\QuestionType;
+use App\Jobs\GradeExamAttemptJob;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
@@ -19,13 +21,18 @@ use App\Models\Tenant\QuestionOption;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\Term;
 use App\Models\Tenant\User;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 uses(TestCase::class);
 
 beforeEach(function () {
-    $this->tenant = Tenant::factory()->create();
+    $suffix = str_replace('-', '_', (string) fake()->uuid());
+    $this->tenant = Tenant::factory()->create([
+        'id' => 'tenant_'.$suffix,
+        'database' => 'tenant_'.$suffix,
+    ]);
     tenancy()->initialize($this->tenant);
 
     $admin = User::create([
@@ -108,7 +115,7 @@ beforeEach(function () {
         'order' => 2,
     ]);
 
-    ExamQuestion::create([
+    $this->examQuestion = ExamQuestion::create([
         'exam_id' => $exam->id,
         'question_id' => $question->id,
         'order' => 1,
@@ -127,27 +134,31 @@ afterEach(function () {
         //
     }
 
-    try {
-        $this->tenant->database()->manager()->deleteDatabase($this->tenant);
-    } catch (\Exception) {
-        //
-    }
+    if (isset($this->tenant)) {
+        try {
+            $this->tenant->database()->manager()->deleteDatabase($this->tenant);
+        } catch (\Exception) {
+            //
+        }
 
-    try {
-        $this->tenant->delete();
-    } catch (\Exception) {
-        //
+        try {
+            $this->tenant->delete();
+        } catch (\Exception) {
+            //
+        }
     }
 });
 
 it('submits an attempt asynchronously', function () {
+    Queue::fake();
+
     Sanctum::actingAs($this->student, ['*'], 'tenant');
 
     $response = $this->postJson("/api/student/exams/{$this->exam->id}/start");
     $response->assertStatus(201);
     $attemptId = $response->json('data.attempt.id');
 
-    $this->putJson("/api/student/exams/attempts/{$attemptId}/answers/{$this->question->id}", [
+    $this->putJson("/api/student/exams/attempts/{$attemptId}/answers/{$this->examQuestion->id}", [
         'selected_option_ids' => [$this->correctOption->id],
     ])->assertStatus(200);
 
@@ -158,6 +169,8 @@ it('submits an attempt asynchronously', function () {
     $attempt = ExamAttempt::where('id', $attemptId)->first();
     expect($attempt)->not->toBeNull();
     expect($attempt->status)->toBe(ExamAttemptStatus::Submitted->value);
+
+    Queue::assertPushed(GradeExamAttemptJob::class);
 });
 
 it('rejects double submission with 409', function () {
@@ -190,20 +203,50 @@ it('rejects submit for non-in-progress attempt', function () {
     $response->assertStatus(409);
 });
 
-it('processes grade job synchronously when queue driver is sync', function () {
+it('completes full grading pipeline end-to-end with sync queue', function () {
     Sanctum::actingAs($this->student, ['*'], 'tenant');
 
     $response = $this->postJson("/api/student/exams/{$this->exam->id}/start");
     $attemptId = $response->json('data.attempt.id');
 
-    $this->putJson("/api/student/exams/attempts/{$attemptId}/answers/{$this->question->id}", [
+    $this->putJson("/api/student/exams/attempts/{$attemptId}/answers/{$this->examQuestion->id}", [
         'selected_option_ids' => [$this->correctOption->id],
     ])->assertStatus(200);
 
     $this->postJson("/api/student/exams/attempts/{$attemptId}/submit")->assertStatus(202);
 
     $attempt = ExamAttempt::find($attemptId);
-    expect($attempt->status)->toBe(ExamAttemptStatus::Submitted->value);
+    expect($attempt->status)->toBe(ExamAttemptStatus::Graded->value);
+    expect((float) $attempt->total_score)->toBe(10.0);
+    expect((float) $attempt->percentage_score)->toBe(100.0);
+});
+
+it('recovers a Grading attempt on retry', function () {
+    $attempt = ExamAttempt::create([
+        'exam_id' => $this->exam->id,
+        'student_id' => $this->student->id,
+        'attempt_number' => 1,
+        'status' => ExamAttemptStatus::Grading->value,
+        'started_at' => now()->subHour(),
+        'submitted_at' => now()->subMinutes(30),
+    ]);
+
+    $answer = ExamAnswer::create([
+        'attempt_id' => $attempt->id,
+        'question_id' => $this->question->id,
+        'selected_option_ids' => [$this->correctOption->id],
+        'is_correct' => false,
+        'marks_awarded' => 0,
+    ]);
+
+    GradeExamAttemptJob::dispatchSync(
+        $attempt->id,
+        (string) tenant('id'),
+    );
+
+    $attempt->refresh();
+    expect($attempt->status)->toBe(ExamAttemptStatus::Graded->value);
+    expect((float) $attempt->total_score)->toBe(10.0);
 });
 
 it('returns session state for reconnection', function () {

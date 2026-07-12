@@ -1,100 +1,148 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\Tenant;
 
 use App\Actions\Tenants\Terms\CreateTerm;
+use App\Exceptions\Domain\Session\DuplicateTermNameException;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Term;
-use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TermValidationTest extends TestCase
 {
-    use RefreshDatabase, WithFaker;
+    protected Tenant $tenant;
+
+    protected string $tenantUuid;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Seed a tenant for testing
+        $tenantId = 'tenant-'.Str::uuid()->toString();
+
         $this->tenant = Tenant::factory()->create([
-            'id' => 'test-tenant',
+            'id' => $tenantId,
+            'slug' => $tenantId,
+            'handle' => $tenantId,
+            'database' => 'tenant_'.str_replace('-', '_', $tenantId),
         ]);
 
-        // Activate the tenant for the test
-        $this->app->instance('tenancy.tenant', $this->tenant);
+        tenancy()->initialize($this->tenant);
+
+        // Use the raw UUID for the terms.tenant_id column (which is uuid type)
+        $this->tenantUuid = Str::uuid()->toString();
     }
 
-    /** @test */
-    public function it_prevents_duplicate_term_names_within_the_same_tenant()
+    protected function tearDown(): void
     {
-        // Create an academic session for the tenant
-        $session = AcademicSession::factory()->for($this->tenant)->create();
+        tenancy()->end();
+        try {
+            $this->tenant->delete();
+        } catch (\Exception) {
+            // Ignore cleanup failures.
+        }
 
-        // Create first term
-        Term::factory()->for($this->tenant)->for($session)->create([
-            'name' => 'First Term',
-        ]);
-
-        // Attempt to create a second term with the same name in the same tenant and session
-        $this->expectException(ValidationException::class);
-
-        Term::factory()->for($this->tenant)->for($session)->make([
-            'name' => 'First Term',
-        ])->save(); // This should throw a ValidationException due to our service
-
-        // Alternatively, we can test via the controller or service directly.
-        // Let's test the service directly for clarity.
+        parent::tearDown();
     }
 
-    /** @test */
-    public function it_allows_same_term_name_in_different_tenants()
+    public function test_prevents_duplicate_term_names_within_the_same_tenant(): void
     {
-        // Create two tenants
-        $tenantA = Tenant::factory()->create(['id' => 'tenant-a']);
-        $tenantB = Tenant::factory()->create(['id' => 'tenant-b']);
-
-        // Create an academic session for each tenant
-        $sessionA = AcademicSession::factory()->for($tenantA)->create();
-        $sessionB = AcademicSession::factory()->for($tenantB)->create();
-
-        // Create a term in tenant A
-        Term::factory()->for($tenantA)->for($sessionA)->create([
-            'name' => 'First Term',
+        $session = AcademicSession::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_current' => false,
         ]);
 
-        // Create a term in tenant B with the same name - should pass
-        $termB = Term::factory()->for($tenantB)->for($sessionB)->create([
+        Term::create([
             'name' => 'First Term',
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-15',
+            'is_current' => false,
+            'academic_session_id' => $session->id,
+            'tenant_id' => $this->tenantUuid,
+        ]);
+
+        $this->expectException(DuplicateTermNameException::class);
+        $this->expectExceptionMessage("A term with the name 'First Term' already exists in this session.");
+
+        (new CreateTerm)->execute([
+            'name' => 'First Term',
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-15',
+            'is_current' => false,
+            'academic_session_id' => $session->id,
+            'tenant_id' => $this->tenantUuid,
+        ]);
+    }
+
+    public function test_allows_same_term_name_in_different_tenants(): void
+    {
+        $sessionA = AcademicSession::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_current' => false,
+        ]);
+
+        $sessionB = AcademicSession::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_current' => false,
+        ]);
+
+        $tenantUuidA = Str::uuid()->toString();
+        $tenantUuidB = Str::uuid()->toString();
+
+        Term::create([
+            'name' => 'First Term',
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-15',
+            'is_current' => false,
+            'academic_session_id' => $sessionA->id,
+            'tenant_id' => $tenantUuidA,
+        ]);
+
+        $termB = Term::create([
+            'name' => 'First Term',
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-15',
+            'is_current' => false,
+            'academic_session_id' => $sessionB->id,
+            'tenant_id' => $tenantUuidB,
         ]);
 
         $this->assertDatabaseHas('terms', [
             'id' => $termB->id,
             'name' => 'First Term',
-            'tenant_id' => $tenantB->id,
+            'tenant_id' => $tenantUuidB,
         ]);
     }
 
-    /** @test */
-    public function it_allows_updating_a_term_to_the_same_name()
+    public function test_allows_updating_a_term_to_the_same_name(): void
     {
-        // Create a tenant and session
-        $tenant = Tenant::factory()->create(['id' => 'tenant-x']);
-        $session = AcademicSession::factory()->for($tenant)->create();
-
-        // Create a term
-        $term = Term::factory()->for($tenant)->for($session)->create([
-            'name' => 'Original Name',
+        $session = AcademicSession::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_current' => false,
         ]);
 
-        // Update the term to the same name (should pass)
-        $term->update([
+        $term = Term::create([
             'name' => 'Original Name',
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-15',
+            'is_current' => false,
+            'academic_session_id' => $session->id,
+            'tenant_id' => $this->tenantUuid,
         ]);
+
+        $term->update(['name' => 'Original Name']);
 
         $this->assertDatabaseHas('terms', [
             'id' => $term->id,
@@ -102,47 +150,52 @@ class TermValidationTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function it_prevents_updating_a_term_to_an_existing_name_in_the_same_tenant()
+    public function test_prevents_updating_a_term_to_an_existing_name_in_the_same_tenant(): void
     {
-        // Create a tenant and session
-        $tenant = Tenant::factory()->create(['id' => 'tenant-y']);
-        $session = AcademicSession::factory()->for($tenant)->create();
-
-        // Create two terms
-        $termA = Term::factory()->for($tenant)->for($session)->create([
-            'name' => 'Term A',
+        $session = AcademicSession::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_current' => false,
         ]);
-        $termB = Term::factory()->for($tenant)->for($session)->create([
+
+        $termA = Term::create([
+            'name' => 'Term A',
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-15',
+            'is_current' => false,
+            'academic_session_id' => $session->id,
+            'tenant_id' => $this->tenantUuid,
+        ]);
+
+        $termB = Term::create([
             'name' => 'Term B',
+            'start_date' => '2025-12-16',
+            'end_date' => '2026-03-15',
+            'is_current' => false,
+            'academic_session_id' => $session->id,
+            'tenant_id' => $this->tenantUuid,
         ]);
 
-        // Attempt to update termB to have the same name as termA
-        $this->expectException(ValidationException::class);
+        $this->expectException(DuplicateTermNameException::class);
 
-        $termB->update([
-            'name' => 'Term A',
-        ]);
+        (new \App\Actions\Tenants\Terms\UpdateTerm)->execute($termB, ['name' => 'Term A']);
     }
 
-    /** @test */
-    public function it_handles_concurrent_create_gracefully_via_database_exception()
+    public function test_handles_concurrent_create_gracefully_via_database_exception(): void
     {
-        // This test simulates a race condition where two requests try to create the same term at the same time.
-        // We'll simulate by trying to create two terms in a loop and catch the QueryException.
-
-        $tenant = Tenant::factory()->create(['id' => 'tenant-z']);
-        $session = AcademicSession::factory()->for($tenant)->create();
-
-        // We'll attempt to create two terms with the same name in quick succession.
-        // The first one should succeed, the second one should fail with a duplicate key error.
-        // We'll use the service directly to catch the ValidationException that wraps the QueryException.
+        $session = AcademicSession::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_current' => false,
+        ]);
 
         $createTerm = new CreateTerm;
 
         $term1 = $createTerm->execute([
             'name' => 'Race Condition Term',
-            'tenant_id' => $tenant->id,
+            'tenant_id' => $this->tenantUuid,
             'academic_session_id' => $session->id,
             'start_date' => now()->toDateString(),
             'end_date' => now()->addMonth()->toDateString(),
@@ -151,15 +204,14 @@ class TermValidationTest extends TestCase
 
         $this->assertDatabaseHas('terms', [
             'name' => 'Race Condition Term',
-            'tenant_id' => $tenant->id,
+            'tenant_id' => $this->tenantUuid,
         ]);
 
-        // Now try to create a second term with the same name and tenant - should throw ValidationException
-        $this->expectException(ValidationException::class);
+        $this->expectException(DuplicateTermNameException::class);
 
-        $termService->createTerm([
+        $createTerm->execute([
             'name' => 'Race Condition Term',
-            'tenant_id' => $tenant->id,
+            'tenant_id' => $this->tenantUuid,
             'academic_session_id' => $session->id,
             'start_date' => now()->toDateString(),
             'end_date' => now()->addMonth()->toDateString(),

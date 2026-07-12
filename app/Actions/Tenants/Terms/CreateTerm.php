@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenants\Terms;
 
+use App\Exceptions\Domain\Session\DuplicateTermNameException;
 use App\Models\Tenant\Term;
 use Illuminate\Database\QueryException;
-use Illuminate\Validation\ValidationException;
 
 class CreateTerm
 {
@@ -18,9 +18,7 @@ class CreateTerm
             ->where('name', $data['name'])
             ->exists()
         ) {
-            throw ValidationException::withMessages([
-                'name' => __('The term name must be unique per tenant.'),
-            ]);
+            throw new DuplicateTermNameException($data['name']);
         }
 
         try {
@@ -30,9 +28,7 @@ class CreateTerm
                 throw $e;
             }
 
-            throw ValidationException::withMessages([
-                'name' => __('The term name must be unique per tenant.'),
-            ]);
+            throw new DuplicateTermNameException($data['name']);
         }
     }
 }

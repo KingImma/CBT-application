@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
+use App\Actions\Tenants\Sessions\CreateSession;
+use App\Actions\Tenants\Sessions\UpdateSession;
 use App\Data\AcademicSession\AcademicSessionData;
 use App\Exceptions\Domain\Session\SessionAlreadyCurrentException;
 use App\Http\Controllers\Controller;
@@ -48,18 +50,13 @@ class AcademicSessionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:100',
-                'unique:academic_sessions,name',
-            ],
+            'name' => ['required', 'string', 'max:100'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after:start_date'],
             'is_current' => ['sometimes', 'boolean'],
         ]);
 
-        $session = AcademicSession::create($validated);
+        $session = (new CreateSession)->execute($validated);
 
         return ApiResponse::created(
             AcademicSessionData::from($session),
@@ -101,21 +98,16 @@ class AcademicSessionController extends Controller
         $session = AcademicSession::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => [
-                'sometimes',
-                'string',
-                'max:100',
-                'unique:academic_sessions,name,'.$id,
-            ],
+            'name' => ['sometimes', 'string', 'max:100'],
             'start_date' => ['sometimes', 'date'],
             'end_date' => ['sometimes', 'date', 'after:start_date'],
             'is_current' => ['sometimes', 'boolean'],
         ]);
 
-        $session->update($validated);
+        $session = (new UpdateSession)->execute($session, $validated);
 
         return ApiResponse::success(
-            AcademicSessionData::from($session->fresh('terms')),
+            AcademicSessionData::from($session->load('terms')),
             'Academic session updated.',
         );
     }

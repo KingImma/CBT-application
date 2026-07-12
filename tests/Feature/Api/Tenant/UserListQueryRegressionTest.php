@@ -106,4 +106,135 @@ class UserListQueryRegressionTest extends TestCase
 
         $this->assertSame('katherine@example.com', $response->json('data.0.email'));
     }
+
+    public function test_revoked_teachers_appear_with_inactive_status(): void
+    {
+        $admin = $this->createUser(RoleType::SchoolAdmin->value, 'School', 'Admin', 'admin@example.com', true);
+        $teacher = $this->createUser(RoleType::Teacher->value, 'Revoked', 'Teacher', 'revoked@example.com', true);
+
+        // Simulate revoke: deactivate + soft delete
+        $teacher->deactivate()->save();
+        $teacher->delete();
+
+        $this->actingAs($admin, 'tenant');
+
+        $response = $this->getJson('/api/teachers?status=inactive');
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Teachers retrieved successfully.')
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.email', 'revoked@example.com');
+    }
+
+    public function test_revoked_students_appear_with_inactive_status(): void
+    {
+        $admin = $this->createUser(RoleType::SchoolAdmin->value, 'School', 'Admin', 'admin@example.com', true);
+        $student = $this->createUser(RoleType::Student->value, 'Revoked', 'Student', 'revoked@example.com', true);
+
+        // Simulate revoke: deactivate + soft delete
+        $student->deactivate()->save();
+        $student->delete();
+
+        $this->actingAs($admin, 'tenant');
+
+        $response = $this->getJson('/api/students?status=inactive');
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Students retrieved successfully.')
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.email', 'revoked@example.com');
+    }
+
+    public function test_revoked_users_appear_with_all_status(): void
+    {
+        $admin = $this->createUser(RoleType::SchoolAdmin->value, 'School', 'Admin', 'admin@example.com', true);
+        $activeTeacher = $this->createUser(RoleType::Teacher->value, 'Active', 'Teacher', 'active@example.com', true);
+        $revokedTeacher = $this->createUser(RoleType::Teacher->value, 'Revoked', 'Teacher', 'revoked@example.com', true);
+
+        // Revoke one teacher
+        $revokedTeacher->deactivate()->save();
+        $revokedTeacher->delete();
+
+        $this->actingAs($admin, 'tenant');
+
+        $response = $this->getJson('/api/teachers?status=all');
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Teachers retrieved successfully.')
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_revoked_users_not_shown_with_active_status(): void
+    {
+        $admin = $this->createUser(RoleType::SchoolAdmin->value, 'School', 'Admin', 'admin@example.com', true);
+        $activeTeacher = $this->createUser(RoleType::Teacher->value, 'Active', 'Teacher', 'active@example.com', true);
+        $revokedTeacher = $this->createUser(RoleType::Teacher->value, 'Revoked', 'Teacher', 'revoked@example.com', true);
+
+        // Revoke one teacher
+        $revokedTeacher->deactivate()->save();
+        $revokedTeacher->delete();
+
+        $this->actingAs($admin, 'tenant');
+
+        $response = $this->getJson('/api/teachers?status=active');
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Teachers retrieved successfully.')
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.email', 'active@example.com');
+    }
+
+    public function test_revoked_teacher_can_be_restored(): void
+    {
+        $admin = $this->createUser(RoleType::SchoolAdmin->value, 'School', 'Admin', 'admin@example.com', true);
+        $teacher = $this->createUser(RoleType::Teacher->value, 'Revoked', 'Teacher', 'revoked@example.com', true);
+
+        // Revoke the teacher
+        $teacher->deactivate()->save();
+        $teacher->delete();
+
+        $this->actingAs($admin, 'tenant');
+
+        // Verify teacher is not in active list
+        $response = $this->getJson('/api/teachers?status=active');
+        $response->assertOk()->assertJsonCount(0, 'data');
+
+        // Restore the teacher
+        $response = $this->postJson("/api/teachers/{$teacher->id}/restore");
+        $response->assertOk()
+            ->assertJsonPath('message', fn ($msg) => str_contains($msg, 'has been restored'));
+
+        // Verify teacher is back in active list
+        $response = $this->getJson('/api/teachers?status=active');
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.email', 'revoked@example.com');
+    }
+
+    public function test_revoked_student_can_be_restored(): void
+    {
+        $admin = $this->createUser(RoleType::SchoolAdmin->value, 'School', 'Admin', 'admin@example.com', true);
+        $student = $this->createUser(RoleType::Student->value, 'Revoked', 'Student', 'revoked@example.com', true);
+
+        // Revoke the student
+        $student->deactivate()->save();
+        $student->delete();
+
+        $this->actingAs($admin, 'tenant');
+
+        // Verify student is not in active list
+        $response = $this->getJson('/api/students?status=active');
+        $response->assertOk()->assertJsonCount(0, 'data');
+
+        // Restore the student
+        $response = $this->postJson("/api/students/{$student->id}/restore");
+        $response->assertOk()
+            ->assertJsonPath('message', fn ($msg) => str_contains($msg, 'has been restored'));
+
+        // Verify student is back in active list
+        $response = $this->getJson('/api/students?status=active');
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.email', 'revoked@example.com');
+    }
 }

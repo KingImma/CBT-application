@@ -12,6 +12,7 @@ class StudentQuery
     public function forList(): Builder
     {
         return User::role('student')
+            ->withTrashed()
             ->select('id', 'first_name', 'last_name', 'email', 'phone', 'is_active')
             ->with(['studentProfile.classLevel', 'studentProfile.classArm']);
     }

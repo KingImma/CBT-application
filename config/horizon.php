@@ -229,7 +229,7 @@ return [
 
             'supervisor-default' => [
                 'connection' => 'horizon-redis',
-                'queue' => ['default', 'notifications', 'emails', 'exams'],
+                'queue' => ['default', 'notifications', 'emails', 'exams', 'imports'],
                 'balance' => 'auto',
                 'autoScalingStrategy' => 'time',
                 'minProcesses' => 1,
@@ -255,7 +255,7 @@ return [
 
             'supervisor-default' => [
                 'connection' => 'horizon-redis',
-                'queue' => ['default', 'notifications', 'emails', 'exams'],
+                'queue' => ['default', 'notifications', 'emails', 'exams', 'imports'],
                 'balance' => 'simple',
                 'maxProcesses' => 3,
                 'tries' => 3,

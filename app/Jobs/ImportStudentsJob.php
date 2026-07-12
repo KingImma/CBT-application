@@ -11,12 +11,12 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 
 class ImportStudentsJob implements ShouldQueue
 {
@@ -90,7 +90,7 @@ class ImportStudentsJob implements ShouldQueue
 
             try {
                 $this->notifyComplete($result, $claimed->tenant_id);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::error('Failed to send student import completion notification', [
                     'import_job_id' => $this->importJobId,
                     'error' => $e->getMessage(),

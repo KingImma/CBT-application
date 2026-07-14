@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ManageExamSession;
+use App\Domains\Exams\Actions\Attempts\GradeExamAttempt;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\ExamType;
@@ -217,8 +217,8 @@ class StudentExamSubmitFlowTest extends TestCase
 
         // Grade manually (the job is queued to Redis, so run inline)
         $this->attempt->refresh();
-        $sessionManager = app(ManageExamSession::class);
-        $sessionManager->gradeAttempt($this->attempt->fresh(), $this->exam);
+        $grader = app(GradeExamAttempt::class);
+        $grader->execute($this->attempt->fresh());
 
         $this->attempt->refresh();
         $this->assertEquals(ExamAttemptStatus::Graded->value, $this->attempt->status);
@@ -241,8 +241,8 @@ class StudentExamSubmitFlowTest extends TestCase
         $this->postJson("/api/student/exams/attempts/{$this->attempt->id}/submit");
 
         $this->attempt->refresh();
-        $sessionManager = app(ManageExamSession::class);
-        $sessionManager->gradeAttempt($this->attempt->fresh(), $this->exam);
+        $grader = app(GradeExamAttempt::class);
+        $grader->execute($this->attempt->fresh());
 
         $this->attempt->refresh();
         $this->assertEquals(1.0, (float) $this->attempt->total_score);
@@ -261,8 +261,8 @@ class StudentExamSubmitFlowTest extends TestCase
         $this->postJson("/api/student/exams/attempts/{$this->attempt->id}/submit");
 
         $this->attempt->refresh();
-        $sessionManager = app(ManageExamSession::class);
-        $sessionManager->gradeAttempt($this->attempt->fresh(), $this->exam);
+        $grader = app(GradeExamAttempt::class);
+        $grader->execute($this->attempt->fresh());
 
         $this->attempt->refresh();
         $this->assertEquals(1.0, (float) $this->attempt->total_score);

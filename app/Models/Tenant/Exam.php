@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
-use App\Data\Values\ExamSettings;
+use App\Domains\Exams\Data\ExamSettings;
 use App\Enums\ExamStatus;
 use App\Enums\RoleType;
 use App\Models\Tenant\Exam\Concerns\HasAttempts;

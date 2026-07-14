@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant\Concerns;
 
 use App\Models\Tenant\User;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 trait TogglesUserActive

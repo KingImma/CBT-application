@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Data\Question\FitbQuestionData;
-use App\Data\Question\McqQuestionData;
-use App\Data\Question\QuestionData;
-use App\Data\Question\TrueFalseQuestionData;
+use App\Domains\Questions\Data\FitbQuestionData;
+use App\Domains\Questions\Data\McqQuestionData;
+use App\Domains\Questions\Data\QuestionData;
+use App\Domains\Questions\Data\TrueFalseQuestionData;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
-use App\Data\Values\ExamAttemptSettings;
+use App\Domains\Exams\Data\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
 use App\Models\Tenant\ExamAttempt\Concerns\HasBroadcasting;

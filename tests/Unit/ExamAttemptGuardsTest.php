@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
-use App\Actions\Tenants\Exam\ExamAttemptGuards;
+use App\Domains\Exams\Exceptions\AttemptCannotBeSubmittedException;
+use App\Domains\Exams\Support\ExamAttemptLifecycleRules;
 use App\Enums\ExamAttemptStatus;
-use App\Exceptions\Domain\ExamAttempt\AttemptCannotBeSubmittedException;
 use App\Models\Tenant\ExamAttempt;
 use Tests\TestCase;
 
@@ -17,7 +17,7 @@ class ExamAttemptGuardsTest extends TestCase
         ]);
         $attempt->status = ExamAttemptStatus::InProgress;
 
-        $guard = ExamAttemptGuards::canSubmit(null);
+        $guard = ExamAttemptLifecycleRules::canSubmit(null);
 
         $this->expectException(AttemptCannotBeSubmittedException::class);
         $this->expectExceptionMessage('Exam time has expired.');

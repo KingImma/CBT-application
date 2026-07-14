@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domains\Exams\Data\Output;
+
+final class TrueFalseStudentQuestionData extends StudentQuestionData
+{
+    /**
+     * Options visible to the student during the exam.
+     * The `is_correct` flag is STRIPPED to prevent answer leakage.
+     *
+     * @var array<int, array{id: string, content: string}>
+     */
+    public readonly array $options;
+
+    public function __construct(
+        string $id,
+        string $exam_id,
+        string $question_id,
+        int $order,
+        ?float $marks,
+        string $type,
+        string $content,
+        string $content_format = 'plain_text',
+        ?string $image_url = null,
+        array $options = [],
+    ) {
+        parent::__construct(
+            id: $id,
+            exam_id: $exam_id,
+            question_id: $question_id,
+            order: $order,
+            marks: $marks,
+            type: $type,
+            content: $content,
+            content_format: $content_format,
+            image_url: $image_url,
+        );
+        $this->options = $options;
+    }
+}

@@ -1,12 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Api\Tenant\TeacherExamReportController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('reports')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| Teacher Reports Resource
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('class-arms/{classArm}/exams/{exam}', [TeacherExamReportController::class, 'examSummary']);
+Route::controller(TeacherExamReportController::class)->group(function () {
 
-    Route::get('students/{student}/results', [TeacherExamReportController::class, 'studentResults']);
+    Route::get('class-arms/{classArm}/exams/{exam}', 'examSummary');
+
+    Route::get('students/{student}/results', 'studentResults');
 
 });

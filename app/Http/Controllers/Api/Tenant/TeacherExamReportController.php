@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\Report\BuildExamClassReport;
-use App\Data\Exam\Output\ResultQuestionData;
+use App\Domains\Exams\Actions\Reports\BuildExamClassReport;
+use App\Domains\Exams\Data\Output\ResultQuestionData;
 use App\Enums\ExamAttemptStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

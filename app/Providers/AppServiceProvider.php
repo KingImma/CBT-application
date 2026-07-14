@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use App\Actions\Tenants\SessionTerm\ResolveCurrentSessionTerm;
-use App\Events\ExamActivated;
-use App\Listeners\SendExamActivatedNotification;
+use App\Domains\Academic\Actions\ResolveCurrentSessionTerm;
+use App\Domains\Exams\Events\ExamActivated;
+use App\Domains\Exams\Listeners\SendExamActivatedNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;

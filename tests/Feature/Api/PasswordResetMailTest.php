@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Actions\Auth\SendOtp;
+use App\Domains\Auth\Actions\SendOtp;
 use App\Mail\PasswordResetOtpMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\Attempts\GradeExamAttempt;
-use App\Data\Exam\Output\ExamResultData;
+use App\Domains\Exams\Actions\Attempts\GradeExamAttempt;
+use App\Domains\Exams\Data\Output\ExamResultData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class ExamGradingController extends Controller

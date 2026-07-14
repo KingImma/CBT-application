@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\SuperAdmin\AuthenticateSuperAdmin;
-use App\Actions\Tenants\Auth\AuthenticateTenantUser;
+use App\Domains\Auth\Actions\AuthenticateSuperAdmin;
+use App\Domains\Auth\Actions\AuthenticateTenantUser;
 use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\SuperAdmin;
 use App\Models\Tenant\User;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

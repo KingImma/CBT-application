@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\ExamAttempt\Concerns;
 
+use App\Domains\Exams\Events\AttemptGraded;
 use App\Enums\ExamAttemptStatus;
-use App\Events\AttemptGraded;
 use Illuminate\Database\Eloquent\Model;
 
 trait HasBroadcasting

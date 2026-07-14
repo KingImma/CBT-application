@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\ExamAttempt\Concerns;
 
-use App\Data\Values\ExamAttemptSettings;
+use App\Domains\Exams\Data\ExamAttemptSettings;
+use App\Domains\Exams\Exceptions\AttemptCannotBeSubmittedException;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\SuspiciousEventType;
-use App\Exceptions\Domain\ExamAttempt\AttemptCannotBeSubmittedException;
 use Illuminate\Support\Facades\DB;
 
 trait HasLifecycle

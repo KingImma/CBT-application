@@ -1,6 +1,6 @@
 <?php
 
-use App\Support\QuestionGrader;
+use App\Domains\Questions\Support\QuestionGrader;
 use Illuminate\Support\Collection;
 
 it('grades mcq and true false by exact selected option ids', function (string $questionType): void {

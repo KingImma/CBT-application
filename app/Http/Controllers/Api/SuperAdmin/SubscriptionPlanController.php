@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\SuperAdmin;
 
-use App\Data\SubscriptionPlan\SubscriptionPlanData;
+use App\Domains\Tenancy\Data\SubscriptionPlanData;
 use App\Http\Controllers\Controller;
 use App\Models\SubscriptionPlan;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\SuperAdmin;
 
-use App\Actions\SuperAdmin\CreateTenant;
-use App\Data\Tenant\TenantData;
+use App\Domains\Tenancy\Actions\CreateTenant;
+use App\Domains\Tenancy\Data\TenantData;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

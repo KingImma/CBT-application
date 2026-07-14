@@ -10,12 +10,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Data\Question\QuestionOptionData;
+use App\Domains\Questions\Data\QuestionOptionData;
 use App\Enums\QuestionType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

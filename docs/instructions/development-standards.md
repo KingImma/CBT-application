@@ -2,13 +2,26 @@
 
 To maintain code quality and consistency, all contributors are expected to follow these standards.
 
+## Architecture
+
+This app uses a **domain-first modular monolith**. Read [architecture.md](./architecture.md) before adding or moving backend code.
+
+**Quick rules:**
+
+- New business logic goes under `app/Domains/{Name}/` (not under legacy `app/Actions/Tenants/...`).
+- One Action class = one use-case; name `{Verb}{Noun}` (no `Action` suffix).
+- Controllers stay thin; no multi-model writes in controllers.
+- Prefer plain `DB::transaction` inside actions — do not introduce base Create/Update/Delete wrappers.
+- Artisan commands live in `app/Console/Commands`.
+- Only put code in Shared when two or more domains need it.
+
 ## Coding Style
 
 ### Backend (PHP/Laravel)
 - Follow **PSR-12** coding standards.
 - Use `laravel/pint` for automated styling: `vendor/bin/pint`.
 - Use type hints and return types wherever possible.
-- Keep controllers lean; use Services or Actions for business logic.
+- Keep controllers lean; use domain Actions for business logic.
 
 #### Model Conventions
 - Default: all Eloquent models must set `protected $guarded = ['id']` for mass-assignment protection.

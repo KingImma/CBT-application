@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Exam\Questions\AddExamQuestion;
-use App\Actions\Tenants\Exam\Questions\DeleteExamQuestion;
-use App\Actions\Tenants\Exam\Questions\RandomizeExamQuestions;
-use App\Actions\Tenants\Exam\Questions\ReorderExamQuestions;
-use App\Actions\Tenants\Exam\Questions\UpdateExamQuestion;
-use App\Models\Tenant\ExamQuestion;
-use App\Data\Exam\Input\AddQuestionData;
-use App\Data\Exam\Input\RandomizeQuestionsData;
-use App\Data\Exam\Input\ReorderQuestionsData;
-use App\Data\Exam\Input\UpdateExamQuestionData;
-use App\Data\Exam\Output\ExamQuestionData;
+use App\Domains\Exams\Actions\Questions\AddExamQuestion;
+use App\Domains\Exams\Actions\Questions\DeleteExamQuestion;
+use App\Domains\Exams\Actions\Questions\RandomizeExamQuestions;
+use App\Domains\Exams\Actions\Questions\ReorderExamQuestions;
+use App\Domains\Exams\Actions\Questions\UpdateExamQuestion;
+use App\Domains\Exams\Data\Input\AddQuestionData;
+use App\Domains\Exams\Data\Input\RandomizeQuestionsData;
+use App\Domains\Exams\Data\Input\ReorderQuestionsData;
+use App\Domains\Exams\Data\Input\UpdateExamQuestionData;
+use App\Domains\Exams\Data\Output\ExamQuestionData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

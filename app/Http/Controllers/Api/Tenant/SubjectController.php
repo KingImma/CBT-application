@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Data\Subject\SubjectData;
+use App\Domains\Academic\Data\SubjectData;
 use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
 use App\Rules\UniqueNormalized;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

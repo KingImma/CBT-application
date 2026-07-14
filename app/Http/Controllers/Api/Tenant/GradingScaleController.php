@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Data\GradingScale\GradingScaleData;
+use App\Domains\Settings\Data\GradingScaleData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\GradingScale;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

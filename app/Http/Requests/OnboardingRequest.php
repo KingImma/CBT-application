@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Data\Tenant\CreateTenantData;
+use App\Domains\Tenancy\Data\CreateTenantData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OnboardingRequest extends FormRequest

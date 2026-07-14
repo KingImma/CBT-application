@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\Exam\Concerns;
 
+use App\Domains\Exams\Exceptions\ExamCannotBeActivatedException;
+use App\Domains\Exams\Exceptions\ExamCannotBeCompletedException;
+use App\Domains\Exams\Exceptions\ExamCannotBeSubmittedException;
+use App\Domains\Exams\Exceptions\ExamStateTransitionException;
 use App\Enums\ExamStatus;
-use App\Exceptions\Domain\Exam\ExamCannotBeActivatedException;
-use App\Exceptions\Domain\Exam\ExamCannotBeCompletedException;
-use App\Exceptions\Domain\Exam\ExamCannotBeSubmittedException;
-use App\Exceptions\Domain\Exam\ExamStateTransitionException;
 
 trait HasLifecycle
 {

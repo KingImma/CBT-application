@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\Tenant;
 
-use App\Actions\Tenants\Exam\ManageExamSession;
+use App\Domains\Exams\Actions\Attempts\GradeExamAttempt;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\ExamType;
@@ -176,8 +176,8 @@ class StudentExamResultFlowTest extends TestCase
         $this->postJson("/api/student/exams/attempts/{$this->attempt->id}/submit");
 
         $this->attempt->refresh();
-        $sessionManager = app(ManageExamSession::class);
-        $sessionManager->gradeAttempt($this->attempt->fresh(), $this->exam);
+        $grader = app(GradeExamAttempt::class);
+        $grader->execute($this->attempt->fresh());
         $this->attempt->refresh();
 
         // Publish results (status + published_at for the results listing query)
@@ -230,8 +230,8 @@ class StudentExamResultFlowTest extends TestCase
         $this->postJson("/api/student/exams/attempts/{$this->attempt->id}/submit");
 
         $this->attempt->refresh();
-        $sessionManager = app(ManageExamSession::class);
-        $sessionManager->gradeAttempt($this->attempt->fresh(), $this->exam);
+        $grader = app(GradeExamAttempt::class);
+        $grader->execute($this->attempt->fresh());
         $this->attempt->refresh();
 
         // Exam is NOT published — result should be forbidden

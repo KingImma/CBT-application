@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Actions\Tenants\TenantUsers\RemoveTenantUserIndex;
+use App\Domains\Tenancy\Actions\RemoveTenantUserIndex;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use ReflectionMethod;
 use Tests\TestCase;

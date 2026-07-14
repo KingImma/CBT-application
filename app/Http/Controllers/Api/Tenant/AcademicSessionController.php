@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Sessions\CreateSession;
-use App\Actions\Tenants\Sessions\UpdateSession;
-use App\Data\AcademicSession\AcademicSessionData;
-use App\Exceptions\Domain\Session\SessionAlreadyCurrentException;
+use App\Domains\Academic\Actions\CreateSession;
+use App\Domains\Academic\Actions\UpdateSession;
+use App\Domains\Academic\Data\AcademicSessionData;
+use App\Domains\Academic\Exceptions\SessionAlreadyCurrentException;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\AcademicSession;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

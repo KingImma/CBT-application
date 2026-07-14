@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant;
 
-use App\Data\Concerns\HasSchemaValidation;
-use App\Data\Teacher\CreateTeacherData;
+use App\Domains\Tenancy\Support\HasSchemaValidation;
+use App\Domains\Teachers\Data\CreateTeacherData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreTeacherRequest extends FormRequest

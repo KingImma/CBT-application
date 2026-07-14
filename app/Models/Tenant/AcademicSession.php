@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
-use App\Exceptions\Domain\Session\SessionAlreadyCurrentException;
+use App\Domains\Academic\Exceptions\SessionAlreadyCurrentException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

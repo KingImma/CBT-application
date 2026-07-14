@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\ExamAttempt\Concerns;
 
-use App\Actions\Exam\CalculateScore;
-use App\Actions\Exam\ResolveGrade;
-use App\Support\QuestionGrader;
+use App\Domains\Exams\Actions\CalculateScore;
+use App\Domains\Exams\Actions\ResolveGrade;
+use App\Domains\Questions\Support\QuestionGrader;
 
 trait HasGrading
 {

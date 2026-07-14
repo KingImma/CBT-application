@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\Tenant;
 
+use App\Domains\Exams\Jobs\GradeExamAttemptJob;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\ExamType;
 use App\Enums\QuestionType;
-use App\Jobs\GradeExamAttemptJob;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassLevel;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant;
 
-use App\Data\Concerns\HasSchemaValidation;
-use App\Data\Student\UpdateStudentData;
+use App\Domains\Tenancy\Support\HasSchemaValidation;
+use App\Domains\Students\Data\UpdateStudentData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateStudentRequest extends FormRequest

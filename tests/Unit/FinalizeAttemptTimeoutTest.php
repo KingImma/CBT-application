@@ -2,14 +2,13 @@
 
 namespace Tests\Unit;
 
-use App\Actions\Base\UpdateAction;
-use App\Actions\Tenants\Exam\Attempts\FinalizeAttempt;
+use App\Domains\Exams\Actions\Attempts\FinalizeAttempt;
+use App\Domains\Exams\Events\ExamAttemptsUpdated;
+use App\Domains\Exams\Support\ExamSessionStateStore;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
-use App\Events\ExamAttemptsUpdated;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
-use App\Support\Exam\ExamSessionStateStore;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
@@ -84,9 +83,8 @@ class FinalizeAttemptTimeoutTest extends TestCase
         ]);
         $attempt->status = ExamAttemptStatus::InProgress;
 
-        $updateAction = new UpdateAction;
         $stateStore = new ExamSessionStateStore;
-        $action = new FinalizeAttempt($updateAction, $stateStore);
+        $action = new FinalizeAttempt($stateStore);
 
         $action->execute($attempt, null, 'stale_heartbeat');
 

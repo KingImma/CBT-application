@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Data\Schemas\TeacherImportSchema;
+use App\Domains\Import\Data\Schemas\TeacherImportSchema;
 use Tests\TestCase;
 
 class TeacherImportSchemaTest extends TestCase

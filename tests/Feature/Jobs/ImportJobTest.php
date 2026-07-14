@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Jobs\ImportTeachersJob;
+use App\Domains\Import\Jobs\ImportTeachersJob;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;

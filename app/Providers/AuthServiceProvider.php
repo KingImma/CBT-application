@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domains\Exams\Policies\ExamAnswerPolicy;
+use App\Domains\Exams\Policies\ExamAttemptPolicy;
+use App\Domains\Exams\Policies\ExamPolicy;
+use App\Domains\Questions\Policies\QuestionPolicy;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\User;
-use App\Policies\Tenant\ClassArmPolicy;
-use App\Policies\Tenant\ExamAnswerPolicy;
-use App\Policies\Tenant\ExamAttemptPolicy;
-use App\Policies\Tenant\ExamPolicy;
-use App\Policies\Tenant\QuestionPolicy;
-use App\Policies\Tenant\UserPolicy;
+use App\Domains\Tenancy\Policies\ClassArmPolicy;
+use App\Domains\Tenancy\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider

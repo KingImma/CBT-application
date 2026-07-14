@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\Tenant;
 
+use App\Domains\Exams\Events\ExamAttemptsUpdated;
 use App\Enums\ExamStatus;
 use App\Enums\RoleType;
-use App\Events\ExamAttemptsUpdated;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassArm;

@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Auth\ResetUserPassword;
-use App\Actions\Import\ImportStudents;
-use App\Actions\Tenants\Student\Student;
-use App\Actions\Tenants\TenantUsers\RemoveTenantUserIndex;
-use App\Actions\Tenants\TenantUsers\SyncTenantUser;
-use App\Data\Results\ImportResult;
-use App\Data\Schemas\StudentImportSchema;
-use App\Data\Student\StudentData;
+use App\Domains\Tenancy\Actions\RemoveTenantUserIndex;
+use App\Domains\Tenancy\Actions\SyncTenantUser;
+use App\Domains\Auth\Actions\ResetUserPassword;
+use App\Domains\Import\Actions\ImportStudents;
+use App\Domains\Import\Data\ImportResult;
+use App\Domains\Import\Data\Schemas\StudentImportSchema;
+use App\Domains\Import\Jobs\ImportStudentsJob;
+use App\Domains\Students\Data\StudentData;
+use App\Domains\Students\Queries\StudentQuery;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
-use App\Jobs\ImportStudentsJob;
 use App\Models\Tenant\User;
-use App\Queries\StudentQuery;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -352,7 +351,7 @@ class StudentController extends Controller
         ]);
     }
 
-   public function importCsv(Request $request): JsonResponse
+    public function importCsv(Request $request): JsonResponse
     {
         $this->authorize('importStudents', User::class);
 

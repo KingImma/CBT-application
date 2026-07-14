@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\CloneQuestionAction;
-use App\Data\Question\QuestionData;
+use App\Domains\Questions\Actions\CloneQuestion;
+use App\Domains\Questions\Data\QuestionData;
 use App\Enums\QuestionType;
 use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\QuestionOption;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -349,7 +349,7 @@ class QuestionController extends Controller
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
         ]);
 
-        $count = app(CloneQuestionAction::class)->cloneToTerm(
+        $count = app(CloneQuestion::class)->cloneToTerm(
             sourceSessionId: $validated['source_session_id'],
             sourceTermId: $validated['source_term_id'],
             targetSessionId: $validated['target_session_id'],

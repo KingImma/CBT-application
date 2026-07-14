@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\Tenant;
 
-use App\Actions\Tenants\Sessions\CreateSession;
-use App\Actions\Tenants\Sessions\UpdateSession;
-use App\Exceptions\Domain\Session\DuplicateSessionNameException;
-use App\Exceptions\Domain\Session\SessionDateRangeOverlapException;
+use App\Domains\Academic\Actions\CreateSession;
+use App\Domains\Academic\Actions\UpdateSession;
+use App\Domains\Academic\Exceptions\DuplicateSessionNameException;
+use App\Domains\Academic\Exceptions\SessionDateRangeOverlapException;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use Illuminate\Support\Str;

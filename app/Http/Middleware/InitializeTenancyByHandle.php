@@ -9,7 +9,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\Tenant;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Stancl\Tenancy\Tenancy;

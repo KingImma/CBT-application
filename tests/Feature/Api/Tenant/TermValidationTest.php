@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\Tenant;
 
-use App\Actions\Tenants\Terms\CreateTerm;
-use App\Exceptions\Domain\Session\DuplicateTermNameException;
+use App\Domains\Academic\Actions\CreateTerm;
+use App\Domains\Academic\Actions\UpdateTerm;
+use App\Domains\Academic\Exceptions\DuplicateTermNameException;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Term;
@@ -179,7 +180,7 @@ class TermValidationTest extends TestCase
 
         $this->expectException(DuplicateTermNameException::class);
 
-        (new \App\Actions\Tenants\Terms\UpdateTerm)->execute($termB, ['name' => 'Term A']);
+        (new UpdateTerm)->execute($termB, ['name' => 'Term A']);
     }
 
     public function test_handles_concurrent_create_gracefully_via_database_exception(): void

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models\Tenant\Concerns;
 
 use App\Enums\StatusType;
-use App\Exceptions\Domain\Tenant\TenantAlreadyActiveException;
-use App\Exceptions\Domain\Tenant\TenantAlreadySuspendedException;
+use App\Domains\Tenancy\Exceptions\TenantAlreadyActiveException;
+use App\Domains\Tenancy\Exceptions\TenantAlreadySuspendedException;
 use Illuminate\Support\Facades\DB;
 
 trait HasLifecycle

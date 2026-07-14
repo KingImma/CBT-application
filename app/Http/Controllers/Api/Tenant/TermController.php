@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Actions\Tenants\Terms\CreateTerm;
-use App\Actions\Tenants\Terms\UpdateTerm;
-use App\Data\Term\TermData;
-use App\Exceptions\Domain\Session\TermAlreadyCurrentException;
+use App\Domains\Academic\Actions\CreateTerm;
+use App\Domains\Academic\Actions\UpdateTerm;
+use App\Domains\Academic\Data\TermData;
+use App\Domains\Academic\Exceptions\TermAlreadyCurrentException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreTermRequest;
 use App\Http\Requests\Tenant\UpdateTermRequest;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Term;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 /**

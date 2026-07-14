@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\SuperAdmin\CreateTenant;
-use App\Data\SubscriptionPlan\SubscriptionPlanData;
+use App\Domains\Tenancy\Actions\CreateTenant;
+use App\Domains\Tenancy\Data\SubscriptionPlanData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OnboardingRequest;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

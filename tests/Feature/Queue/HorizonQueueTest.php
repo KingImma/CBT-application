@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Queue;
 
-use App\Jobs\ExampleDefaultJob;
-use App\Jobs\ExampleProvisioningJob;
+use App\Domains\Exams\Jobs\GradeExamAttemptJob;
+use App\Jobs\ProvisionTenantDetailsJob;
 use App\Models\SuperAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -72,12 +72,12 @@ class HorizonQueueTest extends TestCase
     {
         Queue::fake();
 
-        // Dispatch a fake job to each queue and verify routing
-        dispatch(new ExampleDefaultJob)->onQueue('default');
-        dispatch(new ExampleProvisioningJob)->onQueue('tenant-provisioning');
+        // Dispatch jobs to different queues and verify routing
+        dispatch(new GradeExamAttemptJob('attempt-1', 'tenant-1'))->onQueue('default');
+        dispatch(new GradeExamAttemptJob('attempt-2', 'tenant-1'))->onQueue('exams');
 
-        Queue::assertPushedOn('default', ExampleDefaultJob::class);
-        Queue::assertPushedOn('tenant-provisioning', ExampleProvisioningJob::class);
+        Queue::assertPushedOn('default', GradeExamAttemptJob::class);
+        Queue::assertPushedOn('exams', GradeExamAttemptJob::class);
     }
 
     #[Test]

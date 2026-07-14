@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\Concerns;
 
-use App\Actions\Tenants\SessionTerm\ResolveCurrentSessionTerm;
+use App\Domains\Academic\Actions\ResolveCurrentSessionTerm;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Term;
 use Illuminate\Database\Eloquent\Builder;

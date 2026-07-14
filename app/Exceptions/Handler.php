@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use App\Actions\Exceptions\MonitorException;
-use App\Exceptions\Auth\AccountDeactivatedException;
-use App\Exceptions\Auth\InvalidCredentialsException;
-use App\Exceptions\Business\BulkOperationException;
-use App\Exceptions\Business\PlanLimitExceededException;
-use App\Exceptions\Domain\BaseDomainException;
-use App\Exceptions\Tenant\TenantSlugAlreadyTakenException;
-use App\Support\ApiResponse;
+use App\Domains\Auth\Exceptions\AccountDeactivatedException;
+use App\Domains\Auth\Exceptions\InvalidCredentialsException;
+use App\Domains\Tenancy\Exceptions\BaseDomainException;
+use App\Domains\Tenancy\Exceptions\TenantSlugAlreadyTakenException;
+use App\Shared\Exceptions\BulkOperationException;
+use App\Shared\Exceptions\PlanLimitExceededException;
+use App\Shared\Support\ApiResponse;
+use App\Shared\Support\MonitorException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;

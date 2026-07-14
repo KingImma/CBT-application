@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\Tenant;
 
-use App\Data\Results\ImportResult;
+use App\Domains\Import\Data\ImportResult;
+use App\Domains\Import\Jobs\ImportTeachersJob;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
-use App\Jobs\ImportTeachersJob;
 use App\Models\Tenant;
 use App\Models\Tenant\User;
 use Illuminate\Http\UploadedFile;

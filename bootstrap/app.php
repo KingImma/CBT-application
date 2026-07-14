@@ -100,7 +100,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withCommands([
-    __DIR__.'/../app/Data/Console/Commands',
+        __DIR__.'/../app/Console/Commands',
     ])
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {

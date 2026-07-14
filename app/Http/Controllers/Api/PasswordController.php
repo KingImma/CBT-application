@@ -9,16 +9,16 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\Auth\ChangePassword;
-use App\Actions\Auth\ResetPassword;
-use App\Actions\Auth\SendOtp;
-use App\Actions\Auth\VerifyOtp;
+use App\Domains\Auth\Actions\ChangePassword;
+use App\Domains\Auth\Actions\ResetPassword;
+use App\Domains\Auth\Actions\SendOtp;
+use App\Domains\Auth\Actions\VerifyOtp;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\VerifyOtpRequest;
-use App\Support\ApiResponse;
+use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rules\Password;
 

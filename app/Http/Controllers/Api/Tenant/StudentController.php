@@ -12,6 +12,7 @@ use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Data\Schemas\StudentImportSchema;
 use App\Domains\Import\Jobs\ImportStudentsJob;
 use App\Domains\Students\Data\StudentData;
+use App\Domains\Students\Actions\StudentService;
 use App\Domains\Students\Queries\StudentQuery;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
@@ -92,9 +93,9 @@ class StudentController extends Controller
      * @bodyParam gender string nullable Gender: male, female, other. No-example
      * @bodyParam guardian_email string nullable Guardian email address. No-example
      */
-    public function store(StoreStudentRequest $request, Student $action): JsonResponse
+    public function store(StoreStudentRequest $request, StudentService $studentService): JsonResponse
     {
-        $result = $action->create($request->validated());
+        $result = $studentService->create($request->validated());
 
         broadcast(new ActivityFeedEvent(
             channelType: 'school_admin',
@@ -132,9 +133,9 @@ class StudentController extends Controller
      * @bodyParam gender string nullable Gender. No-example
      * @bodyParam guardian_email string nullable Guardian email. No-example
      */
-    public function update(UpdateStudentRequest $request, string $id, Student $action): JsonResponse
+    public function update(UpdateStudentRequest $request, string $id, StudentService $studentService): JsonResponse
     {
-        $result = $action->update($request->validated(), $id);
+        $result = $studentService->update($request->validated(), $id);
 
         return ApiResponse::success(
             StudentData::from($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
@@ -152,7 +153,7 @@ class StudentController extends Controller
      * @bodyParam class_level_id string required New class level UUID. No-example
      * @bodyParam class_arm_id string nullable New class arm UUID. No-example
      */
-    public function reassignClass(Request $request, string $id, Student $action): JsonResponse
+    public function reassignClass(Request $request, string $id, StudentService $studentService): JsonResponse
     {
         $student = User::role(RoleType::Student->value)->findOrFail($id);
         $this->authorize('reassignClass', $student);
@@ -162,7 +163,7 @@ class StudentController extends Controller
             'class_arm_id' => ['nullable', 'uuid', 'exists:class_arms,id'],
         ]);
 
-        $result = $action->update($validated, $id);
+        $result = $studentService->update($validated, $id);
 
         return ApiResponse::success([
             'student' => StudentData::from($result->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
@@ -250,7 +251,7 @@ class StudentController extends Controller
      * @bodyParam class_level_id string required Class level UUID to target. No-example
      * @bodyParam class_arm_id string nullable Class arm UUID to target. No-example
      */
-    public function bulkResetPasswords(ResetUserPassword $resetUserPassword, Request $request): JsonResponse
+    public function bulkResetPasswords(ResetUserPassword $resetUserPassword, Request $request, StudentService $studentService): JsonResponse
     {
         $this->authorize('bulkResetPasswords', User::class);
 
@@ -271,7 +272,7 @@ class StudentController extends Controller
 
         $query->chunkById(200, function ($students) use ($resetUserPassword, &$reset, $newPassword) {
             foreach ($students as $student) {
-                $resetUserPassword->execute($student, $newPassword);
+                $studentService->resetPassword($student, $newPassword);
                 $reset++;
             }
         });
@@ -288,10 +289,9 @@ class StudentController extends Controller
      *
      * @queryParam class_level_id string Filter by class level UUID. No-example
      */
-    public function exportCsv(Request $request): StreamedResponse
+    public function exportCsv(Request $request, StudentService $studentService): StreamedResponse
     {
-        $query = User::role(RoleType::Student->value)
-            ->with(['studentProfile.classLevel', 'studentProfile.classArm'])
+        $query = $studentService->query()
             ->when($request->class_level_id, fn ($q) => $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id)));
 
         $headers = [
@@ -310,7 +310,7 @@ class StudentController extends Controller
 
             $query->chunk(200, function ($students) use ($handle) {
                 foreach ($students as $student) {
-                    $profile = $student->studentProfile;
+                    $profile = $student->profile;
                     fputcsv($handle, [
                         $profile?->admission_number,
                         $student->first_name,

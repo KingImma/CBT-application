@@ -12,6 +12,7 @@ use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Data\Schemas\TeacherImportSchema;
 use App\Domains\Import\Jobs\ImportTeachersJob;
 use App\Domains\Teachers\Data\TeacherData;
+use App\Domains\Teachers\Actions\TeacherService;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
@@ -90,9 +91,9 @@ class TeacherController extends Controller
      * @bodyParam staff_id string nullable Unique staff ID. No-example
      * @bodyParam class_level_id string nullable Assigned class level UUID. No-example
      */
-    public function store(StoreTeacherRequest $request, Teacher $action): JsonResponse
+    public function store(StoreTeacherRequest $request, TeacherService $teacherService): JsonResponse
     {
-        $result = $action->create($request->validated());
+        $result = $teacherService->create($request->validated());
 
         broadcast(new ActivityFeedEvent(
             channelType: 'school_admin',
@@ -207,9 +208,9 @@ class TeacherController extends Controller
      * @bodyParam staff_id string nullable Staff ID. No-example
      * @bodyParam class_level_id string nullable Class level UUID. No-example
      */
-    public function update(UpdateTeacherRequest $request, Teacher $action, string $id): JsonResponse
+    public function update(UpdateTeacherRequest $request, TeacherService $teacherService, string $id): JsonResponse
     {
-        $teacher = $action->update($request->validated(), $id);
+        $teacher = $teacherService->update($request->validated(), $id);
 
         return ApiResponse::success(TeacherData::from($teacher), 'Teacher updated successfully.');
     }

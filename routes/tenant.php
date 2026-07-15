@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
+use App\Http\Controllers\Api\Tenant\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthController::class)

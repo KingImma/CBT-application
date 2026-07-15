@@ -52,3 +52,6 @@ tasks
 latest
 /.githooks
 /storage
+
+# Git worktrees (local isolation)
+.worktrees/

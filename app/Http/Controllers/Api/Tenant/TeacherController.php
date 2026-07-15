@@ -13,8 +13,6 @@ use App\Domains\Import\Data\Schemas\TeacherImportSchema;
 use App\Domains\Import\Jobs\ImportTeachersJob;
 use App\Domains\Teachers\Data\TeacherData;
 use App\Domains\Teachers\Actions\TeacherService;
-use App\Events\UserActivated;
-use App\Events\UserDeactivated;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
@@ -233,9 +231,6 @@ class TeacherController extends Controller
             $teacher->deactivate()->save();
             $teacher->tokens()->delete();
 
-            // Fire the event manually here
-            UserDeactivated::dispatch($teacher);
-
             TeacherSubjectAssignment::where('user_id', $teacher->id)->delete();
             $removeTenantUserIndex->execute($teacher->email);
             $teacher->delete();
@@ -286,9 +281,6 @@ class TeacherController extends Controller
         DB::transaction(function () use ($teacher, $syncTenantUser) {
             $teacher->restore();
             $teacher->activate()->save();
-            
-            // Fire the event manually here
-            UserActivated::dispatch($teacher);
             
             $syncTenantUser->execute($teacher->email, RoleType::Teacher->value);
         });

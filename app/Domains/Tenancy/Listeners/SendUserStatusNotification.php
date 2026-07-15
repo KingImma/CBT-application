@@ -8,19 +8,21 @@ use App\Events\UserActivated;
 use App\Events\UserDeactivated;
 use App\Notifications\InAppNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Notification;
 
 class SendUserStatusNotification implements ShouldQueue
 {
-    public function handle(UserActivated | UserDeactivated $event)
+    public string $queue = 'default';
+
+    public function handle(UserActivated|UserDeactivated $event): void
     {
         $isActive = $event instanceof UserActivated;
-
         $user = $event->user;
 
-        $event->notify(new InAppNotification(
+        $user->notify(new InAppNotification(
             title: $isActive ? 'User Activated' : 'User Deactivated',
-            message: $isActive ? 'Your account has been activated.' : 'Your account has been deactivated. Contact your school administrator for assistance.',
+            message: $isActive
+                ? 'Your account has been activated.'
+                : 'Your account has been deactivated. Contact your school administrator for assistance.',
             type: $isActive ? 'success' : 'danger',
         ));
     }

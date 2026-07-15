@@ -231,6 +231,9 @@ class TeacherController extends Controller
             $teacher->deactivate()->save();
             $teacher->tokens()->delete();
 
+            // Fire the event manually here
+            UserDeactivated::dispatch($teacher);
+
             TeacherSubjectAssignment::where('user_id', $teacher->id)->delete();
             $removeTenantUserIndex->execute($teacher->email);
             $teacher->delete();
@@ -278,9 +281,15 @@ class TeacherController extends Controller
             return ApiResponse::error('This teacher is already active and has not been deleted.', 422);
         }
 
-        $teacher->restore();
-        $teacher->activate()->save();
-        $syncTenantUser->execute($teacher->email, RoleType::Teacher->value);
+        DB::transaction(function () use ($teacher, $syncTenantUser) {
+            $teacher->restore();
+            $teacher->activate()->save();
+            
+            // Fire the event manually here
+            UserActivated::dispatch($teacher);
+            
+            $syncTenantUser->execute($teacher->email, RoleType::Teacher->value);
+        });
 
         return ApiResponse::success([
             'teacher' => TeacherData::from($teacher->fresh('teacherProfile')),

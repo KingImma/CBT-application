@@ -70,15 +70,9 @@ trait HasLifecycle
     public static function bootHasLifecycle(): void
     {
         static::updated(function ($user) {
-            // Only fire if the 'is_active' status actually flipped during this update
-            if ($user->wasChanged('is_active')) {
-                if ($user->is_active) {
-                    UserActivated::dispatch($user);
-                } else {
-                    // Instantly revoke access
-                    $user->tokens()->delete(); 
-                    UserDeactivated::dispatch($user);
-                }
+            if ($user->wasChanged('is_active') && !$user->is_active) {
+                // Keep automatic token revocation
+                $user->tokens()->delete(); 
             }
         });
     }

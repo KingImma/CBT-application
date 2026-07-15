@@ -6,13 +6,15 @@ echo "===== ENTRYPOINT STARTED ====="
 php -v
 php artisan --version
 
-echo "Clearing permission cache..."
+echo "Clearing application caches (config, events, views, cache)..."
+php artisan optimize:clear
+php artisan event:clear
 php artisan permission:cache-reset
 
-echo "Running migrations..."
+echo "Running central migrations..."
 php artisan migrate --force
 
-echo "Running tenant migrations..."
+echo "Running tenant migrations (including new notifications table)..."
 php artisan tenants:migrate --force < /dev/null
 
 echo "Running seeders..."
@@ -29,6 +31,9 @@ php artisan db:seed --class=SubscriptionPlanSeeder --force
 # php artisan exams:backfill-results
 
 # php artisan scribe:generate
+
+echo "Clearing stale queue worker memory..."
+php artisan queue:restart
 
 echo "Starting Horizon..."
 php artisan horizon > /proc/1/fd/1 2>&1 &

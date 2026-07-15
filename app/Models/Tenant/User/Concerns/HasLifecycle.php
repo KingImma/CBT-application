@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models\Tenant\User\Concerns;
 
 use App\Enums\RoleType;
+use App\Domains\Tenancy\Events\UserActivated;
+use App\Domains\Tenancy\Events\UserDeactivated;
 use Illuminate\Database\Eloquent\Builder;
 
 trait HasLifecycle
@@ -63,5 +65,21 @@ trait HasLifecycle
     public function isSuperAdmin(): bool
     {
         return $this->isRole(RoleType::SuperAdmin->value);
+    }
+
+    public static function bootHasLifecycle(): void
+    {
+        static::updated(function ($user) {
+            // Only fire if the 'is_active' status actually flipped during this update
+            if ($user->wasChanged('is_active')) {
+                if ($user->is_active) {
+                    UserActivated::dispatch($user);
+                } else {
+                    // Instantly revoke access
+                    $user->tokens()->delete(); 
+                    UserDeactivated::dispatch($user);
+                }
+            }
+        });
     }
 }

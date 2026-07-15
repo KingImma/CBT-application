@@ -7,20 +7,34 @@ use App\Http\Controllers\Api\Tenant\ExamGradingController;
 use App\Http\Controllers\Api\Tenant\ExamQuestionController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Exams
+|--------------------------------------------------------------------------
+*/
 Route::apiResource('exams', ExamController::class);
 
-Route::prefix('exams/{exam}')->controller(ExamController::class)->group(function () {
-    Route::post('/submit-for-review', 'submitForReview');
-    Route::post('/activate', 'activate');
-    Route::post('/publish-results', 'publishResults');
-    Route::post('/unpublish-results', 'unpublishResults');
-
-    // School admin only
-    Route::post('/force-complete', 'forceComplete')->middleware('role:school_admin,tenant');
-});
-
-Route::prefix('exams/{exam}/questions')
-    ->controller(ExamQuestionController::class)
+/*
+|--------------------------------------------------------------------------
+| Exam Actions
+|--------------------------------------------------------------------------
+*/
+Route::controller(ExamController::class)
+    ->middleware('role:school_admin,tenant')
+    ->group(function () {
+        Route::post('/{exam}/submit-for-review', 'submitForReview');
+        Route::post('/{exam}/activate', 'activate');
+        Route::post('/{exam}/publish-results', 'publishResults');
+        Route::post('/{exam}/unpublish-results', 'unpublishResults');
+        Route::post('/{exam}/force-complete', 'forceComplete');
+    });
+/*
+|--------------------------------------------------------------------------
+| Exam Questions
+|--------------------------------------------------------------------------
+*/
+Route::controller(ExamQuestionController::class)
+    ->prefix('exams/{exam}/questions')
     ->group(function () {
         Route::get('/', 'index');
         Route::post('/', 'store');
@@ -30,9 +44,14 @@ Route::prefix('exams/{exam}/questions')
         Route::post('/reorder', 'reorder');
     });
 
-Route::prefix('exams/{exam}/grading')
+/*
+|--------------------------------------------------------------------------
+| Exam Grading
+|--------------------------------------------------------------------------
+*/
+Route::controller(ExamGradingController::class)
+    ->prefix('exams/{exam}/grading')
     ->middleware('role:teacher|school_admin,tenant')
-    ->controller(ExamGradingController::class)
     ->group(function () {
         Route::post('/attempts/{attempt}/recompute-score', 'recomputeScore');
         Route::get('/attempts/{attempt}/result', 'viewAttemptResult');

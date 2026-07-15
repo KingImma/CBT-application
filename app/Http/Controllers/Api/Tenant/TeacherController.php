@@ -13,6 +13,8 @@ use App\Domains\Import\Data\Schemas\TeacherImportSchema;
 use App\Domains\Import\Jobs\ImportTeachersJob;
 use App\Domains\Teachers\Data\TeacherData;
 use App\Domains\Teachers\Actions\TeacherService;
+use App\Domains\Tenancy\Events\UserActivated;
+use App\Domains\Tenancy\Events\UserDeactivated;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;

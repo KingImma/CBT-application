@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Models\Tenant\User\Concerns;
 
 use App\Enums\RoleType;
-use App\Domains\Tenancy\Events\UserActivated;
-use App\Domains\Tenancy\Events\UserDeactivated;
 use Illuminate\Database\Eloquent\Builder;
 
 trait HasLifecycle

@@ -33,7 +33,15 @@ class NotificationController extends Controller
         $notification = $request->user('tenant')->notifications()->findOrFail($id);
         $notification->markAsRead();
 
-        return ApiResponse::message('Notification marked read.');
+        return ApiResponse::message('Notification marked as read.');
+    }
+
+    public function markUnread(Request $request, string $id): JsonResponse
+    {
+        $notification = $request->user('tenant')->notifications()->findOrFail($id);
+        $notification->update(['read_at' => null]);
+
+        return ApiResponse::message('Notification marked as unread');
     }
 
     public function markAllRead(Request $request): JsonResponse
@@ -41,5 +49,13 @@ class NotificationController extends Controller
         $request->user('tenant')->unreadNotifications->markAsRead();
 
         return ApiResponse::message('All notifications marked read.');
+    }
+
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        $notification = $request->user('tenant')->notifications()->findOrFail($id);
+        $notification->delete($id);
+
+        return ApiResponse::message('Notification deleted');
     }
 }

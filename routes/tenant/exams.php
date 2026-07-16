@@ -20,13 +20,16 @@ Route::apiResource('exams', ExamController::class);
 |--------------------------------------------------------------------------
 */
 Route::controller(ExamController::class)
-    ->middleware('role:school_admin,tenant')
     ->group(function () {
-        Route::post('/{exam}/submit-for-review', 'submitForReview');
-        Route::post('/{exam}/activate', 'activate');
-        Route::post('/{exam}/publish-results', 'publishResults');
-        Route::post('/{exam}/unpublish-results', 'unpublishResults');
-        Route::post('/{exam}/force-complete', 'forceComplete');
+        Route::post('/{exam}/submit-for-review', 'submitForReview')
+            ->middleware('role:school_admin|teacher,tenant');
+
+        Route::middleware('role:school_admin,tenant')->group(function () {
+            Route::post('/{exam}/activate', 'activate');
+            Route::post('/{exam}/publish-results', 'publishResults');
+            Route::post('/{exam}/unpublish-results', 'unpublishResults');
+            Route::post('/{exam}/force-complete', 'forceComplete');
+        });
     });
 /*
 |--------------------------------------------------------------------------

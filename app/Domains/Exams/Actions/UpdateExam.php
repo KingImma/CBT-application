@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Actions;
 
 use App\Domains\Exams\Data\Input\UpdateExamData;
+use App\Domains\Exams\Support\ExamLifecycleRules;
 use App\Models\Tenant\Exam;
 use Illuminate\Support\Facades\DB;
 

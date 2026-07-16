@@ -7,6 +7,7 @@ namespace App\Domains\Exams\Actions;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use Illuminate\Support\Facades\DB;
+use App\Domains\Exams\Support\ExamLifecycleRules;
 
 final class SubmitExamForReview
 {

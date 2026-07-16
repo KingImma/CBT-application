@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Actions;
 
 use App\Domains\Exams\Events\ExamActivated;
+use App\Domains\Exams\Support\ExamLifecycleRules;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use Illuminate\Support\Facades\DB;

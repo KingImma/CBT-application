@@ -19,7 +19,7 @@ Route::apiResource('exams', ExamController::class);
 | Exam Actions
 |--------------------------------------------------------------------------
 */
-Route::prefix('exam')
+Route::prefix('exams')
     ->controller(ExamController::class)
     ->group(function () {
         Route::post('/{exam}/submit-for-review', 'submitForReview')

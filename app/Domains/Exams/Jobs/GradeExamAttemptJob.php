@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Jobs;
 
 use App\Domains\Exams\Actions\Attempts\GradeExamAttempt as GradeExamAttemptAction;
+use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\ExamAttempt;
@@ -15,6 +16,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * Queue transport for grading. Owns exactly two responsibilities the
@@ -27,7 +29,7 @@ use Illuminate\Support\Facades\Log;
  *      in Grading" a real, reachable state instead of a state nothing
  *      ever writes.
  *
- * The scoring logic itself (QuestionGrader, CalculateScore, ResolveGrade)
+ * The scoring logic itself (QuestionGrader, Percentage, ResolveGrade)
  * stays entirely inside Actions\Tenants\Exam\GradeExamAttempt â€” this class
  * never touches a mark or a percentage.
  */
@@ -44,7 +46,7 @@ class GradeExamAttemptJob implements ShouldQueue
         $this->onQueue('exams');
     }
 
-    public function handle(GradeExamAttemptAction $gradeAttempt): void
+    public function handle(GradeExamAttemptAction $gradeAttempt, ExamAttemptStateMachine $stateMachine): void
     {
         Log::debug('GradeExamAttemptJob: handle started', [
             'attempt_id' => $this->attemptId,
@@ -62,12 +64,12 @@ class GradeExamAttemptJob implements ShouldQueue
             return;
         }
 
-        $tenant->run(function () use ($gradeAttempt) {
+        $tenant->run(function () use ($gradeAttempt, $stateMachine) {
             Log::debug('GradeExamAttemptJob: tenant context initialized', [
                 'attempt_id' => $this->attemptId,
             ]);
 
-            $claimed = DB::transaction(function () {
+            $claimed = DB::transaction(function () use ($stateMachine) {
                 Log::debug('GradeExamAttemptJob: claim phase started', [
                     'attempt_id' => $this->attemptId,
                 ]);
@@ -84,14 +86,9 @@ class GradeExamAttemptJob implements ShouldQueue
                     return null;
                 }
 
-                $currentStatus = ExamAttemptStatus::tryFrom(
-                    $attempt->status,
-                );
-
-                if (
-                    $currentStatus !== ExamAttemptStatus::Submitted
-                    && $currentStatus !== ExamAttemptStatus::Grading
-                ) {
+                try {
+                    $nextStatus = $stateMachine->claimForGrading($attempt);
+                } catch (RuntimeException $e) {
                     Log::debug("GradeExamAttemptJob: skipping attempt {$this->attemptId} â€” unexpected status", [
                         'status' => $attempt->status,
                     ]);
@@ -99,8 +96,8 @@ class GradeExamAttemptJob implements ShouldQueue
                     return null;
                 }
 
-                if ($currentStatus === ExamAttemptStatus::Submitted) {
-                    $attempt->status = ExamAttemptStatus::Grading->value;
+                if ($attempt->status !== ExamAttemptStatus::Grading->value) {
+                    $attempt->status = $nextStatus->value;
                     $attempt->save();
 
                     Log::debug('GradeExamAttemptJob: claimed attempt for grading', [

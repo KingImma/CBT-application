@@ -13,25 +13,27 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdateExamQuestion
 {
-    public function __construct(private RecomputeExamTotalMarks $recompute) {}
+    public function __construct(private RecomputeExamTotalMarks $recomputeTotalMarks) {}
 
-    public function execute(Exam $exam, Question $question, UpdateExamQuestionData $data): ExamQuestion
+    public function execute(Exam $exam, Question $question, UpdateExamQuestionData $updateData): ExamQuestion
     {
+        // Guard: only draft exams allows question modification
         ExamQuestionRules::isDraft('Questions can only be modified in a draft exam.')($exam);
 
-        $examQuestion = $exam->examQuestions()
+        // locate the exam-Question pivot for this question
+        $examQuestionPivot = $exam->examQuestions()
             ->where('question_id', $question->id)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($examQuestion, $exam, $question, $data) {
-            $examQuestion->update(array_filter([
-                'marks' => $data->marks ?? $question->default_marks,
-                'order' => $data->order ?? $examQuestion->order,
-            ], fn ($v) => $v !== null));
+        return DB::transaction(function () use ($examQuestionPivot, $exam, $question, $updateData) {
+            $examQuestionPivot->update(array_filter([
+                'marks' => $updateData->marks ?? $question->default_marks,
+                'order' => $updateData->order ?? $examQuestionPivot->order,
+            ], fn ($value) => $value !== null));
 
-            $this->recompute->execute($exam);
+            $this->recomputeTotalMarks->execute($exam);
 
-            return $examQuestion->fresh();
+            return $examQuestionPivot->fresh();
         });
     }
 }

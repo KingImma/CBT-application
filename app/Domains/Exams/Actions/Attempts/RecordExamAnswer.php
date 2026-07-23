@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Actions\Attempts;
 
 use App\Domains\Exams\Events\ExamSessionStateUpdated;
-use App\Domains\Exams\Support\ExamAttemptLifecycleRules;
+use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Domains\Exams\Support\ExamSessionStateStore;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
@@ -14,11 +14,14 @@ use Illuminate\Support\Facades\DB;
 
 final class RecordExamAnswer
 {
-    public function __construct(private ExamSessionStateStore $stateStore) {}
+    public function __construct(
+        private ExamSessionStateStore $stateStore,
+        private ExamAttemptStateMachine $stateMachine,
+    ) {}
 
     public function save(ExamAttempt $attempt, string $questionId, array $payload): ExamAnswer
     {
-        (ExamAttemptLifecycleRules::isInProgress())($attempt);
+        $this->stateMachine->assertInProgress($attempt);
 
         if ($attempt->getTimeRemainingSeconds() <= 0) {
             throw new \RuntimeException('Exam time has expired');
@@ -33,7 +36,7 @@ final class RecordExamAnswer
 
     public function bulkSave(ExamAttempt $attempt, array $answers): array
     {
-        (ExamAttemptLifecycleRules::isInProgress())($attempt);
+        $this->stateMachine->assertInProgress($attempt);
 
         $saved = DB::transaction(function () use ($attempt, $answers) {
             if ($attempt->getTimeRemainingSeconds() <= 0) {

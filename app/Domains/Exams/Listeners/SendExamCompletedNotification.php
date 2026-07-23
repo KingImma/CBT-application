@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Listeners;
 
-use App\Events\ExamCompleted;
+use App\Domains\Exams\Events\ExamCompleted;
 use App\Models\Tenant\User;
 use App\Notifications\InAppNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -21,12 +21,16 @@ class SendExamCompletedNotification implements ShouldQueue
             ->orWhere('id', $exam->created_by)
             ->get();
 
+        $reportUrl = $exam->class_arm_id !== null
+            ? route('exams.report', ['classArm' => $exam->class_arm_id, 'exam' => $exam->id])
+            : null;
+
         Notification::send($recipients, new InAppNotification(
             title: 'Exam Completed',
             message: 'Your exam has been completed.',
             type: 'info',
             action: [
-                'url' => route('exams.report', ['examId' => $exam->id]),
+                'url' => $reportUrl,
                 'label' => 'View Report',
             ],
         ));

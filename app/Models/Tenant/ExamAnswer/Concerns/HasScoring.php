@@ -6,22 +6,6 @@ namespace App\Models\Tenant\ExamAnswer\Concerns;
 
 trait HasScoring
 {
-    public function markCorrect(float $marks): self
-    {
-        $this->is_correct = true;
-        $this->marks_awarded = $marks;
-
-        return $this;
-    }
-
-    public function markIncorrect(): self
-    {
-        $this->is_correct = false;
-        $this->marks_awarded = 0.0;
-
-        return $this;
-    }
-
     public function flag(): self
     {
         $this->is_flagged = true;

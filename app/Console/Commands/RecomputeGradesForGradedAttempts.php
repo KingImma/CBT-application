@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Domains\Exams\Actions\CalculateScore;
 use App\Domains\Exams\Actions\ResolveGrade;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant;

@@ -8,7 +8,6 @@ use App\Domains\Exams\Data\ExamAttemptSettings;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\Concerns\BelongsToSessionTerm;
 use App\Models\Tenant\ExamAttempt\Concerns\HasBroadcasting;
-use App\Models\Tenant\ExamAttempt\Concerns\HasGrading;
 use App\Models\Tenant\ExamAttempt\Concerns\HasLifecycle;
 use App\Models\Tenant\ExamAttempt\Concerns\HasValidation;
 use DateTimeInterface;
@@ -23,7 +22,6 @@ class ExamAttempt extends Model
 {
     use BelongsToSessionTerm,
         HasBroadcasting,
-        HasGrading,
         HasLifecycle,
         HasUuids,
         HasValidation;

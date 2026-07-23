@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::controller(TeacherExamReportController::class)->group(function () {
 
-    Route::get('class-arms/{classArm}/exams/{exam}', 'examSummary');
+    Route::get('class-arms/{classArm}/exams/{exam}', 'examSummary')->name('exams.report');
 
     Route::get('students/{student}/results', 'studentResults');
 

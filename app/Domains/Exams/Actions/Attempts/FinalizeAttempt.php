@@ -6,7 +6,7 @@ namespace App\Domains\Exams\Actions\Attempts;
 
 use App\Domains\Exams\Events\ExamAttemptsUpdated;
 use App\Domains\Exams\Events\ExamSessionStateUpdated;
-use App\Domains\Exams\Support\ExamAttemptLifecycleRules;
+use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Domains\Exams\Support\ExamSessionStateStore;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
@@ -21,6 +21,7 @@ final class FinalizeAttempt
     public function __construct(
         private ExamSessionStateStore $stateStore,
         private GradeExamAttempt $gradeAttempt,
+        private ExamAttemptStateMachine $stateMachine,
     ) {}
 
     public function execute(ExamAttempt $attempt, ?User $actor = null, string $reason = 'submit'): ExamAttempt
@@ -32,21 +33,21 @@ final class FinalizeAttempt
 
     private function submit(ExamAttempt $attempt, ?User $actor): ExamAttempt
     {
-        ExamAttemptLifecycleRules::canSubmit($actor)($attempt, ['actor' => $actor]);
-
         $attempt->update([
-            'status' => ExamAttemptStatus::Submitted->value,
+            'status' => $this->stateMachine->submit($attempt, $actor)->value,
             'submitted_at' => now(),
         ]);
 
         $attempt->update([
-            'status' => ExamAttemptStatus::Grading->value,
+            'status' => $this->stateMachine->claimForGrading($attempt->fresh())->value,
         ]);
 
         try {
             $this->gradeAttempt->execute($attempt->fresh());
         } catch (\Throwable $e) {
-            $attempt->fresh()->update(['status' => ExamAttemptStatus::Failed->value]);
+            $attempt->fresh()->update([
+                'status' => $this->stateMachine->fail($attempt->fresh())->value,
+            ]);
 
             Log::error('Exam grading failed', [
                 'attempt_id' => $attempt->id,
@@ -63,10 +64,8 @@ final class FinalizeAttempt
     private function timeout(ExamAttempt $attempt): ExamAttempt
     {
         return DB::transaction(function () use ($attempt) {
-            ExamAttemptLifecycleRules::isInProgress()($attempt);
-
             $attempt->update([
-                'status' => ExamAttemptStatus::Timed_out->value,
+                'status' => $this->stateMachine->timeout($attempt)->value,
                 'submitted_at' => now(),
                 'time_spent_seconds' => (int) now()->diffInSeconds($attempt->started_at),
             ]);

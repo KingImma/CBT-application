@@ -22,8 +22,6 @@ class ExamResult extends Model
         'total_score',
         'percentage_score',
         'grade',
-        'objective_score',
-        'theory_score',
         'is_theory_graded',
         'rank_in_class',
         'passed',
@@ -33,8 +31,6 @@ class ExamResult extends Model
     protected $casts = [
         'total_score' => 'decimal:2',
         'percentage_score' => 'decimal:2',
-        'objective_score' => 'decimal:2',
-        'theory_score' => 'decimal:2',
         'is_theory_graded' => 'boolean',
         'passed' => 'boolean',
         'graded_at' => 'datetime',

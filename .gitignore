@@ -31,6 +31,10 @@ EXAM_ENGINE_IMPLEMENTATION_FEEDBACK.md
 /docs/frontend
 /.agents
 /.codex
+/.superpowers
+/docs
+CONTEXT.md
+.mcp.json
 opencode.json
 boost.json
 AGENTS.md
@@ -47,9 +51,8 @@ frankenphp
 frankenphp-worker.php
 ARCHITECTURE_DIAGRAM.md
 /config/octane.php
-/docs/superpowers
+/docs/superpowers/plans
 tasks
-latest
 /.githooks
 /storage
 

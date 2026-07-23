@@ -42,6 +42,13 @@ class AuthenticateTenantUser
         }
     }
 
+    private function ensureAccountIsActive(User $user): void
+    {
+        if (! $user->is_active) {
+            abort(403, 'Your account has been deactivated. Contact your school admin.');
+        }
+    }
+
     private function resolveRole(User $user): string
     {
         return $user->getRoleNames()->first();

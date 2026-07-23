@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -73,6 +75,18 @@ class AppServiceProvider extends ServiceProvider
             $tenantHandle = tenant('handle');
 
             return "{$frontendUrl}/reset-password?token={$token}&email={$notifiable->email}&tenant={$tenantHandle}";
+        });
+
+        RateLimiter::for('seb-start', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user('tenant')?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('seb-current-exam', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user('tenant')?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('seb-exchange', function (Request $request) {
+            return Limit::perMinute(10)->by(($request->query('t') ?: 'no-token').'|'.$request->ip());
         });
     }
 }

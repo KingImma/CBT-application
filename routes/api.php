@@ -59,3 +59,7 @@ Route::controller(PasswordController::class)
             'change',
         );
     });
+
+// routes/api.php
+Route::get('student/seb/exchange', [SebExamLaunchController::class, 'exchange'])
+    ->middleware('throttle:seb-exchange');

@@ -8,57 +8,105 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class VerifyOtp
+final class VerifyOtp
 {
-    private const OTP_EXPIRY_MINUTES = 15;
-
     private const OTP_MAX_ATTEMPTS = 5;
 
-    private const RESET_TOKEN_TTL_MIN = 10;
+    private const RESET_TOKEN_TTL_MINUTES = 10;
 
     public function execute(string $email, string $otp): string
     {
-        $email = strtolower(trim($email));
+        $email = $this->normalizeEmail($email);
 
-        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+        $record = $this->findOtpRecord($email);
 
-        $isTokenExpiredOrInvalid = ! $record || now()->gt($record->expires_at) || $record->attempts >= self::OTP_MAX_ATTEMPTS;
+        $this->ensureOtpCanBeVerified($record);
 
-        if ($isTokenExpiredOrInvalid) {
+        $this->ensureOtpMatches($record, $email, $otp);
+
+        $this->deleteOtp($email);
+
+        return $this->issueResetToken($email);
+    }
+
+    private function normalizeEmail(string $email): string
+    {
+        return strtolower(trim($email));
+    }
+
+    private function findOtpRecord(string $email): ?object
+    {
+        return DB::table('password_reset_tokens')
+            ->where('email', $email)
+            ->first();
+    }
+
+    private function ensureOtpCanBeVerified(?object $record): void
+    {
+        if (
+            ! $record ||
+            now()->gt($record->expires_at) ||
+            $record->attempts >= self::OTP_MAX_ATTEMPTS
+        ) {
             throw ValidationException::withMessages([
                 'otp' => 'Invalid or expired code.',
             ]);
         }
+    }
 
-        if (! hash_equals($record->token, hash('sha256', $otp))) {
-            DB::table('password_reset_tokens')->where('email', $email)->increment('attempts');
+    private function ensureOtpMatches(
+        object $record,
+        string $email,
+        string $otp,
+    ): void {
+        if (hash_equals($record->token, hash('sha256', $otp))) {
+            return;
+        }
 
-            $updated = DB::table('password_reset_tokens')->where('email', $email)->first();
-            $remaining = self::OTP_MAX_ATTEMPTS - $updated->attempts;
+        $remainingAttempts = $this->incrementAttempts($email);
 
-            if ($remaining <= 0) {
-                DB::table('password_reset_tokens')->where('email', $email)->delete();
-                throw ValidationException::withMessages([
-                    'otp' => 'Too many incorrect attempts. Request a new code.',
-                ]);
-            }
+        if ($remainingAttempts <= 0) {
+            $this->deleteOtp($email);
 
             throw ValidationException::withMessages([
-                'otp' => "Invalid code. {$remaining} attempt(s) remaining.",
+                'otp' => 'Too many incorrect attempts. Request a new code.',
             ]);
         }
 
-        DB::table('password_reset_tokens')->where('email', $email)->delete();
+        throw ValidationException::withMessages([
+            'otp' => "Invalid code. {$remainingAttempts} attempt(s) remaining.",
+        ]);
+    }
 
-        return $this->issueResetToken($email);
+    private function incrementAttempts(string $email): int
+    {
+        DB::table('password_reset_tokens')
+            ->where('email', $email)
+            ->increment('attempts');
+
+        $attempts = DB::table('password_reset_tokens')
+            ->where('email', $email)
+            ->value('attempts');
+
+        return self::OTP_MAX_ATTEMPTS - $attempts;
+    }
+
+    private function deleteOtp(string $email): void
+    {
+        DB::table('password_reset_tokens')
+            ->where('email', $email)
+            ->delete();
     }
 
     private function issueResetToken(string $email): string
     {
         $token = bin2hex(random_bytes(32));
-        $key = "pwd_reset_token:{$token}";
 
-        Cache::put($key, $email, now()->addMinutes(self::RESET_TOKEN_TTL_MIN));
+        Cache::put(
+            "pwd_reset_token:{$token}",
+            $email,
+            now()->addMinutes(self::RESET_TOKEN_TTL_MINUTES),
+        );
 
         return $token;
     }

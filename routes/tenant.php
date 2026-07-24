@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\NotificationController;
-use App\Http\Controllers\Api\Tenant\SebExamLaunchController;
+use App\Http\Controllers\Api\Tenant\SebVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthController::class)
@@ -23,6 +23,9 @@ Route::middleware('auth:tenant')->group(function () {
     Route::patch('/notifications/{id}/unread', [NotificationController::class, 'markUnread']);
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+
+    Route::get('/seb/verify', [SebVerificationController::class, 'verify'])
+    ->name('api.tenant.seb.verify');
 });
 
 Route::post('/teachers/{id}/reset-password-otp', [
@@ -46,13 +49,4 @@ Route::middleware(['role:teacher|school_admin,tenant'])->group(function () {
     require __DIR__.'/tenant/exams.php';
     require __DIR__.'/tenant/question_bank.php';
     require __DIR__.'/tenant/teacher_reports.php';
-});
-
-// Authenticated — identity from Sanctum guard
-Route::middleware(['auth:sanctum'])->prefix('student/seb')->group(function () {
-    Route::post('start', [SebExamLaunchController::class, 'start'])
-        ->middleware('throttle:seb-start');
-
-    Route::get('current-exam', [SebExamLaunchController::class, 'currentExam'])
-        ->middleware('throttle:seb-current-exam');
 });

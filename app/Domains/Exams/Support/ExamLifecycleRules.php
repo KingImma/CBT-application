@@ -16,60 +16,125 @@ final class ExamLifecycleRules
 {
     public static function canSubmitForReview(): Closure
     {
-        return function (Exam $e) {
-            throw_unless($e->canSubmitForReview(), ExamCannotBeSubmittedException::class);
+        return function (Exam $exam): void {
+            throw_unless(
+                $exam->canSubmitForReview(),
+                new ExamCannotBeSubmittedException(
+                    'Exam must have at least one question and a total mark greater than zero before it can be submitted for review.'
+                )
+            );
         };
     }
 
     public static function canActivate(): Closure
     {
-        return function (Exam $e) {
-            throw_unless($e->canActivate(), ExamCannotBeActivatedException::class);
+        return function (Exam $exam): void {
+            throw_unless(
+                $exam->isSubmitted(),
+                new ExamCannotBeActivatedException(
+                    'Only submitted exams can be activated.'
+                )
+            );
+
+            throw_unless(
+                $exam->duration_minutes > 0,
+                new ExamCannotBeActivatedException(
+                    'Exam duration must be greater than zero.'
+                )
+            );
+
+            throw_unless(
+                $exam->pass_mark !== null,
+                new ExamCannotBeActivatedException(
+                    'A pass mark must be configured before the exam can be activated.'
+                )
+            );
+
+            throw_unless(
+                $exam->pass_mark <= $exam->total_marks,
+                new ExamCannotBeActivatedException(
+                    'The pass mark cannot exceed the total marks.'
+                )
+            );
+
+            throw_unless(
+                $exam->scheduled_start !== null,
+                new ExamCannotBeActivatedException(
+                    'A scheduled start date and time must be configured before the exam can be activated.'
+                )
+            );
         };
     }
 
     public static function canComplete(): Closure
     {
-        return function (Exam $e) {
-            throw_unless($e->canComplete(), ExamCannotBeCompletedException::class);
+        return function (Exam $exam): void {
+            throw_unless(
+                $exam->canComplete(),
+                new ExamCannotBeCompletedException(
+                    'Only active exams can be completed.'
+                )
+            );
         };
     }
 
     public static function isCompleted(): Closure
     {
-        return function (Exam $e) {
+        return function (Exam $exam): void {
             throw_unless(
-                $e->isCompleted(),
-                new ExamStateTransitionException('Results can only be published for completed exams')
+                $exam->isCompleted(),
+                new ExamStateTransitionException(
+                    'Results can only be published for completed exams.'
+                )
             );
         };
     }
 
     public static function isPublished(): Closure
     {
-        return function (Exam $e) {
+        return function (Exam $exam): void {
             throw_unless(
-                $e->isPublished(),
-                new ExamStateTransitionException('Cannot republish or unpublish results for an exam that is not published')
+                $exam->isPublished(),
+                new ExamStateTransitionException(
+                    'Cannot republish or unpublish results for an exam that is not published.'
+                )
             );
         };
     }
 
     public static function isDraft(): Closure
     {
-        return fn (Exam $e) => throw_unless($e->isDraft(), new ExamStateTransitionException('Only draft exams can be updated'));
+        return function (Exam $exam): void {
+            throw_unless(
+                $exam->isDraft(),
+                new ExamStateTransitionException(
+                    'Only draft exams can be updated.'
+                )
+            );
+        };
     }
 
     public static function canDelete(): Closure
     {
-        return function (Exam $e) {
-            throw_if($e->isActive(), new ExamCannotBeDeletedException('Cannot delete an active exam'));
-            throw_if($e->isPublished(), new ExamCannotBeDeletedException('Cannot delete a published exam'));
+        return function (Exam $exam): void {
             throw_if(
-                $e->completed_attempts > 0,
+                $exam->isActive(),
                 new ExamCannotBeDeletedException(
-                    "Cannot delete an exam with {$e->completed_attempts} completed attempt(s).\n".
-                    'Results would be permanently lost'
+                    'Cannot delete an active exam.'
+                )
+            );
+
+            throw_if(
+                $exam->isPublished(),
+                new ExamCannotBeDeletedException(
+                    'Cannot delete a published exam.'
+                )
+            );
+
+            throw_if(
+                $exam->completed_attempts > 0,
+                new ExamCannotBeDeletedException(
+                    "Cannot delete an exam with {$exam->completed_attempts} completed attempt(s). Results would be permanently lost."
                 )
             );
         };

@@ -6,11 +6,10 @@ namespace App\Domains\Students\Support;
 
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
-use Illuminate\Support\Facades\Request;
 
 class SebLaunchHelper
 {
-  public function generateLaunchUrl(ExamAttempt $attempt, User $student): string
+    public function generateLaunchUrl(ExamAttempt $attempt, User $student): string
     {
         // 1. Revoke pending SEB tokens
         $student->tokens()->where('name', 'seb-launch-token')->delete();
@@ -22,12 +21,13 @@ class SebLaunchHelper
             expiresAt: now()->addMinutes(5)
         )->plainTextToken;
 
-        // 3. Construct sebs:// deep link pointing to frontend SPA
-        $frontendHost = Request::getHost();
+        // 3. Resolve trusted host from the tenant model or environment config
+        // This completely bypasses the untrusted Request::getHost()
+        $trustedHost = tenant('domain') ?? parse_url(config('app.url'), PHP_URL_HOST);
         $frontendRoute = "/seb-entry";
 
         return sprintf('sebs://%s%s?attempt_id=%s&token=%s',
-            $frontendHost,
+            $trustedHost,
             $frontendRoute,
             $attempt->id,
             $token

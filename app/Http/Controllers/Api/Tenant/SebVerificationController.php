@@ -23,11 +23,26 @@ class SebVerificationController extends Controller
             return ApiResponse::error('Exam session is expired or invalid.', 403);
         }
 
-        if ($request->user()->currentAccessToken()->name === 'seb-launch-token') {
-            $request->user()->currentAccessToken()->delete();
-        }
+        $currentToken = $student->currentAccessToken();
 
-        $examSessionToken = $student->createToken('seb-active-session')->plainTextToken;
+        if (
+            $currentToken === null ||
+            $currentToken->name !== 'seb-launch-token' ||
+            ! $currentToken->can('exam:take')
+        ) {
+            return ApiResponse::error('Exam session is expired or invalid.', 403);
+         }
+
+        $currentToken->delete();
+
+        $durationMinutes = $attempt->exam->duration_minutes;
+        $expiration = now()->addMinutes((int) $durationMinutes + 15);
+
+        $examSessionToken = $student->createToken(
+            name: 'seb-active-session',
+            abilities: ['exam:take'],
+            expiresAt: $expiration
+        )->plainTextToken;
 
         return ApiResponse::success([
             'attempt' => $attempt,

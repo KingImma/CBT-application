@@ -11,12 +11,18 @@ class SebLaunchHelper
 {
     public function generateLaunchUrl(ExamAttempt $attempt): string
     {
-        $signedURL = URL::temporarySignedRoute(
-            'api.tenant.seb.authenticate',
+        // Generate a relative signed path
+        $signedPath = URL::temporarySignedRoute(
+            'api.tenant.seb.config.download',
             now()->addMinutes(5),
-            ['attempt_id' => $attempt->id,]
+            ['attempt_id' => $attempt->id],
+            false
         );
 
-        return str_replace(['http://', 'https://'], 'sebs://', $signedURL);
+        $trustedHost = tenant('domain') ?? parse_url(config('app.url'), PHP_URL_HOST);
+
+        // Prepend the sebs:// protocol so the OS opens the SEB client, 
+        // which will then download the XML from this URL.
+        return "sebs://{$trustedHost}{$signedPath}";
     }
 }

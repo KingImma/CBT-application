@@ -28,6 +28,7 @@ return [
         '127.0.0.1',
         'localhost',
         env('CENTRAL_DOMAIN', 'cbt-application-ufyd.onrender.com'),
+        env('TENANT_CENTRAL_DOMAIN', 'educbt.name.ng'),
     ],
 
     /**

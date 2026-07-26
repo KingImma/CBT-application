@@ -100,7 +100,7 @@ class StudentExamController extends Controller
 
         $questionsData = $this->getQuestions->execute($attempt);
 
-        $sebLaunchUrl = $sebLaunchHelper->generateLaunchUrl($attempt, $student);
+        $launchUrl = $sebLaunchHelper->generateLaunchUrl($attempt);
 
         return ApiResponse::created(
             [
@@ -109,7 +109,7 @@ class StudentExamController extends Controller
                     $questionsData['questions'],
                 ),
                 'order' => $questionsData['order'],
-                'seb_launch_url' => $sebLaunchUrl,
+                'seb_launch_url' => $launchUrl,
             ],
             'Exam started.',
         );

@@ -75,7 +75,7 @@ class StudentExamController extends Controller
 
     // ── Attempt lifecycle ─────────────────────────────────────────────────────
 
-    public function start(Request $request, string $id, SebLaunchHelper $sebLaunchHelper): JsonResponse
+    public function start(Request $request, string $id): JsonResponse
     {
         $exam = Exam::findOrFail($id);
         $student = $request->user('tenant');

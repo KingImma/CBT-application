@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\NotificationController;
-use App\Http\Controllers\Api\Tenant\SebConfigurationController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthController::class)
@@ -47,7 +46,3 @@ Route::middleware(['role:teacher|school_admin,tenant'])->group(function () {
     require __DIR__.'/tenant/question_bank.php';
     require __DIR__.'/tenant/teacher_reports.php';
 });
-
-// The endpoint SEB hits to download the dynamic XML
-Route::get('/seb/config', [SebConfigurationController::class, 'download'])
-    ->name('api.tenant.seb.config.download');

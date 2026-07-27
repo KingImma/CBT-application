@@ -27,3 +27,4 @@ final class Percentage
         return max(self::MIN_PERCENTAGE, min(self::MAX_PERCENTAGE, $percentage));
     }
 }
+

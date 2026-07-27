@@ -12,7 +12,6 @@ use App\Domains\Exams\Data\Output\ExamAttemptData;
 use App\Domains\Exams\Data\Output\ResultQuestionData;
 use App\Domains\Exams\Data\Output\StudentQuestionData;
 use App\Domains\Exams\Support\ExamSessionStateStore;
-use App\Domains\Students\Support\SebLaunchHelper;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\QuestionType;
@@ -100,8 +99,6 @@ class StudentExamController extends Controller
 
         $questionsData = $this->getQuestions->execute($attempt);
 
-        $launchUrl = $sebLaunchHelper->generateLaunchUrl($attempt);
-
         return ApiResponse::created(
             [
                 'attempt' => $attempt,
@@ -109,7 +106,6 @@ class StudentExamController extends Controller
                     $questionsData['questions'],
                 ),
                 'order' => $questionsData['order'],
-                'seb_launch_url' => $launchUrl,
             ],
             'Exam started.',
         );

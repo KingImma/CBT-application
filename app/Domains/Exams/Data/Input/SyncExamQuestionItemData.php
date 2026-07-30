@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Data\Input;
 
+use Spatie\LaravelData\Attributes\Validation\RequiredIf;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\IntegerType;
@@ -18,7 +19,7 @@ class SyncExamQuestionItemData extends Data
         #[Uuid, Exists(model: 'questions', column: 'id')]
         public readonly string $question_id,
 
-        #[IntegeType, Min(1)]
+        #[IntegerType, Min(1)]
         public readonly int $order,
 
         #[Numeric, Min(0), RequiredIf('is_marks_locked', true)]

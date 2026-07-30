@@ -72,7 +72,7 @@ class SyncExamQuestions
       $ids = $items->pluck('question_id');
       throw_if(
         $ids->count() !== $ids->unique()->count(),
-        new DomainException('Duplicate question IDs found in the payload. Each question ID must be unique within the exam.')
+        new BaseDomainException('Duplicate question IDs found in the payload. Each question ID must be unique within the exam.')
       );
     }
 
@@ -114,10 +114,10 @@ class SyncExamQuestions
 
         $max = (float) $max;
 
-        throw_if($max <= 0, new DomainException("School max score for {$exam->type} is not configured."));
+        throw_if($max <= 0, new BaseDomainException("School max score for {$exam->type} is not configured."));
         throw_if(
             (float) $exam->total_marks > $max,
-            new DomainException("Total marks ({$exam->total_marks}) exceeds school max of {$max} for {$exam->type}.")
+            new BaseDomainException("Total marks ({$exam->total_marks}) exceeds school max of {$max} for {$exam->type}.")
         );
     }
 

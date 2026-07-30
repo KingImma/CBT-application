@@ -17,6 +17,7 @@ class ExamQuestionData extends Resource
         public readonly string $question_id,
         public readonly int $order,
         public readonly ?float $marks,
+        public readonly bool $is_marks_locked,
 
         #[WhenLoaded('question')]
         public readonly mixed $question,

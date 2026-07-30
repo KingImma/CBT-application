@@ -17,11 +17,13 @@ class ExamQuestion extends Model
         'question_id',
         'order',
         'marks',
+        'is_marks_locked'
     ];
 
     protected $casts = [
         'marks' => 'decimal:2',
         'order' => 'integer',
+        'is_marks_locked' => 'boolean'
     ];
 
     /**

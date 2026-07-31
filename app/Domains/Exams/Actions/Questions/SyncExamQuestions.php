@@ -34,8 +34,6 @@ class SyncExamQuestions
     {
         $this->assertExamIsDraft($exam);
 
-        $this->assertModeGuard($exam, $data->mode);
-
         $items = $data->questions->toCollection();
 
         $this->assertNotDuplicateQuestionIds($items);
@@ -50,29 +48,51 @@ class SyncExamQuestions
         $this->assertLockedSumWithinTotal($lockedSum, (float) $exam->total_marks);
 
         $remaining = max(0.0, (float) $exam->total_marks - $lockedSum);
+
         $distributedMarks = $unlockedItems->isNotEmpty()
             ? $this->marksDistributor->distribute($remaining, $unlockedItems->count())
             : [];
 
-        $rows = $this->buildRows($items, $lockedItems, $unlockedItems, $distributedMarks, $exam->id);
+        $rows = $this->buildRows(
+            $items,
+            $lockedItems,
+            $unlockedItems,
+            $distributedMarks,
+            $exam->id
+        );
 
-        DB::transaction(function () use ($exam, $rows) {
+        DB::transaction(function () use ($exam, $rows, $mode) {
+            $exam = Exam::query()
+                ->lockForUpdate()
+                ->findOrFail($exam->id);
+
+            // Re-check after acquiring the lock.
+            $this->assertExamIsDraft($exam);
+
+            // Atomic mode guard.
+            $this->assertModeGuard($exam, $mode);
+
             $exam->examQuestions()->delete();
+
             ExamQuestion::insert($rows);
         });
 
-        return $exam->examQuestions()->with('question.options')->orderBy('order')->get()->all();
+        return $exam->examQuestions()
+            ->with('question.options')
+            ->orderBy('order')
+            ->get()
+            ->all();
     }
 
     private function assertModeGuard(Exam $exam, string $mode): void
     {
         $hasExisting = $exam->examQuestions()->exists();
 
-        if ($mode === self::CREATE && $hasExisting) {
+        if ($mode === self::MODE_CREATE && $hasExisting) {
             throw new DomainException('Cannot create questions for an exam that already has questions.');
         }
 
-        if ($mode === self::UPDATE && !$hasExisting) {
+        if ($mode === self::MODE_UPDATE && !$hasExisting) {
             throw new DomainException('Cannot update questions for an exam that has no questions.');
         }
     }

@@ -32,56 +32,76 @@ class SyncExamQuestions
      */
     public function execute(Exam $exam, SyncExamQuestionsData $data, string $userId, string $mode): array
     {
-        $this->assertExamIsDraft($exam);
-
         $items = $data->questions->toCollection();
 
         $this->assertNotDuplicateQuestionIds($items);
         $this->assertQuestionsOwnedByTeacher($items, $userId);
-        $this->assertWithinSchoolMax($exam);
 
         [$lockedItems, $unlockedItems] = $items->partition(
             fn (SyncExamQuestionItemData $item) => $item->is_marks_locked
         );
 
-        $lockedSum = (float) $lockedItems->sum('marks');
-        $this->assertLockedSumWithinTotal($lockedSum, (float) $exam->total_marks);
-
-        $remaining = max(0.0, (float) $exam->total_marks - $lockedSum);
-
-        $distributedMarks = $unlockedItems->isNotEmpty()
-            ? $this->marksDistributor->distribute($remaining, $unlockedItems->count())
-            : [];
-
-        $rows = $this->buildRows(
+        return DB::transaction(function () use (
+            $exam,
+            $mode,
             $items,
             $lockedItems,
-            $unlockedItems,
-            $distributedMarks,
-            $exam->id
-        );
-
-        DB::transaction(function () use ($exam, $rows, $mode) {
-            $exam = Exam::query()
+            $unlockedItems
+        ) {
+             $exam = Exam::query()
                 ->lockForUpdate()
-                ->findOrFail($exam->id);
+                ->find($exam->id);
 
-            // Re-check after acquiring the lock.
+            throw_if(
+                $exam === null,
+                new BaseDomainException('Exam not found.')
+            );
+
+            // Re-check state after acquiring the lock.
             $this->assertExamIsDraft($exam);
+            throw_if(
+                $lockedItems->contains(fn ($item) => (float) $item->marks < 0),
+                new BaseDomainException('Locked marks cannot be negative.')
+            );
 
-            // Atomic mode guard.
-            $this->assertModeGuard($exam, $mode);
+            $lockedSum = (float) $lockedItems->sum('marks');
+
+            $this->assertLockedSumWithinTotal(
+                $lockedSum,
+                (float) $exam->total_marks
+            );
+
+            $remaining = max(
+                0.0,
+                (float) $exam->total_marks - $lockedSum
+            );
+
+            $distributedMarks = $unlockedItems->isNotEmpty()
+                ? $this->marksDistributor->distribute(
+                    $remaining,
+                    $unlockedItems->count()
+                )
+                : [];
+
+            $rows = $this->buildRows(
+                $items,
+
+                $lockedItems,
+                $unlockedItems,
+                $distributedMarks,
+                $exam->id
+            );
 
             $exam->examQuestions()->delete();
 
             ExamQuestion::insert($rows);
-        });
 
-        return $exam->examQuestions()
-            ->with('question.options')
-            ->orderBy('order')
-            ->get()
-            ->all();
+            return $exam->examQuestions()
+                ->with('question.options')
+                ->orderBy('order')
+                ->get()
+                ->all();
+        });
     }
 
     private function assertModeGuard(Exam $exam, string $mode): void

@@ -48,21 +48,14 @@ class SyncExamQuestions
             $lockedItems,
             $unlockedItems
         ) {
-             $exam = Exam::query()
+            $exam = Exam::query()
                 ->lockForUpdate()
-                ->find($exam->id);
-
-            throw_if(
-                $exam === null,
-                new BaseDomainException('Exam not found.')
-            );
+                ->findOrFail($exam->id);
 
             // Re-check state after acquiring the lock.
             $this->assertExamIsDraft($exam);
-            throw_if(
-                $lockedItems->contains(fn ($item) => (float) $item->marks < 0),
-                new BaseDomainException('Locked marks cannot be negative.')
-            );
+            $this->assertModeGuard($exam, $mode);
+            $this->assertWithinSchoolMax($exam);
 
             $lockedSum = (float) $lockedItems->sum('marks');
 
@@ -85,9 +78,6 @@ class SyncExamQuestions
 
             $rows = $this->buildRows(
                 $items,
-
-                $lockedItems,
-                $unlockedItems,
                 $distributedMarks,
                 $exam->id
             );
@@ -179,7 +169,7 @@ class SyncExamQuestions
         );
     }
 
-    private function buildRows($items, $lockedItems, $unlockedItems, array $distributedMarks, string $examId): array
+    private function buildRows($items, array $distributedMarks, string $examId): array
     {
         $now = now();
         $unlockedIndex = 0;

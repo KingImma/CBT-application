@@ -16,7 +16,7 @@ use Spatie\LaravelData\Data;
 class SyncExamQuestionItemData extends Data
 {
     public function __construct(
-        #[Uuid, Exists(model: 'questions', column: 'id')]
+        #[Uuid, Exists('questions', 'id')]
         public readonly string $question_id,
 
         #[IntegerType, Min(1)]

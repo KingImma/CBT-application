@@ -22,8 +22,8 @@ class SyncExamQuestionItemData extends Data
         #[IntegerType, Min(1)]
         public readonly int $order,
 
-        #[Numeric, Min(0), RequiredIf('is_marks_locked', true)]
-        public readonly ?string $marks = null,
+        #[Numeric, Min(0), RequiredIf('is_marks_locked', 'true')]
+        public readonly ?float $marks = null,
 
         #[BooleanType]
         public readonly bool $is_marks_locked = false

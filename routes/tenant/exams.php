@@ -41,7 +41,8 @@ Route::controller(ExamQuestionController::class)
     ->prefix('exams/{exam}/questions')
     ->group(function () {
         Route::get('/', 'index');
-        Route::put('/', 'sync');
+        Route::post('/', 'store');
+        Route::put('/', 'update');
         Route::get('/suggest', 'suggest');
     });
 

@@ -20,6 +20,9 @@ use Illuminate\Support\Str;
 
 class SyncExamQuestions
 {
+    public const MODE_CREATE = 'create';
+    public const MODE_UPDATE = 'update';
+
     public function __construct(
         protected readonly MarksDistributor $marksDistributor
     ) {}
@@ -27,9 +30,11 @@ class SyncExamQuestions
     /**
      * @throws BaseDomainException
      */
-    public function execute(Exam $exam, SyncExamQuestionsData $data, string $userId): array
+    public function execute(Exam $exam, SyncExamQuestionsData $data, string $userId, string $mode): array
     {
         $this->assertExamIsDraft($exam);
+
+        $this->assertModeGuard($exam, $data->mode);
 
         $items = $data->questions->toCollection();
 
@@ -57,6 +62,19 @@ class SyncExamQuestions
         });
 
         return $exam->examQuestions()->with('question.options')->orderBy('order')->get()->all();
+    }
+
+    private function assertModeGuard(Exam $exam, string $mode): void
+    {
+        $hasExisting = $exam->examQuestions()->exists();
+
+        if ($mode === self::CREATE && $hasExisting) {
+            throw new DomainException('Cannot create questions for an exam that already has questions.');
+        }
+
+        if ($mode === self::UPDATE && !$hasExisting) {
+            throw new DomainException('Cannot update questions for an exam that has no questions.');
+        }
     }
 
     private function assertExamIsDraft(Exam $exam): void

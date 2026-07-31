@@ -33,16 +33,26 @@ class ExamQuestionController extends Controller
         );
     }
 
-     public function sync(SyncExamQuestionsData $data, Exam $exam, Request $request): JsonResponse
+     public function store(SyncExamQuestionsData $data, Exam $exam, Request $request): JsonResponse
     {
         $this->authorize('manageQuestions', $exam);
 
-        $synced = $this->syncQuestions->execute($exam, $data, $request->user('tenant')->id);
-
-        return ApiResponse::success(
-            ExamQuestionData::collect($synced),
-            'Exam questions synced.'
+        $synced = $this->syncQuestions->execute(
+            $exam, $data, $request->user('tenant')->id, SyncExamQuestions::MODE_CREATE
         );
+
+        return ApiResponse::created(ExamQuestionData::collect($synced), 'Exam questions created.');
+    }
+
+    public function update(SyncExamQuestionsData $data, Exam $exam, Request $request): JsonResponse
+    {
+        $this->authorize('manageQuestions', $exam);
+
+        $synced = $this->syncQuestions->execute(
+            $exam, $data, $request->user('tenant')->id, SyncExamQuestions::MODE_UPDATE
+        );
+
+        return ApiResponse::success(ExamQuestionData::collect($synced), 'Exam questions updated.');
     }
 
     public function suggest(Request $request, Exam $exam): JsonResponse

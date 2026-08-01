@@ -8,7 +8,6 @@ use App\Domains\Exams\Data\Input\SyncExamQuestionsData;
 use App\Domains\Exams\Support\MarksDistributor;
 use App\Domains\Exams\Exceptions\ExamStateTransitionException;
 use App\Domains\Exams\Data\Input\SyncExamQuestionItemData;
-use App\Domains\Tenancy\Exceptions\BaseDomainException;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
@@ -28,7 +27,7 @@ class SyncExamQuestions
     ) {}
 
     /**
-     * @throws BaseDomainException
+     * @throws DomainException
      */
     public function execute(Exam $exam, SyncExamQuestionsData $data, string $userId, string $mode): array
     {
@@ -120,7 +119,7 @@ class SyncExamQuestions
       $ids = $items->pluck('question_id');
       throw_if(
         $ids->count() !== $ids->unique()->count(),
-        new BaseDomainException('Duplicate question IDs found in the payload. Each question ID must be unique within the exam.')
+        new DomainException('Duplicate question IDs found in the payload. Each question ID must be unique within the exam.')
       );
     }
 
@@ -137,7 +136,7 @@ class SyncExamQuestions
 
         throw_if(
           $missing !== [],
-          new BaseDomainException('One or more questions do not belong to your question bank.: ' . implode(', ', $missing))
+          new DomainException('One or more questions do not belong to your question bank.: ' . implode(', ', $missing))
         );
     }
 
@@ -145,7 +144,7 @@ class SyncExamQuestions
     {
         throw_if(
             $lockedSum > $totalMarks,
-            new BaseDomainException(
+            new DomainException(
                 "Locked marks ({$lockedSum}) exceed the exam's total marks ({$totalMarks})."
             )
         );
@@ -162,10 +161,10 @@ class SyncExamQuestions
 
         $max = (float) $max;
 
-        throw_if($max <= 0, new BaseDomainException("School max score for {$exam->type} is not configured."));
+        throw_if($max <= 0, new DomainException("School max score for {$exam->type} is not configured."));
         throw_if(
             (float) $exam->total_marks > $max,
-            new BaseDomainException("Total marks ({$exam->total_marks}) exceeds school max of {$max} for {$exam->type}.")
+            new DomainException("Total marks ({$exam->total_marks}) exceeds school max of {$max} for {$exam->type}.")
         );
     }
 

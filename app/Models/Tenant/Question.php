@@ -27,7 +27,6 @@ class Question extends Model
         'type',
         'content',
         'content_format',
-        'default_marks',
         'image_url',
         'is_active',
         'academic_session_id',
@@ -37,7 +36,6 @@ class Question extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'default_marks' => 'decimal:2',
         'usage_count' => 'integer',
     ];
 

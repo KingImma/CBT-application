@@ -6,6 +6,7 @@ namespace App\Domains\Import\Actions;
 
 use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Data\Schemas\StudentImportSchema;
+use App\Domains\Students\Actions\StudentService;
 use App\Enums\RoleType;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
@@ -13,7 +14,7 @@ use App\Models\Tenant\User;
 
 class ImportStudents extends CsvImport
 {
-    public function __construct(private Student $student) {}
+    public function __construct(private StudentService $student) {}
 
     protected function schemaClass(): string
     {

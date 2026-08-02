@@ -39,6 +39,7 @@ class TeacherService
             $this->syncTenantUser->execute($user->email, RoleType::Teacher->value);
 
             $user->teacherProfile()->create([
+                'gender' => $data['gender'] ?? null,
                 'qualification' => $data['qualification'] ?? null,
                 'staff_id' => $data['staff_id'] ?? $this->generateStaffId(),
                 'class_level_id' => $data['class_level_id'] ?? null,
@@ -66,7 +67,7 @@ class TeacherService
             $fresh = $user->fresh();
 
             $profileData = collect($data)
-                ->only(['qualification', 'staff_id', 'class_level_id'])
+                ->only(['gender', 'qualification', 'staff_id', 'class_level_id'])
                 ->toArray();
 
             if (! empty($profileData)) {

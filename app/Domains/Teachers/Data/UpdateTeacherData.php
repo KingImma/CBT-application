@@ -24,6 +24,8 @@ class UpdateTeacherData extends Data
         public Optional|string $email,
         #[Nullable, StringType, Max(20)]
         public Optional|string|null $phone,
+        #[Nullable, In(['male','female','other'])]
+        public Optional|string|null $gender,
         #[Nullable, StringType, Max(255)]
         public Optional|string|null $qualification,
         #[Nullable, StringType, Max(50)]

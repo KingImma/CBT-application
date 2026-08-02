@@ -13,6 +13,7 @@ class TeacherProfile extends Model
 
     protected $fillable = [
         'user_id',
+        'gender',
         'qualification',
         'staff_id',
         'class_level_id',

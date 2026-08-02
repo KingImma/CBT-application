@@ -19,7 +19,6 @@ class McqQuestionData extends QuestionData
         string $content,
         string $content_format = 'plain_text',
         ?string $image_url = null,
-        float $default_marks = 0,
         bool $is_active = true,
         ?string $subject_id = null,
         ?string $class_level_id = null,

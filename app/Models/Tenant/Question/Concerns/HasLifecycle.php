@@ -18,7 +18,6 @@ trait HasLifecycle
                 'class_level_id' => $this->class_level_id,
                 'type' => $this->type,
                 'content' => $this->content,
-                'default_marks' => $this->default_marks,
                 'image_url' => $this->image_url,
                 'is_active' => true,
                 'usage_count' => 0,

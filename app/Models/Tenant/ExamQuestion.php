@@ -44,6 +44,6 @@ class ExamQuestion extends Model
 
     public function getEffectiveMarks(): string
     {
-        return (string) ($this->marks ?? $this->question->default_marks);
+        return (string) ($this->marks ?? 0);
     }
 }

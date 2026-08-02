@@ -127,7 +127,6 @@ class QuestionController extends Controller
             'class_level_id' => ['required', 'uuid', 'exists:class_levels,id'],
             'content' => ['required', 'string'],
             'content_format' => ['sometimes', 'string', 'in:plain_text,latex'],
-            'default_marks' => ['required', 'numeric', 'min:0.5', 'max:100'],
             'image_url' => ['nullable', 'url', 'max:500'],
         ] + $this->optionRulesForType($request->input('type', '')));
 
@@ -145,7 +144,6 @@ class QuestionController extends Controller
                 'class_level_id' => $validated['class_level_id'],
                 'type' => $type,
                 'content' => $validated['content'],
-                'default_marks' => $validated['default_marks'],
                 'image_url' => $validated['image_url'] ?? null,
                 'is_active' => true,
                 'usage_count' => 0,

@@ -24,6 +24,8 @@ class CreateTeacherData extends Data
         public string $email,
         #[Nullable, StringType, Max(20)]
         public ?string $phone,
+        #[Nullable, In(['male','female','other'])]
+        public ?string $gender,
         #[Nullable, StringType, Max(255)]
         public ?string $qualification,
         #[Nullable, StringType, Max(50), Unique('users', 'staff_id')]

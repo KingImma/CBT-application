@@ -24,7 +24,7 @@ class TrueFalseQuestionData extends QuestionData
         ?string $subject_name = null,
         array $options = [],
     ) {
-        parent::__construct($id, $type, $content, $content_format, $image_url, $default_marks, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
+        parent::__construct($id, $type, $content, $content_format, $image_url, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
         $this->options = $options;
     }
 }

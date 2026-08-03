@@ -27,7 +27,7 @@ class McqQuestionData extends QuestionData
         array $options = [],
         bool $allow_multiple_answers = false,
     ) {
-        parent::__construct($id, $type, $content, $content_format, $image_url, $default_marks, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
+        parent::__construct($id, $type, $content, $content_format, $image_url, $is_active, $subject_id, $class_level_id, $class_level_name, $subject_name);
         $this->options = $options;
         $this->allow_multiple_answers = $allow_multiple_answers;
     }

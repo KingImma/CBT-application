@@ -52,7 +52,7 @@ class QuestionController extends Controller
     {
         $user = $request->user('tenant');
 
-        $questions = Question::select('id', 'type', 'content', 'default_marks', 'image_url', 'subject_id', 'class_level_id', 'created_by', 'is_active', 'created_at')
+        $questions = Question::select('id', 'type', 'content', 'image_url', 'subject_id', 'class_level_id', 'created_by', 'is_active', 'created_at')
             ->with(['classLevel', 'subject', 'creator:id,first_name,last_name'])
             ->when($user && $user->role === RoleType::Teacher->value, fn ($q) => $q->where('created_by', $user->id))
             ->when($request->subject_id, fn ($q) => $q->where('subject_id', $request->subject_id))

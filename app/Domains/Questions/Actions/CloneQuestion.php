@@ -33,7 +33,7 @@ class CloneQuestion
 
         DB::transaction(function () use ($sourceQuestions, $targetSessionId, $targetTermId, $createdBy, &$clonedCount) {
             foreach ($sourceQuestions as $source) {
-                $clone = $source->replicate()->fill([
+                $clone = $source->replicate(['default_marks'])->fill([
                     'academic_session_id' => $targetSessionId,
                     'term_id' => $targetTermId,
                     'created_by' => $createdBy,

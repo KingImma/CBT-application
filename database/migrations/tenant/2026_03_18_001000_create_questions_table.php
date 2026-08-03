@@ -21,7 +21,6 @@ return new class extends Migration
             $table->enum('type', array_column(QuestionType::cases(), 'value'));
             $table->text('content');
             $table->text('explanation')->nullable();
-            $table->decimal('default_marks', 5, 2);
             $table->integer('time_estimate_seconds')->nullable();
             $table->string('image_url', 500)->nullable();
             $table->jsonb('metadata')->nullable();

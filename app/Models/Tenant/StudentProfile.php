@@ -4,12 +4,13 @@ namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Tenant\Student\Concerns\RecalculatesStudentExamResults;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudentProfile extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, RecalculatesStudentExamResults;
 
     protected $fillable = [
         'user_id',

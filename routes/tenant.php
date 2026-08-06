@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\NotificationController;
+use App\Http\Controllers\Api\Tenant\ExamReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthController::class)
@@ -15,14 +16,23 @@ Route::controller(AuthController::class)
     });
 
 
-Route::middleware('auth:tenant')->group(function () {
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
-    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
-    Route::patch('/notifications/{id}/unread', [NotificationController::class, 'markUnread']);
-    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
-    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+Route::controller(NotificationController::class)
+    ->prefix('notifications')
+    ->middleware('auth:tenant')->group(function () {
+    Route::get('/', 'index');
+    Route::get('/unread-count', 'unreadCount');
+    Route::patch('/{id}/read', 'markRead');
+    Route::patch('/{id}/unread', 'markUnread');
+    Route::patch('/read-all', 'markAllRead');
+    Route::delete('/{id}', 'destroy');
 });
+
+Route::controller(ExamReviewController::class)
+    ->prefix('exams/{exam}/review')
+    ->middleware(['auth:tenant', 'role:school_admin'])->group(function () {
+        Route::get('/', 'show');
+        Route::post('/comments', 'addComment');
+    });
 
 Route::post('/teachers/{id}/reset-password-otp', [
     TeacherController::class,

@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Tenant\ExamComment;
 
 class Exam extends Model
 {
@@ -99,6 +100,11 @@ class Exam extends Model
     public function attempts(): HasMany
     {
         return $this->hasMany(ExamAttempt::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(ExamComment::class);
     }
 
     public function scopeActive(Builder $query): Builder

@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
+use App\Domains\Exams\Events\ExamCommentAdded;
+use App\Domains\Exams\Listeners\SendExamCommentNotification;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -66,6 +68,11 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(
             ExamCompleted::class,
             SendExamCompletedNotification::class,
+        );
+
+        Event::listen(
+            ExamCommentAdded::class,
+            SendExamCommentNotification::class,
         );
 
         // 3. Password reset URL override for multi-tenant

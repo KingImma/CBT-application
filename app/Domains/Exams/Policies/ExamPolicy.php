@@ -60,6 +60,11 @@ class ExamPolicy
                 TeacherClassAccess::isTeacherAssignedToExam($user, $exam));
     }
 
+    public function review(User $user, Exam $exam): bool
+    {
+        return $user->hasRole(RoleType::SchoolAdmin->value) && $exam->isSubmitted();
+    }
+
     public function activate(User $user, Exam $exam): bool
     {
         return $user->hasRole(RoleType::SchoolAdmin->value) &&

@@ -23,6 +23,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * @group Exam Administration
@@ -67,7 +68,7 @@ class ExamController extends Controller
      */
     public function store(CreateExamData $data, Request $request): JsonResponse
     {
-        $this->authorize('create', Exam::class);
+        Gate::authorize('create', Exam::class);
 
         $exam = $this->createExam->execute($data, $request->user('tenant')->id);
 
@@ -86,7 +87,7 @@ class ExamController extends Controller
      */
     public function show(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        Gate::authorize('view', $exam);
 
         $exam->load([
             'subject', 'classLevel', 'classArm', 'term',
@@ -106,7 +107,7 @@ class ExamController extends Controller
      */
     public function update(UpdateExamData $data, Exam $exam): JsonResponse
     {
-        $this->authorize('update', $exam);
+        Gate::authorize('update', $exam);
 
         return ApiResponse::success(
             $this->updateExam->execute($exam, $data)->load(['subject', 'classLevel']),
@@ -123,7 +124,7 @@ class ExamController extends Controller
      */
     public function destroy(Exam $exam): JsonResponse
     {
-        $this->authorize('delete', $exam);
+        Gate::authorize('delete', $exam);
 
         $this->deleteExam->execute($exam);
 
@@ -137,7 +138,7 @@ class ExamController extends Controller
      */
     public function submitForReview(Exam $exam): JsonResponse
     {
-        $this->authorize('submitForReview', $exam);
+        Gate::authorize('submitForReview', $exam);
 
         return ApiResponse::success(
             $this->submitForReview->execute($exam),
@@ -153,7 +154,7 @@ class ExamController extends Controller
      */
     public function activate(Exam $exam, Request $request): JsonResponse
     {
-        $this->authorize('activate', $exam);
+        Gate::authorize('activate', $exam);
         $exam = $this->activateExam->execute($exam, $request->user('tenant')->id);
 
         $students = $exam
@@ -190,7 +191,7 @@ class ExamController extends Controller
      */
     public function publishResults(Exam $exam): JsonResponse
     {
-        $this->authorize('publishResults', $exam);
+        Gate::authorize('publishResults', $exam);
 
         return ApiResponse::success(
             $this->publishResults->execute($exam),
@@ -208,7 +209,7 @@ class ExamController extends Controller
      */
     public function unpublishResults(Exam $exam): JsonResponse
     {
-        $this->authorize('unpublishResults', $exam);
+        Gate::authorize('unpublishResults', $exam);
 
         return ApiResponse::success(
             $this->unpublishResults->execute($exam),
@@ -226,7 +227,7 @@ class ExamController extends Controller
      */
     public function forceComplete(Exam $exam): JsonResponse
     {
-        $this->authorize('forceComplete', $exam);
+        Gate::authorize('forceComplete', $exam);
 
         return ApiResponse::success(
             ExamData::from($this->forceComplete->execute($exam)->load(['subject', 'classLevel'])),

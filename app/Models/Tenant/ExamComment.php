@@ -18,6 +18,11 @@ class ExamComment extends Model
         'author_id',
         'parent_id',
         'comment',
+        'resolved_at',
+    ];
+
+    protected $casts = [
+        'resolved_at' => 'datetime',
     ];
 
   public function exam(): BelongsTo

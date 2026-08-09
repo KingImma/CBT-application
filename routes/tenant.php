@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\NotificationController;
 use App\Http\Controllers\Api\Tenant\ExamReviewController;
+use App\Http\Controllers\Api\Tenant\TeacherExamReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthController::class)
@@ -32,6 +33,16 @@ Route::controller(ExamReviewController::class)
     ->middleware(['auth:tenant', 'role:school_admin'])->group(function () {
         Route::get('/', 'show');
         Route::post('/comments', 'addComment');
+    });
+
+// Teacher side of the review thread: view admin comments + reply to them.
+// role:teacher keeps admins out (the view policy would otherwise pass for them),
+// then the `view` policy enforces exam ownership.
+Route::controller(TeacherExamReviewController::class)
+    ->prefix('exams/{exam}/review')
+    ->middleware(['auth:tenant', 'role:teacher'])->group(function () {
+        Route::get('/thread', 'show');
+        Route::post('/comments/{commentId}/replies', 'replyToComment');
     });
 
 Route::post('/teachers/{id}/reset-password-otp', [

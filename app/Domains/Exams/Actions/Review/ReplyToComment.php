@@ -10,7 +10,7 @@ use App\Models\Tenant\ExamComment;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\DB;
 
-final class ReplyToExamComment
+final class ReplyToComment
 {
     public function execute(Exam $exam, string $parentCommentId, User $teacher, string $reply): ExamComment
     {

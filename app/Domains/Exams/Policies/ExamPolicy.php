@@ -17,6 +17,12 @@ class ExamPolicy
 
     public function before(User $user, string $ability): ?bool
     {
+        // review() has its own status guard (exam must be submitted); let it run
+        // instead of blanket-granting it to admins here.
+        if ($ability === 'review') {
+            return null;
+        }
+
         if ($user->hasRole(RoleType::SchoolAdmin->value)) {
             return true;
         }

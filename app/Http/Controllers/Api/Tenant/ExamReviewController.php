@@ -19,7 +19,7 @@ class ExamReviewController extends Controller
     ) {}
 
     public function show(Exam $exam): JsonResponse{
-        Gate::authorize('review', Exam::class);
+        Gate::authorize('review', $exam);
 
         $exam->load(['subject', 'classLevel', 'creator:id,first_name,last_name', 'comments.author:id,first_name,last_name']);
 

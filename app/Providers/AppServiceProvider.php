@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(ResolveCurrentSessionTerm::class);
+        $this->app->singleton(ResolveCurrentSessionTerm::class); 
     }
 
     /**

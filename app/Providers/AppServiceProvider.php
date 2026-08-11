@@ -3,24 +3,33 @@
 namespace App\Providers;
 
 use App\Domains\Academic\Actions\ResolveCurrentSessionTerm;
+use App\Domains\Assessments\Events\AssessmentActivated;
+use App\Domains\Assessments\Events\AssessmentOpened;
+use App\Domains\Assessments\Events\SubmissionApproved;
+use App\Domains\Assessments\Events\SubmissionChangesRequested;
+use App\Domains\Assessments\Events\SubmissionSubmitted;
+use App\Domains\Assessments\Listeners\SendAssessmentActivatedNotification;
+use App\Domains\Assessments\Listeners\SendAssessmentOpenedNotification;
+use App\Domains\Assessments\Listeners\SendSubmissionApprovedNotification;
+use App\Domains\Assessments\Listeners\SendSubmissionChangesRequestedNotification;
+use App\Domains\Assessments\Listeners\SendSubmissionSubmittedNotification;
 use App\Domains\Exams\Events\ExamActivated;
+use App\Domains\Exams\Events\ExamCommentAdded;
+use App\Domains\Exams\Events\ExamCommentReplied;
 use App\Domains\Exams\Events\ExamCompleted;
+use App\Domains\Exams\Listeners\SendExamActivatedNotification;
+use App\Domains\Exams\Listeners\SendExamCommentNotification;
+use App\Domains\Exams\Listeners\SendExamCompletedNotification;
+use App\Domains\Exams\Listeners\SendExamReplyNotification;
+use App\Domains\Tenancy\Listeners\SendUserStatusNotification;
 use App\Events\UserActivated;
 use App\Events\UserDeactivated;
-use App\Domains\Exams\Listeners\SendExamActivatedNotification;
-use App\Domains\Tenancy\Listeners\SendUserStatusNotification;
-use App\Domains\Exams\Listeners\SendExamCompletedNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
-use App\Domains\Exams\Events\ExamCommentAdded;
-use App\Domains\Exams\Listeners\SendExamCommentNotification;
-use App\Domains\Exams\Events\ExamCommentReplied;
-use App\Domains\Exams\Listeners\SendExamReplyNotification;
-
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(ResolveCurrentSessionTerm::class); 
+        $this->app->singleton(ResolveCurrentSessionTerm::class);
     }
 
     /**
@@ -80,6 +89,32 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(
             ExamCommentReplied::class,
             SendExamReplyNotification::class,
+        );
+
+        // Assessment lifecycle + submission review notifications
+        Event::listen(
+            AssessmentOpened::class,
+            SendAssessmentOpenedNotification::class,
+        );
+
+        Event::listen(
+            AssessmentActivated::class,
+            SendAssessmentActivatedNotification::class,
+        );
+
+        Event::listen(
+            SubmissionSubmitted::class,
+            SendSubmissionSubmittedNotification::class,
+        );
+
+        Event::listen(
+            SubmissionChangesRequested::class,
+            SendSubmissionChangesRequestedNotification::class,
+        );
+
+        Event::listen(
+            SubmissionApproved::class,
+            SendSubmissionApprovedNotification::class,
         );
 
         // 3. Password reset URL override for multi-tenant

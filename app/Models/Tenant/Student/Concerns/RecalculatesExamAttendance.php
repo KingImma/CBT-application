@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\Student\Concerns;
 
+use App\Enums\ExamStatus;
+use App\Models\Tenant\Exam;
+use App\Models\Tenant\StudentProfile;
+
 trait RecalculatesExamAttendance
 {
     public static function bootRecalculatesExamAttendance(): void

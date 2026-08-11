@@ -41,6 +41,14 @@ Schedule::command('exams:complete-expired')
         Log::channel('slack')->error('Complete expired exams failed');
     });
 
+// Advance assessment lifecycles (close submissions, activate, complete)
+Schedule::command('assessments:tick')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onFailure(function () {
+        Log::channel('slack')->error('Assessment tick failed');
+    });
+
 // Recover stuck jobs
 Schedule::command('imports:recover-stuck --minutes=15')
     ->everyFiveMinutes()

@@ -39,6 +39,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ResolveCurrentSessionTerm::class);
+
+        $this->app->bind(
+            \App\Domains\Exams\Contracts\MaterializesExamFromExternalSource::class,
+            \App\Domains\Exams\Actions\MaterializeExamFromExternalSource::class,
+        );
     }
 
     /**

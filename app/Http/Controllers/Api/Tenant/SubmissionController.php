@@ -60,7 +60,7 @@ class SubmissionController extends Controller
 
     public function store(Assessment $assessment, CreateSubmissionData $data, Request $request): JsonResponse
     {
-        // Authz (teacher|school_admin) is the route's role middleware. Whether
+        // Auth (teacher|school_admin) is the route's role middleware. Whether
         // *this* teacher may author here is subject-eligibility — a domain rule
         // surfaced as a 409 by CreateSubmission, not a 403 (decision #1).
         $submission = $this->createSubmission->execute(

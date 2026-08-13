@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Actions\Submissions;
 
 use App\Domains\Assessments\Data\Input\SubmissionQuestionData;
+use App\Domains\Assessments\Exceptions\SubmissionMarksExceedCapException;
 use App\Domains\Assessments\Exceptions\SubmissionStateTransitionException;
 use App\Models\Tenant\Submission;
 use App\Models\Tenant\SubmissionQuestion;

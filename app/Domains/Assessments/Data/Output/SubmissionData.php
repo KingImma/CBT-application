@@ -39,6 +39,6 @@ class SubmissionData extends Resource
         public readonly mixed $assessment,
 
         #[WhenLoaded('submissionQuestions')]
-        public readonly mixed $questions,
+        public readonly mixed $submissionQuestions,
     ) {}
 }

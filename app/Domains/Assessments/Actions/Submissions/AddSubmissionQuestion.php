@@ -32,6 +32,8 @@ final class AddSubmissionQuestion
                 )
             );
 
+            $this->assertWithinAssessmentCap($submission, $dto->marks);
+
             $nextOrder = (int) $submission->submissionQuestions()->max('order') + 1;
 
             $question = $submission->submissionQuestions()->create([
@@ -59,5 +61,20 @@ final class AddSubmissionQuestion
 
             return $question->load('options');
         });
+    }
+
+    private function assertWithinAssessmentCap(Submission $submission, float $incomingMarks): void
+    {
+        $assessment = $submission->assessment()->first();
+
+        $currentTotal = (float) $submission->submissionQuestions()->sum('marks');
+        $prospectiveTotal = $currentTotal + $incomingMarks;
+
+        throw_if(
+            $prospectiveTotal > (float) $assessment->total_marks,
+            new SubmissionMarksExceedCapException(
+                "Adding this question ({$incomingMarks} marks) would bring the total to {$prospectiveTotal}, exceeding the assessment cap of {$assessment->total_marks}."
+            )
+        );
     }
 }

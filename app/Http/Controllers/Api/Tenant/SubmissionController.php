@@ -70,7 +70,11 @@ class SubmissionController extends Controller
         );
 
         return ApiResponse::created(
-            SubmissionData::from($submission->load(['subject', 'teacher:id,first_name,last_name'])),
+            SubmissionData::from(
+                $submission
+                    ->load(['subject', 'teacher:id,first_name,last_name'])
+                    ->loadCount('submissionQuestions as question_count')
+            ),
             'Submission created.'
         );
     }
@@ -105,7 +109,17 @@ class SubmissionController extends Controller
 
         $question = $this->addQuestion->execute($submission, $data);
 
-        return ApiResponse::created($question, 'Question added.');
+        return ApiResponse::created([
+                "question" => $question,
+                "submission" => [
+                    'id' => $submission->id,
+                    'total_marks' => (float) $submission->fresh()->total_marks,
+                    'assessment_cap' => (float) $submission->assessment->total_marks,
+                    'question_count' => $submission->submissionQuestions()->count()
+                ]
+            ], 
+            'Question added.'
+        );
     }
 
     public function removeQuestion(Submission $submission, SubmissionQuestion $question): JsonResponse
@@ -114,7 +128,14 @@ class SubmissionController extends Controller
 
         $this->removeQuestion->execute($submission, $question);
 
-        return ApiResponse::message('Question removed.');
+        return ApiResponse::message([
+            "submission" => [
+                'id' => $submission->id,
+                'total_marks' => (float) $submission->fresh()->total_marks,
+                'question_count' => $submission->submissionQuestions()->count()
+            ]
+        ],
+        'Question removed.');
     }
 
     public function submitForReview(Submission $submission): JsonResponse

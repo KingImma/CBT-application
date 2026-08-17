@@ -128,14 +128,13 @@ class SubmissionController extends Controller
 
         $this->removeQuestion->execute($submission, $question);
 
-        return ApiResponse::message([
+        return ApiResponse::success([
             "submission" => [
                 'id' => $submission->id,
                 'total_marks' => (float) $submission->fresh()->total_marks,
                 'question_count' => $submission->submissionQuestions()->count()
             ]
-        ],
-        'Question removed.');
+        ], 'Question removed.');
     }
 
     public function submitForReview(Submission $submission): JsonResponse

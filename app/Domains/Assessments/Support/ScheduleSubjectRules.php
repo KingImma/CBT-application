@@ -7,53 +7,62 @@ namespace App\Domains\Assessments\Support;
 use App\Domains\Assessments\Exceptions\ScheduleSubjectOutOfRangeException;
 use App\Domains\Assessments\Exceptions\ScheduleSubjectOverlapException;
 use App\Domains\Assessments\Exceptions\ScheduleWindowNotSetException;
-use App\Models\Tenant\Assessment;
-use App\Models\Tenant\SubjectSchedule;
+use App\Models\Tenant\AssessmentSchedule;
+use App\Models\Tenant\ScheduleSubject;
 use Closure;
 use Illuminate\Support\Carbon;
 
 final class ScheduleSubjectRules
 {
+    /**
+     * A subject slot must sit inside the schedule's master student window and
+     * must not overlap any other slot on the same schedule.
+     */
     public static function canAssignWindow(?string $excludeScheduleSubjectId = null): Closure
     {
-         // (a): assessment schedule must exist first
-        throw_unless(
-            $assessment->student_starts_at !== null && $assessment->student_ends_at !== null,
-            new ScheduleWindoeNotSetException()
-        );
+        return function (
+            AssessmentSchedule $schedule,
+            Carbon $startsAt,
+            Carbon $endsAt,
+        ): void {
+            throw_unless(
+                $schedule->masterWindowIsSet(),
+                new ScheduleWindowNotSetException
+            );
 
-        throw_unless(
-            $startsAt->lt($endsAt),
-            new ScheduleSubjectOutOfRangeException(
-                    $assessment->student_starts_at->toDateTimeString(),
-                    $assessment->student_ends_at->toDateTimeString(),
+            throw_unless(
+                $startsAt->lt($endsAt),
+                new ScheduleSubjectOutOfRangeException(
+                    $schedule->assessment_starts->toDateTimeString(),
+                    $schedule->assessment_ends->toDateTimeString(),
                 )
-        );
+            );
 
-        // (b): Subject schedule must be within the assessment schedule
-        throw_unless(
-            $startsAt->gte($assessment->student_starts_at) && $endsAt->lte($assessment->student_ends_at),
-            new ScheduleSubjectOutOfRangeException(
-                    $assessment->student_starts_at->toDateTimeString(),
-                    $assessment->student_ends_at->toDateTimeString(),
+            // (a) within the schedule's master window
+            throw_unless(
+                $startsAt->gte($schedule->assessment_starts) && $endsAt->lte($schedule->assessment_ends),
+                new ScheduleSubjectOutOfRangeException(
+                    $schedule->assessment_starts->toDateTimeString(),
+                    $schedule->assessment_ends->toDateTimeString(),
                 )
-        );
+            );
 
-        // No overlapping subject schedules
-        $conflict = SubjectSchedule::where('assessment_id', $assessment->id)
-            ->when($excludeScheduleSubjectId, fn ($q) => $q->where('id', '!=', $excludeScheduleSubjectId) )
-            ->where('starts_at', '<', $endsAt)
-            ->where('ends_at', '>', $startsAt)
-            ->with('subject')
-            ->first();
-        
-        throw_if(
-            $conflict !== null,
-            new ScheduleSubjectOverlapException(
+            // (b) no overlapping slots on this schedule
+            $conflict = ScheduleSubject::where('assessment_schedule_id', $schedule->id)
+                ->when($excludeScheduleSubjectId, fn ($q) => $q->where('id', '!=', $excludeScheduleSubjectId))
+                ->where('starts_at', '<', $endsAt)
+                ->where('ends_at', '>', $startsAt)
+                ->with('subject')
+                ->first();
+
+            throw_if(
+                $conflict !== null,
+                new ScheduleSubjectOverlapException(
                     $conflict->subject->name,
                     $conflict->starts_at->toDateTimeString(),
                     $conflict->ends_at->toDateTimeString(),
                 )
-        );
+            );
+        };
     }
 }

@@ -9,7 +9,7 @@ use App\Models\Tenant\StudentProfile;
 use App\Notifications\InAppNotification;
 
 /**
- * The assessment went live: its approved submissions are now materialised into
+ * The schedule went live: its approved submissions are now materialised into
  * student-facing exams. Notify every student in the target class (level, and
  * arm when the assessment is arm-scoped) that they can start.
  */
@@ -17,7 +17,8 @@ class SendAssessmentActivatedNotification
 {
     public function handle(AssessmentActivated $event): void
     {
-        $assessment = $event->assessment;
+        $schedule = $event->schedule;
+        $assessment = $schedule->assessment;
 
         StudentProfile::query()
             ->where('class_level_id', $assessment->class_level_id)

@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('submission_comments', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('submission_id')->constrained('submissions')->cascadeOnDelete();
+            $table->foreignUuid('submission_id')->constrained('teacher_submissions')->cascadeOnDelete();
             $table->foreignUuid('author_id')->constrained('users')->restrictOnDelete();
             $table->uuid('parent_id')->nullable();
             $table->text('body');

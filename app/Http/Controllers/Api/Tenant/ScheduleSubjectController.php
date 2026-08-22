@@ -10,7 +10,7 @@ use App\Domains\Assessments\Actions\ScheduleSubjects\UpdateScheduleSubject;
 use App\Domains\Assessments\Data\Input\ScheduleSubjectData;
 use App\Domains\Assessments\Data\Output\ScheduleSubjectData as ScheduleSubjectOutput;
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\Assessment;
+use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\ScheduleSubject;
 use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * @group Assessment Schedule — Subject Calendar
- * Per-subject exam windows nested inside an Assessment's exam-period ceiling.
+ * Per-subject exam windows nested inside an AssessmentSchedule's master
+ * student window (assessment_starts / assessment_ends).
  */
 class ScheduleSubjectController extends Controller
 {
@@ -31,13 +32,13 @@ class ScheduleSubjectController extends Controller
     /**
      * List all subject slots under a schedule — drives the calendar view.
      *
-     * @urlParam assessment string required The assessment (schedule) UUID.
+     * @urlParam schedule string required The assessment-schedule UUID.
      */
-    public function index(Assessment $assessment): JsonResponse
+    public function index(AssessmentSchedule $schedule): JsonResponse
     {
-        Gate::authorize('view', $assessment);
+        Gate::authorize('view', $schedule);
 
-        $slots = $assessment->scheduleSubjects()
+        $slots = $schedule->scheduleSubjects()
             ->with('subject:id,name,code')
             ->orderBy('starts_at')
             ->get();
@@ -49,16 +50,14 @@ class ScheduleSubjectController extends Controller
     }
 
     /**
-     * Place a subject into the calendar. Rejects if outside the schedule's
-     * exam period ceiling, or overlapping another subject in this schedule.
-     *
-     * @urlParam assessment string required The assessment (schedule) UUID.
+     * Place a subject into the calendar. Rejects if outside the master window,
+     * or overlapping another subject in this schedule.
      */
-    public function store(ScheduleSubjectData $data, Assessment $assessment): JsonResponse
+    public function store(ScheduleSubjectData $data, AssessmentSchedule $schedule): JsonResponse
     {
-        Gate::authorize('manageSchedule', $assessment);
+        Gate::authorize('manage', $schedule);
 
-        $slot = $this->assign->execute($assessment, $data);
+        $slot = $this->assign->execute($schedule, $data);
 
         return ApiResponse::created(
             ScheduleSubjectOutput::from($slot->load('subject:id,name,code')),
@@ -67,17 +66,14 @@ class ScheduleSubjectController extends Controller
     }
 
     /**
-     * Move/resize a subject's slot. Same ceiling + overlap checks apply,
+     * Move/resize a subject's slot. Same bounds + overlap checks apply,
      * excluding itself from the overlap comparison.
-     *
-     * @urlParam assessment string required The assessment (schedule) UUID.
-     * @urlParam scheduleSubject string required The schedule-subject UUID.
      */
-    public function update(ScheduleSubjectData $data, Assessment $assessment, ScheduleSubject $scheduleSubject): JsonResponse
+    public function update(ScheduleSubjectData $data, AssessmentSchedule $schedule, ScheduleSubject $scheduleSubject): JsonResponse
     {
-        Gate::authorize('manageSchedule', $assessment);
+        Gate::authorize('manage', $schedule);
 
-        abort_unless($scheduleSubject->assessment_id === $assessment->id, 404);
+        abort_unless($scheduleSubject->assessment_schedule_id === $schedule->id, 404);
 
         $slot = $this->update->execute($scheduleSubject, $data);
 
@@ -89,15 +85,12 @@ class ScheduleSubjectController extends Controller
 
     /**
      * Remove a subject slot. Blocked once the schedule is activated.
-     *
-     * @urlParam assessment string required The assessment (schedule) UUID.
-     * @urlParam scheduleSubject string required The schedule-subject UUID.
      */
-    public function destroy(Assessment $assessment, ScheduleSubject $scheduleSubject): JsonResponse
+    public function destroy(AssessmentSchedule $schedule, ScheduleSubject $scheduleSubject): JsonResponse
     {
-        Gate::authorize('manageSchedule', $assessment);
+        Gate::authorize('manage', $schedule);
 
-        abort_unless($scheduleSubject->assessment_id === $assessment->id, 404);
+        abort_unless($scheduleSubject->assessment_schedule_id === $schedule->id, 404);
 
         $this->remove->execute($scheduleSubject);
 

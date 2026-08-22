@@ -16,7 +16,7 @@ return new class extends Migration
     {
         Schema::create('submission_questions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('submission_id')->constrained('submissions')->cascadeOnDelete();
+            $table->foreignUuid('submission_id')->constrained('teacher_submissions')->cascadeOnDelete();
             $table->enum('type', array_column(SubmissionQuestionType::cases(), 'value'));
             $table->integer('order');
             $table->text('content');

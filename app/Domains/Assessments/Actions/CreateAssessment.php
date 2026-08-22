@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Actions;
 
 use App\Domains\Assessments\Data\Input\CreateAssessmentData;
-use App\Enums\AssessmentStatus;
 use App\Models\Tenant\Assessment;
 use App\Models\Tenant\ClassArm;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +14,10 @@ final class CreateAssessment
 {
     public function __construct() {}
 
+    /**
+     * Create the stable assessment definition. No term, windows or status —
+     * occurrences live on AssessmentSchedule rows.
+     */
     public function execute(CreateAssessmentData $dto, string $createdBy): Assessment
     {
         $this->ensureValidRelationships($dto);
@@ -23,16 +26,10 @@ final class CreateAssessment
             'title' => $dto->title,
             'class_level_id' => $dto->class_level_id,
             'class_arm_id' => $dto->class_arm_id,
-            'term_id' => $dto->term_id,
             'created_by' => $createdBy,
-            'status' => AssessmentStatus::Draft->value,
             'total_marks' => $dto->total_marks,
             'duration_minutes' => $dto->duration_minutes,
-            'submission_opens_at' => $dto->submission_opens_at,
-            'submission_closes_at' => $dto->submission_closes_at,
-            'student_starts_at' => $dto->student_starts_at,
-            'student_ends_at' => $dto->student_ends_at,
-            'instructions' => $dto->instructions,
+            'description' => $dto->description,
         ]));
     }
 

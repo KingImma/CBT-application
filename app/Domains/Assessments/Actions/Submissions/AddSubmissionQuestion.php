@@ -66,7 +66,7 @@ final class AddSubmissionQuestion
 
     private function assertWithinAssessmentCap(Submission $submission, float $incomingMarks): void
     {
-        $assessment = $submission->assessment()->first();
+        $assessment = $submission->schedule->assessment;
 
         $currentTotal = (float) $submission->submissionQuestions()->sum('marks');
         $prospectiveTotal = $currentTotal + $incomingMarks;

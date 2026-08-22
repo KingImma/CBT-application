@@ -27,7 +27,7 @@ class SendSubmissionApprovedNotification
             message: "\"{$submission->title}\" was approved and is ready to go live.",
             type: 'success',
             action: [
-                'url' => "/teacher/assessments/{$submission->assessment_id}/submissions/{$submission->id}",
+                'url' => "/teacher/assessments/{$submission->assessment_schedule_id}/teacher-submissions/{$submission->id}",
                 'label' => 'View Submission',
             ],
         ));

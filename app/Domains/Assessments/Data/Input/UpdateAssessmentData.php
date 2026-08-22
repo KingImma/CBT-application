@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\Assessments\Data\Input;
 
-use Spatie\LaravelData\Attributes\Validation\Date;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\IntegerType;
 use Spatie\LaravelData\Attributes\Validation\Max;
@@ -27,28 +26,13 @@ class UpdateAssessmentData extends Data
         #[Uuid, Exists('class_arms', 'id')]
         public readonly string|Optional|null $class_arm_id,
 
-        #[Uuid, Exists('terms', 'id')]
-        public readonly string|Optional $term_id,
-
         #[Numeric, Min(0)]
         public readonly float|Optional $total_marks,
 
         #[IntegerType, Min(1)]
         public readonly int|Optional|null $duration_minutes,
 
-        #[Date]
-        public readonly string|Optional|null $submission_opens_at,
-
-        #[Date]
-        public readonly string|Optional|null $submission_closes_at,
-
-        #[Date]
-        public readonly string|Optional|null $student_starts_at,
-
-        #[Date]
-        public readonly string|Optional|null $student_ends_at,
-
         #[StringType]
-        public readonly string|Optional|null $instructions,
+        public readonly string|Optional|null $description,
     ) {}
 }

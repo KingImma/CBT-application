@@ -5,32 +5,32 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Domains\Assessments\Actions\ActivateAssessment;
-use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Domains\Exams\Actions\Attempts\FinalizeAttempt;
 use App\Enums\AssessmentStatus;
 use App\Enums\ExamAttemptStatus;
+use App\Enums\QuestionSubmissionStatus;
 use App\Models\Tenant;
-use App\Models\Tenant\Assessment;
+use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Drives the assessment clock across every active tenant. Three idempotent,
- * time-driven flips (decision #6 — scheduled activation):
- *   open              -> submissions_closed   once submission_closes_at passes
- *   submissions_closed -> active              once student_starts_at opens the window
- *   active            -> completed            once student_ends_at passes
- * The queries run in order so a just-closed assessment whose start time has
- * already arrived can activate in the same tick. Guard failures (e.g. a window
- * that closed with zero approved submissions) are logged and skipped, never
- * fatal — the run must survive per-tenant and per-row hiccups.
+ * Drives the schedule clock across every active tenant. Three idempotent,
+ * time-driven flips:
+ *   question window open  -> closed   once question_submission_ends passes
+ *   draft                 -> active   once assessment_starts opens the window
+ *   active                -> completed once assessment_ends passes
+ * The queries run in order so a just-closed schedule whose start time has
+ * already arrived can activate in the same tick. Guard failures (e.g. a
+ * window that closed with zero approved submissions) are logged and skipped,
+ * never fatal — the run must survive per-tenant and per-row hiccups.
  */
 class TickAssessments extends Command
 {
     protected $signature = 'assessments:tick';
 
-    protected $description = 'Advance assessment lifecycles (close submissions, activate, complete) across all tenants.';
+    protected $description = 'Advance assessment schedule lifecycles (close questions, activate, complete) across all tenants.';
 
     public function __construct(
         private ActivateAssessment $activate,
@@ -66,52 +66,53 @@ class TickAssessments extends Command
 
     private function tickTenant(string $tenantId): void
     {
-        $this->closeExpiredSubmissionWindows($tenantId);
-        $this->activateScheduledAssessments($tenantId);
-        $this->completeFinishedAssessments($tenantId);
+        $this->closeExpiredQuestionWindows($tenantId);
+        $this->activateScheduledSchedules($tenantId);
+        $this->completeFinishedSchedules($tenantId);
     }
 
-    /** open -> submissions_closed once the teacher window has passed. */
-    private function closeExpiredSubmissionWindows(string $tenantId): void
+    /** open -> closed once the teacher question deadline has passed. */
+    private function closeExpiredQuestionWindows(string $tenantId): void
     {
-        Assessment::query()
-            ->where('status', AssessmentStatus::Open)
-            ->where('submission_closes_at', '<=', now())
+        AssessmentSchedule::query()
+            ->where('question_submission_status', QuestionSubmissionStatus::Open)
+            ->where('question_submission_ends', '<=', now())
             ->get()
-            ->each(function (Assessment $assessment) use ($tenantId): void {
-                $assessment->closeSubmissions();
+            ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
+                $schedule->closeSubmissions();
 
-                Log::info('Assessment submissions auto-closed', [
+                Log::info('Schedule question window auto-closed', [
                     'tenant_id' => $tenantId,
-                    'assessment_id' => $assessment->id,
+                    'schedule_id' => $schedule->id,
                 ]);
             });
     }
 
     /**
-     * submissions_closed -> active once the student window opens. Activation
-     * materialises the exams; a guard rejection (no approved submissions, invalid
-     * window) leaves the assessment closed for an admin to reopen or fix.
+     * draft -> active once the master student window opens. Activation
+     * materialises the exams; a guard rejection (no approved submissions, no
+     * slots, invalid window) leaves the schedule draft for an admin to fix.
      */
-    private function activateScheduledAssessments(string $tenantId): void
+    private function activateScheduledSchedules(string $tenantId): void
     {
-        Assessment::query()
-            ->where('status', AssessmentStatus::SubmissionsClosed)
-            ->where('student_starts_at', '<=', now())
-            ->where('student_ends_at', '>', now())
+        AssessmentSchedule::query()
+            ->where('assessment_status', AssessmentStatus::Draft)
+            ->where('question_submission_status', QuestionSubmissionStatus::Closed)
+            ->where('assessment_starts', '<=', now())
+            ->where('assessment_ends', '>', now())
             ->get()
-            ->each(function (Assessment $assessment) use ($tenantId): void {
+            ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
                 try {
-                    $this->activate->execute($assessment);
+                    $this->activate->execute($schedule);
 
                     Log::info('Assessment auto-activated', [
                         'tenant_id' => $tenantId,
-                        'assessment_id' => $assessment->id,
+                        'schedule_id' => $schedule->id,
                     ]);
-                } catch (AssessmentStateTransitionException $e) {
+                } catch (\Throwable $e) {
                     Log::warning('Assessment auto-activation skipped', [
                         'tenant_id' => $tenantId,
-                        'assessment_id' => $assessment->id,
+                        'schedule_id' => $schedule->id,
                         'reason' => $e->getMessage(),
                     ]);
                 }
@@ -119,31 +120,31 @@ class TickAssessments extends Command
     }
 
     /**
-     * active -> completed once the student window has passed. Any attempt still
-     * in progress on a materialised paper is force-finalised through the existing
-     * timeout path (no actor, no re-grade of a partial paper).
+     * active -> completed once the master student window has passed. Any
+     * attempt still in progress on a materialised paper is force-finalised
+     * through the existing timeout path.
      */
-    private function completeFinishedAssessments(string $tenantId): void
+    private function completeFinishedSchedules(string $tenantId): void
     {
-        Assessment::query()
-            ->where('status', AssessmentStatus::Active)
-            ->where('student_ends_at', '<=', now())
+        AssessmentSchedule::query()
+            ->where('assessment_status', AssessmentStatus::Active)
+            ->where('assessment_ends', '<=', now())
             ->get()
-            ->each(function (Assessment $assessment) use ($tenantId): void {
-                $this->forceSubmitOpenAttempts($assessment, $tenantId);
+            ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
+                $this->forceSubmitOpenAttempts($schedule, $tenantId);
 
-                $assessment->complete();
+                $schedule->complete();
 
                 Log::info('Assessment auto-completed', [
                     'tenant_id' => $tenantId,
-                    'assessment_id' => $assessment->id,
+                    'schedule_id' => $schedule->id,
                 ]);
             });
     }
 
-    private function forceSubmitOpenAttempts(Assessment $assessment, string $tenantId): void
+    private function forceSubmitOpenAttempts(AssessmentSchedule $schedule, string $tenantId): void
     {
-        $examIds = $assessment->submissions()
+        $examIds = $schedule->submissions()
             ->whereNotNull('exam_id')
             ->pluck('exam_id');
 
@@ -159,7 +160,7 @@ class TickAssessments extends Command
                     try {
                         $this->finalizeAttempt->execute($attempt, reason: 'stale_heartbeat');
                     } catch (\Throwable $e) {
-                        Log::error('Force-submit on assessment completion failed', [
+                        Log::error('Force-submit on schedule completion failed', [
                             'tenant_id' => $tenantId,
                             'attempt_id' => $attempt->id,
                             'reason' => $e->getMessage(),

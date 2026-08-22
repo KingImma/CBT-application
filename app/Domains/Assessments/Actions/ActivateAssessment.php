@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Actions;
 
 use App\Domains\Assessments\Events\AssessmentActivated;
-use App\Models\Tenant\Assessment;
+use App\Models\Tenant\AssessmentSchedule;
 use Illuminate\Support\Facades\DB;
 
 final class ActivateAssessment
@@ -15,19 +15,19 @@ final class ActivateAssessment
     ) {}
 
     /**
-     * Flip the assessment to active and materialise the student-facing paper(s)
-     * from every approved submission. The guard (≥1 approved, valid window) runs
-     * inside activate(); materialisation happens in the same transaction so a
-     * failure to build the exam rolls the status change back too.
+     * Flip the schedule to active and materialise the student-facing paper(s)
+     * from every approved submission on THIS schedule. The guard runs inside
+     * activate(); materialisation shares the transaction so a failure to build
+     * an exam rolls the status change back too.
      */
-    public function execute(Assessment $assessment): Assessment
+    public function execute(AssessmentSchedule $schedule): AssessmentSchedule
     {
-        return DB::transaction(function () use ($assessment): Assessment {
-            $assessment->activate();
+        return DB::transaction(function () use ($schedule): AssessmentSchedule {
+            $schedule->activate();
 
-            $this->materialize->execute($assessment);
+            $this->materialize->execute($schedule);
 
-            $fresh = $assessment->fresh();
+            $fresh = $schedule->fresh();
 
             event(new AssessmentActivated($fresh));
 

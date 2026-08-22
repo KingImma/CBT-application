@@ -6,40 +6,20 @@ namespace App\Domains\Assessments\Support;
 
 use App\Domains\Assessments\Exceptions\AssessmentCannotBeActivatedException;
 use App\Domains\Assessments\Exceptions\AssessmentCannotBeCompletedException;
-use App\Domains\Assessments\Exceptions\AssessmentCannotBeOpenedException;
 use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
-use App\Models\Tenant\Assessment;
+use App\Enums\SubmissionStatus;
+use App\Models\Tenant\AssessmentSchedule;
 use Closure;
 
 final class AssessmentLifecycleRules
 {
-    public static function canOpen(): Closure
-    {
-        return function (Assessment $assessment): void {
-            throw_unless(
-                $assessment->isDraft(),
-                new AssessmentCannotBeOpenedException(
-                    'Only draft assessments can be opened.'
-                )
-            );
-
-            throw_unless(
-                $assessment->submission_closes_at !== null
-                    && $assessment->submission_closes_at->isFuture(),
-                new AssessmentCannotBeOpenedException(
-                    'A submission close time in the future must be set before opening.'
-                )
-            );
-        };
-    }
-
     public static function canCloseSubmissions(): Closure
     {
-        return function (Assessment $assessment): void {
+        return function (AssessmentSchedule $schedule): void {
             throw_unless(
-                $assessment->isOpen(),
+                $schedule->isQuestionSubmissionOpen(),
                 new AssessmentStateTransitionException(
-                    'Only open assessments can have submissions closed.'
+                    'Only open question windows can be closed.'
                 )
             );
         };
@@ -47,19 +27,18 @@ final class AssessmentLifecycleRules
 
     public static function canReopen(): Closure
     {
-        return function (Assessment $assessment): void {
+        return function (AssessmentSchedule $schedule): void {
             throw_unless(
-                $assessment->isSubmissionsClosed(),
-                new AssessmentCannotBeOpenedException(
-                    'Only assessments with closed submissions can be reopened.'
+                $schedule->isQuestionSubmissionClosed(),
+                new AssessmentStateTransitionException(
+                    'Only closed question windows can be reopened.'
                 )
             );
 
             throw_unless(
-                $assessment->submission_closes_at !== null
-                    && $assessment->submission_closes_at->isFuture(),
-                new AssessmentCannotBeOpenedException(
-                    'A new submission close time in the future must be set before reopening.'
+                $schedule->isDraft(),
+                new AssessmentStateTransitionException(
+                    'A schedule that has been activated cannot reopen submissions.'
                 )
             );
         };
@@ -67,33 +46,39 @@ final class AssessmentLifecycleRules
 
     public static function canActivate(): Closure
     {
-        return function (Assessment $assessment): void {
+        return function (AssessmentSchedule $schedule): void {
             throw_unless(
-                $assessment->isSubmissionsClosed(),
+                $schedule->isQuestionSubmissionClosed(),
                 new AssessmentCannotBeActivatedException(
-                    'Only assessments with closed submissions can be activated.'
+                    'The question submission window must be closed before activation.'
                 )
             );
 
             throw_unless(
-                $assessment->student_starts_at !== null
-                    && $assessment->student_ends_at !== null,
+                $schedule->masterWindowIsSet(),
                 new AssessmentCannotBeActivatedException(
                     'Both student start and end times must be configured before activation.'
                 )
             );
 
             throw_unless(
-                $assessment->student_starts_at < $assessment->student_ends_at,
+                $schedule->approvedSubmissionsCount() > 0,
                 new AssessmentCannotBeActivatedException(
-                    'The student start time must be before the student end time.'
+                    'At least one approved submission is required before activation.'
                 )
             );
 
-            throw_unless(
-                $assessment->approvedSubmissionsCount() > 0,
+            // Every approved paper must have a subject slot inside the master
+            // window, otherwise materialisation would produce an unscheduled exam.
+            $unscheduled = $schedule->submissions()
+                ->where('status', SubmissionStatus::Approved->value)
+                ->whereDoesntHave('subject.scheduleSubjects', fn ($q) => $q->where('assessment_schedule_id', $schedule->id))
+                ->count();
+
+            throw_if(
+                $unscheduled > 0,
                 new AssessmentCannotBeActivatedException(
-                    'At least one approved submission is required before activation.'
+                    "{$unscheduled} approved submission(s) have no subject slot on this schedule."
                 )
             );
         };
@@ -101,11 +86,11 @@ final class AssessmentLifecycleRules
 
     public static function canComplete(): Closure
     {
-        return function (Assessment $assessment): void {
+        return function (AssessmentSchedule $schedule): void {
             throw_unless(
-                $assessment->isActive(),
+                $schedule->isActive(),
                 new AssessmentCannotBeCompletedException(
-                    'Only active assessments can be completed.'
+                    'Only active schedules can be completed.'
                 )
             );
         };

@@ -11,7 +11,7 @@ class ScheduleSubjectData extends Resource
 {
     public function __construct(
         public readonly string $id,
-        public readonly string $assessment_id,
+        public readonly string $assessment_schedule_id,
         public readonly string $subject_id,
         public readonly string $starts_at,
         public readonly string $ends_at,

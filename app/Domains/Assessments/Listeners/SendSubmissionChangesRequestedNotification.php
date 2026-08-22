@@ -27,7 +27,7 @@ class SendSubmissionChangesRequestedNotification
             message: "{$event->admin->first_name} {$event->admin->last_name} requested changes on \"{$submission->title}\".",
             type: 'warning',
             action: [
-                'url' => "/teacher/assessments/{$submission->assessment_id}/submissions/{$submission->id}",
+                'url' => "/teacher/assessments/{$submission->assessment_schedule_id}/teacher-submissions/{$submission->id}",
                 'label' => 'View Feedback',
             ],
         ));

@@ -54,34 +54,4 @@ class AssessmentPolicy
     {
         return $user->hasRole(RoleType::SchoolAdmin->value);
     }
-
-    public function open(User $user, Assessment $assessment): bool
-    {
-        return $user->hasRole(RoleType::SchoolAdmin->value);
-    }
-
-    public function closeSubmissions(User $user, Assessment $assessment): bool
-    {
-        return $user->hasRole(RoleType::SchoolAdmin->value);
-    }
-
-    public function reopen(User $user, Assessment $assessment): bool
-    {
-        return $user->hasRole(RoleType::SchoolAdmin->value);
-    }
-
-    public function activate(User $user, Assessment $assessment): bool
-    {
-        return $user->hasRole(RoleType::SchoolAdmin->value);
-    }
-
-    public function complete(User $user, Assessment $assessment): bool
-    {
-        return $user->hasRole(RoleType::SchoolAdmin->value);
-    }
-
-    public function manageSchedule(User $user, Assesment $assessment):bool
-    {
-        return $user->hasRole(RoleType::SchoolAdmin->value);
-    }
 }

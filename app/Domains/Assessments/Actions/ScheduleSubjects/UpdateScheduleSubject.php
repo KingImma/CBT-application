@@ -20,7 +20,7 @@ final class UpdateScheduleSubject
 
             // self-excluded from its own overlap check
             ScheduleSubjectRules::canAssignWindow($scheduleSubject->id)(
-                $scheduleSubject->assessment,
+                $scheduleSubject->schedule,
                 $startsAt,
                 $endsAt,
             );

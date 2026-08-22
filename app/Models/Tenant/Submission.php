@@ -22,8 +22,11 @@ class Submission extends Model
         HasValidation,
         SoftDeletes;
 
+    /** Papers are occurrence-scoped: one teacher's paper inside one AssessmentSchedule. */
+    protected $table = 'teacher_submissions';
+
     protected $fillable = [
-        'assessment_id',
+        'assessment_schedule_id',
         'teacher_id',
         'subject_id',
         'title',
@@ -45,10 +48,10 @@ class Submission extends Model
         'approved_at' => 'datetime',
     ];
 
-    /** @return BelongsTo<Assessment, Submission> */
-    public function assessment(): BelongsTo
+    /** @return BelongsTo<AssessmentSchedule, Submission> */
+    public function schedule(): BelongsTo
     {
-        return $this->belongsTo(Assessment::class);
+        return $this->belongsTo(AssessmentSchedule::class, 'assessment_schedule_id');
     }
 
     /** @return BelongsTo<User, Submission> */

@@ -8,14 +8,15 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Submission — one teacher's paper inside an assessment. This is the
-     * former "Exam" demoted to live under an assessment container.
+     * TeacherSubmission — one teacher's paper inside one AssessmentSchedule.
+     * Papers are occurrence-scoped (Option A): every term gets a fresh
+     * authoring cycle, nothing carries over between schedules.
      */
     public function up(): void
     {
-        Schema::create('submissions', function (Blueprint $table) {
+        Schema::create('teacher_submissions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('assessment_id')->constrained('assessments')->cascadeOnDelete();
+            $table->foreignUuid('assessment_schedule_id')->constrained('assessment_schedules')->cascadeOnDelete();
             $table->foreignUuid('teacher_id')->constrained('users')->restrictOnDelete();
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->string('title');
@@ -35,14 +36,14 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // One paper per teacher per subject within an assessment (decision #5).
-            $table->unique(['assessment_id', 'teacher_id', 'subject_id']);
-            $table->index(['assessment_id', 'status']);
+            // One paper per teacher per subject per schedule occurrence.
+            $table->unique(['assessment_schedule_id', 'teacher_id', 'subject_id']);
+            $table->index(['assessment_schedule_id', 'status']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('submissions');
+        Schema::dropIfExists('teacher_submissions');
     }
 };

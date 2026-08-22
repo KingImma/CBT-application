@@ -7,7 +7,7 @@ namespace App\Domains\Assessments\Actions\Submissions;
 use App\Domains\Assessments\Data\Input\CreateSubmissionData;
 use App\Domains\Assessments\Exceptions\SubmissionCannotBeSubmittedException;
 use App\Enums\SubmissionStatus;
-use App\Models\Tenant\Assessment;
+use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\Submission;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use Illuminate\Support\Facades\DB;
@@ -17,23 +17,25 @@ final class CreateSubmission
     public function __construct() {}
 
     /**
-     * A teacher creates their paper inside an open assessment. The unique
-     * (assessment_id, teacher_id, subject_id) index guarantees one paper per
-     * teacher per subject (decision #5). Eligibility is subject-assignment
-     * against the assessment's class level (decision #1).
+     * A teacher creates their paper inside an open schedule. The unique
+     * (assessment_schedule_id, teacher_id, subject_id) index guarantees one
+     * paper per teacher per subject per occurrence (decision #5). Eligibility
+     * is subject-assignment against the parent assessment's class level.
      */
     public function execute(
-        Assessment $assessment,
+        AssessmentSchedule $schedule,
         CreateSubmissionData $dto,
         string $teacherId,
     ): Submission {
-        return DB::transaction(function () use ($assessment, $dto, $teacherId): Submission {
+        return DB::transaction(function () use ($schedule, $dto, $teacherId): Submission {
             throw_unless(
-                $assessment->submissionWindowIsOpen(),
+                $schedule->questionWindowIsOpen(),
                 new SubmissionCannotBeSubmittedException(
-                    'The assessment is not open for submissions.'
+                    'The question submission window has closed.'
                 )
             );
+
+            $assessment = $schedule->assessment;
 
             throw_unless(
                 TeacherSubjectAssignment::where('user_id', $teacherId)
@@ -47,17 +49,17 @@ final class CreateSubmission
 
             // Surface the unique index as a domain conflict rather than a 500.
             throw_if(
-                $assessment->submissions()
+                $schedule->submissions()
                     ->where('teacher_id', $teacherId)
                     ->where('subject_id', $dto->subject_id)
                     ->exists(),
                 new SubmissionCannotBeSubmittedException(
-                    'You already have a paper for this subject in this assessment.'
+                    'You already have a paper for this subject in this schedule.'
                 )
             );
 
             return Submission::create([
-                'assessment_id' => $assessment->id,
+                'assessment_schedule_id' => $schedule->id,
                 'teacher_id' => $teacherId,
                 'subject_id' => $dto->subject_id,
                 'title' => $dto->title,

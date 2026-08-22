@@ -52,11 +52,11 @@ trait HasValidation
             return false;
         }
 
-        $assessment = $this->assessment;
+        $schedule = $this->schedule;
 
-        return $assessment !== null
-            && $assessment->submissionWindowIsOpen()
-            && $this->questionsMarksTotal() <= (float) $assessment->total_marks;
+        return $schedule !== null
+            && $schedule->questionWindowIsOpen()
+            && $this->questionsMarksTotal() <= (float) $schedule->assessment->total_marks;
     }
 
     public function canRequestChanges(): bool

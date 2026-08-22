@@ -13,14 +13,14 @@ final class RemoveScheduleSubject
     public function execute(ScheduleSubject $scheduleSubject): void
     {
         DB::transaction(function () use ($scheduleSubject): void {
-            $assessment = $scheduleSubject->assessment;
+            $schedule = $scheduleSubject->schedule;
 
             // once materialized (active/completed), the exam already exists off this
             // window — deleting the slot would orphan the Exam's schedule reference
             throw_if(
-                $assessment->isActive() || $assessment->isCompleted(),
+                $schedule->isActive() || $schedule->isCompleted(),
                 new AssessmentStateTransitionException(
-                    'Cannot remove a subject slot after the assessment has been activated.'
+                    'Cannot remove a subject slot after the schedule has been activated.'
                 )
             );
 

@@ -30,7 +30,7 @@ class SendSubmissionSubmittedNotification
                 message: "{$teacherName} submitted \"{$submission->title}\" for review.",
                 type: 'info',
                 action: [
-                    'url' => "/admin/assessments/{$submission->assessment_id}/submissions/{$submission->id}",
+                    'url' => "/admin/assessments/{$submission->assessment_schedule_id}/teacher-submissions/{$submission->id}",
                     'label' => 'Review Submission',
                 ],
             )));

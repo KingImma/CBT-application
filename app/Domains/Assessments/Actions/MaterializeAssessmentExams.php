@@ -9,7 +9,7 @@ use App\Domains\Exams\Data\MaterializeExamOptionRequest;
 use App\Domains\Exams\Data\MaterializeExamQuestionRequest;
 use App\Domains\Exams\Data\MaterializeExamRequest;
 use App\Enums\SubmissionStatus;
-use App\Models\Tenant\Assessment;
+use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\Submission;
 use Illuminate\Support\Facades\DB;
@@ -21,30 +21,32 @@ final class MaterializeAssessmentExams
     ) {}
 
     /** @return array<int,Exam> */
-    public function execute(Assessment $assessment): array
+    public function execute(AssessmentSchedule $schedule): array
     {
-        return DB::transaction(function () use ($assessment): array {
-            $assessment->loadMissing('term');
+        return DB::transaction(function () use ($schedule): array {
+            $schedule->loadMissing('assessment');
 
-            $submissions = $assessment->submissions()
+            $submissions = $schedule->submissions()
                 ->where('status', SubmissionStatus::Approved->value)
                 ->whereNull('exam_id')
                 ->with('submissionQuestions.options')
                 ->get();
 
             return $submissions
-                ->map(fn (Submission $submission): Exam => $this->materialize($assessment, $submission))
+                ->map(fn (Submission $submission): Exam => $this->materialize($schedule, $submission))
                 ->all();
         });
     }
 
-    private function materialize(Assessment $assessment, Submission $submission): Exam
+    private function materialize(AssessmentSchedule $schedule, Submission $submission): Exam
     {
-        $scheduleSubject = $assessment->scheduleSubjects()
+        $assessment = $schedule->assessment;
+
+        $slot = $schedule->scheduleSubjects()
             ->where('subject_id', $submission->subject_id)
             ->first();
 
-        throw_if($scheduleSubject === null, new \RuntimeException(
+        throw_if($slot === null, new \RuntimeException(
             "No schedule window set for subject on submission {$submission->id}. Contact the admin to schedule this subject."
         ));
 
@@ -53,13 +55,13 @@ final class MaterializeAssessmentExams
             subjectId: $submission->subject_id,
             classLevelId: $assessment->class_level_id,
             classArmId: $assessment->class_arm_id,
-            termId: $assessment->term_id,
+            termId: $schedule->term_id,
             createdBy: $submission->teacher_id,
-            durationMinutes: $scheduleSubject->optionalDurationMinutes(),
+            durationMinutes: $slot->optionalDurationMinutes(),
             totalMarks: (float) $submission->total_marks,
-            scheduledStart: $scheduleSubject->starts_at?->toIso8601String(),
-            windowEnd: $scheduleSubject->ends_at?->toIso8601String(),
-            instructions: $assessment->instructions,
+            scheduledStart: $slot->starts_at?->toIso8601String(),
+            windowEnd: $slot->ends_at?->toIso8601String(),
+            instructions: $assessment->description,
             questions: $submission->submissionQuestions
                 ->map(fn ($sq) => new MaterializeExamQuestionRequest(
                     type: $sq->type->value,

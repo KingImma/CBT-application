@@ -14,7 +14,7 @@ class SubmissionData extends Resource
 {
     public function __construct(
         public readonly string $id,
-        public readonly string $assessment_id,
+        public readonly string $assessment_schedule_id,
         public readonly string $teacher_id,
         public readonly string $subject_id,
         public readonly string $title,
@@ -35,8 +35,8 @@ class SubmissionData extends Resource
         #[WhenLoaded('teacher')]
         public readonly mixed $teacher,
 
-        #[WhenLoaded('assessment')]
-        public readonly mixed $assessment,
+        #[WhenLoaded('schedule')]
+        public readonly mixed $schedule,
 
         #[WhenLoaded('submissionQuestions')]
         public readonly mixed $submissionQuestions,

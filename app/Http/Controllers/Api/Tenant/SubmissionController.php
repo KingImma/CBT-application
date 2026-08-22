@@ -16,7 +16,7 @@ use App\Domains\Assessments\Data\Input\SubmissionQuestionData;
 use App\Domains\Assessments\Data\Input\UpdateSubmissionData;
 use App\Domains\Assessments\Data\Output\SubmissionData;
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\Assessment;
+use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\Submission;
 use App\Models\Tenant\SubmissionQuestion;
 use App\Shared\Support\ApiResponse;
@@ -25,10 +25,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * @group Assessment Submissions
+ * @group Teacher Submissions
  *
- * A teacher's paper inside an assessment: authoring (draft → submitted),
- * the admin review loop (request changes → resubmit), and approval.
+ * A teacher's paper inside an assessment schedule: authoring (draft →
+ * submitted), the admin review loop (request changes → resubmit), approval.
  */
 class SubmissionController extends Controller
 {
@@ -42,11 +42,11 @@ class SubmissionController extends Controller
         private ApproveSubmission $approveSubmission,
     ) {}
 
-    public function index(Assessment $assessment, Request $request): JsonResponse
+    public function index(AssessmentSchedule $schedule, Request $request): JsonResponse
     {
-        Gate::authorize('view', $assessment);
+        Gate::authorize('view', $schedule);
 
-        $submissions = $assessment->submissions()
+        $submissions = $schedule->submissions()
             ->with(['subject:id,name', 'teacher:id,first_name,last_name'])
             ->withCount('submissionQuestions as question_count')
             ->orderByDesc('created_at')
@@ -58,13 +58,13 @@ class SubmissionController extends Controller
         );
     }
 
-    public function store(Assessment $assessment, CreateSubmissionData $data, Request $request): JsonResponse
+    public function store(AssessmentSchedule $schedule, CreateSubmissionData $data, Request $request): JsonResponse
     {
         // Auth (teacher|school_admin) is the route's role middleware. Whether
         // *this* teacher may author here is subject-eligibility — a domain rule
         // surfaced as a 409 by CreateSubmission, not a 403 (decision #1).
         $submission = $this->createSubmission->execute(
-            $assessment,
+            $schedule,
             $data,
             $request->user('tenant')->id,
         );
@@ -86,7 +86,8 @@ class SubmissionController extends Controller
         $submission->load([
             'subject:id,name',
             'teacher:id,first_name,last_name',
-            'assessment',
+            'schedule.assessment',
+            'schedule.term',
             'submissionQuestions.options',
         ])->loadCount('submissionQuestions as question_count');
 
@@ -110,14 +111,14 @@ class SubmissionController extends Controller
         $question = $this->addQuestion->execute($submission, $data);
 
         return ApiResponse::created([
-                "question" => $question,
-                "submission" => [
-                    'id' => $submission->id,
-                    'total_marks' => (float) $submission->fresh()->total_marks,
-                    'assessment_cap' => (float) $submission->assessment->total_marks,
-                    'question_count' => $submission->submissionQuestions()->count()
-                ]
-            ], 
+            'question' => $question,
+            'submission' => [
+                'id' => $submission->id,
+                'total_marks' => (float) $submission->fresh()->total_marks,
+                'assessment_cap' => (float) $submission->schedule->assessment->total_marks,
+                'question_count' => $submission->submissionQuestions()->count(),
+            ],
+        ],
             'Question added.'
         );
     }
@@ -129,11 +130,11 @@ class SubmissionController extends Controller
         $this->removeQuestion->execute($submission, $question);
 
         return ApiResponse::success([
-            "submission" => [
+            'submission' => [
                 'id' => $submission->id,
                 'total_marks' => (float) $submission->fresh()->total_marks,
-                'question_count' => $submission->submissionQuestions()->count()
-            ]
+                'question_count' => $submission->submissionQuestions()->count(),
+            ],
         ], 'Question removed.');
     }
 

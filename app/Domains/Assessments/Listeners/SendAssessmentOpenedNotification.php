@@ -17,7 +17,8 @@ class SendAssessmentOpenedNotification
 {
     public function handle(AssessmentOpened $event): void
     {
-        $assessment = $event->assessment;
+        $schedule = $event->schedule;
+        $assessment = $schedule->assessment;
 
         $teacherIds = TeacherSubjectAssignment::query()
             ->where('class_level_id', $assessment->class_level_id)
@@ -28,7 +29,7 @@ class SendAssessmentOpenedNotification
             return;
         }
 
-        $deadline = $assessment->submission_closes_at?->format('M j, Y g:i A');
+        $deadline = $schedule->question_submission_ends?->format('M j, Y g:i A');
 
         User::query()
             ->whereIn('id', $teacherIds)

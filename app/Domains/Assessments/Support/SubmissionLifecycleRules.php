@@ -29,22 +29,16 @@ final class SubmissionLifecycleRules
                 )
             );
 
-            $assessment = $submission->assessment;
+            $schedule = $submission->schedule;
 
             throw_unless(
-                $assessment !== null && $assessment->isOpen(),
+                $schedule !== null && $schedule->questionWindowIsOpen(),
                 new SubmissionCannotBeSubmittedException(
-                    'The assessment is not open for submissions.'
+                    'The question submission window has closed.'
                 )
             );
 
-            throw_unless(
-                $assessment->submission_closes_at !== null
-                    && $assessment->submission_closes_at->isFuture(),
-                new SubmissionCannotBeSubmittedException(
-                    'The submission window has closed.'
-                )
-            );
+            $assessment = $schedule->assessment;
 
             throw_if(
                 $submission->questionsMarksTotal() > (float) $assessment->total_marks,

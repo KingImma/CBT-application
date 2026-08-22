@@ -16,9 +16,9 @@ final class ScheduleSubjectRules
 {
     public static function canAssignWindow(?string $excludeScheduleSubjectId = null): Closure
     {
-         // (a): assesment schedule must exist first
+         // (a): assessment schedule must exist first
         throw_unless(
-            $assesment->student_starts_at !== null && $assesment->student_ends_at !== null,
+            $assessment->student_starts_at !== null && $assessment->student_ends_at !== null,
             new ScheduleWindoeNotSetException()
         );
 
@@ -30,9 +30,9 @@ final class ScheduleSubjectRules
                 )
         );
 
-        // (b): Subject schedule must be within the assesment schedule
+        // (b): Subject schedule must be within the assessment schedule
         throw_unless(
-            $startsAt->gte($assesment->student_starts_at) && $endsAt->lte($assesment->student_ends_at),
+            $startsAt->gte($assessment->student_starts_at) && $endsAt->lte($assessment->student_ends_at),
             new ScheduleSubjectOutOfRangeException(
                     $assessment->student_starts_at->toDateTimeString(),
                     $assessment->student_ends_at->toDateTimeString(),
@@ -40,7 +40,7 @@ final class ScheduleSubjectRules
         );
 
         // No overlapping subject schedules
-        $conflict = SubjectSchedule::where('assesment_id', $assesment->id)
+        $conflict = SubjectSchedule::where('assessment_id', $assessment->id)
             ->when($excludeScheduleSubjectId, fn ($q) => $q->where('id', '!=', $excludeScheduleSubjectId) )
             ->where('starts_at', '<', $endsAt)
             ->where('ends_at', '>', $startsAt)

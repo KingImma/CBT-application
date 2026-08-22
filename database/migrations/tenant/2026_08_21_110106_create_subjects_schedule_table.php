@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subjects_schedule', function (Blueprint $table) {
+        Schema::create('schedule_subjects', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('assesment_id')->constrained('assesments')->cascadeOnDelete();
+            $table->foreignUuid('assessment_id')->constrained('assessments')->cascadeOnDelete();
             $table->foreignUuid('subject_id')->constrained('subjects')->restrictOnDelete();
             $table->dateTime('starts_at');
             $table->dateTime('ends_at');
             $table->integer('duration_minutes')->nullable(); //falls to assesment default time if null;
             $table->timestamps();
 
-            $table->unique(['assesment_id', 'subject_id']);
-            $table->index(['assesment_id', 'starts_at', 'ends_at']);
+            $table->unique(['assessment_id', 'subject_id']);
+            $table->index(['assessment_id', 'starts_at', 'ends_at']);
         });
     }
 

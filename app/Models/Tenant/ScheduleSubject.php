@@ -13,7 +13,7 @@ class ScheduleSubject extends Model
     use HasUuids;
 
     protected $fillable = [
-        'assesment_id',
+        'assessment_id',
         'subject_id',
         'starts_at',
         'ends_at',
@@ -26,7 +26,7 @@ class ScheduleSubject extends Model
         'duration_minutes' => 'integer'
     ];
 
-    public function assesment(): BelongsTo {
+    public function assessment(): BelongsTo {
         return $this->belongsTo(Assesment::class);
     }
 
@@ -36,7 +36,7 @@ class ScheduleSubject extends Model
 
     public function optionalDurationMinutes(): int {
         return $this->duration_minutes
-            ?? $this->assesment->duration_minutes
+            ?? $this->assessment->duration_minutes
             ?? max(1, (int) $this->starts_at->diffInMinutes($this->ends_at));
     }
 }

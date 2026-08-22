@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\Tenant\AssessmentController;
 use App\Http\Controllers\Api\Tenant\SubmissionController;
+use App\Http\Controllers\Api\Tenant\ScheduleSubjectController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,6 +32,16 @@ Route::middleware('role:school_admin,tenant')
         Route::post('assessments/{assessment}/reopen', 'reopen');
         Route::post('assessments/{assessment}/activate', 'activate');
         Route::post('assessments/{assessment}/complete', 'complete');
+    });
+
+
+Route::middleware('role:school_admin,tenant')
+    ->controller(ScheduleSubjectController::class)
+    ->group(function () { 
+        Route::get('assessments/{assessment}/schedule-subjects/', 'index');
+        Route::post('assessments/{assessment}/schedule-subjects/', 'store');
+        Route::patch('assessments/{assessment}/schedule-subjects/{scheduleSubject}', 'update');
+        Route::delete('assessments/{assessment}/schedule-subjects/{scheduleSubject}', 'destroy');
     });
 
 /*

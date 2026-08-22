@@ -114,4 +114,11 @@ class Assessment extends Model
             ->where('class_level_id', $this->class_level_id)
             ->exists();
     }
+
+    /**
+     * Subjects schedule relationship 
+    */
+    public function scheduleSubjects(): HasMany {
+        return $this->hasMany(ScheduleSubject::class);
+    }
 }

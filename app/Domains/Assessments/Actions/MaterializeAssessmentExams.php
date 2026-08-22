@@ -40,6 +40,14 @@ final class MaterializeAssessmentExams
 
     private function materialize(Assessment $assessment, Submission $submission): Exam
     {
+        $scheduleSubject = $assessment->scheduleSubjects()
+            ->where('subject_id', $submission->subject_id)
+            ->first();
+
+        throw_if($scheduleSubject === null, new \RuntimeException(
+            "No schedule window set for subject on submission {$submission->id}. Contact the admin to schedule this subject."
+        ));
+
         $exam = $this->materializer->execute(new MaterializeExamRequest(
             title: $submission->title,
             subjectId: $submission->subject_id,
@@ -47,10 +55,10 @@ final class MaterializeAssessmentExams
             classArmId: $assessment->class_arm_id,
             termId: $assessment->term_id,
             createdBy: $submission->teacher_id,
-            durationMinutes: $this->durationMinutes($assessment),
+            durationMinutes: $scheduleSubject->optionalDurationMinutes(),
             totalMarks: (float) $submission->total_marks,
-            scheduledStart: $assessment->student_starts_at?->toIso8601String(),
-            windowEnd: $assessment->student_ends_at?->toIso8601String(),
+            scheduledStart: $scheduleSubject->starts_at?->toIso8601String(),
+            windowEnd: $scheduleSubject->ends_at?->toIso8601String(),
             instructions: $assessment->instructions,
             questions: $submission->submissionQuestions
                 ->map(fn ($sq) => new MaterializeExamQuestionRequest(
@@ -75,18 +83,5 @@ final class MaterializeAssessmentExams
         $submission->update(['exam_id' => $exam->id]);
 
         return $exam;
-    }
-
-    private function durationMinutes(Assessment $assessment): int
-    {
-        if ($assessment->duration_minutes) {
-            return $assessment->duration_minutes;
-        }
-
-        if ($assessment->student_starts_at && $assessment->student_ends_at) {
-            return max(1, (int) $assessment->student_starts_at->diffInMinutes($assessment->student_ends_at));
-        }
-
-        return 60;
     }
 }

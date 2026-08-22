@@ -79,4 +79,9 @@ class AssessmentPolicy
     {
         return $user->hasRole(RoleType::SchoolAdmin->value);
     }
+
+    public function manageSchedule(User $user, Assesment $assessment):bool
+    {
+        return $user->hasRole(RoleType::SchoolAdmin->value);
+    }
 }

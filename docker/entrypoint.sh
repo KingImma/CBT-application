@@ -17,6 +17,9 @@ php artisan migrate --force
 echo "Running tenant migrations (including new notifications table)..."
 php artisan tenants:migrate --force < /dev/null
 
+echo "Ensuring assessment schedule format across tenants (heals tenants with stale recorded migrations)..."
+php artisan tenants:ensure-assessment-schedule-format < /dev/null
+
 echo "Running seeders..."
 php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=SubscriptionPlanSeeder --force

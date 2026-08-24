@@ -210,11 +210,24 @@ final class BackfillAssessmentSchedules
         // `instructions` is renamed to `description` (decision #7).
         DB::table('assessments')->update(['description' => DB::raw('instructions')]);
 
+        // Drifted databases may lack any of these constraints/indexes under
+        // their conventional names; anything left on the columns goes away
+        // with the columns themselves.
+        if ($this->hasForeignKey('assessments', 'assessments_term_id_foreign')) {
+            Schema::table('assessments', function (Blueprint $table): void {
+                $table->dropForeign(['term_id']);
+            });
+        }
+
+        foreach (['status', 'submission_closes_at', 'student_starts_at', 'student_ends_at'] as $column) {
+            if ($this->hasIndex("assessments_status_{$column}_index")) {
+                Schema::table('assessments', function (Blueprint $table) use ($column): void {
+                    $table->dropIndex(['status', $column]);
+                });
+            }
+        }
+
         Schema::table('assessments', function (Blueprint $table): void {
-            $table->dropIndex(['status', 'submission_closes_at']);
-            $table->dropIndex(['status', 'student_starts_at']);
-            $table->dropIndex(['status', 'student_ends_at']);
-            $table->dropForeign(['term_id']);
             $table->dropColumn([
                 'term_id',
                 'status',
@@ -271,10 +284,28 @@ final class BackfillAssessmentSchedules
             });
         }
 
+        // Drifted databases may lack these under their conventional names
+        // (proven in production); Postgres drops anything left on the
+        // columns together with the columns themselves.
+        if ($this->hasForeignKey('assessments', 'assessments_class_level_id_foreign')) {
+            Schema::table('assessments', function (Blueprint $table): void {
+                $table->dropForeign(['class_level_id']);
+            });
+        }
+
+        if ($this->hasForeignKey('assessments', 'assessments_class_arm_id_foreign')) {
+            Schema::table('assessments', function (Blueprint $table): void {
+                $table->dropForeign(['class_arm_id']);
+            });
+        }
+
+        if ($this->hasIndex('assessments_class_level_id_created_at_index')) {
+            Schema::table('assessments', function (Blueprint $table): void {
+                $table->dropIndex(['class_level_id', 'created_at']);
+            });
+        }
+
         Schema::table('assessments', function (Blueprint $table): void {
-            $table->dropForeign(['class_level_id']);
-            $table->dropForeign(['class_arm_id']);
-            $table->dropIndex(['class_level_id', 'created_at']);
             $table->dropColumn(['class_level_id', 'class_arm_id']);
         });
     }
@@ -285,6 +316,14 @@ final class BackfillAssessmentSchedules
         return (bool) DB::selectOne(
             'select 1 from pg_class where relname = ? and relkind in (?, ?)',
             [$name, 'i', 'I'],
+        );
+    }
+
+    private function hasForeignKey(string $table, string $constraintName): bool
+    {
+        return (bool) DB::selectOne(
+            'select 1 from pg_constraint where conname = ? and conrelid = ?::regclass and contype = ?',
+            [$constraintName, $table, 'f'],
         );
     }
 }

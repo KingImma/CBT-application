@@ -40,7 +40,11 @@ class AssessmentController extends Controller
         // visibility lives on the schedules (AssessmentSchedulePolicy).
         $assessments = QueryBuilder::for(
             Assessment::query()
-                ->with(['creator:id,first_name,last_name'])
+                ->with([
+                    'creator:id,first_name,last_name',
+                    'schedules' => fn ($q) => $q->with(['classLevel:id,name', 'classArm', 'term', 'academicSession'])
+                        ->orderByDesc('created_at'),
+                ])
         )
             ->allowedFilters('title')
             ->defaultSort('-created_at')
@@ -61,7 +65,7 @@ class AssessmentController extends Controller
         $assessment = $this->createAssessment->execute($data, $request->user('tenant')->id);
 
         return ApiResponse::created(
-            AssessmentData::from($assessment->load('creator:id,first_name,last_name')),
+            AssessmentData::from($this->loadForOutput($assessment)),
             'Assessment created.'
         );
     }
@@ -70,13 +74,8 @@ class AssessmentController extends Controller
     {
         Gate::authorize('view', $assessment);
 
-        $assessment->load([
-            'creator:id,first_name,last_name',
-            'schedules.classLevel',
-            'schedules.classArm',
-            'schedules.term',
-            'schedules.academicSession',
-        ])->loadCount('schedules as schedule_count');
+        $this->loadForOutput($assessment)
+            ->loadCount('schedules as schedule_count');
 
         return ApiResponse::success(AssessmentData::from($assessment), 'Assessment retrieved successfully.');
     }
@@ -86,7 +85,7 @@ class AssessmentController extends Controller
         Gate::authorize('update', $assessment);
 
         return ApiResponse::success(
-            AssessmentData::from($this->updateAssessment->execute($assessment, $data)),
+            AssessmentData::from($this->loadForOutput($this->updateAssessment->execute($assessment, $data))),
             'Assessment updated.'
         );
     }
@@ -98,5 +97,19 @@ class AssessmentController extends Controller
         $this->deleteAssessment->execute($assessment);
 
         return ApiResponse::message('Assessment deleted.');
+    }
+
+    /**
+     * Every assessment response embeds its occurrences so the frontend never
+     * needs a follow-up fetch per definition. Submissions/slots stay
+     * unloaded — the shallow schedule endpoints serve detail views.
+     */
+    private function loadForOutput(Assessment $assessment): Assessment
+    {
+        return $assessment->load([
+            'creator:id,first_name,last_name',
+            'schedules' => fn ($q) => $q->with(['classLevel:id,name', 'classArm', 'term', 'academicSession'])
+                ->orderByDesc('created_at'),
+        ]);
     }
 }

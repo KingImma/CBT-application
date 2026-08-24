@@ -27,7 +27,7 @@ final class ScheduleSubjectRules
         ) use ($excludeScheduleSubjectId): void {
             throw_unless(
                 $schedule->masterWindowIsSet(),
-                new ScheduleWindowNotSetException()
+                new ScheduleWindowNotSetException
             );
 
             throw_unless(
@@ -56,14 +56,13 @@ final class ScheduleSubjectRules
                 ->with('subject')
                 ->first();
 
-            throw_if(
-                $conflict !== null,
-                new ScheduleSubjectOverlapException(
+            if ($conflict !== null) {
+                throw new ScheduleSubjectOverlapException(
                     $conflict->subject->name,
                     $conflict->starts_at->toDateTimeString(),
                     $conflict->ends_at->toDateTimeString(),
-                )
-            );
+                );
+            }
         };
     }
 }

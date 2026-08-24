@@ -3,8 +3,13 @@
 namespace Tests\Unit;
 
 use App\Domains\Exams\Actions\Attempts\FinalizeAttempt;
+use App\Domains\Exams\Actions\Attempts\GradeExamAttempt;
 use App\Domains\Exams\Events\ExamAttemptsUpdated;
+use App\Domains\Exams\State\ExamAttemptStateMachine;
+use App\Domains\Exams\Support\AttemptScoreCalculator;
+use App\Domains\Exams\Support\BatchGradeAnswersUpdater;
 use App\Domains\Exams\Support\ExamSessionStateStore;
+use App\Domains\Questions\Support\QuestionGrader;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
@@ -84,7 +89,12 @@ class FinalizeAttemptTimeoutTest extends TestCase
         $attempt->status = ExamAttemptStatus::InProgress;
 
         $stateStore = new ExamSessionStateStore;
-        $action = new FinalizeAttempt($stateStore);
+        $gradeAttempt = new GradeExamAttempt(
+            new AttemptScoreCalculator(new QuestionGrader),
+            new BatchGradeAnswersUpdater,
+            new ExamAttemptStateMachine,
+        );
+        $action = new FinalizeAttempt($stateStore, $gradeAttempt, new ExamAttemptStateMachine);
 
         $action->execute($attempt, null, 'stale_heartbeat');
 

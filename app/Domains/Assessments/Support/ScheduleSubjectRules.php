@@ -24,10 +24,10 @@ final class ScheduleSubjectRules
             AssessmentSchedule $schedule,
             Carbon $startsAt,
             Carbon $endsAt,
-        ): void {
+        ) use ($excludeScheduleSubjectId): void {
             throw_unless(
                 $schedule->masterWindowIsSet(),
-                new ScheduleWindowNotSetException
+                new ScheduleWindowNotSetException()
             );
 
             throw_unless(
@@ -40,7 +40,8 @@ final class ScheduleSubjectRules
 
             // (a) within the schedule's master window
             throw_unless(
-                $startsAt->gte($schedule->assessment_starts) && $endsAt->lte($schedule->assessment_ends),
+                $startsAt->gte($schedule->assessment_starts) &&
+                $endsAt->lte($schedule->assessment_ends),
                 new ScheduleSubjectOutOfRangeException(
                     $schedule->assessment_starts->toDateTimeString(),
                     $schedule->assessment_ends->toDateTimeString(),

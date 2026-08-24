@@ -30,7 +30,8 @@ class AssessmentSchedulePolicy
 
     public function view(User $user, AssessmentSchedule $schedule): bool
     {
-        return $schedule->assessment->isOpenToTeacher($user);
+        // Visibility follows the occurrence's class level now.
+        return $schedule->isOpenToTeacher($user);
     }
 
     public function manage(User $user, AssessmentSchedule $schedule): bool

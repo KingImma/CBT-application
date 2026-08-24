@@ -21,10 +21,10 @@ class SendAssessmentActivatedNotification
         $assessment = $schedule->assessment;
 
         StudentProfile::query()
-            ->where('class_level_id', $assessment->class_level_id)
+            ->where('class_level_id', $schedule->class_level_id)
             ->when(
-                $assessment->class_arm_id,
-                fn ($q) => $q->where('class_arm_id', $assessment->class_arm_id),
+                $schedule->class_arm_id,
+                fn ($q) => $q->where('class_arm_id', $schedule->class_arm_id),
             )
             ->with('user')
             ->chunk(100, function ($students) use ($assessment): void {
@@ -34,7 +34,7 @@ class SendAssessmentActivatedNotification
                         message: "\"{$assessment->title}\" is now open. Start before the window closes.",
                         type: 'info',
                         action: [
-                            'url' => "/student/assessments/{$assessment->id}",
+                            'url' => '/student/exams',
                             'label' => 'Start Assessment',
                         ],
                     ));

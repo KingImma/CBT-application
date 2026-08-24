@@ -20,7 +20,7 @@ final class CreateSubmission
      * A teacher creates their paper inside an open schedule. The unique
      * (assessment_schedule_id, teacher_id, subject_id) index guarantees one
      * paper per teacher per subject per occurrence (decision #5). Eligibility
-     * is subject-assignment against the parent assessment's class level.
+     * is subject-assignment against the schedule's class level.
      */
     public function execute(
         AssessmentSchedule $schedule,
@@ -35,15 +35,13 @@ final class CreateSubmission
                 )
             );
 
-            $assessment = $schedule->assessment;
-
             throw_unless(
                 TeacherSubjectAssignment::where('user_id', $teacherId)
                     ->where('subject_id', $dto->subject_id)
-                    ->where('class_level_id', $assessment->class_level_id)
+                    ->where('class_level_id', $schedule->class_level_id)
                     ->exists(),
                 new SubmissionCannotBeSubmittedException(
-                    'You are not assigned to this subject for the assessment class level.'
+                    'You are not assigned to this subject for the scheduled class level.'
                 )
             );
 

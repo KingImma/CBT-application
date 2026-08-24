@@ -40,8 +40,7 @@ final class MaterializeAssessmentExams
 
     private function materialize(AssessmentSchedule $schedule, Submission $submission): Exam
     {
-        $assessment = $schedule->assessment;
-
+        // Class binding lives on the occurrence; cap/duration stay global.
         $slot = $schedule->scheduleSubjects()
             ->where('subject_id', $submission->subject_id)
             ->first();
@@ -53,15 +52,15 @@ final class MaterializeAssessmentExams
         $exam = $this->materializer->execute(new MaterializeExamRequest(
             title: $submission->title,
             subjectId: $submission->subject_id,
-            classLevelId: $assessment->class_level_id,
-            classArmId: $assessment->class_arm_id,
+            classLevelId: $schedule->class_level_id,
+            classArmId: $schedule->class_arm_id,
             termId: $schedule->term_id,
             createdBy: $submission->teacher_id,
             durationMinutes: $slot->optionalDurationMinutes(),
             totalMarks: (float) $submission->total_marks,
             scheduledStart: $slot->starts_at?->toIso8601String(),
             windowEnd: $slot->ends_at?->toIso8601String(),
-            instructions: $assessment->description,
+            instructions: $schedule->assessment->description,
             questions: $submission->submissionQuestions
                 ->map(fn ($sq) => new MaterializeExamQuestionRequest(
                     type: $sq->type->value,

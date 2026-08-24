@@ -7,16 +7,16 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Assessment definition — stable across academic sessions. All occurrence
-     * data (term, windows, lifecycle status) lives on assessment_schedules.
+     * Assessment definition — school-wide and stable across academic sessions.
+     * Bound to no class: class levels (and arms) attach to the schedules that
+     * occur under this definition. All occurrence data (windows, lifecycle
+     * status) also lives on assessment_schedules.
      */
     public function up(): void
     {
         Schema::create('assessments', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('title');
-            $table->foreignUuid('class_level_id')->constrained('class_levels')->restrictOnDelete();
-            $table->foreignUuid('class_arm_id')->nullable()->constrained('class_arms')->nullOnDelete();
             $table->foreignUuid('created_by')->constrained('users')->restrictOnDelete();
             $table->decimal('total_marks', 6, 2)->default(0);
             $table->integer('duration_minutes')->nullable();
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['class_level_id', 'created_at']);
+            $table->index('created_at');
         });
     }
 

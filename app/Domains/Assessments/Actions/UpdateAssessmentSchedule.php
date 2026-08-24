@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Actions;
 
 use App\Domains\Assessments\Data\Input\UpdateScheduleData;
+use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Models\Tenant\AssessmentSchedule;
+use App\Models\Tenant\ClassArm;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,9 +18,9 @@ final class UpdateAssessmentSchedule
     public function __construct() {}
 
     /**
-     * Adjust the windows of a draft schedule. Once activated (or completed)
-     * the schedule is locked. Existing subject slots must still fit inside a
-     * reshaped master window.
+     * Adjust the windows (and, while still draft, the class binding) of a
+     * draft schedule. Once activated (or completed) the schedule is locked.
+     * Existing subject slots must still fit inside a reshaped master window.
      */
     public function execute(AssessmentSchedule $schedule, UpdateScheduleData $dto): AssessmentSchedule
     {
@@ -29,6 +31,27 @@ final class UpdateAssessmentSchedule
                     'Only draft schedules can be edited.'
                 )
             );
+
+            // Class binding may move while draft; the arm must belong to the
+            // level it sits under.
+            if (! $dto->class_level_id instanceof Optional) {
+                $schedule->class_level_id = $dto->class_level_id ?? $schedule->class_level_id;
+                $schedule->class_arm_id = null;
+            }
+
+            if (! $dto->class_arm_id instanceof Optional) {
+                throw_if(
+                    $dto->class_arm_id !== null
+                    && ! ClassArm::whereKey($dto->class_arm_id)
+                        ->where('class_level_id', $schedule->class_level_id)
+                        ->exists(),
+                    ValidationException::withMessages([
+                        'class_arm_id' => ['The selected class arm does not belong to the schedule\'s class level.'],
+                    ])
+                );
+
+                $schedule->class_arm_id = $dto->class_arm_id;
+            }
 
             $starts = $dto->assessment_starts instanceof Optional
                 ? $schedule->assessment_starts

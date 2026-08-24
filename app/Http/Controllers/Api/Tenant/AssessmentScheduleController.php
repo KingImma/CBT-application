@@ -14,9 +14,11 @@ use App\Domains\Assessments\Actions\UpdateAssessmentSchedule;
 use App\Domains\Assessments\Data\Input\CreateScheduleData;
 use App\Domains\Assessments\Data\Input\UpdateScheduleData;
 use App\Domains\Assessments\Data\Output\ScheduleData;
+use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Assessment;
 use App\Models\Tenant\AssessmentSchedule;
+use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,12 +44,23 @@ class AssessmentScheduleController extends Controller
     ) {}
 
     /** List every occurrence of an assessment (the reuse view). */
-    public function index(Assessment $assessment): JsonResponse
+    public function index(Assessment $assessment, Request $request): JsonResponse
     {
         Gate::authorize('view', $assessment);
 
+        // Teachers only see occurrences for class levels they're assigned to;
+        // admins see everything (visibility now lives on the occurrence).
+        $user = $request->user('tenant');
+        $isAdmin = $user->hasRole(RoleType::SchoolAdmin->value);
+
         $schedules = $assessment->schedules()
-            ->with(['term', 'academicSession'])
+            ->when(! $isAdmin, fn ($q) => $q->whereIn(
+                'class_level_id',
+                TeacherSubjectAssignment::query()
+                    ->select('class_level_id')
+                    ->where('user_id', $user->id)
+            ))
+            ->with(['term', 'academicSession', 'classLevel:id,name'])
             ->withCount('submissions as submission_count')
             ->orderByDesc('created_at')
             ->get();
@@ -67,7 +80,7 @@ class AssessmentScheduleController extends Controller
         $schedule = $this->createSchedule->execute($assessment, $data);
 
         return ApiResponse::created(
-            ScheduleData::from($schedule->load(['term', 'academicSession'])),
+            ScheduleData::from($schedule->load(['classLevel', 'classArm', 'term', 'academicSession'])),
             'Assessment scheduled.'
         );
     }
@@ -92,7 +105,7 @@ class AssessmentScheduleController extends Controller
         Gate::authorize('manage', $schedule);
 
         return ApiResponse::success(
-            ScheduleData::from($this->updateSchedule->execute($schedule, $data)->load(['term', 'academicSession'])),
+            ScheduleData::from($this->updateSchedule->execute($schedule, $data)->load(['classLevel', 'classArm', 'term', 'academicSession'])),
             'Assessment schedule updated.'
         );
     }

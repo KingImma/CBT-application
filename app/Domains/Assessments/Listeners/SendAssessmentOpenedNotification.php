@@ -21,7 +21,7 @@ class SendAssessmentOpenedNotification
         $assessment = $schedule->assessment;
 
         $teacherIds = TeacherSubjectAssignment::query()
-            ->where('class_level_id', $assessment->class_level_id)
+            ->where('class_level_id', $schedule->class_level_id)
             ->distinct()
             ->pluck('user_id');
 

@@ -16,12 +16,6 @@ class AssessmentData extends Resource
         public readonly ?float $total_marks,
         public readonly ?int $duration_minutes,
 
-        #[WhenLoaded('classLevel')]
-        public readonly mixed $classLevel,
-
-        #[WhenLoaded('classArm')]
-        public readonly mixed $classArm,
-
         #[WhenLoaded('creator')]
         public readonly mixed $creator,
 

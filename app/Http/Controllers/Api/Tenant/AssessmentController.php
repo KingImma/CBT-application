@@ -36,12 +36,13 @@ class AssessmentController extends Controller
     {
         Gate::authorize('viewAny', Assessment::class);
 
+        // Definitions are school-wide: no per-teacher filtering here. Class
+        // visibility lives on the schedules (AssessmentSchedulePolicy).
         $assessments = QueryBuilder::for(
             Assessment::query()
-                ->visibleTo($request->user('tenant'))
-                ->with(['classLevel', 'classArm', 'creator:id,first_name,last_name'])
+                ->with(['creator:id,first_name,last_name'])
         )
-            ->allowedFilters('title', 'class_level_id', 'class_arm_id')
+            ->allowedFilters('title')
             ->defaultSort('-created_at')
             ->withCount('schedules as schedule_count')
             ->paginate((int) $request->get('per_page', 20));
@@ -60,7 +61,7 @@ class AssessmentController extends Controller
         $assessment = $this->createAssessment->execute($data, $request->user('tenant')->id);
 
         return ApiResponse::created(
-            AssessmentData::from($assessment->load(['classLevel', 'classArm'])),
+            AssessmentData::from($assessment->load('creator:id,first_name,last_name')),
             'Assessment created.'
         );
     }
@@ -70,9 +71,9 @@ class AssessmentController extends Controller
         Gate::authorize('view', $assessment);
 
         $assessment->load([
-            'classLevel',
-            'classArm',
             'creator:id,first_name,last_name',
+            'schedules.classLevel',
+            'schedules.classArm',
             'schedules.term',
             'schedules.academicSession',
         ])->loadCount('schedules as schedule_count');
@@ -85,7 +86,7 @@ class AssessmentController extends Controller
         Gate::authorize('update', $assessment);
 
         return ApiResponse::success(
-            AssessmentData::from($this->updateAssessment->execute($assessment, $data)->load(['classLevel', 'classArm'])),
+            AssessmentData::from($this->updateAssessment->execute($assessment, $data)),
             'Assessment updated.'
         );
     }

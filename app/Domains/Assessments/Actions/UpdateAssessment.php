@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Actions;
 
 use App\Domains\Assessments\Data\Input\UpdateAssessmentData;
+use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Enums\AssessmentStatus;
 use App\Models\Tenant\Assessment;
 use Illuminate\Support\Facades\DB;

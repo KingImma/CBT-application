@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Assessments\Actions;
 
+use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Models\Tenant\Assessment;
 use Illuminate\Support\Facades\DB;
 

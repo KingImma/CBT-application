@@ -29,7 +29,7 @@ class AssessmentPolicy
         return null;
     }
 
-    /** The list itself is filtered by Assessment::scopeVisibleTo. */
+    /** Definitions are school-wide: every staff member may read them. */
     public function viewAny(User $user): bool
     {
         return $user->hasRole(RoleType::Teacher->value);
@@ -37,7 +37,7 @@ class AssessmentPolicy
 
     public function view(User $user, Assessment $assessment): bool
     {
-        return $assessment->isOpenToTeacher($user);
+        return $user->hasRole(RoleType::Teacher->value);
     }
 
     public function create(User $user): bool

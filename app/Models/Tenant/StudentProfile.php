@@ -2,9 +2,9 @@
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\Student\Concerns\RecalculatesExamAttendance;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Tenant\Student\Concerns\RecalculatesExamAttendance;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,6 +19,8 @@ class StudentProfile extends Model
         'admission_number',
         'date_of_birth',
         'gender',
+        'guardian_name',
+        'guardian_phone',
         'guardian_email',
     ];
 

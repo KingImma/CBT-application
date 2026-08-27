@@ -57,6 +57,7 @@ Route::middleware('role:school_admin,tenant')
         Route::post('assessment-schedules/{schedule}/reopen', 'reopen');
         Route::post('assessment-schedules/{schedule}/activate', 'activate');
         Route::post('assessment-schedules/{schedule}/complete', 'complete');
+        Route::post('assessment-schedules/{schedule}/publish-results', 'publishResults');
     });
 
 /*

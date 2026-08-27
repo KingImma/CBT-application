@@ -75,7 +75,7 @@ class TeacherExamReportController extends Controller
                 'submitted_at' => $attempt->submitted_at?->toIso8601String(),
                 'questions' => $attempt->answers
                     ->map(function ($answer) use ($examQuestions) {
-                        $examQuestion = $examQuestions->get($answer->question->id);
+                        $examQuestion = $examQuestions->get($answer->question?->id);
 
                         return $examQuestion
                             ? ResultQuestionData::fromAnswer($answer, $examQuestion, $answer->question)

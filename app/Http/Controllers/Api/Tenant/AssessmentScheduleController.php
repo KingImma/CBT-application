@@ -10,6 +10,7 @@ use App\Domains\Assessments\Actions\CompleteAssessment;
 use App\Domains\Assessments\Actions\CreateAssessmentSchedule;
 use App\Domains\Assessments\Actions\DeleteAssessmentSchedule;
 use App\Domains\Assessments\Actions\ReopenSubmissions;
+use App\Domains\Assessments\Actions\PublishScheduleResults;
 use App\Domains\Assessments\Actions\UpdateAssessmentSchedule;
 use App\Domains\Assessments\Data\Input\CreateScheduleData;
 use App\Domains\Assessments\Data\Input\UpdateScheduleData;
@@ -41,6 +42,7 @@ class AssessmentScheduleController extends Controller
         private ReopenSubmissions $reopenSubmissions,
         private ActivateAssessment $activateAssessment,
         private CompleteAssessment $completeAssessment,
+        private PublishScheduleResults $publishResults
     ) {}
 
     /** List every occurrence of an assessment (the reuse view). */
@@ -162,6 +164,21 @@ class AssessmentScheduleController extends Controller
         return ApiResponse::success(
             ScheduleData::from($this->completeAssessment->execute($schedule)),
             'Assessment completed.'
+        );
+    }
+
+    public function publishResults(AssessmentSchedule $schedule): JsonResponse
+    {
+        Gate::authorize('manage', $schedule);
+    
+        $results = $this->publishResults->execute($schedule);
+    
+        $publishedCount = collect($results)->where('status', 'published')->count();
+        $skippedCount = collect($results)->where('status', 'skipped')->count();
+    
+        return ApiResponse::success(
+            ['results' => $results],
+            "{$publishedCount} exam(s) published".($skippedCount ? ", {$skippedCount} skipped." : '.')
         );
     }
 }

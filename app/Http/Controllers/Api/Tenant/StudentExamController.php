@@ -457,7 +457,7 @@ class StudentExamController extends Controller
 
         $questions = $attempt->answers
             ->map(function ($answer) use ($examQuestions) {
-                $eq = $examQuestions->get($answer->question->id);
+                $eq = $examQuestions->get($answer->question?->id);
 
                 return $eq
                     ? ResultQuestionData::fromAnswer(
@@ -532,7 +532,7 @@ class StudentExamController extends Controller
                 'time_spent_seconds' => $attempt->time_spent_seconds,
                 'questions' => $attempt->answers
                     ->map(function ($answer) use ($examQuestions) {
-                        $eq = $examQuestions->get($answer->question->id);
+                        $eq = $examQuestions->get($answer->question?->id);
 
                         return $eq
                             ? ResultQuestionData::fromAnswer(

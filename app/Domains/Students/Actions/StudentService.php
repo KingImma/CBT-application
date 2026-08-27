@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Students\Actions;
 
-use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Domains\Students\Support\StudentRules;
+use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Enums\RoleType;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
@@ -73,7 +73,7 @@ class StudentService
             $fresh = $user->fresh();
 
             $profileData = collect($data)
-                ->only(['class_level_id', 'class_arm_id', 'admission_number', 'date_of_birth', 'gender', 'guardian_email'])
+                ->only(['class_level_id', 'class_arm_id', 'admission_number', 'date_of_birth', 'gender', 'guardian_name', 'guardian_phone', 'guardian_email'])
                 ->toArray();
 
             if (isset($profileData['admission_number'])) {

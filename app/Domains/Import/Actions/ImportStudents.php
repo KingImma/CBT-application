@@ -11,6 +11,7 @@ use App\Enums\RoleType;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
+use App\Shared\Support\NormalizeName;
 
 class ImportStudents extends CsvImport
 {
@@ -23,8 +24,8 @@ class ImportStudents extends CsvImport
 
     protected function resolveReferences(array $rows, array &$errors): array
     {
-        $classLevels = ClassLevel::pluck('id', 'name');
-        $classArms = ClassArm::select('id', 'name', 'class_level_id')
+        $classLevels = ClassLevel::pluck('id', 'normalized_name');
+        $classArms = ClassArm::select('id', 'normalized_name', 'class_level_id')
             ->get()
             ->groupBy('class_level_id');
 
@@ -47,6 +48,19 @@ class ImportStudents extends CsvImport
                     'errors' => [
                         'class_level' => [
                             "Class level '{$data['class_level']}' not found.",
+                        ],
+                    ],
+                ];
+
+                continue;
+            }
+
+            if ($classArmId === null && ! blank($data['class_arm'])) {
+                $errors[] = [
+                    'row' => $row['row'],
+                    'errors' => [
+                        'class_arm' => [
+                            "Class arm '{$data['class_arm']}' not found for class level '{$data['class_level']}'.",
                         ],
                     ],
                 ];
@@ -187,7 +201,7 @@ class ImportStudents extends CsvImport
             return null;
         }
 
-        $level = $classLevels->get($name);
+        $level = $classLevels->get(NormalizeName::canonical($name));
 
         return $level ? (string) $level : null;
     }
@@ -201,9 +215,10 @@ class ImportStudents extends CsvImport
             return null;
         }
 
+        $canonical = NormalizeName::canonical($name);
         $arms = $classArms->get($classLevelId, collect());
 
-        $arm = $arms->firstWhere('name', $name);
+        $arm = $arms->firstWhere('normalized_name', $canonical);
 
         return $arm ? (string) $arm->id : null;
     }

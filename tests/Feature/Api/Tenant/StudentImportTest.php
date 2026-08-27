@@ -39,6 +39,8 @@ class StudentImportTest extends TestCase
     {
         parent::setUp();
 
+        $this->resetCentralTables();
+
         $this->tenant = Tenant::factory()->create();
         tenancy()->initialize($this->tenant);
 
@@ -78,7 +80,19 @@ class StudentImportTest extends TestCase
 
         DB::purge('pgsql');
         $this->tenant->delete();
+
+        $this->resetCentralTables();
+
         parent::tearDown();
+    }
+
+    private function resetCentralTables(): void
+    {
+        $central = config('tenancy.database.central_connection');
+
+        foreach (['import_jobs', 'subscription_plans', 'tenants'] as $table) {
+            DB::connection($central)->table($table)->delete();
+        }
     }
 
     private function runStudentJob(string $csv, array $validated = [], string $status = 'pending'): string
@@ -205,6 +219,93 @@ class StudentImportTest extends TestCase
         $this->runStudentJob($csv);
 
         $this->assertEquals(2, User::role(RoleType::Student->value)->count());
+    }
+
+    public function test_job_resolves_class_arm_case_insensitively(): void
+    {
+        $csv = "first_name,last_name,email,admission_number,class_level,class_arm\n"
+            ."Alice,Johnson,alice@test.com,,JSS 1,a\n";
+
+        $this->runStudentJob($csv);
+
+        $alice = User::where('email', 'alice@test.com')->firstOrFail();
+        $this->assertEquals($this->jss1->id, $alice->studentProfile->class_level_id);
+        $this->assertEquals($this->armA->id, $alice->studentProfile->class_arm_id);
+    }
+
+    public function test_dry_run_rejects_unknown_class_arm(): void
+    {
+        Sanctum::actingAs($this->admin, ['*'], 'tenant');
+
+        $csv = "first_name,last_name,email,admission_number,class_level,class_arm\n"
+            ."Alice,Johnson,alice@test.com,,JSS 1,Z\n";
+
+        $file = UploadedFile::fake()->createWithContent('students.csv', $csv);
+
+        $response = $this->postJson('/api/students/import', [
+            'file' => $file,
+            'dry_run' => 'true',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.0.errors.class_arm.0', "Class arm 'Z' not found for class level 'JSS 1'.");
+    }
+
+    public function test_job_resolves_short_arm_token_to_long_arm_name(): void
+    {
+        $this->armA->update(['name' => 'Junior Secondary A']);
+
+        $csv = "first_name,last_name,email,admission_number,class_level,class_arm\n"
+            ."Alice,Johnson,alice@test.com,,JSS 1,A\n";
+
+        $this->runStudentJob($csv);
+
+        $alice = User::where('email', 'alice@test.com')->firstOrFail();
+        $this->assertEquals($this->jss1->id, $alice->studentProfile->class_level_id);
+        $this->assertEquals($this->armA->id, $alice->studentProfile->class_arm_id);
+    }
+
+    public function test_dry_run_rejects_ambiguous_class_arm(): void
+    {
+        Sanctum::actingAs($this->admin, ['*'], 'tenant');
+
+        ClassArm::create(['name' => 'Senior Secondary A', 'class_level_id' => $this->jss1->id]);
+
+        $csv = "first_name,last_name,email,admission_number,class_level,class_arm\n"
+            ."Alice,Johnson,alice@test.com,,JSS 1,A\n";
+
+        $file = UploadedFile::fake()->createWithContent('students.csv', $csv);
+
+        $response = $this->postJson('/api/students/import', [
+            'file' => $file,
+            'dry_run' => 'true',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.0.errors.class_arm.0', "Class arm 'A' is ambiguous for class level 'JSS 1' (matches: A, Senior Secondary A). Use the full name.");
+    }
+
+    public function test_job_marks_failed_and_broadcasts_failure_when_arm_unresolvable(): void
+    {
+        Event::fake();
+
+        $csv = "first_name,last_name,email,admission_number,class_level,class_arm\n"
+            ."Alice,Johnson,alice@test.com,,JSS 1,Z\n";
+
+        $importJobId = $this->runStudentJob($csv);
+
+        $central = config('tenancy.database.central_connection');
+        $row = DB::connection($central)->table('import_jobs')->where('id', $importJobId)->first();
+
+        $this->assertSame('failed', $row->status);
+        $this->assertNotNull($row->retain_until);
+
+        $this->assertEquals(0, User::role(RoleType::Student->value)->count());
+
+        Event::assertDispatched(ActivityFeedEvent::class, function (ActivityFeedEvent $event) {
+            return $event->action === 'student_import_failed'
+                && ! empty($event->meta['errors']);
+        });
     }
 
     public function test_job_skips_existing_email(): void

@@ -36,11 +36,6 @@ class ImportStudents extends CsvImport
                 $data['class_level'] ?? null,
                 $classLevels,
             );
-            $classArmId = $this->resolveClassArmId(
-                $classLevelId,
-                $data['class_arm'] ?? null,
-                $classArms,
-            );
 
             if ($classLevelId === null) {
                 $errors[] = [
@@ -55,7 +50,23 @@ class ImportStudents extends CsvImport
                 continue;
             }
 
-            if ($classArmId === null && ! blank($data['class_arm'])) {
+            $arm = $this->resolveClassArm($classLevelId, $data['class_arm'] ?? null, $classArms);
+
+            if ($arm['ambiguous']) {
+                $errors[] = [
+                    'row' => $row['row'],
+                    'errors' => [
+                        'class_arm' => [
+                            "Class arm '{$data['class_arm']}' is ambiguous for class level '{$data['class_level']}' "
+                                .'(matches: '.implode(', ', $arm['candidates']).'). Use the full name.',
+                        ],
+                    ],
+                ];
+
+                continue;
+            }
+
+            if ($arm['id'] === null) {
                 $errors[] = [
                     'row' => $row['row'],
                     'errors' => [
@@ -69,7 +80,7 @@ class ImportStudents extends CsvImport
             }
 
             $row['_classLevelId'] = $classLevelId;
-            $row['_classArmId'] = $classArmId;
+            $row['_classArmId'] = $arm['id'];
             $resolvedRows[] = $row;
         }
 
@@ -206,21 +217,52 @@ class ImportStudents extends CsvImport
         return $level ? (string) $level : null;
     }
 
-    private function resolveClassArmId(
+    /**
+     * @return array{id: ?string, ambiguous: bool, candidates: array<int, string>}
+     */
+    private function resolveClassArm(
         ?string $classLevelId,
         ?string $name,
         $classArms,
-    ): ?string {
-        if ($classLevelId === null || $name === null) {
-            return null;
+    ): array {
+        if ($classLevelId === null || blank($name)) {
+            return ['id' => null, 'ambiguous' => false, 'candidates' => []];
         }
 
-        $canonical = NormalizeName::canonical($name);
+        $inputSegments = $this->segments(NormalizeName::canonical($name));
         $arms = $classArms->get($classLevelId, collect());
 
-        $arm = $arms->firstWhere('normalized_name', $canonical);
+        if ($inputSegments === []) {
+            return ['id' => null, 'ambiguous' => false, 'candidates' => []];
+        }
 
-        return $arm ? (string) $arm->id : null;
+        $matches = $arms->filter(function ($arm) use ($inputSegments) {
+            $armSegments = $this->segments($arm->normalized_name);
+
+            return count($armSegments) >= count($inputSegments)
+                && array_slice($armSegments, -count($inputSegments)) === $inputSegments;
+        });
+
+        if ($matches->count() !== 1) {
+            $candidates = $matches
+                ->sortBy('normalized_name')
+                ->pluck('normalized_name')
+                ->map(fn ($v) => str($v)->title())
+                ->all();
+
+            return [
+                'id' => null,
+                'ambiguous' => $matches->count() > 1,
+                'candidates' => $candidates,
+            ];
+        }
+
+        return ['id' => (string) $matches->first()->id, 'ambiguous' => false, 'candidates' => []];
+    }
+
+    private function segments(string $value): array
+    {
+        return array_values(array_filter(preg_split('/\s+/', trim($value))));
     }
 
     private function buildPayload(

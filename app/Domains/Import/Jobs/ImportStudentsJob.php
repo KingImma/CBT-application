@@ -83,6 +83,28 @@ class ImportStudentsJob implements ShouldQueue
 
             $result = app(ImportStudents::class)->execute($validated, $tempPath, false);
 
+            if (! $result->isSuccess()) {
+                DB::connection($central)
+                    ->table('import_jobs')
+                    ->where('id', $this->importJobId)
+                    ->update([
+                        'status' => 'failed',
+                        'retain_until' => now()->addDays(3),
+                        'updated_at' => now(),
+                    ]);
+
+                try {
+                    $this->notifyFailure($result, $claimed->tenant_id);
+                } catch (Throwable $e) {
+                    Log::error('Failed to send student import failure notification', [
+                        'import_job_id' => $this->importJobId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                return;
+            }
+
             DB::connection($central)
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
@@ -121,6 +143,21 @@ class ImportStudentsJob implements ShouldQueue
                 'skipped' => $result->getSkipped(),
                 'updated' => $result->getUpdated(),
                 'total_rows' => $result->getTotalRows(),
+            ],
+        ));
+    }
+
+    public function notifyFailure(ImportResult $result, string $tenantId): void
+    {
+        event(new ActivityFeedEvent(
+            channelType: 'school_admin',
+            channelId: $tenantId,
+            action: 'student_import_failed',
+            description: $result->getMessage() ?? 'Student import failed.',
+            meta: [
+                'errors' => $result->getErrors(),
+                'total_rows' => $result->getTotalRows(),
+                'retained' => true,
             ],
         ));
     }

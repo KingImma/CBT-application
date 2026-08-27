@@ -28,6 +28,11 @@ trait HasValidation
         return $this->status === SubmissionStatus::Approved;
     }
 
+    public function isCompleted(): bool
+    {
+        return $this->status === SubmissionStatus::Completed;
+    }
+
     /**
      * Teachers may edit the paper only while it is a draft or has been
      * returned for changes.

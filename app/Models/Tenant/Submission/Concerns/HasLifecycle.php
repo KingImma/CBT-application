@@ -47,4 +47,18 @@ trait HasLifecycle
 
         return $this;
     }
+
+    /**
+     * Terminal status reached when the materialised exam is completed
+     * (force-complete, time-expiry or last student attempt). Idempotent —
+     * the ExamCompleted chain must stay safe against an unpublish reverting
+     * the exam to `completed` and re-firing.
+     */
+    public function complete(): self
+    {
+        $this->status = SubmissionStatus::Completed;
+        $this->save();
+
+        return $this;
+    }
 }

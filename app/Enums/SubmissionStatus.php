@@ -8,4 +8,5 @@ enum SubmissionStatus: string
     case Submitted = 'submitted';
     case ChangesRequested = 'changes_requested';
     case Approved = 'approved';
+    case Completed = 'completed';
 }

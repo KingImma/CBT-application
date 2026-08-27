@@ -10,6 +10,7 @@ use App\Domains\Assessments\Exceptions\AssessmentCannotBePublishedException;
 use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Enums\SubmissionStatus;
 use App\Models\Tenant\AssessmentSchedule;
+use App\Models\Tenant\Submission;
 use Closure;
 
 final class AssessmentLifecycleRules
@@ -100,24 +101,13 @@ final class AssessmentLifecycleRules
     public static function canPublish(): Closure
     {
         return function (AssessmentSchedule $schedule): void {
-            $countsPublishedAsCompleted = (bool) config(
-                'assessments.schedule_publish_counts_published_exams_as_completed',
-                false
-            );
-
-            $submissions = $schedule->submissions()
+            // The teacher submission is the source of truth; the internal exam
+            // only drives the student flow. Completing an exam chains a
+            // `completed` submission status via the ExamCompleted event.
+            $notReady = $schedule->submissions()
                 ->whereNotNull('exam_id')
-                ->with('exam')
-                ->get();
-
-            $notReady = $submissions->contains(function ($submission) use ($countsPublishedAsCompleted): bool {
-                if ($submission->exam === null) {
-                    return true;
-                }
-
-                return ! $submission->exam->isCompleted()
-                    && ! ($countsPublishedAsCompleted && $submission->exam->isPublished());
-            });
+                ->get()
+                ->contains(fn (Submission $submission): bool => ! $submission->isCompleted());
 
             throw_if(
                 $notReady,

@@ -8,11 +8,14 @@ use App\Domains\Assessments\Events\AssessmentOpened;
 use App\Domains\Assessments\Events\SubmissionApproved;
 use App\Domains\Assessments\Events\SubmissionChangesRequested;
 use App\Domains\Assessments\Events\SubmissionSubmitted;
+use App\Domains\Assessments\Listeners\MarkSubmissionCompleted;
 use App\Domains\Assessments\Listeners\SendAssessmentActivatedNotification;
 use App\Domains\Assessments\Listeners\SendAssessmentOpenedNotification;
 use App\Domains\Assessments\Listeners\SendSubmissionApprovedNotification;
 use App\Domains\Assessments\Listeners\SendSubmissionChangesRequestedNotification;
 use App\Domains\Assessments\Listeners\SendSubmissionSubmittedNotification;
+use App\Domains\Exams\Actions\MaterializeExamFromExternalSource;
+use App\Domains\Exams\Contracts\MaterializesExamFromExternalSource;
 use App\Domains\Exams\Events\ExamActivated;
 use App\Domains\Exams\Events\ExamCommentAdded;
 use App\Domains\Exams\Events\ExamCommentReplied;
@@ -41,8 +44,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ResolveCurrentSessionTerm::class);
 
         $this->app->bind(
-            \App\Domains\Exams\Contracts\MaterializesExamFromExternalSource::class,
-            \App\Domains\Exams\Actions\MaterializeExamFromExternalSource::class,
+            MaterializesExamFromExternalSource::class,
+            MaterializeExamFromExternalSource::class,
         );
     }
 
@@ -84,6 +87,11 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(
             ExamCompleted::class,
             SendExamCompletedNotification::class,
+        );
+
+        Event::listen(
+            ExamCompleted::class,
+            MarkSubmissionCompleted::class,
         );
 
         Event::listen(

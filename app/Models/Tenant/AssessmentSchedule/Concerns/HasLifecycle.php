@@ -56,4 +56,19 @@ trait HasLifecycle
 
         return $this;
     }
+
+    /**
+     * Release this schedule's results and stamp the publish time. Only
+     * reaches this state once every materialised exam is completed.
+     */
+    public function publish(): self
+    {
+        AssessmentLifecycleRules::canPublish()($this);
+
+        $this->assessment_status = AssessmentStatus::Published;
+        $this->published_at = now();
+        $this->save();
+
+        return $this;
+    }
 }

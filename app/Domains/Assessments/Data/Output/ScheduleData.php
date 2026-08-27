@@ -24,6 +24,7 @@ class ScheduleData extends Resource
         public readonly QuestionSubmissionStatus $question_submission_status,
         public readonly AssessmentStatus $assessment_status,
         public readonly ?string $activated_at,
+        public readonly ?string $published_at,
 
         #[WhenLoaded('classLevel')]
         public readonly mixed $classLevel,

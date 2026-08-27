@@ -6,6 +6,7 @@ namespace App\Domains\Assessments\Support;
 
 use App\Domains\Assessments\Exceptions\AssessmentCannotBeActivatedException;
 use App\Domains\Assessments\Exceptions\AssessmentCannotBeCompletedException;
+use App\Domains\Assessments\Exceptions\AssessmentCannotBePublishedException;
 use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Enums\SubmissionStatus;
 use App\Models\Tenant\AssessmentSchedule;
@@ -91,6 +92,37 @@ final class AssessmentLifecycleRules
                 $schedule->isActive(),
                 new AssessmentCannotBeCompletedException(
                     'Only active schedules can be completed.'
+                )
+            );
+        };
+    }
+
+    public static function canPublish(): Closure
+    {
+        return function (AssessmentSchedule $schedule): void {
+            $countsPublishedAsCompleted = (bool) config(
+                'assessments.schedule_publish_counts_published_exams_as_completed',
+                false
+            );
+
+            $submissions = $schedule->submissions()
+                ->whereNotNull('exam_id')
+                ->with('exam')
+                ->get();
+
+            $notReady = $submissions->contains(function ($submission) use ($countsPublishedAsCompleted): bool {
+                if ($submission->exam === null) {
+                    return true;
+                }
+
+                return ! $submission->exam->isCompleted()
+                    && ! ($countsPublishedAsCompleted && $submission->exam->isPublished());
+            });
+
+            throw_if(
+                $notReady,
+                new AssessmentCannotBePublishedException(
+                    'All exams under this schedule must be completed before results can be published.'
                 )
             );
         };

@@ -9,8 +9,8 @@ use App\Domains\Assessments\Actions\CloseSubmissions;
 use App\Domains\Assessments\Actions\CompleteAssessment;
 use App\Domains\Assessments\Actions\CreateAssessmentSchedule;
 use App\Domains\Assessments\Actions\DeleteAssessmentSchedule;
-use App\Domains\Assessments\Actions\ReopenSubmissions;
 use App\Domains\Assessments\Actions\PublishScheduleResults;
+use App\Domains\Assessments\Actions\ReopenSubmissions;
 use App\Domains\Assessments\Actions\UpdateAssessmentSchedule;
 use App\Domains\Assessments\Data\Input\CreateScheduleData;
 use App\Domains\Assessments\Data\Input\UpdateScheduleData;
@@ -170,12 +170,21 @@ class AssessmentScheduleController extends Controller
     public function publishResults(AssessmentSchedule $schedule): JsonResponse
     {
         Gate::authorize('manage', $schedule);
-    
-        $results = $this->publishResults->execute($schedule);
-    
+
+        $outcome = $this->publishResults->execute($schedule);
+
+        if (! $outcome['published']) {
+            return ApiResponse::success(
+                ['results' => []],
+                'Results already published.'
+            );
+        }
+
+        $results = $outcome['results'];
+
         $publishedCount = collect($results)->where('status', 'published')->count();
         $skippedCount = collect($results)->where('status', 'skipped')->count();
-    
+
         return ApiResponse::success(
             ['results' => $results],
             "{$publishedCount} exam(s) published".($skippedCount ? ", {$skippedCount} skipped." : '.')

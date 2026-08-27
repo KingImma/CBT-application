@@ -26,6 +26,11 @@ trait HasValidation
         return $this->assessment_status === AssessmentStatus::Completed;
     }
 
+    public function isPublished(): bool
+    {
+        return $this->assessment_status === AssessmentStatus::Published;
+    }
+
     public function isQuestionSubmissionOpen(): bool
     {
         return $this->question_submission_status === QuestionSubmissionStatus::Open;

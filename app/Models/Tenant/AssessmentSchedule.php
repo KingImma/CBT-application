@@ -32,6 +32,7 @@ class AssessmentSchedule extends Model
         'assessment_starts',
         'assessment_ends',
         'activated_at',
+        'published_at',
         'question_submission_status',
         'assessment_status',
     ];
@@ -52,6 +53,7 @@ class AssessmentSchedule extends Model
         'assessment_starts' => 'datetime',
         'assessment_ends' => 'datetime',
         'activated_at' => 'datetime',
+        'published_at' => 'datetime',
     ];
 
     /** @return BelongsTo<Assessment, AssessmentSchedule> */

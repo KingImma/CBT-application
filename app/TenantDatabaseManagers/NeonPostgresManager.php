@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\TenantDatabaseManagers;
 
 use Illuminate\Support\Facades\DB;
-use Stancl\Tenancy\Contracts\TenantDatabaseManager;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 

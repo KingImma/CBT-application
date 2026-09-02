@@ -30,4 +30,23 @@ class NeonPostgresManager extends PostgreSQLDatabaseManager
         return (bool) DB::connection('pgsql_direct')
             ->select("SELECT datname FROM pg_database WHERE datname = ?", [$name]);
     }
+
+    /**
+     * @param  array<string, mixed>  $baseConfig
+     * @return array<string, mixed>
+     */
+    public function makeConnectionConfig(array $baseConfig, string $databaseName): array
+    {
+        unset($baseConfig['url']);
+
+        $parsed = parse_url((string) env('DATABASE_URL'));
+
+        $baseConfig['host'] = $parsed['host'];
+        $baseConfig['port'] = $parsed['port'] ?? 5432;
+        $baseConfig['username'] = $parsed['user'];
+        $baseConfig['password'] = $parsed['pass'];
+        $baseConfig['database'] = $databaseName;
+
+        return $baseConfig;
+    }
 }

@@ -12,6 +12,7 @@ use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
+use App\TenantDatabaseManagers\NeonPostgresManager;
 
 return [
     'tenant_model' => Tenant::class,
@@ -49,7 +50,7 @@ return [
      * Database tenancy config. Used by DatabaseTenancyBootstrapper.
      */
     'database' => [
-        'central_connection' => env('DB_CONNECTION', 'central'),
+        'central_connection' => 'pgsql',
 
         /**
          * Connection used as a "template" for the dynamically created tenant database connection.
@@ -61,7 +62,7 @@ return [
          * Tenant database names are created like this:
          * prefix + tenant_id + suffix.
          */
-        'prefix' => '',
+        'prefix' => 'tenant_',
         'suffix' => '',
 
         /**
@@ -70,20 +71,14 @@ return [
         'managers' => [
             'sqlite' => SQLiteDatabaseManager::class,
             'mysql' => MySQLDatabaseManager::class,
-            'pgsql' => PostgreSQLDatabaseManager::class,
-
-        /**
-         * Use this database manager for MySQL to have a DB user created for each tenant database.
-         * You can customize the grants given to these users by changing the $grants property.
-         */
-            // 'mysql' => Stancl\Tenancy\TenantDatabaseManagers\PermissionControlledMySQLDatabaseManager::class,
+            'pgsql' => NeonPostgresManager::class,
+        ],
 
         /**
          * Disable the pgsql manager above, and enable the one below if you
          * want to separate tenant DBs by schemas rather than databases.
          */
-            // 'pgsql' => Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLSchemaManager::class, // Separate by schema instead of database
-        ],
+        // 'pgsql' => Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLSchemaManager::class, // Separate by schema instead of database
     ],
 
     /**

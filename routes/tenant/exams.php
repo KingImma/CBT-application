@@ -58,3 +58,15 @@ Route::controller(ExamGradingController::class)
         Route::post('/attempts/{attempt}/recompute-score', 'recomputeScore');
         Route::get('/attempts/{attempt}/result', 'viewAttemptResult');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Result Pdf Download
+|--------------------------------------------------------------------------
+*/
+Route::controller(ExamGradingController::class)
+    ->prefix('exams/results/{attempt}')
+    ->middleware(['auth:tenant', 'ensure.active'])
+    ->group(function () {
+        Route::get('/pdf', 'downloadResultPdf')->name('exams.results.pdf');
+    });

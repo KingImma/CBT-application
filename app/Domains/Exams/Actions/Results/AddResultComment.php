@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final class AddResultComment
 {
-    public function execute(Exam $exam, User $admin, string $comment) 
+    public function execute(Exam $exam, User $admin, string $comment)
     {
         throw _unless(
             $exam->isCompleted(),

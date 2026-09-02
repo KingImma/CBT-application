@@ -12,7 +12,7 @@ php artisan event:clear
 php artisan permission:cache-reset
 
 echo "Running central migrations..."
-php artisan migrate --force
+php artisan migrate --force --database=pgsql_direct
 
 echo "Running tenant migrations (including new notifications table)..."
 php artisan tenants:migrate --force < /dev/null

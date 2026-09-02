@@ -125,7 +125,7 @@ class CreateTenant
     private function cleanupOrphanedTenant(Tenant $tenant, string $slug, \Exception $original): void
     {
         try {
-            $tenant->delete();
+            $tenant->forceDelete();
         } catch (\Exception $cleanupException) {
             Log::critical('Orphaned tenant database after failed provisioning', [
                 'slug' => $slug,

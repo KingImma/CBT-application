@@ -38,7 +38,11 @@ class NeonPostgresManager extends PostgreSQLDatabaseManager
     {
         unset($baseConfig['url']);
 
-        $parsed = parse_url((string) config('database.connections.pgsql_direct.url'));
+        $urlKey = app()->bound('tenancy.provisioning')
+            ? 'database.connections.pgsql_direct.url'
+            : 'database.connections.pgsql.url';
+
+        $parsed = parse_url((string) config($urlKey));
 
         $baseConfig['host'] = $parsed['host'];
         $baseConfig['port'] = $parsed['port'] ?? 5432;

@@ -13,6 +13,8 @@ use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
+use App\Jobs\BeginTenantProvisioning;
+use App\Jobs\EndTenantProvisioning;
 
 class TenancyServiceProvider extends ServiceProvider
 {
@@ -26,9 +28,11 @@ class TenancyServiceProvider extends ServiceProvider
             Events\CreatingTenant::class => [],
             Events\TenantCreated::class => [
                 JobPipeline::make([
+                    BeginTenantProvisioning::class,
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
                     Jobs\SeedDatabase::class,
+                    EndTenantProvisioning::class
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
                 }),

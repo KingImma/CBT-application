@@ -15,7 +15,7 @@ echo "Running central migrations..."
 php artisan migrate --force --database=pgsql_direct
 
 echo "Running tenant migrations (including new notifications table)..."
-php artisan tenants:migrate --force < /dev/null
+php artisan tenants:migrate --force -vvv < /dev/null
 
 echo "Ensuring assessment schedule format across tenants (heals tenants with stale recorded migrations)..."
 php artisan tenants:ensure-assessment-schedule-format < /dev/null

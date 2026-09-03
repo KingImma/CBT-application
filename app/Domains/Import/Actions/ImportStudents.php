@@ -12,6 +12,10 @@ use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\User;
 use App\Shared\Support\NormalizeName;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
+use Throwable;
 
 class ImportStudents extends CsvImport
 {
@@ -128,68 +132,139 @@ class ImportStudents extends CsvImport
         $imported = 0;
         $skipped = 0;
         $updated = 0;
-
-        $duplicateKeys = collect($duplicateByRow)->pluck('row')->toArray();
-
-        foreach ($rows as $rn => $row) {
+    
+        $duplicateRows = collect($duplicateByRow)
+            ->pluck('row')
+            ->map(static fn (mixed $row): int => (int) $row)
+            ->unique()
+            ->all();
+    
+        foreach ($rows as $index => $row) {
             $data = $row['data'];
+    
+            $rowNumber = (int) ($row['row'] ?? $index);
+    
             $admissionNumber = strtoupper(
-                $data['admission_number'] ??
-                $this->student->generateAdmissionNumber()
+                (string) (
+                    $data['admission_number']
+                    ?? $this->student->generateAdmissionNumber()
+                )
             );
-            $email = $data['email'] ?? $admissionNumber.'@student.edu';
-
-            if (in_array($rn, $duplicateKeys)) {
-                if ($this->overwriteExisting) {
-                    $existingUser = User::role(RoleType::Student->value)
-                        ->where(function ($q) use ($email, $admissionNumber) {
-                            $q->where('email', $email)
-                                ->orWhereHas('studentProfile', fn ($q2) => $q2->where('admission_number', $admissionNumber));
-                        })
-                        ->first();
-
-                    if ($existingUser) {
-                        $existingUser->update([
-                            'first_name' => $data['first_name'],
-                            'last_name' => $data['last_name'],
-                            'phone' => $data['phone'] ?? $existingUser->phone,
-                        ]);
-
-                        if ($existingUser->studentProfile) {
-                            $existingUser->studentProfile->update([
+    
+            $email = $data['email']
+                ?? $admissionNumber.'@student.edu';
+    
+            try {
+                if (in_array($rowNumber, $duplicateRows, true)) {
+                    if (! $this->overwriteExisting) {
+                        $skipped++;
+    
+                        continue;
+                    }
+    
+                    DB::connection('tenant')->transaction(
+                        function () use (
+                            $data,
+                            $email,
+                            $admissionNumber,
+                            $row
+                        ): void {
+                            $existingUser = User::role(
+                                RoleType::Student->value
+                            )
+                                ->where(function ($query) use (
+                                    $email,
+                                    $admissionNumber
+                                ): void {
+                                    $query
+                                        ->where('email', $email)
+                                        ->orWhereHas(
+                                            'studentProfile',
+                                            function ($profileQuery) use (
+                                                $admissionNumber
+                                            ): void {
+                                                $profileQuery->where(
+                                                    'admission_number',
+                                                    $admissionNumber
+                                                );
+                                            }
+                                        );
+                                })
+                                ->first();
+    
+                            if ($existingUser === null) {
+                                throw new RuntimeException(
+                                    "Existing student could not be found for row {$row['row']}."
+                                );
+                            }
+    
+                            $existingUser->update([
+                                'first_name' => $data['first_name'],
+                                'last_name' => $data['last_name'],
+                                'phone' => $data['phone']
+                                    ?? $existingUser->phone,
+                            ]);
+    
+                            $profile = $existingUser->studentProfile;
+    
+                            if ($profile === null) {
+                                throw new RuntimeException(
+                                    "Student profile is missing for user {$existingUser->id}."
+                                );
+                            }
+    
+                            $profile->update([
                                 'class_level_id' => $row['_classLevelId'],
                                 'class_arm_id' => $row['_classArmId'],
-                                'date_of_birth' => $data['date_of_birth'] ?? $existingUser->studentProfile->date_of_birth,
-                                'gender' => $data['gender'] ?? $existingUser->studentProfile->gender,
-                                'guardian_email' => $data['guardian_email'] ?? $existingUser->studentProfile->guardian_email,
+                                'date_of_birth' => $data['date_of_birth']
+                                    ?? $profile->date_of_birth,
+                                'gender' => $data['gender']
+                                    ?? $profile->gender,
+                                'guardian_email' => $data['guardian_email']
+                                    ?? $profile->guardian_email,
                             ]);
-                        }
-
-                        $updated++;
-                    } else {
-                        $skipped++;
-                    }
-
+                        },
+                        3
+                    );
+    
+                    $updated++;
+    
                     continue;
                 }
-
+    
+                $payload = $this->buildPayload(
+                    $data,
+                    $row['_classLevelId'],
+                    $row['_classArmId'],
+                    $admissionNumber,
+                    $email,
+                );
+    
+                DB::connection('tenant')->transaction(
+                    function () use ($payload): void {
+                        $this->student->create($payload);
+                    },
+                    3
+                );
+    
+                $imported++;
+            } catch (Throwable $e) {
                 $skipped++;
-
-                continue;
+    
+                Log::warning('Student import row failed', [
+                    'row' => $rowNumber,
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
             }
-
-            $payload = $this->buildPayload(
-                $data,
-                $row['_classLevelId'],
-                $row['_classArmId'],
-                $admissionNumber,
-                $email,
-            );
-            $this->student->create($payload);
-            $imported++;
         }
-
-        return $this->buildPartsSummary($imported, $skipped, $updated, count($rows));
+    
+        return $this->buildPartsSummary(
+            $imported,
+            $skipped,
+            $updated,
+            count($rows),
+        );
     }
 
     private function extractIdentifiers(

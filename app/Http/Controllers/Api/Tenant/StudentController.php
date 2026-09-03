@@ -24,6 +24,7 @@ use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -374,7 +375,7 @@ class StudentController extends Controller
         }
 
         $importJobId = Str::uuid()->toString();
-        $central = config('tenancy.database.central_connection');
+        $central = 'pgsql_imports';
 
         DB::connection($central)->table('import_jobs')->insert([
             'id' => $importJobId,
@@ -388,7 +389,10 @@ class StudentController extends Controller
         ]);
 
         try {
-            ImportStudentsJob::dispatch($importJobId);
+            ImportStudentsJob::dispatch($importJobId)
+                ->onConnection('horizon-redis')
+                ->onQueue('imports')
+                ->afterCommit();
         } catch (\Throwable $e) {
             Log::error('ImportStudentsJob dispatch failed, row will be recovered by scheduled sweep', [
                 'import_job_id' => $importJobId,

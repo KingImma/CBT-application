@@ -22,9 +22,11 @@ class ImportStudentsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
-
+    public int $tries = 1;
+    
     public int $backoff = 30;
+    
+    public int $timeout = 300;
 
     public function middleware(): array
     {
@@ -38,26 +40,33 @@ class ImportStudentsJob implements ShouldQueue
 
     public function handle(): void
     {
-        $central = config('tenancy.database.central_connection');
+        $central = 'pgsql_imports';
 
-        $claimed = DB::connection($central)->transaction(function () use ($central) {
-            $row = DB::connection($central)
+        DB::purge($central);
+        
+        $connection = DB::connection($central);
+
+        $claimed = $connection->transaction(function () use ($connection) {
+            $row = $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
                 ->lockForUpdate()
                 ->first();
-
+    
             if ($row === null || $row->status === 'completed') {
                 return null;
             }
-
-            DB::connection($central)
+    
+            $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
-                ->update(['status' => 'processing', 'updated_at' => now()]);
-
+                ->update([
+                    'status' => 'processing',
+                    'updated_at' => now(),
+                ]);
+    
             return $row;
-        });
+        }, 3);
 
         if ($claimed === null) {
             Log::info('ImportStudentsJob: skipped — already completed or row missing', [
@@ -84,7 +93,7 @@ class ImportStudentsJob implements ShouldQueue
             $result = app(ImportStudents::class)->execute($validated, $tempPath, false);
 
             if (! $result->isSuccess()) {
-                DB::connection($central)
+                $connection
                     ->table('import_jobs')
                     ->where('id', $this->importJobId)
                     ->update([
@@ -105,7 +114,7 @@ class ImportStudentsJob implements ShouldQueue
                 return;
             }
 
-            DB::connection($central)
+            $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
                 ->update(['status' => 'completed', 'updated_at' => now()]);
@@ -119,7 +128,7 @@ class ImportStudentsJob implements ShouldQueue
                 ]);
             }
 
-            DB::connection($central)
+            $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
                 ->delete();
@@ -128,6 +137,7 @@ class ImportStudentsJob implements ShouldQueue
                 @unlink($tempPath);
             }
             tenancy()->end();
+            DB::purge($central);
         }
     }
 
@@ -164,21 +174,32 @@ class ImportStudentsJob implements ShouldQueue
 
     public function failed(Throwable $e): void
     {
-        $central = config('tenancy.database.central_connection');
-
-        DB::connection($central)
-            ->table('import_jobs')
-            ->where('id', $this->importJobId)
-            ->update([
-                'status' => 'failed',
-                'retain_until' => now()->addDays(3),
-                'updated_at' => now(),
+        $central = 'pgsql_imports';
+    
+        DB::purge($central);
+    
+        $connection = DB::connection($central);
+    
+        try {
+            $connection
+                ->table('import_jobs')
+                ->where('id', $this->importJobId)
+                ->update([
+                    'status' => 'failed',
+                    'retain_until' => now()->addDays(3),
+                    'updated_at' => now(),
+                ]);
+        } catch (Throwable $statusError) {
+            Log::critical('Could not mark student import as failed', [
+                'import_job_id' => $this->importJobId,
+                'original_error' => $e->getMessage(),
+                'status_error' => $statusError->getMessage(),
             ]);
-
+        }
+    
         Log::error('Students import failed permanently', [
             'import_job_id' => $this->importJobId,
             'error' => $e->getMessage(),
-            'retained_until' => now()->addDays(3)->toIso8601String(),
         ]);
     }
 }

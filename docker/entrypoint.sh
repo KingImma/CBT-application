@@ -8,6 +8,7 @@ php artisan --version
 
 echo "Clearing application caches (config, events, views, cache)..."
 php artisan optimize:clear
+php artisan horizon:terminate
 php artisan event:clear
 php artisan permission:cache-reset
 

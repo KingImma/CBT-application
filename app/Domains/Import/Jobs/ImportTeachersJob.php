@@ -29,42 +29,51 @@ class ImportTeachersJob implements ShouldQueue
 
     public function __construct(private readonly string $importJobId)
     {
-        $this->queue = 'imports';
+        $this->onConnection('horizon-redis');
+        $this->onQueue('imports');
     }
 
     public function handle(): void
     {
-        $central = config('tenancy.database.central_connection');
+        $central = 'pgsql_imports';
     
         DB::purge($central);
     
         $connection = DB::connection($central);
     
         $claimed = $connection->transaction(function () use ($connection) {
-            $row = $connection
-                ->table('import_jobs')
-                ->where('id', $this->importJobId)
-                ->lockForUpdate()
-                ->first();
-    
+            try {
+                $row = $connection
+                    ->table('import_jobs')
+                    ->where('id', $this->importJobId)
+                    ->lockForUpdate()
+                    ->first();
+            } catch (Throwable $e) {
+                Log::error('Import claim SELECT failed', [
+                    'import_job_id' => $this->importJobId,
+                    'connection' => $connection->getName(),
+                    'database' => $connection->getDatabaseName(),
+                    'host' => $connection->getConfig('host'),
+                    'transaction_level' => $connection->transactionLevel(),
+                    'error' => $e->getMessage(),
+                    'previous' => $e->getPrevious()?->getMessage(),
+                ]);
+        
+                throw $e;
+            }
+        
             if ($row === null || $row->status === 'completed') {
                 return null;
             }
-    
-            $updated = $connection
+        
+            $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
                 ->update([
                     'status' => 'processing',
                     'updated_at' => now(),
                 ]);
-    
-            if ($updated !== 1) {
-                throw new RuntimeException(
-                    "Unable to claim import job {$this->importJobId}."
-                );
-            }
-    
+        
             return $row;
         }, 3);
     
@@ -112,7 +121,7 @@ class ImportTeachersJob implements ShouldQueue
     
             DB::purge($central);
     
-            DB::connection($central)
+            $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
                 ->update([
@@ -129,7 +138,7 @@ class ImportTeachersJob implements ShouldQueue
                 ]);
             }
     
-            DB::connection($central)
+            $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
                 ->delete();
@@ -146,24 +155,32 @@ class ImportTeachersJob implements ShouldQueue
 
     public function failed(Throwable $e): void
     {
-        $central = config('tenancy.database.central_connection');
-
-        DB::purge($central);
-        DB::reconnect($central);
-            
-        DB::connection($central)
-            ->table('import_jobs')
-            ->where('id', $this->importJobId)
-            ->update([
-                'status' => 'failed',
-                'retain_until' => now()->addDays(3),
-                'updated_at' => now(),
+        $connectionName = 'pgsql_imports';
+    
+        DB::purge($connectionName);
+    
+        $connection = DB::connection($connectionName);
+    
+        try {
+            $connection
+                ->table('import_jobs')
+                ->where('id', $this->importJobId)
+                ->update([
+                    'status' => 'failed',
+                    'retain_until' => now()->addDays(3),
+                    'updated_at' => now(),
+                ]);
+        } catch (Throwable $statusError) {
+            Log::critical('Could not mark import as failed', [
+                'import_job_id' => $this->importJobId,
+                'original_error' => $e->getMessage(),
+                'status_error' => $statusError->getMessage(),
             ]);
-
+        }
+    
         Log::error('Teachers import failed permanently', [
             'import_job_id' => $this->importJobId,
             'error' => $e->getMessage(),
-            'retained_until' => now()->addDays(3)->toIso8601String(),
         ]);
     }
 }

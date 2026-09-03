@@ -102,6 +102,16 @@ return [
             'search_path' => 'public',
             'sslmode' => 'require',
         ],
+
+        'pgsql_imports' => [
+            'driver' => 'pgsql',
+            'url' => env('DATABASE_URL_DIRECT'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'require',
+        ],
         
         'tenant_template' => [
             'driver' => 'pgsql',

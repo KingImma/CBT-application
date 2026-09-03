@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @group Staff Directory
@@ -356,7 +357,7 @@ class TeacherController extends Controller
         }
 
         $importJobId = Str::uuid()->toString();
-        $central = config('tenancy.database.central_connection');
+        $central = 'pgsql_imports';
 
         DB::connection($central)->table('import_jobs')->insert([
             'id' => $importJobId,
@@ -370,7 +371,10 @@ class TeacherController extends Controller
         ]);
 
         try {
-            ImportTeachersJob::dispatch($importJobId);
+            ImportTeachersJob::dispatch($importJobId)
+                ->onConnection('horizon-redis')
+                ->onQueue('imports')
+                ->afterCommit();
         } catch (\Throwable $e) {
             // Row already durably persisted as 'pending' — imports:recover-stuck
             // sweep picks it up on next scheduled run even if dispatch failed now.

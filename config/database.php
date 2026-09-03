@@ -102,6 +102,17 @@ return [
             'search_path' => 'public',
             'sslmode' => 'require',
         ],
+        
+        'tenant_template' => [
+            'driver' => 'pgsql',
+            'url' => env('DATABASE_URL_DIRECT'),
+            'database' => 'neondb',
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'require',
+        ],
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',

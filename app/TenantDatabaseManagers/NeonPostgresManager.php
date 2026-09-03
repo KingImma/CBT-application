@@ -7,6 +7,7 @@ namespace App\TenantDatabaseManagers;
 use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
+use RuntimeException;
 
 class NeonPostgresManager extends PostgreSQLDatabaseManager
 {
@@ -37,19 +38,25 @@ class NeonPostgresManager extends PostgreSQLDatabaseManager
     public function makeConnectionConfig(array $baseConfig, string $databaseName): array
     {
         unset($baseConfig['url']);
-
-        $urlKey = app()->bound('tenancy.provisioning')
-            ? 'database.connections.pgsql_direct.url'
-            : 'database.connections.pgsql.url';
-
-        $parsed = parse_url((string) config($urlKey));
-
+    
+        $parsed = parse_url(
+            (string) config('database.connections.pgsql_direct.url')
+        );
+    
+        if (! isset($parsed['host'], $parsed['user'], $parsed['pass'])) {
+            throw new RuntimeException(
+                'Invalid DATABASE_URL_DIRECT configuration.'
+            );
+        }
+    
+        $baseConfig['driver'] = 'pgsql';
         $baseConfig['host'] = $parsed['host'];
         $baseConfig['port'] = $parsed['port'] ?? 5432;
         $baseConfig['username'] = $parsed['user'];
         $baseConfig['password'] = $parsed['pass'];
         $baseConfig['database'] = $databaseName;
-
+        $baseConfig['sslmode'] = 'require';
+    
         return $baseConfig;
     }
 }

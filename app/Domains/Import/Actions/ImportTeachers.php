@@ -7,6 +7,9 @@ namespace App\Domains\Import\Actions;
 use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Data\Schemas\TeacherImportSchema;
 use App\Domains\Teachers\Actions\TeacherService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 use App\Enums\RoleType;
 use App\Models\Tenant\User;
 
@@ -23,36 +26,38 @@ class ImportTeachers extends CsvImport
     {
         $resolvedRows = [];
         $identityFields = TeacherImportSchema::IDENTITY;
-
-        foreach ($rows as $row) {
+    
+        foreach ($rows as $rowNumber => $row) {
             $data = $row['data'];
             $identifiers = $this->extractIdentifiers($data, $identityFields);
-
+    
             $existing = User::role(RoleType::Teacher->value);
-
+    
             foreach ($identifiers as $key => $value) {
                 if ($key === 'email') {
                     $existing->where('email', $value);
                 } else {
                     $existing->whereHas(
                         'teacherProfile',
-                        fn ($q) => $q->where($key, $value),
+                        fn ($query) => $query->where($key, $value),
                     );
                 }
             }
-
-            $exists = $existing->exists();
-
-            if ($exists) {
-                $row['_duplicates'] = [];
-                foreach ($identifiers as $key => $value) {
-                    $row['_duplicates'][] = ['key' => $key, 'value' => $value];
-                }
+    
+            if ($existing->exists()) {
+                $row['_duplicates'] = array_map(
+                    static fn (string $key, mixed $value): array => [
+                        'key' => $key,
+                        'value' => $value,
+                    ],
+                    array_keys($identifiers),
+                    array_values($identifiers),
+                );
             }
-
-            $resolvedRows[] = $row;
+    
+            $resolvedRows[$rowNumber] = $row;
         }
-
+    
         return $resolvedRows;
     }
 
@@ -63,50 +68,81 @@ class ImportTeachers extends CsvImport
         $imported = 0;
         $skipped = 0;
         $updated = 0;
-
-        $duplicateKeys = collect($duplicateByRow)->pluck('row')->toArray();
-
-        foreach ($rows as $rn => $row) {
+    
+        $duplicateKeys = collect($duplicateByRow)
+            ->pluck('row')
+            ->unique()
+            ->map(fn ($row) => (int) $row)
+            ->all();
+    
+        foreach ($rows as $index => $row) {
             $data = $row['data'];
             $email = $data['email'];
-
-            if (in_array($rn, $duplicateKeys)) {
-                if ($this->overwriteExisting) {
-                    $existingUser = User::role(RoleType::Teacher->value)
-                        ->where('email', $email)
-                        ->first();
-
-                    if ($existingUser) {
+            $rowNumber = (int) ($row['row'] ?? $index);
+    
+            try {
+                if (in_array($rowNumber, $duplicateKeys, true)) {
+                    if (! $this->overwriteExisting) {
+                        $skipped++;
+    
+                        continue;
+                    }
+    
+                    DB::connection('tenant')->transaction(function () use ($data, $email) {
+                        $existingUser = User::role(RoleType::Teacher->value)
+                            ->where('email', $email)
+                            ->first();
+    
+                        if (! $existingUser) {
+                            return;
+                        }
+    
                         $existingUser->update([
                             'first_name' => $data['first_name'],
                             'last_name' => $data['last_name'],
-                            'phone' => $data['phone'] ?? $existingUser->phone,
+                            'phone' => $data['phone']
+                                ?? $existingUser->phone,
                         ]);
-
+    
                         if ($existingUser->teacherProfile) {
                             $existingUser->teacherProfile->update([
-                                'qualification' => $data['qualification'] ?? $existingUser->teacherProfile->qualification,
-                                'staff_id' => $data['staff_id'] ?? $existingUser->teacherProfile->staff_id,
+                                'qualification' => $data['qualification']
+                                    ?? $existingUser->teacherProfile->qualification,
+                                'staff_id' => $data['staff_id']
+                                    ?? $existingUser->teacherProfile->staff_id,
                             ]);
                         }
-
-                        $updated++;
-                    }
-
+                    }, 3);
+    
+                    $updated++;
+    
                     continue;
                 }
-
+    
+                DB::connection('tenant')->transaction(function () use ($data, $email) {
+                    $this->teacher->create(
+                        $this->buildPayload($data, $email)
+                    );
+                }, 3);
+    
+                $imported++;
+            } catch (Throwable $e) {
                 $skipped++;
-
-                continue;
+    
+                Log::warning('Teacher import row failed', [
+                    'row' => $rowNumber,
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
             }
-
-            $payload = $this->buildPayload($data, $email);
-            $this->teacher->create($payload);
-            $imported++;
         }
-
-        return $this->buildPartsSummary($imported, $skipped, $updated, count($rows));
+    
+        return $this->buildPartsSummary(
+            $imported,
+            $skipped,
+            $updated,
+            count($rows),
+        );
     }
 
     private function extractIdentifiers(

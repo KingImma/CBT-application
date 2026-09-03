@@ -6,8 +6,8 @@ namespace App\Domains\Import\Actions;
 
 use App\Domains\Import\Data\ImportResult;
 use App\Shared\Support\CsvHeaderNormalizer;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Throwable;
 
 abstract class CsvImport
 {
@@ -69,7 +69,17 @@ abstract class CsvImport
                 );
             }
 
-            return $this->processImportTransaction($rows, $duplicateByRow);
+            try {
+                return $this->processRows($rows, $duplicateByRow);
+            } catch (Throwable $e) {
+                return new ImportResult(
+                    success: false,
+                    message: 'Import failed: '.$e->getMessage(),
+                    errors: [],
+                    totalRows: count($rows),
+                    canProceed: false,
+                );
+            }
         } finally {
             fclose($handle);
         }
@@ -124,15 +134,20 @@ abstract class CsvImport
     protected function buildDuplicateIndex(array $rows): array
     {
         $duplicateByRow = [];
-        foreach ($rows as $rn => $row) {
-            foreach ($row['_duplicates'] ?? [] as $d) {
+    
+        foreach ($rows as $row) {
+            foreach ($row['_duplicates'] ?? [] as $duplicate) {
                 $duplicateByRow[] = [
-                    'row' => $rn,
-                    'message' => "Existing record found for {$d['key']}: '{$d['value']}'.",
+                    'row' => $row['row'],
+                    'message' => sprintf(
+                        "Existing record found for %s: '%s'.",
+                        $duplicate['key'],
+                        $duplicate['value'],
+                    ),
                 ];
             }
         }
-
+    
         return $duplicateByRow;
     }
 
@@ -278,21 +293,5 @@ abstract class CsvImport
         }
 
         return null;
-    }
-
-    private function processImportTransaction(array $rows, array $duplicateByRow): ImportResult
-    {
-        try {
-            return DB::transaction(function () use ($rows, $duplicateByRow) {
-                return $this->processRows($rows, $duplicateByRow);
-            });
-        } catch (\Exception $e) {
-            return new ImportResult(
-                success: false,
-                message: 'Import failed: '.$e->getMessage(),
-                errors: [],
-                canProceed: false,
-            );
-        }
     }
 }

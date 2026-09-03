@@ -255,11 +255,28 @@ return [
 
             'supervisor-default' => [
                 'connection' => 'horizon-redis',
-                'queue' => ['default', 'notifications', 'emails', 'exams', 'imports'],
-                'balance' => 'simple',
-                'maxProcesses' => 3,
+                'queue' => ['default', 'notifications', 'emails', 'exams'],
+                'balance' => 'auto',
+                'autoScalingStrategy' => 'time',
+                'minProcesses' => 1,
+                'maxProcesses' => 2,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+                'memory' => 128,
                 'tries' => 3,
+                'timeout' => 120,
+                'nice' => 0,
+            ],
+            
+            'supervisor-imports' => [
+                'connection' => 'horizon-redis',
+                'queue' => ['imports'],
+                'balance' => 'simple',
+                'processes' => 1,
+                'memory' => 256,
+                'tries' => 1,
                 'timeout' => 300,
+                'nice' => 10,
             ],
         ],
 

@@ -20,42 +20,46 @@ class TeacherService
 
     public function create(array $data): array
     {
-        $password = $data['password'] ?? config('app.teacher_default_password', 'teach12345');
-
-        $user = DB::transaction(function () use ($data, $password) {
-            $prepared = [
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'password' => Hash::make($password),
-                'phone' => $data['phone'] ?? null,
-                'role' => RoleType::Teacher->value,
-                'is_active' => true,
-            ];
-
-            $user = User::create($prepared);
-
-            $user->assignRole(RoleType::Teacher->value);
-            $this->syncTenantUser->execute($user->email, RoleType::Teacher->value);
-
-            $user->teacherProfile()->create([
-                'gender' => $data['gender'] ?? null,
-                'qualification' => $data['qualification'] ?? null,
-                'staff_id' => $data['staff_id'] ?? $this->generateStaffId(),
-                'class_level_id' => $data['class_level_id'] ?? null,
-            ]);
-
-            return $user;
-        });
-
-        return ['user' => $user, 'password' => $password];
+        $password = $data['password']
+            ?? config('app.teacher_default_password', 'teach12345');
+    
+        $prepared = [
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'password' => Hash::make($password),
+            'phone' => $data['phone'] ?? null,
+            'role' => RoleType::Teacher->value,
+            'is_active' => true,
+        ];
+    
+        $user = User::create($prepared);
+    
+        $user->assignRole(RoleType::Teacher->value);
+    
+        $this->syncTenantUser->execute(
+            $user->email,
+            RoleType::Teacher->value
+        );
+    
+        $user->teacherProfile()->create([
+            'gender' => $data['gender'] ?? null,
+            'qualification' => $data['qualification'] ?? null,
+            'staff_id' => $data['staff_id'] ?? $this->generateStaffId(),
+            'class_level_id' => $data['class_level_id'] ?? null,
+        ]);
+    
+        return [
+            'user' => $user,
+            'password' => $password,
+        ];
     }
 
     public function update(array $data, string $userId): User
     {
         $user = User::role(RoleType::Teacher->value)->findOrFail($userId);
 
-        return DB::transaction(function () use ($user, $data) {
+        return DB::connection('tenant')->transaction(function () use ($user, $data) {
             TeacherRules::canUpdate()($user, $data);
 
             $prepared = collect($data)
@@ -78,7 +82,7 @@ class TeacherService
             }
 
             return $fresh;
-        });
+        }, 3);
     }
 
     public function generateStaffId(): string

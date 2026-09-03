@@ -17,6 +17,7 @@ class InAppNotification extends Notification implements ShouldQueue
         public readonly string $title,
         public readonly string $message,
         public readonly string $type = 'info', // info, success, warning, error
+        public readonly ?string $label = null; 
         public readonly ?array $action = null  // e.g., ['url' => '/exams/1', 'label' => 'View']
     ) {}
 
@@ -37,6 +38,7 @@ class InAppNotification extends Notification implements ShouldQueue
             'title' => $this->title,
             'message' => $this->message,
             'type' => $this->type,
+            'label' => $this->label,
             'action' => $this->action,
         ];
     }
@@ -51,6 +53,7 @@ class InAppNotification extends Notification implements ShouldQueue
             'title' => $this->title,
             'message' => $this->message,
             'type' => $this->type,
+            'label' => $this->label,
             'action' => $this->action,
             'created_at' => now()->toIso8601String(),
         ]);

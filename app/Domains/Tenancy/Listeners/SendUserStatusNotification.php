@@ -7,6 +7,7 @@ namespace App\Domains\Tenancy\Listeners;
 use App\Events\UserActivated;
 use App\Events\UserDeactivated;
 use App\Notifications\InAppNotification;
+use App\Enums\NotificationLabel;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class SendUserStatusNotification implements ShouldQueue
@@ -24,6 +25,7 @@ class SendUserStatusNotification implements ShouldQueue
                 ? 'Your account has been activated.'
                 : 'Your account has been deactivated. Contact your school administrator for assistance.',
             type: $isActive ? 'success' : 'danger',
+            label: NotificationLabel::Exam->value,
         ));
     }
 }

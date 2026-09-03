@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Listeners;
 
 use App\Domains\Assessments\Events\SubmissionApproved;
+use App\Enums\NotificationLabel;
 use App\Notifications\InAppNotification;
 
 /**
@@ -26,6 +27,7 @@ class SendSubmissionApprovedNotification
             title: 'Submission Approved',
             message: "\"{$submission->title}\" was approved and is ready to go live.",
             type: 'success',
+            label: NotificationLabel::Submission->value,
             action: [
                 'url' => "/teacher/assessments/{$submission->assessment_schedule_id}/teacher-submissions/{$submission->id}",
                 'label' => 'View Submission',

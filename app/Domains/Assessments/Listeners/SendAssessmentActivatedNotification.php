@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Listeners;
 
 use App\Domains\Assessments\Events\AssessmentActivated;
+use App\Enums\NotificationLabel;
 use App\Models\Tenant\StudentProfile;
 use App\Notifications\InAppNotification;
 
@@ -33,6 +34,7 @@ class SendAssessmentActivatedNotification
                         title: 'Assessment Now Available',
                         message: "\"{$assessment->title}\" is now open. Start before the window closes.",
                         type: 'info',
+                        labe: NotificationLabel::Assessment->value,
                         action: [
                             'url' => '/student/exams',
                             'label' => 'Start Assessment',

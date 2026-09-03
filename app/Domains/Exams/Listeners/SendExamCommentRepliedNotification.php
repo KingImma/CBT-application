@@ -21,6 +21,7 @@ class SendExamCommentRepliedNotification
             title: 'Teacher Replied to Your Review Comment',
             message: "Reply on \"{$event->exam->title}\": {$event->reply->comment}",
             type: 'info',
+            label:NotificationLabel::Exam->value,
             action: [
                 'url' => "/admin/exams/{$event->exam->id}/review",
                 'label' => 'View Reply',

@@ -7,6 +7,7 @@ namespace App\Domains\Exams\Listeners;
 use App\Domains\Exams\Events\ExamCompleted;
 use App\Models\Tenant\User;
 use App\Notifications\InAppNotification;
+use App\Enums\NotificationLabel;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 
@@ -29,6 +30,7 @@ class SendExamCompletedNotification implements ShouldQueue
             title: 'Exam Completed',
             message: 'Your exam has been completed.',
             type: 'info',
+            label: NotificationLabel::Exam->value,
             action: [
                 'url' => $reportUrl,
                 'label' => 'View Report',

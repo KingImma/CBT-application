@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Listeners;
 
 use App\Domains\Assessments\Events\SubmissionSubmitted;
+use App\Enums\NotificationLabel;
 use App\Enums\RoleType;
 use App\Models\Tenant\User;
 use App\Notifications\InAppNotification;
@@ -29,6 +30,7 @@ class SendSubmissionSubmittedNotification
                 title: 'Submission Ready for Review',
                 message: "{$teacherName} submitted \"{$submission->title}\" for review.",
                 type: 'info',
+                label: NotificationLabel->Submission->value,
                 action: [
                     'url' => "/admin/assessments/{$submission->assessment_schedule_id}/teacher-submissions/{$submission->id}",
                     'label' => 'Review Submission',

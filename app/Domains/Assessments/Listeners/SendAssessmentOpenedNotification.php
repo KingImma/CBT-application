@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Listeners;
 
 use App\Domains\Assessments\Events\AssessmentOpened;
+use App\Enums\NotificationLabel;
 use App\Models\Tenant\TeacherSubjectAssignment;
 use App\Models\Tenant\User;
 use App\Notifications\InAppNotification;
@@ -41,6 +42,7 @@ class SendAssessmentOpenedNotification
                     ? "\"{$assessment->title}\" is open. Submit your paper before {$deadline}."
                     : "\"{$assessment->title}\" is open for submissions.",
                 type: 'info',
+                label: NotificationLabel::Assessment->value
                 action: [
                     'url' => "/teacher/assessments/{$assessment->id}",
                     'label' => 'View Assessment',

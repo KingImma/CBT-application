@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Listeners;
 
 use App\Domains\Assessments\Events\SubmissionChangesRequested;
+use App\Enums\NotificationLabel;
 use App\Notifications\InAppNotification;
 
 /**
@@ -26,6 +27,7 @@ class SendSubmissionChangesRequestedNotification
             title: 'Changes Requested on Your Submission',
             message: "{$event->admin->first_name} {$event->admin->last_name} requested changes on \"{$submission->title}\".",
             type: 'warning',
+            label: NotificationLabel::Submission->value,
             action: [
                 'url' => "/teacher/assessments/{$submission->assessment_schedule_id}/teacher-submissions/{$submission->id}",
                 'label' => 'View Feedback',

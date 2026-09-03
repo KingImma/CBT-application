@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Listeners;
 
 use App\Domains\Exams\Events\ExamCommentAdded;
+use App\Enums\NotificationLabel;
 use App\Notifications\InAppNotification;
 
 class SendExamCommentNotification
@@ -21,6 +22,7 @@ class SendExamCommentNotification
             title: 'New Comment on Your Exam',
             message: "{$event->admin->first_name} {$event->admin->last_name} commented on \"{$event->exam->title}\".",
             type: 'info',
+            label: NotificationLabel::Exam->value,
             action: [
                 'url' => "/teacher/exams/{$event->exam->id}",
                 'label' => 'View Comment',

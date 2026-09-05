@@ -34,7 +34,7 @@ class SendAssessmentActivatedNotification
                         title: 'Assessment Now Available',
                         message: "\"{$assessment->title}\" is now open. Start before the window closes.",
                         type: 'info',
-                        labe: NotificationLabel::Assessment->value,
+                        label: NotificationLabel::Assessment->value,
                         action: [
                             'url' => '/student/exams',
                             'label' => 'Start Assessment',

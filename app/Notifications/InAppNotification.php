@@ -17,8 +17,8 @@ class InAppNotification extends Notification implements ShouldQueue
         public readonly string $title,
         public readonly string $message,
         public readonly string $type = 'info', // info, success, warning, error
-        public readonly ?string $label = null; 
-        public readonly ?array $action = null  // e.g., ['url' => '/exams/1', 'label' => 'View']
+        public readonly ?string $label = null,
+        public readonly ?array $action = null,  // e.g., ['url' => '/exams/1', 'label' => 'View']
     ) {}
 
     /**

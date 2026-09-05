@@ -42,7 +42,7 @@ class SendAssessmentOpenedNotification
                     ? "\"{$assessment->title}\" is open. Submit your paper before {$deadline}."
                     : "\"{$assessment->title}\" is open for submissions.",
                 type: 'info',
-                label: NotificationLabel::Assessment->value
+                label: NotificationLabel::Assessment->value,
                 action: [
                     'url' => "/teacher/assessments/{$assessment->id}",
                     'label' => 'View Assessment',

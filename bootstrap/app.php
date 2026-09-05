@@ -89,6 +89,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'user.active' => EnsureUserIsActive::class,
             'super-admin' => EnsureUserIsSuperAdmin::class,
             'auth.any' => AuthenticateAnyGuard::class,
+            'ensure.active' => EnsureUserIsActive::class,
 
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,

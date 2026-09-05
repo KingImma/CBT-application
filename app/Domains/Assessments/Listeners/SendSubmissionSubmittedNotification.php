@@ -30,7 +30,7 @@ class SendSubmissionSubmittedNotification
                 title: 'Submission Ready for Review',
                 message: "{$teacherName} submitted \"{$submission->title}\" for review.",
                 type: 'info',
-                label: NotificationLabel->Submission->value,
+                label: NotificationLabel::Submission->value,
                 action: [
                     'url' => "/admin/assessments/{$submission->assessment_schedule_id}/teacher-submissions/{$submission->id}",
                     'label' => 'Review Submission',

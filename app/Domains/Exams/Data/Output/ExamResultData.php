@@ -29,7 +29,7 @@ class ExamResultData extends Resource
     public static function fromAttempt(ExamAttempt $attempt): self
     {
         // Ensure relations are loaded to avoid N+1 queries
-        $attempt->load([
+        $attempt->loadMissing([
             'exam',
             'answers.question',
             'exam.examQuestions.question',

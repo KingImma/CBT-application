@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Domains\Exams\Actions\Reports\BuildExamClassReport;
+use App\Domains\Exams\Actions\Results\GenerateCumulativeResultPdfAction;
+use App\Domains\Exams\Actions\Results\GenerateBulkResultPdfAction;
 use App\Domains\Exams\Data\Output\ResultQuestionData;
 use App\Enums\ExamAttemptStatus;
 use App\Http\Controllers\Controller;
@@ -18,7 +20,11 @@ use Illuminate\Http\Request;
 
 class TeacherExamReportController extends Controller
 {
-    public function __construct(private BuildExamClassReport $buildReport) {}
+    public function __construct(
+        private BuildExamClassReport $buildReport,
+        private GenerateCumulativeResultPdfAction $generateCumulativePdf,
+        private GenerateBulkResultPdfAction $generateBulkPdf
+    ) {}
 
     public function examSummary(ClassArm $classArm, Exam $exam): JsonResponse
     {
@@ -28,6 +34,25 @@ class TeacherExamReportController extends Controller
             $this->buildReport->execute($classArm, $exam),
             'Exam class report retrieved successfully.'
         );
+    }
+
+    public function examSummaryPdf(ClassArm $classArm, Exam $exam)
+    {
+        $this->authorize('viewExamReport', [$classArm, $exam]); // same gate as examSummary() — no new policy
+
+        $pdf = $this->generateCumulativePdf->execute($classArm, $exam);
+
+        return $pdf->download($this->generateCumulativePdf->filename($classArm, $exam));
+    }
+
+    public function examResultsBulkPdf(ClassArm $classArm, Exam $exam)
+    {
+        // staff-only — bulk contains every student's answers, same sensitivity as cumulative
+        $this->authorize('viewExamReport', [$classArm, $exam]);
+
+        $pdf = $this->generateBulkPdf->execute($classArm, $exam);
+
+        return $pdf->download($this->generateBulkPdf->filename($classArm, $exam));
     }
 
     public function studentResults(Request $request, string $studentId): JsonResponse

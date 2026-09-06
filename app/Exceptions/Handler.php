@@ -23,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -44,6 +45,7 @@ class Handler extends ExceptionHandler
         TenantSlugAlreadyTakenException::class,
         HttpResponseException::class,
         BaseDomainException::class,
+        UnauthorizedException::class,
     ];
 
     public function register(): void
@@ -129,6 +131,10 @@ class Handler extends ExceptionHandler
                 422,
                 meta: ['results' => $e->getResults()]
             );
+        }
+
+        if ($e instanceof UnauthorizedException) {
+            return ApiResponse::error('You do not have permission to perform this action.', 403);
         }
 
         // ── Generic HTTP exceptions ─────────────────────────────────────────

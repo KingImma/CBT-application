@@ -66,7 +66,7 @@ Route::controller(ExamGradingController::class)
 */
 Route::controller(ExamGradingController::class)
     ->prefix('exams/results/{attempt}')
-    ->middleware(['auth:tenant', 'tenant'])
+    ->middleware(['auth:tenant'])
     ->group(function () {
         Route::get('/pdf', 'downloadResultPdf')->name('exams.results.pdf');
     });

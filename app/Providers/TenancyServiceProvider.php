@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Jobs\BeginTenantProvisioning;
+use App\Jobs\EndTenantProvisioning;
 use Illuminate\Foundation\Http\Kernel;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Stancl\JobPipeline\JobPipeline;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
-use App\Jobs\BeginTenantProvisioning;
-use App\Jobs\EndTenantProvisioning;
 
 class TenancyServiceProvider extends ServiceProvider
 {
-    public static string $controllerNamespace = '';
-
     /** @return array<class-string, array<int, mixed>> */
     public function events(): array
     {
@@ -32,7 +29,7 @@ class TenancyServiceProvider extends ServiceProvider
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
                     Jobs\SeedDatabase::class,
-                    EndTenantProvisioning::class
+                    EndTenantProvisioning::class,
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
                 }),
@@ -96,7 +93,6 @@ class TenancyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bootEvents();
-        $this->mapRoutes();
         $this->makeTenancyMiddlewareHighestPriority();
     }
 
@@ -110,16 +106,6 @@ class TenancyServiceProvider extends ServiceProvider
                 Event::listen($event, $listener);
             }
         }
-    }
-
-    protected function mapRoutes(): void
-    {
-        $this->app->booted(function () {
-            if (file_exists(base_path('routes/tenant.php'))) {
-                Route::namespace(static::$controllerNamespace)
-                    ->group(base_path('routes/tenant.php'));
-            }
-        });
     }
 
     protected function makeTenancyMiddlewareHighestPriority(): void

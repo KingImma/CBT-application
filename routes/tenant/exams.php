@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Route;
 | Exams
 |--------------------------------------------------------------------------
 */
-Route::apiResource('exams', ExamController::class);
+Route::apiResource('exams', ExamController::class)
+    ->middleware(['auth:tenant', 'role:teacher|school_admin,tenant']);
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +22,7 @@ Route::apiResource('exams', ExamController::class);
 */
 Route::prefix('exams')
     ->controller(ExamController::class)
+    ->middleware(['auth:tenant', 'role:teacher|school_admin,tenant'])
     ->group(function () {
         Route::post('/{exam}/submit-for-review', 'submitForReview')
             ->middleware('role:school_admin|teacher,tenant');
@@ -39,6 +41,7 @@ Route::prefix('exams')
 */
 Route::controller(ExamQuestionController::class)
     ->prefix('exams/{exam}/questions')
+    ->middleware(['auth:tenant', 'role:teacher|school_admin,tenant'])
     ->group(function () {
         Route::get('/', 'index');
         Route::post('/', 'store');

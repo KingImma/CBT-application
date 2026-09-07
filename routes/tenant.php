@@ -62,8 +62,9 @@ require __DIR__.'/tenant/students.php';
 
 require __DIR__.'/tenant/settings.php';
 
+require __DIR__.'/tenant/exams.php';
+
 Route::middleware(['role:teacher|school_admin,tenant'])->group(function () {
-    require __DIR__.'/tenant/exams.php';
     require __DIR__.'/tenant/question_bank.php';
     require __DIR__.'/tenant/teacher_reports.php';
 });

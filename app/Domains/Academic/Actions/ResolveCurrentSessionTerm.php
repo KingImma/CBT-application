@@ -6,6 +6,7 @@ namespace App\Domains\Academic\Actions;
 
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\Term;
+use App\Modules\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Cache;
 
 class ResolveCurrentSessionTerm
@@ -13,6 +14,8 @@ class ResolveCurrentSessionTerm
     private const CACHE_KEY = 'session_term_context';
 
     private const CACHE_TTL = 60;
+
+    public function __construct(private TenantContext $tenant) {}
 
     public function currentSession(): ?AcademicSession
     {
@@ -56,6 +59,6 @@ class ResolveCurrentSessionTerm
 
     private function cacheKey(string $suffix): string
     {
-        return self::CACHE_KEY.':'.(tenant('id') ?? 'central').':'.$suffix;
+        return $this->tenant->cacheKey(self::CACHE_KEY.':'.$suffix);
     }
 }

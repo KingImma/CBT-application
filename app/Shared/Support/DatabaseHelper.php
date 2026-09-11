@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Shared\Support;
 
+use App\Modules\Persistence\UniqueConstraint;
 use Illuminate\Database\QueryException;
 
+/**
+ * @deprecated Use {@see UniqueConstraint::isViolation()} from the Persistence
+ * module instead. Kept as a delegating shim so the detection logic lives in
+ * one place while legacy references are migrated.
+ */
 final class DatabaseHelper
 {
     /**
@@ -14,6 +20,6 @@ final class DatabaseHelper
      */
     public static function isUniqueViolation(QueryException $e): bool
     {
-        return in_array((string) $e->getCode(), ['23505', '23000', '1062'], true);
+        return UniqueConstraint::isViolation($e);
     }
 }

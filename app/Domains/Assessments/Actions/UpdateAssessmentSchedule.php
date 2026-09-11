@@ -8,6 +8,7 @@ use App\Domains\Assessments\Data\Input\UpdateScheduleData;
 use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\ClassArm;
+use App\Modules\Time\DateRange;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -62,7 +63,7 @@ final class UpdateAssessmentSchedule
                 : ($dto->assessment_ends !== null ? Carbon::parse($dto->assessment_ends) : null);
 
             throw_if(
-                $starts !== null && $ends !== null && $starts->gte($ends),
+                $starts !== null && $ends !== null && DateRange::tryOf($starts, $ends) === null,
                 ValidationException::withMessages([
                     'assessment_ends' => ['The student end time must be after the student start time.'],
                 ])

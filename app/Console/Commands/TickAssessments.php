@@ -79,12 +79,20 @@ class TickAssessments extends Command
             ->where('question_submission_ends', '<=', now())
             ->get()
             ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
-                $schedule->closeSubmissions();
+                try {
+                    $schedule->closeSubmissions();
 
-                Log::info('Schedule question window auto-closed', [
-                    'tenant_id' => $tenantId,
-                    'schedule_id' => $schedule->id,
-                ]);
+                    Log::info('Schedule question window auto-closed', [
+                        'tenant_id' => $tenantId,
+                        'schedule_id' => $schedule->id,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('Schedule question window auto-close skipped', [
+                        'tenant_id' => $tenantId,
+                        'schedule_id' => $schedule->id,
+                        'reason' => $e->getMessage(),
+                    ]);
+                }
             });
     }
 
@@ -131,14 +139,22 @@ class TickAssessments extends Command
             ->where('assessment_ends', '<=', now())
             ->get()
             ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
-                $this->forceSubmitOpenAttempts($schedule, $tenantId);
+                try {
+                    $this->forceSubmitOpenAttempts($schedule, $tenantId);
 
-                $schedule->complete();
+                    $schedule->complete();
 
-                Log::info('Assessment auto-completed', [
-                    'tenant_id' => $tenantId,
-                    'schedule_id' => $schedule->id,
-                ]);
+                    Log::info('Assessment auto-completed', [
+                        'tenant_id' => $tenantId,
+                        'schedule_id' => $schedule->id,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('Assessment auto-completion skipped', [
+                        'tenant_id' => $tenantId,
+                        'schedule_id' => $schedule->id,
+                        'reason' => $e->getMessage(),
+                    ]);
+                }
             });
     }
 

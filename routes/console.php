@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
-Schedule::command('horizon:snapshot')->everyFiveMinutes();
 
 // Prune expired Sanctum tokens from central database (SuperAdmin tokens)
 Schedule::command('sanctum:prune-expired --hours=24')
@@ -44,7 +43,7 @@ Schedule::command('exams:complete-expired')
 // Advance assessment lifecycles (close submissions, activate, complete)
 Schedule::command('assessments:tick')
     ->everyMinute()
-    ->withoutOverlapping()
+    ->withoutOverlapping(10)
     ->onFailure(function () {
         Log::channel('slack')->error('Assessment tick failed');
     });

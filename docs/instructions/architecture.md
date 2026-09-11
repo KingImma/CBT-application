@@ -34,6 +34,7 @@ app/
     Teachers/       # roster, assignments, reports
     Tenancy/        # tenants, super-admin, plans, provisioning
     Settings/       # school settings, grading scales
+  Modules/          # shared dependency services (time, scheduling, persistence, tenancy context)
   Shared/           # cross-cutting only (ApiResponse, enums, global traits)
   Http/             # Controllers, Middleware, Requests
   Console/Commands/ # all Artisan commands
@@ -101,9 +102,30 @@ Cross-domain calls are allowed: call the other domain's **Action**, not private 
 5. Prefer model methods for simple state checks (`$exam->canActivate()`); Support classes for pure reusable rules.
 6. Do not add new files under legacy `app/Actions/Tenants/...` — use `app/Domains/{Name}/`.
 
-## Shared vs domain
+## Domains vs Modules vs Shared
 
-**Shared:** `ApiResponse`, generic string/CSV helpers, small stable enums, truly global traits.
+The three layers have one direction of dependency and must not be blurred:
+
+```
+Domains  →  Modules  →  Shared
+```
+
+- **Domains** own business capability: use-cases, models, domain exceptions, policies. Domains may depend on modules and other domains' Actions/Queries.
+- **Modules** are the shared *dependency services* that actions need in order to work — time/date ranges, schedule windows, persistence helpers, tenant context. A module is infrastructure: it must **not** import anything from `App\Domains` and must **not** know about a specific product model. If a helper needs a domain model, it belongs in that domain (or as a cross-domain Action/Query), not in a module.
+- **Shared** holds inert primitives with no behaviour beyond formatting: `ApiResponse`, string/CSV helpers, enums, global traits.
+
+When two or more domains need the same behaviour and it is not tied to a single domain's model, extract it into a module instead of copying it or forcing a domain to own it.
+
+### Current modules
+
+| Module | Provides | Typical consumers |
+|--------|----------|-------------------|
+| `Modules/Time` | `DateRange` — ordered range value object with overlap/containment/duration | sessions, exam slots, any window math |
+| `Modules/Schedule` | `ScheduleWindow` — optional-bound window with open/closed predicates | assessment schedules, exam attempts |
+| `Modules/Persistence` | `UniqueConstraint::isViolation()` — driver-agnostic duplicate-key detection | any write action that maps a race to a domain exception |
+| `Modules/Tenancy` | `TenantContext` — tenant id/name, central check, tenant-scoped cache keys | cache access, jobs, reports |
+
+**Shared primitives:** `ApiResponse`, generic string/CSV helpers, small stable enums, truly global traits.
 
 **Domain:** exam session state, question grading, import schemas, domain exceptions, domain policies.
 
@@ -143,6 +165,10 @@ All Artisan commands live in `app/Console/Commands` (`App\Console\Commands`). Re
 | Activate an exam | `Domains/Exams/Actions` |
 | Create a student | `Domains/Students/Actions` |
 | Change API response envelope | `Shared/Support` |
+| Date/range math or overlap checks | `Modules/Time` |
+| Open/closed window rules | `Modules/Schedule` |
+| Detect a duplicate-key DB error | `Modules/Persistence` |
+| Tenant id / tenant-scoped cache key | `Modules/Tenancy` |
 | Add an Artisan command | `app/Console/Commands` |
 | Tenant provisioning | `Domains/Tenancy/Actions` |
 | Sit an exam / submit answers | `Domains/Exams/Actions/Attempts` |
@@ -159,3 +185,4 @@ All Artisan commands live in `app/Console/Commands` (`App\Console\Commands`). Re
 - [x] **Phase 3** — Academic, Settings, Questions
 - [x] **Phase 4** — Auth, Tenancy, shared cleanup
 - [x] **Phase 5** — Namespace audit, empty directory cleanup, broken import fixes, pint verified
+- [x] **Phase 6** — Shared dependency services extracted into `app/Modules` (Time, Schedule, Persistence, Tenancy context)

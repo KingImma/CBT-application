@@ -8,7 +8,6 @@ use App\Domains\Exams\Events\ExamAttemptsUpdated;
 use App\Domains\Exams\Events\ExamSessionStateUpdated;
 use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Domains\Exams\Support\ExamSessionStateStore;
-use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
@@ -82,7 +81,7 @@ final class FinalizeAttempt
                 $exam->refresh();
 
                 $shouldComplete = $exam->completed_attempts >= $exam->expected_attempts
-                    || ($exam->window_end !== null && now()->gte($exam->window_end));
+                    || $exam->windowHasClosed();
 
                 if ($shouldComplete) {
                     $exam->update(['status' => ExamStatus::Completed]);

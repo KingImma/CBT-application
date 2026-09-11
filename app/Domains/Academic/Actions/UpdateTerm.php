@@ -6,6 +6,7 @@ namespace App\Domains\Academic\Actions;
 
 use App\Domains\Academic\Exceptions\DuplicateTermNameException;
 use App\Models\Tenant\Term;
+use App\Modules\Persistence\UniqueConstraint;
 use Illuminate\Database\QueryException;
 
 class UpdateTerm
@@ -25,7 +26,7 @@ class UpdateTerm
 
             return $term->fresh();
         } catch (QueryException $e) {
-            if ($e->getCode() !== '23000' && ! str_contains($e->getMessage(), 'Duplicate entry')) {
+            if (! UniqueConstraint::isViolation($e)) {
                 throw $e;
             }
 

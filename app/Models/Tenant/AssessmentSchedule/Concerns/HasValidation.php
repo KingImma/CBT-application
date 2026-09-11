@@ -7,6 +7,7 @@ namespace App\Models\Tenant\AssessmentSchedule\Concerns;
 use App\Enums\AssessmentStatus;
 use App\Enums\QuestionSubmissionStatus;
 use App\Enums\SubmissionStatus;
+use App\Modules\Schedule\ScheduleWindow;
 use Illuminate\Support\Carbon;
 
 trait HasValidation
@@ -46,7 +47,7 @@ trait HasValidation
     {
         return $this->isQuestionSubmissionOpen()
             && $this->question_submission_ends !== null
-            && $this->question_submission_ends->isFuture();
+            && ! ScheduleWindow::of(null, $this->question_submission_ends)->hasClosed(now());
     }
 
     public function approvedSubmissionsCount(): int
@@ -56,9 +57,7 @@ trait HasValidation
 
     public function masterWindowIsSet(): bool
     {
-        return $this->assessment_starts !== null
-            && $this->assessment_ends !== null
-            && $this->assessment_starts < $this->assessment_ends;
+        return ScheduleWindow::of($this->assessment_starts, $this->assessment_ends)->isSet();
     }
 
     public function canCloseSubmissions(): bool

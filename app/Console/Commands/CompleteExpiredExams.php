@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Domains\Exams\Events\ExamAttemptsUpdated;
+use App\Domains\Exams\Actions\ForceCompleteExam;
 use App\Enums\ExamStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\Exam;
@@ -14,55 +14,55 @@ use Illuminate\Support\Facades\Log;
 class CompleteExpiredExams extends Command
 {
     protected $signature = 'exams:complete-expired';
+    protected $description = 'Force-completes standalone exams that have passed their deadline across all tenants';
 
-    protected $description = 'Mark active exams as completed when their window expires or all students have submitted.';
+    public function __construct(
+        private ForceCompleteExam $forceCompleteExam
+    ) {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
-        $tenants = Tenant::where('is_active', true)->get();
+        Tenant::where('is_active', true)->chunkById(100, function ($tenants) {
+            foreach ($tenants as $tenant) {
+                try {
+                    $tenant->run(fn () => $this->completeExams((string) $tenant->id));
+                } catch (\Throwable $e) {
+                    Log::error('Expired exam completion failed for tenant', [
+                        'tenant_id' => (string) $tenant->id,
+                        'reason'    => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
 
-        if ($tenants->isEmpty()) {
-            $this->warn('No active tenants found.');
+        return self::SUCCESS;
+    }
 
-            return self::SUCCESS;
-        }
+    private function completeExams(string $tenantId): void
+    {
+        $exams = Exam::query()
+            ->where('status', ExamStatus::Active)
+            ->whereNotNull('window_end')
+            ->where('window_end', '<=', now())
+            ->cursor();
 
-        foreach ($tenants as $tenant) {
+        foreach ($exams as $exam) {
             try {
-                $tenant->run(function () use ($tenant) {
-                    $exams = Exam::query()
-                        ->where('status', ExamStatus::Active)
-                        ->where(function ($q) {
-                            $q->where('window_end', '<', now())
-                                ->orWhereColumn('completed_attempts', '>=', 'expected_attempts');
-                        })
-                        ->get();
+                $this->forceCompleteExam->execute($exam);
 
-                    foreach ($exams as $exam) {
-                        $exam->update(['status' => ExamStatus::Completed]);
-
-                        event(new ExamAttemptsUpdated(
-                            examId: $exam->id,
-                            completedAttempts: $exam->completed_attempts,
-                            expectedAttempts: $exam->expected_attempts,
-                            status: 'completed',
-                            tenantId: (string) $tenant->id,
-                        ));
-                    }
-
-                    if ($exams->isNotEmpty()) {
-                        Log::info("Completed {$exams->count()} expired exam(s) for tenant {$tenant->id}.");
-                    }
-                });
+                Log::info('Standalone exam auto-completed', [
+                    'tenant_id' => $tenantId,
+                    'exam_id'   => $exam->id,
+                ]);
             } catch (\Throwable $e) {
-                // One unreachable/broken tenant DB must not sink the fleet run.
-                Log::error('Expired-exam completion failed for tenant', [
-                    'tenant_id' => (string) $tenant->id,
-                    'reason' => $e->getMessage(),
+                Log::warning('Standalone exam auto-completion skipped', [
+                    'tenant_id' => $tenantId,
+                    'exam_id'   => $exam->id,
+                    'reason'    => $e->getMessage(),
                 ]);
             }
         }
-
-        return self::SUCCESS;
     }
 }

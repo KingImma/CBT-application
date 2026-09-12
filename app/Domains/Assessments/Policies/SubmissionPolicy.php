@@ -27,22 +27,30 @@ class SubmissionPolicy
 
     public function update(User $user, Submission $submission): bool
     {
-        return $submission->isOwnedBy($user) && $submission->isEditableByTeacher();
+        return $this->isWithinDeadline($submission)
+            && $submission->isOwnedBy($user)
+            && $submission->isEditableByTeacher();
     }
 
     public function delete(User $user, Submission $submission): bool
     {
-        return $submission->isOwnedBy($user) && $submission->isEditableByTeacher();
+        return $this->isWithinDeadline($submission)
+            && $submission->isOwnedBy($user)
+            && $submission->isEditableByTeacher();
     }
 
     public function manageQuestions(User $user, Submission $submission): bool
     {
-        return $submission->isOwnedBy($user) && $submission->isEditableByTeacher();
+        return $this->isWithinDeadline($submission)
+            && $submission->isOwnedBy($user)
+            && $submission->isEditableByTeacher();
     }
 
     public function submitForReview(User $user, Submission $submission): bool
     {
-        return $submission->isOwnedBy($user) && $submission->isEditableByTeacher();
+        return $this->isWithinDeadline($submission)
+            && $submission->isOwnedBy($user)
+            && $submission->isEditableByTeacher();
     }
 
     public function requestChanges(User $user, Submission $submission): bool
@@ -53,5 +61,16 @@ class SubmissionPolicy
     public function approve(User $user, Submission $submission): bool
     {
         return $user->hasRole(RoleType::SchoolAdmin->value) && $submission->isSubmitted();
+    }
+
+    private function isWithinDeadline(Submission $submission): bool
+    {
+        $deadline = $submission->schedule->question_submission_ends ?? null;
+
+        if (!$deadline) {
+            return true;
+        }
+
+        return now()->isBefore($deadline);
     }
 }

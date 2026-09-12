@@ -36,6 +36,8 @@ Schedule::command('exams:auto-submit-expired')
 // Complete exams whose window has closed
 Schedule::command('exams:complete-expired')
     ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground()
     ->onFailure(function () {
         Log::channel('slack')->error('Complete expired exams failed');
     });
@@ -44,6 +46,7 @@ Schedule::command('exams:complete-expired')
 Schedule::command('assessments:tick')
     ->everyMinute()
     ->withoutOverlapping(10)
+    ->runInBackground()
     ->onFailure(function () {
         Log::channel('slack')->error('Assessment tick failed');
     });

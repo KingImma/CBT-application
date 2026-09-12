@@ -15,22 +15,11 @@ use App\Models\Tenant\ExamAttempt;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Drives the schedule clock across every active tenant. Three idempotent,
- * time-driven flips:
- *   question window open  -> closed   once question_submission_ends passes
- *   draft                 -> active   once assessment_starts opens the window
- *   active                -> completed once assessment_ends passes
- * The queries run in order so a just-closed schedule whose start time has
- * already arrived can activate in the same tick. Guard failures (e.g. a
- * window that closed with zero approved submissions) are logged and skipped,
- * never fatal — the run must survive per-tenant and per-row hiccups.
- */
 class TickAssessments extends Command
 {
     protected $signature = 'assessments:tick';
 
-    protected $description = 'Advance assessment schedule lifecycles (close questions, activate, complete) across all tenants.';
+    protected $description = 'Ticks assessment lifecycle states forward across all tenants';
 
     public function __construct(
         private ActivateAssessment $activate,
@@ -41,148 +30,132 @@ class TickAssessments extends Command
 
     public function handle(): int
     {
-        $tenants = Tenant::where('is_active', true)->get();
-
-        if ($tenants->isEmpty()) {
-            $this->warn('No active tenants found.');
-
-            return self::SUCCESS;
-        }
-
-        foreach ($tenants as $tenant) {
-            try {
-                $tenant->run(fn () => $this->tickTenant((string) $tenant->id));
-            } catch (\Throwable $e) {
-                // One unreachable/broken tenant DB must not sink the fleet tick.
-                Log::error('Assessment tick failed for tenant', [
-                    'tenant_id' => (string) $tenant->id,
-                    'reason' => $e->getMessage(),
-                ]);
+        Tenant::where("is_active", true)->chunckById(100, function ($tenants) {
+            foreach ($tenants as $tenant) {
+                try {
+                    $tenant->run(fn () => $this->tickTenant((string) $tenant->id));
+                } catch (\Throwable $e) {
+                    Log::error('Assessment tick failed for tenant', [
+                        'tenant_id' => (string) $tenant->id,
+                        'reason'    => $e->getMessage(),
+                    ]);
+                }
             }
-        }
-
-        return self::SUCCESS;
+        })
     }
 
     private function tickTenant(string $tenantId): void
     {
         $this->closeExpiredQuestionWindows($tenantId);
-        $this->activateScheduledSchedules($tenantId);
-        $this->completeFinishedSchedules($tenantId);
+        $this->activateScheduledAssessments($tenantId);
+        $this->completeFinishedAssessments($tenantId);
     }
 
-    /** open -> closed once the teacher question deadline has passed. */
     private function closeExpiredQuestionWindows(string $tenantId): void
     {
-        AssessmentSchedule::query()
-            ->where('question_submission_status', QuestionSubmissionStatus::Open)
-            ->where('question_submission_ends', '<=', now())
-            ->get()
-            ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
-                try {
+        $schedules = AssessmentSchedule::query()
+            ->where("question_submission_status", QuestionSubmissionStatus::Open)
+            ->where("question_submission_ends", "<=", now());
+            ->cursor();
+
+        foreach ($schedules as $schedule) {
+            $this->safelyExecute(
+                "Scheduled question window auto-closed",
+                $tenantId,
+                $schedule->id,
+                function () use ($schedule) {
                     $schedule->closeSubmissions();
-
-                    Log::info('Schedule question window auto-closed', [
-                        'tenant_id' => $tenantId,
-                        'schedule_id' => $schedule->id,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::warning('Schedule question window auto-close skipped', [
-                        'tenant_id' => $tenantId,
-                        'schedule_id' => $schedule->id,
-                        'reason' => $e->getMessage(),
-                    ]);
                 }
-            });
+            )
+        }
     }
 
-    /**
-     * draft -> active once the master student window opens. Activation
-     * materialises the exams; a guard rejection (no approved submissions, no
-     * slots, invalid window) leaves the schedule draft for an admin to fix.
-     */
-    private function activateScheduledSchedules(string $tenantId): void
+    private function activateScheduledAssessments(string $tenantId): void
     {
-        AssessmentSchedule::query()
-            ->where('assessment_status', AssessmentStatus::Draft)
-            ->where('question_submission_status', QuestionSubmissionStatus::Closed)
-            ->where('assessment_starts', '<=', now())
-            ->where('assessment_ends', '>', now())
-            ->get()
-            ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
-                try {
-                    $this->activate->execute($schedule);
+        $schedules = AssessmentSchedule::query
+            ->where("assessment_status", AssessmentStatus::Draft)
+            ->where("assessment_submission_status", QuestionSubmissionStatus::Closed)
+            ->where("assessment_starts", "<=", now())
+            ->where("assessment_ends", ">", now())
+            ->cursor();
 
-                    Log::info('Assessment auto-activated', [
-                        'tenant_id' => $tenantId,
-                        'schedule_id' => $schedule->id,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::warning('Assessment auto-activation skipped', [
-                        'tenant_id' => $tenantId,
-                        'schedule_id' => $schedule->id,
-                        'reason' => $e->getMessage(),
-                    ]);
+        foreach ($schedules as $schedule) {
+            $this->safelyExecute(
+                "Assessment auto-activated",
+                $tenantId,
+                $schedule->id,
+                function () use ($schedule) {
+                    $this->activate->execute($schedule)
                 }
-            });
+            )
+        }
     }
 
-    /**
-     * active -> completed once the master student window has passed. Any
-     * attempt still in progress on a materialised paper is force-finalised
-     * through the existing timeout path.
-     */
-    private function completeFinishedSchedules(string $tenantId): void
+    private function completeFinishedAssessments(string $tenantId): void
     {
-        AssessmentSchedule::query()
-            ->where('assessment_status', AssessmentStatus::Active)
-            ->where('assessment_ends', '<=', now())
-            ->get()
-            ->each(function (AssessmentSchedule $schedule) use ($tenantId): void {
-                try {
-                    $this->forceSubmitOpenAttempts($schedule, $tenantId);
+        $schedules = AssessmentSchedule::query
+            ->where("assessment_status", AssessmentStatus::Active)
+            ->where("assessment_ends", "<=", now())
+            ->cursor();
 
+        foreach ($schedules as $schedule) {
+            $this->safelyExecute(
+                "Assessment auto-completed",
+                $tenantId,
+                $schedule->id,
+                function () use ($schedule) {
+                    $this->forceSubmitOpenAttempts($schedule, tenantId);
                     $schedule->complete();
-
-                    Log::info('Assessment auto-completed', [
-                        'tenant_id' => $tenantId,
-                        'schedule_id' => $schedule->id,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::warning('Assessment auto-completion skipped', [
-                        'tenant_id' => $tenantId,
-                        'schedule_id' => $schedule->id,
-                        'reason' => $e->getMessage(),
-                    ]);
                 }
-            });
+            )
+        }
     }
 
-    private function forceSubmitOpenAttempts(AssessmentSchedule $schedule, string $tenantId): void
+    private function forceSubmitOpenAttempts(AssessmentSchedule $schedule, string $tenantId)
     {
         $examIds = $schedule->submissions()
-            ->whereNotNull('exam_id')
-            ->pluck('exam_id');
+            ->whereNotNull("exam_id")
+            ->pluck("exam_id");
 
         if ($examIds->isEmpty()) {
             return;
         }
 
-        ExamAttempt::with('exam')
-            ->whereIn('exam_id', $examIds)
-            ->where('status', ExamAttemptStatus::InProgress->value)
-            ->chunkById(100, function ($attempts) use ($tenantId): void {
+        ExamAttempt::with("exam")
+            ->whereIn("exam_id", $examIds)
+            ->where("status", ExamAttemptStatus::InProgress->value)
+            ->chunckById(100, function ($attempts) use ($tenantId) {
                 foreach ($attempts as $attempt) {
                     try {
-                        $this->finalizeAttempt->execute($attempt, reason: 'stale_heartbeat');
-                    } catch (\Throwable $e) {
+                        $this->finalizeAttempt->execute($attempt, reason: "stale_heartbeat");
+                    } catch (Exception $e) {
                         Log::error('Force-submit on schedule completion failed', [
-                            'tenant_id' => $tenantId,
+                            'tenant_id'  => $tenantId,
                             'attempt_id' => $attempt->id,
-                            'reason' => $e->getMessage(),
+                            'reason'     => $e->getMessage(),
                         ]);
                     }
                 }
-            });
+            })
+    }
+
+    /**
+    * handle logging and try-catch logic
+    */
+    private function safelyExecute(string $successMessage, string $tenantId, string $scheduleId, callable $action): void
+    {
+        try {
+            $action();
+            Log::info($successMessage, [
+                "tenant_id": $tenantId,
+                "schedule_id": $scheduleId
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("${successMessage} skipped", [
+                "tenant_id": $tenantId,
+                "schedule_id": $scheduleId,
+                "reason": $e->getMessage()
+            ]);
+        }
     }
 }

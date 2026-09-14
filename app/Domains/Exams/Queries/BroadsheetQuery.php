@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Queries;
 
-use App\Domains\Results\Support\BroadsheetTotals;
-use App\Models\Tenant\ClassArm;
-use App\Models\Tenant\ClassLevel;
-use App\Models\Tenant\StudentProfile;
-use App\Models\Tenant\Term;
-use App\Models\Tenant\TermResult;
+use Illuminate\Support\Facades\DB;
 
 final class BroadsheetQuery
 {

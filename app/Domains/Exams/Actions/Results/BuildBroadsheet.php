@@ -10,16 +10,15 @@ use App\Domains\Exams\Data\Output\Results\BroadsheetStudentData;
 use App\Domains\Exams\Data\Output\Results\BroadsheetSubjectData;
 use App\Domains\Exams\Data\Output\Results\StudentSubjectScoreData;
 use App\Domains\Exams\Queries\BroadsheetQuery;
-use App\Domains\Exams\Support\ResolveCaComponentTypes;
+use App\Domains\Exams\Support\ResolveCAComponentTypes;
 use Spatie\LaravelData\DataCollection;
 
 final class BuildBroadsheet
 {
     public function __construct(
         private BroadsheetQuery $query,
-        private ResolveCaComponentTypes $resolveCaTypes,
-    ) {
-    }
+        private ResolveCAComponentTypes $resolveCaTypes,
+    ) {}
 
     public function execute(
         string $classLevelId,

@@ -9,14 +9,14 @@ use Illuminate\Support\Facades\DB;
 final class BroadsheetQuery
 {
     /**
-    * @param string[] $caTypes
-    * @return array[students: array<int, object>, subjects: <int, objects>]
-    */
+     * @param  string[]  $caTypes
+     * @return array[students: array<int, object>, subjects: <int, objects>]
+     */
     public function execute(string $classLevelId, ?string $classArmId, string $termId, array $caTypes): array
     {
         $bindings = [
             'term_id' => $termId,
-            'ca_types' => '{' . implode(',', $caTypes) . '}',
+            'ca_types' => '{'.implode(',', $caTypes).'}',
             'class_level_id' => $classLevelId,
             'class_arm_id' => $classArmId,
         ];
@@ -54,7 +54,7 @@ final class BroadsheetQuery
             ranked_students AS (
                 SELECT
                     st.*,
-                    RANK() OVER (PARTITION BY st.class_level_id ORDER BY st.total_score DESC) AS postion
+                    RANK() OVER (PARTITION BY st.class_level_id ORDER BY st.total_score DESC) AS position
                 FROM student_totals st
             )
             SELECT
@@ -93,8 +93,8 @@ final class BroadsheetQuery
             JOIN subjects sub ON sub.id = er.subject_id
             JOIN LATERAL (
                 SELECT 
-                    COALESCE(SUM(er2.total_score) FILTERS (WHERE e2.type = ANY(:ca_types)), 0)
-                    + COALESCE(SUM(er2.total_score) FILTERS (WHERE e2.type = 'exam')), 0) AS subject_total
+                    COALESCE(SUM(er2.total_score) FILTER (WHERE e2.type = ANY(:ca_types)), 0)
+                    + COALESCE(SUM(er2.total_score) FILTER (WHERE e2.type = 'exam'), 0) AS subject_total
                 FROM exam_results er2
                 JOIN exams e2 ON e2.id = er2.exam_id
                 WHERE er2.student_id = sp.user_id
@@ -102,7 +102,7 @@ final class BroadsheetQuery
                     AND er2.subject_id = sub.id
             ) ss ON TRUE
             WHERE sp.class_level_id = :class_level_id
-                AND (:class_arm_id::uuid IS NOT NULL OR sp.class_arm_id = :class_arm_id)
+                AND (:class_arm_id::uuid IS NULL OR sp.class_arm_id = :class_arm_id)
             GROUP BY sub.id, sub.name
             ORDER BY sub.name
         SQL, $bindings);

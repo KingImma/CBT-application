@@ -19,7 +19,7 @@ final class BroadsheetQuery
     */
     public function execute(string $classLevelId, ?string $classArmId, string $termId, array $caTypes): array
     {
-        $bindings: [
+        $bindings = [
             'term_id' => $termId,
             'ca_types' => '{' . implode(',', $caTypes) . '}',
             'class_level_id' => $classLevelId,

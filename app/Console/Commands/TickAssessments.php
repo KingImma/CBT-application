@@ -14,6 +14,7 @@ use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 class TickAssessments extends Command
 {
@@ -30,7 +31,7 @@ class TickAssessments extends Command
 
     public function handle(): int
     {
-        Tenant::where("is_active", true)->chunckById(100, function ($tenants) {
+        Tenant::where("is_active", true)->chunkById(100, function ($tenants) {
             foreach ($tenants as $tenant) {
                 try {
                     $tenant->run(fn () => $this->tickTenant((string) $tenant->id));
@@ -41,7 +42,7 @@ class TickAssessments extends Command
                     ]);
                 }
             }
-        })
+        };)
     }
 
     private function tickTenant(string $tenantId): void
@@ -55,7 +56,7 @@ class TickAssessments extends Command
     {
         $schedules = AssessmentSchedule::query()
             ->where("question_submission_status", QuestionSubmissionStatus::Open)
-            ->where("question_submission_ends", "<=", now());
+            ->where("question_submission_ends", "<=", now())
             ->cursor();
 
         foreach ($schedules as $schedule) {
@@ -72,9 +73,9 @@ class TickAssessments extends Command
 
     private function activateScheduledAssessments(string $tenantId): void
     {
-        $schedules = AssessmentSchedule::query
+        $schedules = AssessmentSchedule::query()
             ->where("assessment_status", AssessmentStatus::Draft)
-            ->where("assessment_submission_status", QuestionSubmissionStatus::Closed)
+            ->where("question_submission_status", QuestionSubmissionStatus::Closed)
             ->where("assessment_starts", "<=", now())
             ->where("assessment_ends", ">", now())
             ->cursor();
@@ -93,7 +94,7 @@ class TickAssessments extends Command
 
     private function completeFinishedAssessments(string $tenantId): void
     {
-        $schedules = AssessmentSchedule::query
+        $schedules = AssessmentSchedule::query()
             ->where("assessment_status", AssessmentStatus::Active)
             ->where("assessment_ends", "<=", now())
             ->cursor();
@@ -124,11 +125,11 @@ class TickAssessments extends Command
         ExamAttempt::with("exam")
             ->whereIn("exam_id", $examIds)
             ->where("status", ExamAttemptStatus::InProgress->value)
-            ->chunckById(100, function ($attempts) use ($tenantId) {
+            ->chunkById(100, function ($attempts) use ($tenantId) {
                 foreach ($attempts as $attempt) {
                     try {
                         $this->finalizeAttempt->execute($attempt, reason: "stale_heartbeat");
-                    } catch (Exception $e) {
+                    } catch (\Throwable $e) {
                         Log::error('Force-submit on schedule completion failed', [
                             'tenant_id'  => $tenantId,
                             'attempt_id' => $attempt->id,
@@ -147,14 +148,14 @@ class TickAssessments extends Command
         try {
             $action();
             Log::info($successMessage, [
-                "tenant_id": $tenantId,
-                "schedule_id": $scheduleId
+                "tenant_id" => $tenantId,
+                "schedule_id" => $scheduleId
             ]);
         } catch (\Throwable $e) {
             Log::warning("${successMessage} skipped", [
-                "tenant_id": $tenantId,
-                "schedule_id": $scheduleId,
-                "reason": $e->getMessage()
+                "tenant_id" => $tenantId,
+                "schedule_id" => $scheduleId
+                "reason" => $e->getMessage()
             ]);
         }
     }

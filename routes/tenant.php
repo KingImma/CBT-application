@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Tenant\ExamReviewController;
 use App\Http\Controllers\Api\Tenant\NotificationController;
+use App\Http\Controllers\Api\Tenant\BroadsheetController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\TeacherExamReviewController;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +49,9 @@ Route::post('/teachers/{id}/reset-password-otp', [
     TeacherController::class,
     'resetPassword',
 ])->middleware('role:school_admin,tenant');
+
+Route::get('broadsheet', [BroadsheetController::class, 'show']);
+Route::get('broadsheet/pdf', [BroadsheetController::class, 'pdf']);
 
 require __DIR__.'/tenant/academic.php';
 require __DIR__.'/tenant/classes.php';

@@ -55,6 +55,7 @@ ARCHITECTURE_DIAGRAM.md
 tasks
 /.githooks
 /storage
+broad.md
 
 # Git worktrees (local isolation)
 .worktrees/

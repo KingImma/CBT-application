@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Actions\Reports;
 
 use App\Domains\Exams\Data\Output\ExamClassReportSummaryData;
+use App\Domains\Exams\Support\ResolveExamPassMark;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\Exam;
@@ -15,27 +16,45 @@ use Illuminate\Support\Collection;
 /** Pure aggregation â€” reads only, no writes, no base primitive needed. */
 final class ComputeExamClassSummary
 {
+    public function __construct(
+        private ResolveExamPassMark $resolvePassMark,
+    ) {
+    }
+
     /**
      * @param  Collection<int, StudentProfile>  $students
      * @param  Collection<string, ExamAttempt>  $attemptsByStudentId
      */
-    public function execute(Exam $exam, ClassArm $arm, Collection $students, Collection $attemptsByStudentId): ExamClassReportSummaryData
-    {
+    public function execute(
+        Exam $exam,
+        ClassArm $arm,
+        Collection $students,
+        Collection $attemptsByStudentId
+    ): ExamClassReportSummaryData {
         $studentsInClass = $students->count();
         $sitters = $attemptsByStudentId->filter(
             fn (ExamAttempt $a) => $a->status !== ExamAttemptStatus::Grading
         );
 
         $scores = $sitters->pluck('percentage_score')->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
-        $passMark = $exam->pass_mark;
+        $passMark = $this->resolvePassMark->execute($exam);
         $passCount = 0;
         $failCount = 0;
 
         foreach ($sitters as $attempt) {
-            if ($attempt->total_score === null || $passMark === null) {
+            $status = $attempt->status instanceof ExamAttemptStatus
+                ? $attempt->status
+                : ExamAttemptStatus::tryFrom((string) $attempt->status);
+
+            if ($status !== ExamAttemptStatus::Graded) {
                 continue;
             }
-            $attempt->total_score >= $passMark ? $passCount++ : $failCount++;
+
+            if ($attempt->percentage_score === null) {
+                continue;
+            }
+
+            (float) $attempt->percentage_score >= $passMark ? $passCount++ : $failCount++;
         }
 
         $studentsSat = $attemptsByStudentId->count();
@@ -55,8 +74,8 @@ final class ComputeExamClassSummary
             average_score: $scores->isNotEmpty() ? round($scores->avg(), 2) : null,
             highest_score: $scores->isNotEmpty() ? $scores->max() : null,
             lowest_score: $scores->isNotEmpty() ? $scores->min() : null,
-            pass_count: ($passCount + $failCount) > 0 ? $passCount : null,
-            fail_count: ($passCount + $failCount) > 0 ? $failCount : null,
+            pass_count: $passCount,
+            fail_count: $failCount,
             completion_status: $completionStatus,
             completion_rate: $studentsInClass > 0 ? round($studentsSat / $studentsInClass * 100, 2) : 0.0,
             exam_status: $exam->status->value,

@@ -16,7 +16,8 @@ final class BuildExamClassReport
         private ExamClassReportQuery $query,
         private ComputeExamClassSummary $computeSummary,
         private MapExamClassReportStudents $mapStudents,
-    ) {}
+    ) {
+    }
 
     public function execute(ClassArm $arm, Exam $exam): ExamClassReportData
     {

@@ -52,7 +52,11 @@ final class MapExamClassReportStudents
 
     private function resolveStatus(ExamAttempt $attempt, Exam $exam): string
     {
-        return match ($attempt->status) {
+        $status = $attempt->status instanceof ExamAttemptStatus
+            ? $attempt->status
+            : ExamAttemptStatus::tryFrom((string) $attempt->status);
+
+        return match ($status) {
             ExamAttemptStatus::Graded => $this->passOrFail($attempt, $exam),
             ExamAttemptStatus::Timed_out => 'timed_out',
             ExamAttemptStatus::Disqualified => 'disqualified',
@@ -63,10 +67,11 @@ final class MapExamClassReportStudents
 
     private function passOrFail(ExamAttempt $attempt, Exam $exam): string
     {
-        if ($attempt->total_score === null || $exam->pass_mark === null) {
+        if ($attempt->percentage_score === null) {
             return 'grading';
         }
 
-        return $attempt->total_score >= $exam->pass_mark ? 'passed' : 'failed';
+        $passMark = $this->resolvePassMark->execute($exam);
+        return (float) $attempt->percentage_score >= $passMark ? 'passed' : 'failed';
     }
 }

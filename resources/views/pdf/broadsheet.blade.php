@@ -25,19 +25,24 @@
     <table>
         <thead>
             <tr>
-                <th rowspan="2">#</th>
-                <th rowspan="2" style="text-align:left;">Student</th>
+                <th>#</th>
+                <th>Student</th>
                 @foreach ($broadsheet->subjects as $subject)
                     <th colspan="3">{{ $subject->name }}</th>
                 @endforeach
-                <th class="total" rowspan="2">Total</th>
-                <th class="total" rowspan="2">Avg</th>
-                <th rowspan="2">Pos</th>
+                <th class="total">Total</th>
+                <th class="total">Avg</th>
+                <th>Pos</th>
             </tr>
             <tr>
+                <th></th>
+                <th></th>
                 @foreach ($broadsheet->subjects as $subject)
                     <th>CA</th><th>Exam</th><th>Tot</th>
                 @endforeach
+                <th class="total"></th>
+                <th class="total"></th>
+                <th></th>
             </tr>
         </thead>
         <tbody>

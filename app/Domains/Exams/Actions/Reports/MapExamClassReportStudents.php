@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Actions\Reports;
 
 use App\Domains\Exams\Data\Output\ExamClassReportStudentRowData;
+use App\Domains\Exams\Support\ResolveExamPassMark;
 use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
@@ -13,6 +14,11 @@ use Illuminate\Support\Collection;
 
 final class MapExamClassReportStudents
 {
+    public function __construct(
+        private ResolveExamPassMark $resolvePassMark,
+    ) {
+    }
+
     /**
      * @param  Collection<int, StudentProfile>  $students
      * @param  Collection<string, ExamAttempt>  $attemptsByStudentId

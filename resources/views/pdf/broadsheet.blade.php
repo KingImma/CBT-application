@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -22,12 +23,16 @@
         | Session: {{ $broadsheet->meta->academic_session_id }}
     </div>
 
+    @php
+        $classSubjects = $broadsheet->subjects;
+    @endphp
+
     <table>
         <thead>
             <tr>
                 <th>#</th>
                 <th>Student</th>
-                @foreach ($broadsheet->subjects as $subject)
+                @foreach ($classSubjects as $subject)
                     <th colspan="3">{{ $subject->name }}</th>
                 @endforeach
                 <th class="total">Total</th>
@@ -37,7 +42,7 @@
             <tr>
                 <th></th>
                 <th></th>
-                @foreach ($broadsheet->subjects as $subject)
+                @foreach ($classSubjects as $subject)
                     <th>CA</th><th>Exam</th><th>Tot</th>
                 @endforeach
                 <th class="total"></th>
@@ -47,20 +52,31 @@
         </thead>
         <tbody>
             @foreach ($broadsheet->students as $index => $student)
-                {{-- key by subject_id, NOT positional order — a student who sat
-                     zero subjects has an empty $student->subjects array, and a
-                     plain @foreach over it would emit zero <td> cells and shift
-                     every column after it. Looping the class-level subject list
-                     instead guarantees a fixed column count per row. --}}
-                @php $scoresBySubject = collect($student->subjects)->keyBy('subject_id'); @endphp
+                @php
+                    // Key each student's scores by subject_id, NOT by position.
+                    //
+                    // Do NOT use collect($student->subjects) here: a Spatie
+                    // DataCollection implements Arrayable, so collect() calls
+                    // toArray() and turns every score into a plain array. Then
+                    // $score->ca / ->exam / ->total silently read null and print
+                    // 0, even when the student has real scores.
+                    //
+                    // Iterating the DataCollection directly goes through its
+                    // IteratorAggregate, which yields the StudentSubjectScoreData
+                    // objects untouched.
+                    $scoresBySubject = [];
+                    foreach ($student->subjects as $score) {
+                        $scoresBySubject[(string) $score->subject_id] = $score;
+                    }
+                @endphp
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td class="name">{{ $student->full_name }}</td>
-                    @foreach ($broadsheet->subjects as $subject)
-                        @php $score = $scoresBySubject->get($subject->id); @endphp
-                        <td>{{ $score->ca ?? 0 }}</td>
-                        <td>{{ $score->exam ?? 0 }}</td>
-                        <td>{{ $score->total ?? 0 }}</td>
+                    @foreach ($classSubjects as $subject)
+                        @php $score = $scoresBySubject[(string) $subject->id] ?? null; @endphp
+                        <td>{{ $score?->ca ?? 0 }}</td>
+                        <td>{{ $score?->exam ?? 0 }}</td>
+                        <td>{{ $score?->total ?? 0 }}</td>
                     @endforeach
                     <td class="total">{{ $student->total_score }}</td>
                     <td class="total">{{ $student->average_score }}</td>
@@ -71,7 +87,7 @@
         <tfoot>
             <tr>
                 <td colspan="2">Class Average</td>
-                @foreach ($broadsheet->subjects as $subject)
+                @foreach ($classSubjects as $subject)
                     <td colspan="3">{{ $subject->class_average }}</td>
                 @endforeach
                 <td colspan="3"></td>

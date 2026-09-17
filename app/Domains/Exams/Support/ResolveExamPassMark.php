@@ -24,7 +24,7 @@ final class ResolveExamPassMark
             return (float) $exam->pass_mark;
         }
 
-        $default = SchoolSetting::value('default_pass_mark');
+        $default = SchoolSetting::where('key', 'default_pass_mark')->value('value');
 
         return $default !== null ? (float) $default : self::FALLBACK_PASS_MARK;
     }

@@ -47,14 +47,20 @@
         </thead>
         <tbody>
             @foreach ($broadsheet->students as $index => $student)
+                {{-- key by subject_id, NOT positional order — a student who sat
+                     zero subjects has an empty $student->subjects array, and a
+                     plain @foreach over it would emit zero <td> cells and shift
+                     every column after it. Looping the class-level subject list
+                     instead guarantees a fixed column count per row. --}}
+                @php $scoresBySubject = collect($student->subjects)->keyBy('subject_id'); @endphp
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td class="name">{{ $student->full_name }}</td>
-                    {{-- zipped by index: subjects array is sorted by subject name on both sides --}}
-                    @foreach ($student->subjects as $score)
-                        <td>{{ $score->ca }}</td>
-                        <td>{{ $score->exam }}</td>
-                        <td>{{ $score->total }}</td>
+                    @foreach ($broadsheet->subjects as $subject)
+                        @php $score = $scoresBySubject->get($subject->id); @endphp
+                        <td>{{ $score->ca ?? 0 }}</td>
+                        <td>{{ $score->exam ?? 0 }}</td>
+                        <td>{{ $score->total ?? 0 }}</td>
                     @endforeach
                     <td class="total">{{ $student->total_score }}</td>
                     <td class="total">{{ $student->average_score }}</td>

@@ -18,9 +18,9 @@
 <body>
     <h1>{{ $schoolName }} — Broadsheet</h1>
     <div class="meta">
-        Class: {{ $broadsheet->meta->class_level_id }}{{ $broadsheet->meta->class_arm_id ? ' / '.$broadsheet->meta->class_arm_id : '' }}
-        | Term: {{ $broadsheet->meta->term_id }}
-        | Session: {{ $broadsheet->meta->academic_session_id }}
+        Class: {{ $broadsheet->meta->class_level_name }}{{ $broadsheet->meta->class_arm_name ? ' / '.$broadsheet->meta->class_arm_name : '' }}
+        | Term: {{ $broadsheet->meta->term_name }}
+        | Session: {{ $broadsheet->meta->academic_session_name }}
     </div>
 
     @php

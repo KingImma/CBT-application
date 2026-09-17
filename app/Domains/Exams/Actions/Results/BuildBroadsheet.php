@@ -10,6 +10,10 @@ use App\Domains\Exams\Data\Output\Results\BroadsheetStudentData;
 use App\Domains\Exams\Data\Output\Results\BroadsheetSubjectData;
 use App\Domains\Exams\Data\Output\Results\StudentSubjectScoreData;
 use App\Domains\Exams\Queries\BroadsheetQuery;
+use App\Models\Tenant\AcademicSession;
+use App\Models\Tenant\ClassArm;
+use App\Models\Tenant\ClassLevel;
+use App\Models\Tenant\Term;
 use App\Domains\Exams\Support\ResolveCAComponentTypes;
 use Spatie\LaravelData\DataCollection;
 
@@ -18,7 +22,8 @@ final class BuildBroadsheet
     public function __construct(
         private BroadsheetQuery $query,
         private ResolveCAComponentTypes $resolveCaTypes,
-    ) {}
+    ) {
+    }
 
     public function execute(
         string $classLevelId,
@@ -34,7 +39,17 @@ final class BuildBroadsheet
         );
 
         return new BroadsheetData(
-            meta: new BroadsheetMetaData($classLevelId, $classArmId, $termId, $academicSessionId),
+            meta: new BroadsheetMetaData(
+                class_level_id: $classLevelId,
+                class_level_name: ClassLevel::whereKey($classLevelId)->value('name') ?? $classLevelId,
+                class_arm_id: $classArmId,
+                class_arm_name: $classArmId ? (ClassArm::whereKey($classArmId)->value('name') ?? $classArmId) : null,
+                term_id: $termId,
+                term_name: Term::whereKey($termId)->value('name') ?? $termId,
+                academic_session_id: $academicSessionId,
+                academic_session_name: AcademicSession::whereKey($academicSessionId)->value('name')
+                    ?? $academicSessionId,
+            ),
             subjects: $this->mapSubjects($raw['subjects']),
             students: $this->mapStudents($raw['students']),
         );

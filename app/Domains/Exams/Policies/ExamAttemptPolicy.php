@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Policies;
 
+use App\Domains\Teachers\Support\TeacherClassAccess;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\RoleType;
 use App\Models\Tenant\ExamAttempt;
@@ -18,7 +19,8 @@ class ExamAttemptPolicy
     {
         return $user->id === $attempt->student_id
             || $user->id === $attempt->exam->created_by
-            || $user->hasAnyRole(['admin', RoleType::SchoolAdmin->value]);
+            || $user->hasAnyRole(['admin', RoleType::SchoolAdmin->value])
+            || TeacherClassAccess::isTeacherAssignedToExam($user, $attempt->exam);
     }
 
     public function start(User $user, ExamAttempt $attempt): bool

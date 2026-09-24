@@ -17,9 +17,16 @@ Route::controller(TeacherExamReportController::class)->group(function () {
 
     Route::get('students/{student}/results', 'studentResults');
 
+    // Per-student cumulative result sheet
     Route::get('students/{studentId}/cumulative-result/pdf', 'cumulativeResultPdf');
 
-    Route::get('class-arms/{classArm}/exams/{exam}/report/pdf', 'examSummaryPdf')->name('exams.report.cumulative-pdf');
+    // Class-wide cumulative report: one result sheet per student in the arm
+    Route::get('class-arms/{classArm}/exams/{exam}/report/pdf', 'classCumulativePdf')
+        ->name('exams.report.cumulative-pdf');
+
+     // Class-wide exam summary report (summary grid + roster)
+    Route::get('class-arms/{classArm}/exams/{exam}/report/summary/pdf', 'examSummaryPdf')
+        ->name('exams.report.summary-pdf');
 
     Route::get(
         'class-arms/{classArm}/exams/{exam}/results/bulk/pdf',

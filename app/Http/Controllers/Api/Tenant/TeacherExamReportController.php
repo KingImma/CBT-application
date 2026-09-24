@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Domains\Exams\Actions\Reports\BuildExamClassReport;
 use App\Domains\Exams\Actions\Results\GenerateBulkResultPdfAction;
+use App\Domains\Exams\Actions\Results\GenerateClassCumulativeResultPdfAction;
 use App\Domains\Exams\Actions\Results\GenerateCumulativeResultPdfAction;
 use App\Domains\Exams\Actions\Results\GenerateExamClassReportPdf;
 use App\Domains\Exams\Data\Output\ResultQuestionData;
@@ -25,6 +26,7 @@ class TeacherExamReportController extends Controller
     public function __construct(
         private BuildExamClassReport $buildReport,
         private GenerateCumulativeResultPdfAction $generateCumulativePdf,
+        private GenerateClassCumulativeResultPdfAction $generateClassCumulativePdf,
         private GenerateBulkResultPdfAction $generateBulkPdf,
         private GenerateExamClassReportPdf $generateExamClassReportPdf
     ) {}
@@ -70,6 +72,17 @@ class TeacherExamReportController extends Controller
         return $pdf->download($this->generateCumulativePdf->filename($student, $session));
     }
 
+    /** * Generate cumulative result sheets for all students in the class arm. */
+    public function classCumulativePdf(ClassArm $classArm, Exam $exam)
+    {
+        $this->authorize('viewExamReport', [$classArm, $exam]);
+
+        $pdf = $this->generateClassCumulativePdf->execute($classArm, $exam);
+
+        return $pdf->download($this->generateClassCumulativePdf->filename($classArm, $exam));
+    }
+
+    /** The class-wide exam summary report (summary grid + roster). */
     public function examSummaryPdf(ClassArm $classArm, Exam $exam)
     {
         $this->authorize('viewExamReport', [$classArm, $exam]); // same gate as examSummary() — no new policy

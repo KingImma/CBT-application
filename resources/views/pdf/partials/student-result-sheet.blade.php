@@ -117,9 +117,17 @@
                 <tr>
                     <td class="label">CLASS</td>
                     <td class="value">
-                        {{ strtoupper($result->class_level_name) }}{{ $result->class_arm_name ? ' '.strtoupper($result->class_arm_name) : '' }}
+                        {{ strtoupper($result->class_level_name) }}
                     </td>
                 </tr>
+                @if ($result->class_arm_name)
+                <tr>
+                    <td class="label">CLASS-ARM</td>
+                    <td class="value">
+                        {{ strtoupper($result->class_arm_name) }}
+                    </td>
+                </tr>
+                @endif
                 <tr>
                     <td class="label">AVERAGE</td>
                     <td class="value">{{ $fmt($result->average) }}%</td>

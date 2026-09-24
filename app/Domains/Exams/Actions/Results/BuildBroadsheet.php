@@ -74,8 +74,11 @@ final class BuildBroadsheet
         return BroadsheetStudentData::collect(array_map(
             fn (object $row) => new BroadsheetStudentData(
                 student_id: $row->student_id,
+                admission_number: $row->admission_number,
                 full_name: $row->full_name,
                 subjects: $this->mapSubjectScores($row->subjects),
+                total_subjects: count($subjects = json_decode($row->subjects, true)),
+                total_marks_obtainable: count($subjects) * 100,
                 total_score: round((float) $row->total_score, 2),
                 average_score: round((float) $row->average_score, 2),
                 position: (int) $row->position,

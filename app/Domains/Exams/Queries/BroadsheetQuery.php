@@ -59,6 +59,7 @@ final class BroadsheetQuery
             )
             SELECT
                 u.id AS student_id,
+                sp.admission_number,
                 u.first_name || ' ' || u.last_name AS full_name,
                 rs.total_score,
                 rs.average_score,

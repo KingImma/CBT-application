@@ -4,31 +4,31 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Actions\Results;
 
+use App\Domains\Exams\Actions\Results\BuildStudentCumulativeResult;
 use App\Domains\Exams\Data\Output\ExamResultData;
 use App\Models\Tenant\ExamAttempt;
+use App\Models\Tenant\Term;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Str;
 
 final class GenerateResultsPdf
 {
+    public function __construct(
+        private BuildStudentCumulativeResult $buildCumulative,
+    ) {
+    }
+
+    /** Default — per subject, current term. Same route as before. */
     public function execute(ExamAttempt $attempt): DomPdf
     {
-        $attempt->loadMissing([
-            'student',
-            'exam.subject',
-            'exam.classLevel',
-            'exam.examQuestions.question',
-            'answers.question.options'
-        ]);
+        return $this->perSubject($attempt);
+    }
 
-        $resultData = ExamResultData::fromAttempt($attempt);
-
-        return Pdf::loadView('pdf.exam-result', [
-            'result' => $resultData,
-            'attempt' => $attempt,
-            'schoolName' => tenant('name') ?? 'EduCBT'
-        ])->setPaper('a4');
+    /** For a future explicit route. */
+    public function executePerQuestion(ExamAttempt $attempt): DomPdf
+    {
+        return $this->perQuestion($attempt);
     }
 
     public function filename(ExamAttempt $attempt): string
@@ -36,8 +36,39 @@ final class GenerateResultsPdf
         $student = $attempt->student;
         $exam = $attempt->exam;
 
-        $slug = Str::slug("{$exam->title} for {$student->first_name}-{$student->last_name}");
+        return Str::slug("{$exam->title} for {$student->first_name}-{$student->last_name}") . '.pdf';
+    }
 
-        return "{$slug}.pdf";
+    private function perSubject(ExamAttempt $attempt): DomPdf
+    {
+        $attempt->loadMissing(['student.studentProfile', 'term', 'exam.term']);
+
+        $term = $attempt->term ?? $attempt->exam->term;
+
+        $result = $this->buildCumulative->executeForTerm($attempt->student, $term);
+
+        return Pdf::loadView('pdf.exam-result-summary', [
+            'result' => $result,
+            'schoolName' => tenant('name') ?? 'EduCBT',
+        ])->setPaper('a4');
+    }
+
+    private function perQuestion(ExamAttempt $attempt): DomPdf
+    {
+        $attempt->loadMissing([
+            'student',
+            'exam.subject',
+            'exam.classLevel',
+            'exam.examQuestions.question',
+            'answers.question.options',
+        ]);
+
+        $resultData = ExamResultData::fromAttempt($attempt);
+
+        return Pdf::loadView('pdf.exam-result', [
+            'result' => $resultData,
+            'attempt' => $attempt,
+            'schoolName' => tenant('name') ?? 'EduCBT',
+        ])->setPaper('a4');
     }
 }

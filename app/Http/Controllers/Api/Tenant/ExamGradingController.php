@@ -62,4 +62,13 @@ class ExamGradingController extends Controller
 
         return $pdf->download($this->generatePdf->filename($attempt));
     }
+
+    public function downloadResultPdfPerQuestion(ExamAttempt $attempt): Response
+    {
+        Gate::authorize("view", $attempt);
+
+        $pdf = $this->generatePdf->executePerQuestion($attempt);
+
+        return $pdf->download($this->generatePdf->filename($attempt));
+    }
 }

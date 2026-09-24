@@ -36,6 +36,23 @@ class TeacherExamReportController extends Controller
         );
     }
 
+    public function cumulativeResultPdf(Request $request, string $studentId)
+    {
+        $student = User::where('role', 'student')->findOrFail($studentId);
+
+        $sessionId = $request->query('academic_session_id');
+
+        $session = $sessionId
+            ? AcademicSession::findOrFail($sessionId)
+            : AcademicSession::where('is_current', true)->firstOrFail();
+
+        $this->authorize('view', $student); // or whatever gate your UserPolicy exposes for viewStudent
+
+        $pdf = $this->generateCumulativePdf->execute($student, $session);
+
+        return $pdf->download($this->generateCumulativePdf->filename($student, $session));
+    }
+
     public function examSummaryPdf(ClassArm $classArm, Exam $exam)
     {
         $this->authorize('viewExamReport', [$classArm, $exam]); // same gate as examSummary() — no new policy

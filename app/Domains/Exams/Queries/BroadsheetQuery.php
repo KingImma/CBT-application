@@ -77,9 +77,10 @@ final class BroadsheetQuery
                 ) AS subjects
             FROM ranked_students rs
             JOIN users u ON u.id = rs.student_id
+            JOIN student_profiles sp ON sp.user_id = u.id
             LEFT JOIN subject_scores ss ON ss.student_id = rs.student_id AND subject_id IS NOT NULL
             LEFT JOIN subjects sub ON sub.id = ss.subject_id
-            GROUP BY u.id, u.first_name, u.last_name, rs.total_score, rs.average_score, rs.position
+            GROUP BY u.id, sp.admission_number, u.first_name, u.last_name, rs.total_score, rs.average_score, rs.position
             ORDER BY rs.position, full_name
         SQL, $bindings);
 

@@ -50,7 +50,7 @@
                     @endif
 
                     @php
-                        $graded = collect($result->subjects)->filter(
+                        $graded = $result->subjects->toCollection()->filter(
                             fn ($row) => ($row->terms[$term['id']] ?? null) !== null
                         );
                     @endphp

@@ -53,4 +53,67 @@ final class StudentCumulativeResultQuery
             'student_id' => $studentId,
         ]);
     }
+
+    /**
+     * Where the student sits in their cohort for the given term range, ranked
+     * on the summed total score (same scoring rules as `execute`).
+     *
+     * @param  string[]  $termIds
+     * @param  string[]  $caTypes
+     * @return array{position: int, number_in_class: int}
+     */
+    public function classRank(
+        string $studentId,
+        string $classLevelId,
+        ?string $classArmId,
+        array $termIds,
+        array $caTypes,
+    ): array {
+        if ($termIds === []) {
+            return ['position' => 0, 'number_in_class' => 0];
+        }
+
+        $row = DB::selectOne(<<<'SQL'
+            WITH scoped_scores AS (
+                SELECT er.student_id, SUM(er.total_score) AS total_score
+                FROM exam_results er
+                JOIN exams e ON e.id = er.exam_id
+                WHERE er.term_id = ANY(:term_ids::uuid[])
+                    AND er.subject_id IN (
+                        SELECT cls.subject_id
+                        FROM class_level_subject cls
+                        WHERE cls.class_level_id = :class_level_id
+                    )
+                    AND (e.type = ANY(:ca_types) OR e.type = 'exam')
+                GROUP BY er.student_id
+            ),
+            cohort AS (
+                SELECT
+                    sp.user_id AS student_id,
+                    COALESCE(ss.total_score, 0) AS total_score
+                FROM student_profiles sp
+                LEFT JOIN scoped_scores ss ON ss.student_id = sp.user_id
+                WHERE sp.class_level_id = :class_level_id
+                    AND (:class_arm_id::uuid IS NULL OR sp.class_arm_id = :class_arm_id)
+            ),
+            ranked AS (
+                SELECT student_id, RANK() OVER (ORDER BY total_score DESC) AS position
+                FROM cohort
+            )
+            SELECT
+                (SELECT COUNT(*) FROM cohort) AS number_in_class,
+                (SELECT position FROM ranked WHERE student_id = :student_id) AS position
+        SQL, [
+            'term_ids' => '{'.implode(',', $termIds) . '}',
+            'ca_types' => '{'.implode(',', $caTypes) . '}',
+            'class_level_id' => $classLevelId,
+            'class_arm_id' => $classArmId,
+            'student_id' => $studentId,
+        ]);
+
+        return [
+            'position' => (int) ($row->position ?? 0),
+            'number_in_class' => (int) ($row->number_in_class ?? 0),
+        ];
+    }
 }

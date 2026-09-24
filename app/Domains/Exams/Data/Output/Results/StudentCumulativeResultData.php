@@ -20,6 +20,16 @@ final class StudentCumulativeResultData extends Data
         public readonly array $terms,
         /** @var DataCollection<int, StudentCumulativeSubjectRowData> */
         public readonly DataCollection $subjects,
+        public readonly ?string $gender,
+        public readonly int $number_in_class,
+        public readonly int $position,
+        public readonly float $total_obtained,
+        public readonly float $total_obtainable,
+        public readonly float $average,
+        public readonly ?string $evaluation,
+        public readonly ?string $school_section,
+        /** @var array<int, array{label: string, min_score: float|int, max_score: float|int, remark?: ?string}> */
+        public readonly array $grades,
     ) {
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Actions\Results;
 
 use App\Domains\Exams\Actions\Results\BuildStudentCumulativeResult;
+use App\Domains\Exams\Support\ResolveSchoolPdfHeader;
 use App\Domains\Exams\Data\Output\ExamResultData;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\Term;
@@ -16,6 +17,7 @@ final class GenerateResultsPdf
 {
     public function __construct(
         private BuildStudentCumulativeResult $buildCumulative,
+        private ResolveSchoolPdfHeader $schoolHeader,
     ) {
     }
 
@@ -49,7 +51,7 @@ final class GenerateResultsPdf
 
         return Pdf::loadView('pdf.exam-result-summary', [
             'result' => $result,
-            'schoolName' => tenant('name') ?? 'EduCBT',
+            'school' => $this->schoolHeader->execute(),
         ])->setPaper('a4');
     }
 
@@ -68,7 +70,7 @@ final class GenerateResultsPdf
         return Pdf::loadView('pdf.exam-result', [
             'result' => $resultData,
             'attempt' => $attempt,
-            'schoolName' => tenant('name') ?? 'EduCBT',
+            'schoolName' => $this->schoolHeader->execute()['name'],
         ])->setPaper('a4');
     }
 }

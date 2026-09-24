@@ -1,54 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-    body { font-family: sans-serif; font-size: 10px; }
-    h1 { text-align: center; margin-bottom: 2px; }
-    .subtitle { text-align: center; font-weight: bold; margin-bottom: 10px; }
-    .meta { margin-bottom: 10px; }
-    .meta span { display: inline-block; width: 24%; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #333; padding: 4px; text-align: center; }
-    th { background: #f0f0f5; }
-    td.subject { text-align: left; }
-</style>
+<meta charset="utf-8">
+@include('pdf.partials._result-sheet-styles')
 </head>
 <body>
-    <h1>{{ $schoolName }}</h1>
-    <div class="subtitle">CUMULATIVE RESULT — {{ $result->academic_session_name }}</div>
-
-    <div class="meta">
-        <span>Name: {{ $result->student_name }}</span>
-        <span>Admission No: {{ $result->admission_number }}</span>
-        <span>Class: {{ $result->class_level_name }}{{ $result->class_arm_name ? ' '.$result->class_arm_name : '' }}</span>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th rowspan="2">Subject</th>
-                @foreach ($result->terms as $term)
-                    <th colspan="2">{{ $term['name'] }}</th>
-                @endforeach
-            </tr>
-            <tr>
-                @foreach ($result->terms as $term)
-                    <th>Score</th><th>Grade</th>
-                @endforeach
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($result->subjects as $row)
-                <tr>
-                    <td class="subject">{{ $row->subject_name }}</td>
-                    @foreach ($result->terms as $term)
-                        @php($cell = $row->terms[$term['id']] ?? null)
-                        <td>{{ $cell['total'] ?? '-' }}</td>
-                        <td>{{ $cell['grade'] ?? '-' }}</td>
-                    @endforeach
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+@include('pdf.partials.student-result-sheet', ['result' => $result, 'school' => $school])
 </body>
 </html>

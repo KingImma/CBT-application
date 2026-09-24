@@ -41,15 +41,29 @@ class TeacherExamReportController extends Controller
 
     public function cumulativeResultPdf(Request $request, string $studentId)
     {
+        $validated = $request->validate([
+            'academic_session_id' => ['sometimes', 'uuid', 'exists:academic_sessions,id'],
+        ]);
+
         $student = User::where('role', 'student')->findOrFail($studentId);
 
-        $sessionId = $request->query('academic_session_id');
-
-        $session = $sessionId
-            ? AcademicSession::findOrFail($sessionId)
-            : AcademicSession::where('is_current', true)->firstOrFail();
-
         $this->authorize('viewStudent', $student);
+
+        $session = isset($validated['academic_session_id'])
+            ? AcademicSession::findOrFail($validated['academic_session_id'])
+            : AcademicSession::where('is_current', true)->first();
+
+        /*
+         * A concluded session has no current term, so the standing session is
+         * no longer implied — the caller must identify which session range to
+         * report before the cumulative result can be produced.
+         */
+        if ($session === null) {
+            return ApiResponse::error(
+                'No academic session is currently active. Pass academic_session_id to identify the session to report.',
+                422
+            );
+        }
 
         $pdf = $this->generateCumulativePdf->execute($student, $session);
 

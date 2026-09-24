@@ -49,7 +49,7 @@ final class GenerateClassCumulativeResultPdfAction
             fn (User $student) => $this->build->execute($student, $session)
         );
 
-        return Pdf::loadView('pdf.exam-cumulative-result-bulk', [
+        return Pdf::loadView('pdf.exam-cumulative-result', [
             'results' => $results,
             'school' => $this->schoolHeader->execute(),
         ])->setPaper('a4');
@@ -59,6 +59,6 @@ final class GenerateClassCumulativeResultPdfAction
     {
         return Str::slug(
             "{$exam->title}-{$arm->classLevel->name}-{$arm->name}-cumulative"
-        ) . '.pdf';
+        ).'.pdf';
     }
 }

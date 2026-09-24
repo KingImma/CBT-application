@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Domains\Exams\Actions\Reports\BuildExamClassReport;
-use App\Domains\Exams\Actions\Results\GenerateCumulativeResultPdfAction;
 use App\Domains\Exams\Actions\Results\GenerateBulkResultPdfAction;
+use App\Domains\Exams\Actions\Results\GenerateCumulativeResultPdfAction;
+use App\Domains\Exams\Actions\Results\GenerateExamClassReportPdf;
 use App\Domains\Exams\Data\Output\ResultQuestionData;
 use App\Enums\ExamAttemptStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
@@ -23,7 +25,8 @@ class TeacherExamReportController extends Controller
     public function __construct(
         private BuildExamClassReport $buildReport,
         private GenerateCumulativeResultPdfAction $generateCumulativePdf,
-        private GenerateBulkResultPdfAction $generateBulkPdf
+        private GenerateBulkResultPdfAction $generateBulkPdf,
+        private GenerateExamClassReportPdf $generateExamClassReportPdf
     ) {}
 
     public function examSummary(ClassArm $classArm, Exam $exam): JsonResponse
@@ -46,7 +49,7 @@ class TeacherExamReportController extends Controller
             ? AcademicSession::findOrFail($sessionId)
             : AcademicSession::where('is_current', true)->firstOrFail();
 
-        $this->authorize('view', $student); // or whatever gate your UserPolicy exposes for viewStudent
+        $this->authorize('viewStudent', $student);
 
         $pdf = $this->generateCumulativePdf->execute($student, $session);
 
@@ -57,9 +60,9 @@ class TeacherExamReportController extends Controller
     {
         $this->authorize('viewExamReport', [$classArm, $exam]); // same gate as examSummary() — no new policy
 
-        $pdf = $this->generateCumulativePdf->execute($classArm, $exam);
+        $pdf = $this->generateExamClassReportPdf->execute($classArm, $exam);
 
-        return $pdf->download($this->generateCumulativePdf->filename($classArm, $exam));
+        return $pdf->download($this->generateExamClassReportPdf->filename($classArm, $exam));
     }
 
     public function examResultsBulkPdf(ClassArm $classArm, Exam $exam)

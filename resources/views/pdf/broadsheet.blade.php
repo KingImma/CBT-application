@@ -37,7 +37,7 @@
         </thead>
         <tbody>
             @foreach ($broadsheet->students as $student)
-                @php($scoresBySubject = $student->subjects->keyBy('subject_id'))
+                @php($scoresBySubject = $student->subjects->toCollection()->keyBy('subject_id'))
                 <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $student->admission_number }}</td>

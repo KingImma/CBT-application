@@ -17,6 +17,8 @@ Route::controller(TeacherExamReportController::class)->group(function () {
 
     Route::get('students/{student}/results', 'studentResults');
 
+    Route::get('students/{studentId}/cumulative-result/pdf', 'cumulativeResultPdf');
+
     Route::get('class-arms/{classArm}/exams/{exam}/report/pdf', 'examSummaryPdf')->name('exams.report.cumulative-pdf');
 
     Route::get(

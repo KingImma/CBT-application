@@ -11,6 +11,7 @@ use App\Domains\Exams\Events\ExamAttemptsUpdated;
 use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Domains\Exams\Support\AttemptScoreCalculator;
 use App\Domains\Exams\Support\BatchGradeAnswersUpdater;
+use Illuminate\Support\Collection;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
@@ -27,7 +28,8 @@ final class GradeExamAttempt
         private AttemptScoreCalculator $attemptScoreCalculator,
         private BatchGradeAnswersUpdater $batchGradeAnswersUpdater,
         private ExamAttemptStateMachine $stateMachine,
-    ) {}
+    ) {
+    }
 
     public function execute(ExamAttempt $attempt): ExamAttempt
     {
@@ -89,15 +91,19 @@ final class GradeExamAttempt
         return $result;
     }
 
-    private function resolveTimeSpent($submittedAnswers, ExamAttempt $attempt): int
+    /** @param Collection<int, SubmittedAnswer> $submittedAnswers $param */
+    private function resolveTimeSpent(Collection $submittedAnswers, ExamAttempt $attempt): int
     {
         $maxTime = $submittedAnswers->max('time_spent_seconds') ?? 0;
 
         return $maxTime ?: (int) abs(($attempt->submitted_at ?? now())->diffInSeconds($attempt->started_at));
     }
 
-    private function persistResultAndCascade(ExamAttempt $gradedAttempt, Exam $exam, AttemptGradeResult $gradeResult): void
-    {
+    private function persistResultAndCascade(
+        ExamAttempt $gradedAttempt,
+        Exam $exam,
+        AttemptGradeResult $gradeResult
+    ): void {
         $examResult = ExamResult::updateOrCreate(
             ['exam_attempt_id' => $gradedAttempt->id],
             array_merge($gradeResult->toResultAttributes(), [
@@ -119,9 +125,9 @@ final class GradeExamAttempt
     private function advanceExamCompletionState(Exam $exam): void
     {
         $exam->increment('completed_attempts');
+        $exam->ensureExpectedAttempts();
 
-        $shouldComplete = $exam->completed_attempts >= $exam->expected_attempts
-            || ($exam->window_end !== null && now()->gte($exam->window_end));
+        $shouldComplete = $exam->shouldAutoComplete();
 
         if ($shouldComplete) {
             $exam->update(['status' => ExamStatus::Completed]);
@@ -142,7 +148,7 @@ final class GradeExamAttempt
      */
     private function defaultGradingScale(): ?GradingScale
     {
-        $cacheKey = 'grading_scale:default:'.tenant('id');
+        $cacheKey = 'grading_scale:default:' . tenant('id');
 
         return Cache::remember($cacheKey, now()->addDay(), function () {
             return GradingScale::where('is_default', true)->first();

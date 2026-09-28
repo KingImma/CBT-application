@@ -22,7 +22,8 @@ final class FinalizeAttempt
         private ExamSessionStateStore $stateStore,
         private GradeExamAttempt $gradeAttempt,
         private ExamAttemptStateMachine $stateMachine,
-    ) {}
+    ) {
+    }
 
     public function execute(ExamAttempt $attempt, ?User $actor = null, string $reason = 'submit'): ExamAttempt
     {
@@ -79,10 +80,9 @@ final class FinalizeAttempt
 
             if ($exam !== null) {
                 $exam->increment('completed_attempts');
-                $exam->refresh();
+                $exam->ensureExpectedAttempts();
 
-                $shouldComplete = $exam->completed_attempts >= $exam->expected_attempts
-                    || ($exam->window_end !== null && now()->gte($exam->window_end));
+                $shouldComplete = $exam->shouldAutoComplete();
 
                 if ($shouldComplete) {
                     $exam->update(['status' => ExamStatus::Completed]);

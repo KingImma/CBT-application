@@ -27,6 +27,30 @@ trait HasAttempts
         return $this->attempts()->completed()->count();
     }
 
+    public function shouldAutoComplete(): bool
+    {
+        if ($this->expected_attempts > 0 && $this->completed_attempts >= $this->expected_attempts) {
+            return true;
+        }
+
+        return $this->window_end !== null && now()->gte($this->window_end);
+    }
+
+    public function ensureExpectedAttempts(): self
+    {
+        if ((int) $this->expected_attempts > 0) {
+            return $this;
+        }
+
+        $expected = $this->expectedAttempts();
+
+        if ($expected > 0) {
+            $this->update(['expected_attempts' => $expected]);
+        }
+
+        return $this;
+    }
+
     public function completionRate(): float
     {
         $expected = $this->expectedAttempts();

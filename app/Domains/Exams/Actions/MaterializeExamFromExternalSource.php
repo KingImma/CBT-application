@@ -37,6 +37,8 @@ final class MaterializeExamFromExternalSource implements Contract
                 'settings' => [],
             ]);
 
+            $exam->update(['expected_attempts' => $exam->expectedAttempts()]);
+
             foreach ($request->questions as $q) {
                 $question = Question::create([
                     'subject_id' => $request->subjectId,

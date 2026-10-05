@@ -32,9 +32,10 @@ trait HasLifecycle
             ExamCannotBeActivatedException::class
         );
 
-        $windowEnd = $this->scheduled_start->copy()->addMinutes(
-            $this->duration_minutes * 2
-        );
+        $windowEnd = $this->window_end
+            ?? $this->scheduled_start->copy()->addMinutes(
+                $this->duration_minutes * 2
+            );
 
         $expectedAttempts = $this->expectedAttempts();
 

@@ -50,7 +50,7 @@ final class StartExamAttempt
     {
         $tenantId = (string) tenant('id');
         $remaining = $attempt->getTimeRemainingSeconds();
-        $ttl = $attempt->exam->duration_minutes * 60;
+        $ttl = max(1, min($attempt->exam->duration_minutes * 60, $remaining));
 
         $this->stateStore->write(
             new ExamSessionState(

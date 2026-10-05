@@ -23,7 +23,10 @@ final class ActivateExam
 
             $exam->update([
                 'status' => ExamStatus::Active->value,
-                'window_end' => $exam->scheduled_start->copy()->addMinutes($exam->duration_minutes * 2),
+                // A materialised exam already carries its subject slot window;
+                // only default standalone exams to start + 2x duration.
+                'window_end' => $exam->window_end
+                    ?? $exam->scheduled_start->copy()->addMinutes($exam->duration_minutes * 2),
                 'expected_attempts' => $exam->expectedAttempts(),
             ]);
 

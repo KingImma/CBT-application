@@ -134,11 +134,17 @@ class ExamAttempt extends Model
     }
 
     /**
-     * Calculate the absolute deadline timestamp for this attempt.
+     * Calculate the absolute deadline timestamp for this attempt:
+     * the personal clock (started_at + duration) capped by the exam
+     * window so a late start cannot run past the slot end.
      */
     private function getDeadlineTimestamp(): int
     {
-        return $this->started_at->getTimestamp() +
+        $personal = $this->started_at->getTimestamp() +
             $this->exam->duration_minutes * self::SECONDS_PER_MINUTE;
+
+        $window = $this->exam->window_end?->getTimestamp();
+
+        return $window !== null ? min($personal, $window) : $personal;
     }
 }

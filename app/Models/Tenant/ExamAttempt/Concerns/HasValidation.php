@@ -41,8 +41,12 @@ trait HasValidation
 
     private function getDeadlineTimestamp(): int
     {
-        return $this->started_at->getTimestamp()
+        $personal = $this->started_at->getTimestamp()
             + ($this->exam->duration_minutes * 60);
+
+        $window = $this->exam->window_end?->getTimestamp();
+
+        return $window !== null ? min($personal, $window) : $personal;
     }
 
     public function canSubmit(): bool

@@ -14,7 +14,6 @@ use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class TickAssessments extends Command
 {
@@ -42,7 +41,7 @@ class TickAssessments extends Command
                     ]);
                 }
             }
-        };)
+        });
     }
 
     private function tickTenant(string $tenantId): void
@@ -67,7 +66,7 @@ class TickAssessments extends Command
                 function () use ($schedule) {
                     $schedule->closeSubmissions();
                 }
-            )
+            );
         }
     }
 
@@ -86,9 +85,9 @@ class TickAssessments extends Command
                 $tenantId,
                 $schedule->id,
                 function () use ($schedule) {
-                    $this->activate->execute($schedule)
+                    $this->activate->execute($schedule);
                 }
-            )
+            );
         }
     }
 
@@ -108,7 +107,7 @@ class TickAssessments extends Command
                     $this->forceSubmitOpenAttempts($schedule, tenantId);
                     $schedule->complete();
                 }
-            )
+            );
         }
     }
 
@@ -137,7 +136,7 @@ class TickAssessments extends Command
                         ]);
                     }
                 }
-            })
+            });
     }
 
     /**
@@ -154,7 +153,7 @@ class TickAssessments extends Command
         } catch (\Throwable $e) {
             Log::warning("${successMessage} skipped", [
                 "tenant_id" => $tenantId,
-                "schedule_id" => $scheduleId
+                "schedule_id" => $scheduleId,
                 "reason" => $e->getMessage()
             ]);
         }

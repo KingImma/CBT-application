@@ -42,6 +42,8 @@ class TickAssessments extends Command
                 }
             }
         });
+
+        return self::SUCCESS;
     }
 
     private function tickTenant(string $tenantId): void
@@ -54,8 +56,8 @@ class TickAssessments extends Command
     private function closeExpiredQuestionWindows(string $tenantId): void
     {
         $schedules = AssessmentSchedule::query()
-            ->where("question_submission_status", QuestionSubmissionStatus::Open)
-            ->where("question_submission_ends", "<=", now())
+            ->where('question_submission_status', QuestionSubmissionStatus::Open->value)
+            ->where('question_submission_ends', '<=', now())
             ->cursor();
 
         foreach ($schedules as $schedule) {
@@ -73,10 +75,10 @@ class TickAssessments extends Command
     private function activateScheduledAssessments(string $tenantId): void
     {
         $schedules = AssessmentSchedule::query()
-            ->where("assessment_status", AssessmentStatus::Draft)
-            ->where("question_submission_status", QuestionSubmissionStatus::Closed)
-            ->where("assessment_starts", "<=", now())
-            ->where("assessment_ends", ">", now())
+            ->where('assessment_status', AssessmentStatus::Draft->value)
+            ->where('question_submission_status', QuestionSubmissionStatus::Closed->value)
+            ->where('assessment_starts', '<=', now())
+            ->where('assessment_ends', '>', now())
             ->cursor();
 
         foreach ($schedules as $schedule) {
@@ -94,8 +96,8 @@ class TickAssessments extends Command
     private function completeFinishedAssessments(string $tenantId): void
     {
         $schedules = AssessmentSchedule::query()
-            ->where("assessment_status", AssessmentStatus::Active)
-            ->where("assessment_ends", "<=", now())
+            ->where('assessment_status', AssessmentStatus::Active->value)
+            ->where('assessment_ends', '<=', now())
             ->cursor();
 
         foreach ($schedules as $schedule) {
@@ -103,8 +105,8 @@ class TickAssessments extends Command
                 "Assessment auto-completed",
                 $tenantId,
                 $schedule->id,
-                function () use ($schedule) {
-                    $this->forceSubmitOpenAttempts($schedule, tenantId);
+                function () use ($schedule, $tenantId) {
+                    $this->forceSubmitOpenAttempts($schedule, $tenantId);
                     $schedule->complete();
                 }
             );
@@ -151,11 +153,13 @@ class TickAssessments extends Command
                 "schedule_id" => $scheduleId
             ]);
         } catch (\Throwable $e) {
-            Log::warning("${successMessage} skipped", [
-                "tenant_id" => $tenantId,
-                "schedule_id" => $scheduleId,
-                "reason" => $e->getMessage()
-            ]);
+            $context = [
+                'tenant_id' => $tenantId,
+                'schedule_id' => $scheduleId,
+                'reason' => $e->getMessage(),
+            ];
+            Log::warning("{$successMessage} skipped", $context);
+            Log::channel('slack')->error("{$successMessage} skipped", $context);
         }
     }
 }

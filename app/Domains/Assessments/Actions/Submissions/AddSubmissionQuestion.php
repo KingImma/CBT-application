@@ -16,7 +16,8 @@ final class AddSubmissionQuestion
 {
     public function __construct(
         private RecomputeSubmissionMarks $recompute,
-    ) {}
+    ) {
+    }
 
     /**
      * Append a question (authored inline) with its normalised options to a

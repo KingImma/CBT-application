@@ -12,9 +12,14 @@ use Illuminate\Queue\SerializesModels;
 
 class EndTenantProvisioning implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
-    public function __construct(private $tenant) {}
+    public function __construct(private $tenant)
+    {
+    }
 
     public function handle(): void
     {

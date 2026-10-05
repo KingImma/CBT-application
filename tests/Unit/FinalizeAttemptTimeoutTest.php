@@ -88,13 +88,13 @@ class FinalizeAttemptTimeoutTest extends TestCase
         ]);
         $attempt->status = ExamAttemptStatus::InProgress;
 
-        $stateStore = new ExamSessionStateStore;
+        $stateStore = new ExamSessionStateStore();
         $gradeAttempt = new GradeExamAttempt(
-            new AttemptScoreCalculator(new QuestionGrader),
-            new BatchGradeAnswersUpdater,
-            new ExamAttemptStateMachine,
+            new AttemptScoreCalculator(new QuestionGrader()),
+            new BatchGradeAnswersUpdater(),
+            new ExamAttemptStateMachine(),
         );
-        $action = new FinalizeAttempt($stateStore, $gradeAttempt, new ExamAttemptStateMachine);
+        $action = new FinalizeAttempt($stateStore, $gradeAttempt, new ExamAttemptStateMachine());
 
         $action->execute($attempt, null, 'stale_heartbeat');
 

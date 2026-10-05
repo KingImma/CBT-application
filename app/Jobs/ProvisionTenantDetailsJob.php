@@ -19,7 +19,10 @@ use Illuminate\Support\Str;
 
 class ProvisionTenantDetailsJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * @param  array<int,mixed>  $adminData
@@ -29,7 +32,8 @@ class ProvisionTenantDetailsJob implements ShouldQueue
         public readonly Tenant $tenant,
         public readonly array $adminData,
         public readonly array $curriculumData,
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {
@@ -115,6 +119,7 @@ class ProvisionTenantDetailsJob implements ShouldQueue
         if ($exists) {
             DB::table('grading_scales')->update(['is_default' => false]);
             DB::table('grading_scales')->where('name', $scaleName)->update(['is_default' => true]);
+
             return;
         }
 
@@ -154,11 +159,11 @@ class ProvisionTenantDetailsJob implements ShouldQueue
     }
 
     private const DEFAULT_GRADES = [
-    ['label' => 'A', 'min_score' => 70, 'max_score' => 100, 'remark' => 'Excellent'],
-    ['label' => 'B', 'min_score' => 60, 'max_score' => 69,  'remark' => 'Very Good'],
-    ['label' => 'C', 'min_score' => 50, 'max_score' => 59,  'remark' => 'Good'],
-    ['label' => 'D', 'min_score' => 45, 'max_score' => 49,  'remark' => 'Pass'],
-    ['label' => 'E', 'min_score' => 40, 'max_score' => 44,  'remark' => 'Fair'],
-    ['label' => 'F', 'min_score' => 0,  'max_score' => 39,  'remark' => 'Fail'],
+        ['label' => 'A', 'min_score' => 70, 'max_score' => 100, 'remark' => 'Excellent'],
+        ['label' => 'B', 'min_score' => 60, 'max_score' => 69,  'remark' => 'Very Good'],
+        ['label' => 'C', 'min_score' => 50, 'max_score' => 59,  'remark' => 'Good'],
+        ['label' => 'D', 'min_score' => 45, 'max_score' => 49,  'remark' => 'Pass'],
+        ['label' => 'E', 'min_score' => 40, 'max_score' => 44,  'remark' => 'Fair'],
+        ['label' => 'F', 'min_score' => 0,  'max_score' => 39,  'remark' => 'Fail'],
     ];
 }

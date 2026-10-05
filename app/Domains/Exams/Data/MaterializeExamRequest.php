@@ -22,5 +22,6 @@ class MaterializeExamRequest extends Data
         public readonly ?string $instructions,
         /** @var MaterializeExamQuestionRequest[] */
         public readonly array $questions,
-    ) {}
+    ) {
+    }
 }

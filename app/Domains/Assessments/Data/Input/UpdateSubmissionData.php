@@ -14,8 +14,8 @@ class UpdateSubmissionData extends Data
     public function __construct(
         #[StringType, Max(255)]
         public readonly string|Optional $title,
-
         #[StringType]
         public readonly string|Optional|null $description,
-    ) {}
+    ) {
+    }
 }

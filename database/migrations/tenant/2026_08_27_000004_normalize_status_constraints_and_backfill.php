@@ -19,8 +19,7 @@ use Illuminate\Support\Facades\DB;
  * enum cases, then run the submission backfill that 2026_08_27_000003 defers
  * to here. Idempotent.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         $this->rebuild(
@@ -37,7 +36,7 @@ return new class extends Migration
             array_column(AssessmentStatus::cases(), 'value'),
         );
 
-        $backfill = new BackfillSubmissionCompletion;
+        $backfill = new BackfillSubmissionCompletion();
 
         if ($backfill->pendingCount() === 0) {
             return;
@@ -49,7 +48,9 @@ return new class extends Migration
     /**
      * Not reversible; use migrate:fresh to reset instead.
      */
-    public function down(): void {}
+    public function down(): void
+    {
+    }
 
     /**
      * Drop every CHECK constraint that references a single column `column`

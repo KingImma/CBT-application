@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\Tenancy\Listeners;
 
+use App\Enums\NotificationLabel;
 use App\Events\UserActivated;
 use App\Events\UserDeactivated;
 use App\Notifications\InAppNotification;
-use App\Enums\NotificationLabel;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class SendUserStatusNotification implements ShouldQueue

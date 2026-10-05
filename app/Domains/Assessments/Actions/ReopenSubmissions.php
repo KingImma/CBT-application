@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 final class ReopenSubmissions
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Reopen a closed question window for stragglers. A new strictly-future

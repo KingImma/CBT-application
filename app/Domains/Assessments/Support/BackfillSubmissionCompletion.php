@@ -45,7 +45,9 @@ final class BackfillSubmissionCompletion
         return Submission::query()
             ->whereNotNull('exam_id')
             ->where('status', SubmissionStatus::Approved->value)
-            ->whereHas('exam', fn ($q) => $q
+            ->whereHas(
+                'exam',
+                fn ($q) => $q
                 ->whereIn('status', [
                     ExamStatus::Completed->value,
                     ExamStatus::Published->value,

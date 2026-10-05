@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 final class SubmitSubmissionForReview
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(Submission $submission): Submission
     {

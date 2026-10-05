@@ -23,5 +23,6 @@ class ExamClassReportSummaryData extends Resource
         public readonly string $completion_status,
         public readonly ?float $completion_rate,
         public readonly string $exam_status,
-    ) {}
+    ) {
+    }
 }

@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 final class RedistributeQuestionMarks
 {
-    public function __construct(private MarksDistributor $distributor) {}
+    public function __construct(private MarksDistributor $distributor)
+    {
+    }
 
     public function execute(Exam $exam): void
     {

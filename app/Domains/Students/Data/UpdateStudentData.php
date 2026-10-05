@@ -45,5 +45,6 @@ class UpdateStudentData extends Data
         public Optional|string|null $guardian_email,
         #[Nullable, BooleanType]
         public Optional|bool $is_active,
-    ) {}
+    ) {
+    }
 }

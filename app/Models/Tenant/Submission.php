@@ -16,11 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Submission extends Model
 {
-    use HasFactory,
-        HasLifecycle,
-        HasUuids,
-        HasValidation,
-        SoftDeletes;
+    use HasFactory;
+    use HasLifecycle;
+    use HasUuids;
+    use HasValidation;
+    use SoftDeletes;
 
     /** Papers are occurrence-scoped: one teacher's paper inside one AssessmentSchedule. */
     protected $table = 'teacher_submissions';

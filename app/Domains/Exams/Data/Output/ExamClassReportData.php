@@ -13,5 +13,6 @@ class ExamClassReportData extends Resource
 
         /** @var array<ExamClassReportStudentRowData> */
         public readonly array $students,
-    ) {}
+    ) {
+    }
 }

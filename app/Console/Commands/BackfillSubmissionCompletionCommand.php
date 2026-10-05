@@ -42,7 +42,7 @@ class BackfillSubmissionCompletionCommand extends Command
             try {
                 tenancy()->initialize($tenant);
 
-                $updated = (new BackfillSubmissionCompletion)->upgrade();
+                $updated = (new BackfillSubmissionCompletion())->upgrade();
 
                 $backfilled += $updated;
                 $this->info("  + Completed {$updated} submission(s).");

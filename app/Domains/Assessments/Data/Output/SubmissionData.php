@@ -25,20 +25,16 @@ class SubmissionData extends Resource
         public readonly ?string $returned_at,
         public readonly ?string $approved_at,
         public readonly ?string $exam_id,
-
         #[Computed]
         public readonly Optional|int $question_count,
-
         #[WhenLoaded('subject')]
         public readonly mixed $subject,
-
         #[WhenLoaded('teacher')]
         public readonly mixed $teacher,
-
         #[WhenLoaded('schedule')]
         public readonly mixed $schedule,
-
         #[WhenLoaded('submissionQuestions')]
         public readonly mixed $submissionQuestions,
-    ) {}
+    ) {
+    }
 }

@@ -36,7 +36,8 @@ class StudentExamController extends Controller
         private RecordExamAnswer $recordAnswer,
         private GetExamQuestions $getQuestions,
         private ExamSessionStateStore $stateStore,
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -50,6 +51,18 @@ class StudentExamController extends Controller
                     ->whereNull('class_arm_id')
                     ->orWhere('class_arm_id', $profile?->class_arm_id),
             )
+            ->where(function ($q) use ($student) {
+                $q->whereHas('attempts', fn ($attempt) => $attempt
+                    ->where('student_id', $student->id)
+                    ->where('status', ExamAttemptStatus::InProgress->value))
+                    ->orWhereRaw(
+                        '(select count(*) from exam_attempts
+                            where exam_attempts.exam_id = exams.id
+                            and exam_attempts.student_id = ?
+                            and exam_attempts.status <> ?) < coalesce(exams.max_attempts, 1)',
+                        [$student->id, ExamAttemptStatus::InProgress->value],
+                    );
+            })
             ->with(['subject', 'classLevel'])
             ->paginate((int) $request->get('per_page', 20));
 

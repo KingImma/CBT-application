@@ -16,12 +16,13 @@ class StudentService
 {
     public function __construct(
         private SyncTenantUser $syncTenantUser,
-    ) {}
+    ) {
+    }
 
     public function create(array $data): array
     {
         $password = config('app.student_default_password');
-    
+
         $prepared = [
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
@@ -31,21 +32,21 @@ class StudentService
             'role' => RoleType::Student->value,
             'is_active' => true,
         ];
-    
+
         $user = User::create($prepared);
-    
+
         $user->assignRole(RoleType::Student->value);
-    
+
         $this->syncTenantUser->execute(
             $user->email,
             RoleType::Student->value
         );
-    
+
         $admissionNumber = strtoupper(
             $data['admission_number']
                 ?? $this->generateAdmissionNumber()
         );
-    
+
         $user->studentProfile()->create([
             'class_level_id' => $data['class_level_id'],
             'class_arm_id' => $data['class_arm_id'],
@@ -56,7 +57,7 @@ class StudentService
             'guardian_phone' => $data['guardian_phone'] ?? null,
             'guardian_email' => $data['guardian_email'] ?? null,
         ]);
-    
+
         return [
             'user' => $user,
             'password' => $password,

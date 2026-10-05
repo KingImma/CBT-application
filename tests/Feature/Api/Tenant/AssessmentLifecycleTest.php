@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Api\Tenant;
 
+use App\Enums\ExamAttemptStatus;
 use App\Enums\RoleType;
 use App\Models\Tenant;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Exam;
+use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\SchoolSetting;
@@ -811,7 +813,7 @@ class AssessmentLifecycleTest extends TestCase
         ]);
 
         $this->actingAsTenant($this->student);
-        $response = $this->getJson('/student/exams/available');
+        $response = $this->getJson('/api/student/exams/available');
         $response->assertStatus(200);
         $examIds = collect($response->json('data'))->pluck('id');
         $this->assertTrue($examIds->contains($exam->id));
@@ -823,10 +825,102 @@ class AssessmentLifecycleTest extends TestCase
         $draftExam = $this->createDraftExam($this->teacher);
         $this->actingAsTenant($this->student);
 
-        $response = $this->getJson('/student/exams/available');
+        $response = $this->getJson('/api/student/exams/available');
         $response->assertStatus(200);
         $examIds = collect($response->json('data'))->pluck('id');
         $this->assertFalse($examIds->contains($draftExam->id));
+    }
+
+    #[Test]
+    public function student_who_exhausted_attempts_no_longer_sees_the_exam_as_available(): void
+    {
+        $exam = $this->createDraftExam($this->teacher, ['pass_mark' => 5.00, 'max_attempts' => 1]);
+
+        $this->addQuestionToExam($exam, $this->teacher);
+        $this->postJson("/api/exams/{$exam->id}/submit-for-review")->assertStatus(200);
+
+        $this->actingAsTenant($this->admin);
+        $this->postJson("/api/exams/{$exam->id}/activate")->assertStatus(200);
+        $exam->fresh()->update([
+            'session_started_at' => now(),
+            'session_duration_minutes' => 120,
+        ]);
+
+        ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $this->student->id,
+            'attempt_number' => 1,
+            'status' => ExamAttemptStatus::Graded->value,
+            'started_at' => now()->subMinutes(30),
+            'submitted_at' => now()->subMinutes(10),
+        ]);
+
+        $this->actingAsTenant($this->student);
+        $response = $this->getJson('/api/student/exams/available');
+        $response->assertStatus(200);
+        $examIds = collect($response->json('data'))->pluck('id');
+        $this->assertFalse($examIds->contains($exam->id));
+    }
+
+    #[Test]
+    public function student_with_attempts_remaining_still_sees_the_exam_as_available(): void
+    {
+        $exam = $this->createDraftExam($this->teacher, ['pass_mark' => 5.00, 'max_attempts' => 2]);
+
+        $this->addQuestionToExam($exam, $this->teacher);
+        $this->postJson("/api/exams/{$exam->id}/submit-for-review")->assertStatus(200);
+
+        $this->actingAsTenant($this->admin);
+        $this->postJson("/api/exams/{$exam->id}/activate")->assertStatus(200);
+        $exam->fresh()->update([
+            'session_started_at' => now(),
+            'session_duration_minutes' => 120,
+        ]);
+
+        ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $this->student->id,
+            'attempt_number' => 1,
+            'status' => ExamAttemptStatus::Graded->value,
+            'started_at' => now()->subMinutes(30),
+            'submitted_at' => now()->subMinutes(10),
+        ]);
+
+        $this->actingAsTenant($this->student);
+        $response = $this->getJson('/api/student/exams/available');
+        $response->assertStatus(200);
+        $examIds = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($examIds->contains($exam->id));
+    }
+
+    #[Test]
+    public function student_with_in_progress_attempt_still_sees_the_exam_as_available(): void
+    {
+        $exam = $this->createDraftExam($this->teacher, ['pass_mark' => 5.00, 'max_attempts' => 1]);
+
+        $this->addQuestionToExam($exam, $this->teacher);
+        $this->postJson("/api/exams/{$exam->id}/submit-for-review")->assertStatus(200);
+
+        $this->actingAsTenant($this->admin);
+        $this->postJson("/api/exams/{$exam->id}/activate")->assertStatus(200);
+        $exam->fresh()->update([
+            'session_started_at' => now(),
+            'session_duration_minutes' => 120,
+        ]);
+
+        ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $this->student->id,
+            'attempt_number' => 1,
+            'status' => ExamAttemptStatus::InProgress->value,
+            'started_at' => now()->subMinutes(5),
+        ]);
+
+        $this->actingAsTenant($this->student);
+        $response = $this->getJson('/api/student/exams/available');
+        $response->assertStatus(200);
+        $examIds = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($examIds->contains($exam->id));
     }
 
     #[Test]
@@ -846,7 +940,7 @@ class AssessmentLifecycleTest extends TestCase
         ]);
 
         $this->actingAsTenant($this->student);
-        $response = $this->postJson("/student/exams/{$exam->id}/start");
+        $response = $this->postJson("/api/student/exams/{$exam->id}/start");
         $response->assertStatus(201);
         $this->assertArrayHasKey('attempt', $response->json('data'));
     }
@@ -857,7 +951,7 @@ class AssessmentLifecycleTest extends TestCase
         $exam = $this->createDraftExam($this->teacher);
 
         $this->actingAsTenant($this->student);
-        $response = $this->postJson("/student/exams/{$exam->id}/start");
+        $response = $this->postJson("/api/student/exams/{$exam->id}/start");
         $response->assertStatus(422);
         $this->assertStringContainsString('not active', strtolower($response->json('message')));
     }
@@ -881,10 +975,10 @@ class AssessmentLifecycleTest extends TestCase
 
         $this->actingAsTenant($this->student);
         // First attempt should succeed
-        $this->postJson("/student/exams/{$exam->id}/start")->assertStatus(201);
+        $this->postJson("/api/student/exams/{$exam->id}/start")->assertStatus(201);
 
         // Second attempt should fail
-        $response = $this->postJson("/student/exams/{$exam->id}/start");
+        $response = $this->postJson("/api/student/exams/{$exam->id}/start");
         $response->assertStatus(422);
         $this->assertStringContainsString('attempt', strtolower($response->json('message')));
     }
@@ -975,7 +1069,7 @@ class AssessmentLifecycleTest extends TestCase
 
         // 6. Student starts attempt
         $this->actingAsTenant($this->student);
-        $response = $this->postJson("/student/exams/{$examId}/start");
+        $response = $this->postJson("/api/student/exams/{$examId}/start");
         $response->assertStatus(201);
         $attemptId = $response->json('data.attempt.id');
         $this->assertNotNull($attemptId);
@@ -985,7 +1079,7 @@ class AssessmentLifecycleTest extends TestCase
         $this->assertCount(3, $questions);
 
         // 7. Verify timer is running
-        $response = $this->getJson("/student/exams/attempts/{$attemptId}/time-remaining");
+        $response = $this->getJson("/api/student/exams/attempts/{$attemptId}/time-remaining");
         $response->assertStatus(200);
         $remaining = $response->json('data.remaining_seconds');
         $this->assertGreaterThan(0, $remaining);
@@ -996,23 +1090,23 @@ class AssessmentLifecycleTest extends TestCase
         $q2Correct = $q2->options()->where('is_correct', true)->first();
         $q3Wrong = $q3->options()->where('is_correct', false)->first();
 
-        $this->putJson("/student/exams/attempts/{$attemptId}/answers/{$q1->id}", [
+        $this->putJson("/api/student/exams/attempts/{$attemptId}/answers/{$q1->id}", [
             'selected_option_ids' => [$q1Correct->id],
             'time_spent_seconds' => 30,
         ])->assertStatus(200);
 
-        $this->putJson("/student/exams/attempts/{$attemptId}/answers/{$q2->id}", [
+        $this->putJson("/api/student/exams/attempts/{$attemptId}/answers/{$q2->id}", [
             'selected_option_ids' => [$q2Correct->id],
             'time_spent_seconds' => 45,
         ])->assertStatus(200);
 
-        $this->putJson("/student/exams/attempts/{$attemptId}/answers/{$q3->id}", [
+        $this->putJson("/api/student/exams/attempts/{$attemptId}/answers/{$q3->id}", [
             'selected_option_ids' => [$q3Wrong->id],
             'time_spent_seconds' => 20,
         ])->assertStatus(200);
 
         // 9. Submit
-        $response = $this->postJson("/student/exams/attempts/{$attemptId}/submit");
+        $response = $this->postJson("/api/student/exams/attempts/{$attemptId}/submit");
         $response->assertStatus(200);
         $attemptData = $response->json('data.attempt');
 
@@ -1024,12 +1118,12 @@ class AssessmentLifecycleTest extends TestCase
         $this->assertGreaterThan(0, (int) $attemptData['time_spent_seconds']);
 
         // 11. Result accessible (show_result_immediately)
-        $response = $this->getJson("/student/exams/attempts/{$attemptId}/result");
+        $response = $this->getJson("/api/student/exams/attempts/{$attemptId}/result");
         $response->assertStatus(200);
         $this->assertArrayHasKey('total_score', $response->json('data'));
 
         // 12. Max attempts enforced
-        $response = $this->postJson("/student/exams/{$examId}/start");
+        $response = $this->postJson("/api/student/exams/{$examId}/start");
         $response->assertStatus(422);
         $this->assertStringContainsString('attempt', strtolower($response->json('message')));
     }
@@ -1052,6 +1146,7 @@ class AssessmentLifecycleTest extends TestCase
             'total_marks' => 0,
             'max_attempts' => 1,
             'created_by' => $user->id,
+            'scheduled_start' => now()->subHour(),
             'settings' => ['require_attendance' => false],
         ], $overrides));
     }

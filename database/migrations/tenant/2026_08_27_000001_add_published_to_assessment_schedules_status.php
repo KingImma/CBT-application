@@ -4,8 +4,7 @@ use App\Enums\AssessmentStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * The `assessment_status` check was created before AssessmentStatus gained
      * its `published` case, so bulk-publishing fails on any database whose

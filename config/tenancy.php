@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
+use App\TenantDatabaseManagers\NeonPostgresManager;
 use Database\Seeders\TenantDatabaseSeeder;
 use Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
@@ -10,9 +11,7 @@ use Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
 use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
-use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
-use App\TenantDatabaseManagers\NeonPostgresManager;
 
 return [
     'tenant_model' => Tenant::class,
@@ -74,10 +73,10 @@ return [
             'pgsql' => NeonPostgresManager::class,
         ],
 
-        /**
-         * Disable the pgsql manager above, and enable the one below if you
-         * want to separate tenant DBs by schemas rather than databases.
-         */
+    /**
+     * Disable the pgsql manager above, and enable the one below if you
+     * want to separate tenant DBs by schemas rather than databases.
+     */
         // 'pgsql' => Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLSchemaManager::class, // Separate by schema instead of database
     ],
 

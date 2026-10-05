@@ -67,7 +67,7 @@ class SubmissionPolicy
     {
         $deadline = $submission->schedule->question_submission_ends ?? null;
 
-        if (!$deadline) {
+        if (! $deadline) {
             return true;
         }
 

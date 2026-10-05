@@ -4,8 +4,7 @@ use App\Enums\SubmissionStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Submission lifecycle gains a `completed` terminal status (set by the
      * ExamCompleted chain). Rebuild the enum check from the current cases

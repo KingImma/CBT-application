@@ -11,7 +11,9 @@ use Illuminate\Support\Collection;
 
 final class AttemptScoreCalculator
 {
-    public function __construct(private QuestionGrader $questionGrader) {}
+    public function __construct(private QuestionGrader $questionGrader)
+    {
+    }
 
     /**
      * @param  Collection  $submittedAnswers  ExamAnswer models, question.options eager loaded

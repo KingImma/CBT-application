@@ -19,7 +19,8 @@ class InAppNotification extends Notification implements ShouldQueue
         public readonly string $type = 'info', // info, success, warning, error
         public readonly ?string $label = null,
         public readonly ?array $action = null,  // e.g., ['url' => '/exams/1', 'label' => 'View']
-    ) {}
+    ) {
+    }
 
     /**
      * Store in DB for history, push via Reverb for real-time.

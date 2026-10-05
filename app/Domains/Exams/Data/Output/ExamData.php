@@ -28,23 +28,18 @@ class ExamData extends Resource
         public readonly ?string $instructions,
         public readonly ?string $published_at,
         public readonly bool $is_published,
-
         #[Computed]
         public readonly Optional|int $question_count,
-
         #[WhenLoaded('subject')]
         public readonly mixed $subject,
-
         #[WhenLoaded('classLevel')]
         public readonly mixed $classLevel,
-
         #[WhenLoaded('classArm')]
         public readonly mixed $classArm,
-
         #[WhenLoaded('term')]
         public readonly mixed $term,
-
         #[WhenLoaded('creator')]
         public readonly mixed $creator,
-    ) {}
+    ) {
+    }
 }

@@ -13,11 +13,14 @@ use Illuminate\Queue\SerializesModels;
 
 class ExamCommentAdded
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public Exam $exam,
         public User $admin,
         public ExamComment $comment
-    ) {}
+    ) {
+    }
 }

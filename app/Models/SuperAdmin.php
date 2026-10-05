@@ -12,7 +12,10 @@ use Laravel\Sanctum\HasApiTokens;
 
 class SuperAdmin extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasUuids, Notifiable;
+    use HasApiTokens;
+    use HasFactory;
+    use HasUuids;
+    use Notifiable;
 
     protected $table = 'super_admins';
 

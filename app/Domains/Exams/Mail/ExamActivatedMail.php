@@ -14,13 +14,15 @@ use Illuminate\Queue\SerializesModels;
 
 class ExamActivatedMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public function __construct(
         public readonly Exam $exam,
         public readonly string $studentName,
         public readonly string $schoolName,
-    ) {}
+    ) {
+    }
 
     public function envelope(): Envelope
     {

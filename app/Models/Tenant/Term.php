@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class Term extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'name',

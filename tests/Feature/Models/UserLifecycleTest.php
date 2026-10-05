@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Models\Tenant\User;
 use App\Domains\Tenancy\Events\UserActivated;
 use App\Domains\Tenancy\Events\UserDeactivated;
+use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Event;
 
 test('it dispatches UserDeactivated and deletes tokens when deactivated', function () {
@@ -21,7 +21,7 @@ test('it dispatches UserDeactivated and deletes tokens when deactivated', functi
 
     Event::assertDispatched(UserDeactivated::class, fn ($event) => $event->user->id === $user->id);
     Event::assertNotDispatched(UserActivated::class);
-    
+
     // Assert tokens were instantly revoked
     expect($user->tokens()->count())->toBe(0);
 });

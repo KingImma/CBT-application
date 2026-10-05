@@ -13,11 +13,10 @@ use Illuminate\Database\Migrations\Migration;
  * will never re-run it via tenants:migrate. The command exists to heal
  * those; it runs this exact logic idempotently.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
-        $backfill = new BackfillAssessmentSchedules;
+        $backfill = new BackfillAssessmentSchedules();
 
         if (! $backfill->isLegacyFormat()) {
             return; // fresh database — global definitions already in place
@@ -29,5 +28,7 @@ return new class extends Migration
     /**
      * Data backfills are not reversible; use migrate:fresh to reset instead.
      */
-    public function down(): void {}
+    public function down(): void
+    {
+    }
 };

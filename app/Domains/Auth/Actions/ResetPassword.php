@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Mail;
 
 class ResetPassword
 {
-    public function __construct(private DecodeResetToken $decodeResetToken) {}
+    public function __construct(private DecodeResetToken $decodeResetToken)
+    {
+    }
 
     public function execute(string $resetToken, string $newPassword): void
     {

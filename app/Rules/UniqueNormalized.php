@@ -22,7 +22,8 @@ class UniqueNormalized implements ValidationRule
     public function __construct(
         private readonly string $table,
         private readonly string $column = 'normalized_name',
-    ) {}
+    ) {
+    }
 
     public function where(string $column, mixed $value): static
     {

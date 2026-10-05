@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\Concerns;
 
-use App\Enums\StatusType;
 use App\Domains\Tenancy\Exceptions\TenantAlreadyActiveException;
 use App\Domains\Tenancy\Exceptions\TenantAlreadySuspendedException;
+use App\Enums\StatusType;
 use Illuminate\Support\Facades\DB;
 
 trait HasLifecycle

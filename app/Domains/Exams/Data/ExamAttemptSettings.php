@@ -11,7 +11,8 @@ class ExamAttemptSettings implements Castable
 {
     public function __construct(
         private readonly array $questionOrder = [],
-    ) {}
+    ) {
+    }
 
     public function getQuestionOrder(): array
     {
@@ -21,7 +22,7 @@ class ExamAttemptSettings implements Castable
     public static function fromArray(?array $data): self
     {
         if ($data === null) {
-            return new self;
+            return new self();
         }
 
         return new self(
@@ -38,8 +39,7 @@ class ExamAttemptSettings implements Castable
 
     public static function castUsing(array $arguments): CastsAttributes
     {
-        return new class implements CastsAttributes
-        {
+        return new class () implements CastsAttributes {
             public function get($model, string $key, $value, array $attributes): ExamAttemptSettings
             {
                 return ExamAttemptSettings::fromArray(json_decode($value, true));

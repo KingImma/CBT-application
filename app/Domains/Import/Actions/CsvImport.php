@@ -11,7 +11,9 @@ use Throwable;
 
 abstract class CsvImport
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(array $validated, string $filePath, bool $dryRun): ImportResult
     {
@@ -134,7 +136,7 @@ abstract class CsvImport
     protected function buildDuplicateIndex(array $rows): array
     {
         $duplicateByRow = [];
-    
+
         foreach ($rows as $row) {
             foreach ($row['_duplicates'] ?? [] as $duplicate) {
                 $duplicateByRow[] = [
@@ -147,7 +149,7 @@ abstract class CsvImport
                 ];
             }
         }
-    
+
         return $duplicateByRow;
     }
 

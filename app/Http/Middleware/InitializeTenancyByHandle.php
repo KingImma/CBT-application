@@ -18,7 +18,9 @@ use Symfony\Component\HttpFoundation\Response;
 class InitializeTenancyByHandle
 {
     // FIX 1: Replaced the trailing semicolon with empty curly braces {}
-    public function __construct(private readonly Tenancy $tenancy) {}
+    public function __construct(private readonly Tenancy $tenancy)
+    {
+    }
 
     public function handle(Request $request, Closure $next): Response
     {

@@ -22,7 +22,8 @@ final class BuildStudentCumulativeResult
     public function __construct(
         private StudentCumulativeResultQuery $query,
         private ResolveCAComponentTypes $resolveCaTypes,
-    ) {}
+    ) {
+    }
 
     /**
      * The standing cumulative report: every term of the session up to and
@@ -159,7 +160,7 @@ final class BuildStudentCumulativeResult
      * Every graded subject is worth 100 marks per term, so the ceiling is the
      * number of subjects with a result x 100 x terms in range.
      *
-     * @param array<int, StudentCumulativeSubjectRowData> $subjects
+     * @param  array<int, StudentCumulativeSubjectRowData>  $subjects
      */
     private function totalObtainable(array $subjects, int $termCount): float
     {
@@ -198,10 +199,8 @@ final class BuildStudentCumulativeResult
         $normalized = strtoupper($classLevelName);
 
         return match (true) {
-            str_contains($normalized, 'JSS') || str_contains($normalized, 'JUNIOR')
-                => 'JUNIOR SECONDARY',
-            str_contains($normalized, 'SSS') || str_contains($normalized, 'SENIOR')
-                => 'SENIOR SECONDARY',
+            str_contains($normalized, 'JSS') || str_contains($normalized, 'JUNIOR') => 'JUNIOR SECONDARY',
+            str_contains($normalized, 'SSS') || str_contains($normalized, 'SENIOR') => 'SENIOR SECONDARY',
             default => null,
         };
     }

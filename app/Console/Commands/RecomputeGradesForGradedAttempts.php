@@ -42,6 +42,7 @@ class RecomputeGradesForGradedAttempts extends Command
 
                 if ($grades === null) {
                     $this->warn('  → No default grading scale found, skipping tenant.');
+
                     continue;
                 }
 

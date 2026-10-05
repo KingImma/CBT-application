@@ -12,12 +12,14 @@ use Illuminate\Queue\SerializesModels;
 
 class PasswordResetOtpMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $otp,
         public readonly string $schoolName,
-    ) {}
+    ) {
+    }
 
     public function envelope(): Envelope
     {

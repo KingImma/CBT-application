@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Actions\Attempts;
 
 use App\Domains\Exams\Actions\ResolveGrade;
-use App\Domains\Exams\ValueObjects\AttemptGradeResult;
-use App\Domains\Exams\ValueObjects\Percentage;
 use App\Domains\Exams\Events\ExamAttemptsUpdated;
 use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Domains\Exams\Support\AttemptScoreCalculator;
 use App\Domains\Exams\Support\BatchGradeAnswersUpdater;
-use Illuminate\Support\Collection;
+use App\Domains\Exams\ValueObjects\AttemptGradeResult;
+use App\Domains\Exams\ValueObjects\Percentage;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAnswer;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\GradingScale;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -148,7 +148,7 @@ final class GradeExamAttempt
      */
     private function defaultGradingScale(): ?GradingScale
     {
-        $cacheKey = 'grading_scale:default:' . tenant('id');
+        $cacheKey = 'grading_scale:default:'.tenant('id');
 
         return Cache::remember($cacheKey, now()->addDay(), function () {
             return GradingScale::where('is_default', true)->first();

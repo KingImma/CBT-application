@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\DB;
 
 final class CreateSubmission
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * A teacher creates their paper inside an open schedule. The unique

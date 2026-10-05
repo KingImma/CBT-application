@@ -10,17 +10,18 @@ use App\Domains\Exams\Data\Output\ExamResultData;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
-use Illuminate\Support\Facades\Gate;
 use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class ExamGradingController extends Controller
 {
     public function __construct(
         private GradeExamAttempt $gradeAttempt,
         private GenerateResultsPdf $generatePdf
-    ) {}
+    ) {
+    }
 
     /**
      * Recompute a single attempt's score.
@@ -49,14 +50,13 @@ class ExamGradingController extends Controller
         );
     }
 
-
     /**
-    * Download a single attempt's result as PDF.
-    * Authorization: attempt owner (student), exam creator (teacher), or admin/school_admin.
-    */
+     * Download a single attempt's result as PDF.
+     * Authorization: attempt owner (student), exam creator (teacher), or admin/school_admin.
+     */
     public function downloadResultPdf(ExamAttempt $attempt): Response
     {
-        Gate::authorize("view", $attempt);
+        Gate::authorize('view', $attempt);
 
         $pdf = $this->generatePdf->execute($attempt);
 
@@ -65,7 +65,7 @@ class ExamGradingController extends Controller
 
     public function downloadResultPdfPerQuestion(ExamAttempt $attempt): Response
     {
-        Gate::authorize("view", $attempt);
+        Gate::authorize('view', $attempt);
 
         $pdf = $this->generatePdf->executePerQuestion($attempt);
 

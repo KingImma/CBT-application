@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\ExamAttemptStatus;
 use App\Domains\Exams\Jobs\GradeExamAttemptJob;
+use App\Enums\ExamAttemptStatus;
 use App\Models\Tenant;
 use App\Models\Tenant\ExamAttempt;
 use Illuminate\Console\Command;

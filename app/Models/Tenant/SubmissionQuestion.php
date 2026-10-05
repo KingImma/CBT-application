@@ -13,7 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubmissionQuestion extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'submission_id',

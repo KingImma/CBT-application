@@ -16,7 +16,8 @@ class TermData extends Resource
         public readonly ?string $start_date,
         public readonly ?string $end_date,
         public readonly Optional|string $academic_session_id,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

@@ -17,14 +17,12 @@ class UpdateAssessmentData extends Data
     public function __construct(
         #[StringType, Max(255)]
         public readonly string|Optional $title,
-
         #[Numeric, Min(0)]
         public readonly float|Optional $total_marks,
-
         #[IntegerType, Min(1)]
         public readonly int|Optional|null $duration_minutes,
-
         #[StringType]
         public readonly string|Optional|null $description,
-    ) {}
+    ) {
+    }
 }

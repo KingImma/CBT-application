@@ -40,7 +40,8 @@ class SubmissionController extends Controller
         private SubmitSubmissionForReview $submitForReview,
         private RequestSubmissionChanges $requestChanges,
         private ApproveSubmission $approveSubmission,
-    ) {}
+    ) {
+    }
 
     public function index(AssessmentSchedule $schedule, Request $request): JsonResponse
     {
@@ -110,7 +111,8 @@ class SubmissionController extends Controller
 
         $question = $this->addQuestion->execute($submission, $data);
 
-        return ApiResponse::created([
+        return ApiResponse::created(
+            [
             'question' => $question,
             'submission' => [
                 'id' => $submission->id,

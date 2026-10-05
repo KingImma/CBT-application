@@ -12,7 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubscriptionPlan extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'name',

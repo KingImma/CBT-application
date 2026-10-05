@@ -27,7 +27,8 @@ class ScheduleSubjectController extends Controller
         private AssignScheduleSubject $assign,
         private UpdateScheduleSubject $update,
         private RemoveScheduleSubject $remove,
-    ) {}
+    ) {
+    }
 
     /**
      * List all subject slots under a schedule — drives the calendar view.

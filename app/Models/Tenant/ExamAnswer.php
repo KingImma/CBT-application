@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExamAnswer extends Model
 {
-    use HasBroadcasting, HasScoring, HasUuids;
+    use HasBroadcasting;
+    use HasScoring;
+    use HasUuids;
 
     protected $fillable = [
         'attempt_id',

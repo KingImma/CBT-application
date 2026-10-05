@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdateExam
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(Exam $exam, UpdateExamData $dto): Exam
     {

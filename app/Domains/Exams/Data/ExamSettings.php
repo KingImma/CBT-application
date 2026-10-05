@@ -16,7 +16,8 @@ class ExamSettings implements Castable
         private readonly ?Carbon $resultsReleaseDate = null,
         private readonly bool $requireAttendance = true,
         private readonly int $maxSuspiciousEvents = 5,
-    ) {}
+    ) {
+    }
 
     public function getRandomizeQuestions(): bool
     {
@@ -46,7 +47,7 @@ class ExamSettings implements Castable
     public static function fromArray(?array $data): self
     {
         if ($data === null) {
-            return new self;
+            return new self();
         }
 
         return new self(
@@ -71,8 +72,7 @@ class ExamSettings implements Castable
 
     public static function castUsing(array $arguments): CastsAttributes
     {
-        return new class implements CastsAttributes
-        {
+        return new class () implements CastsAttributes {
             public function get($model, string $key, $value, array $attributes): ExamSettings
             {
                 return ExamSettings::fromArray(json_decode($value, true));

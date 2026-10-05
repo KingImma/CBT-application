@@ -20,11 +20,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ExamAttempt extends Model
 {
-    use BelongsToSessionTerm,
-        HasBroadcasting,
-        HasLifecycle,
-        HasUuids,
-        HasValidation;
+    use BelongsToSessionTerm;
+    use HasBroadcasting;
+    use HasLifecycle;
+    use HasUuids;
+    use HasValidation;
 
     private const SECONDS_PER_MINUTE = 60;
 

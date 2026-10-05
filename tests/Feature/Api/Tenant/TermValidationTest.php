@@ -71,7 +71,7 @@ class TermValidationTest extends TestCase
         $this->expectException(DuplicateTermNameException::class);
         $this->expectExceptionMessage("A term with the name 'First Term' already exists in this session.");
 
-        (new CreateTerm)->execute([
+        (new CreateTerm())->execute([
             'name' => 'First Term',
             'start_date' => '2025-09-01',
             'end_date' => '2025-12-15',
@@ -180,7 +180,7 @@ class TermValidationTest extends TestCase
 
         $this->expectException(DuplicateTermNameException::class);
 
-        (new UpdateTerm)->execute($termB, ['name' => 'Term A']);
+        (new UpdateTerm())->execute($termB, ['name' => 'Term A']);
     }
 
     public function test_handles_concurrent_create_gracefully_via_database_exception(): void
@@ -192,7 +192,7 @@ class TermValidationTest extends TestCase
             'is_current' => false,
         ]);
 
-        $createTerm = new CreateTerm;
+        $createTerm = new CreateTerm();
 
         $term1 = $createTerm->execute([
             'name' => 'Race Condition Term',

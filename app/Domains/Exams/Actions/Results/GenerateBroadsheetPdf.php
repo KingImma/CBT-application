@@ -21,6 +21,6 @@ final class GenerateBroadsheetPdf
 
     public function filename(BroadsheetData $broadsheet): string
     {
-        return Str::slug('broadsheet-' . $broadsheet->meta->class_level_id . '-' . $broadsheet->meta->term_id) . '.pdf';
+        return Str::slug('broadsheet-'.$broadsheet->meta->class_level_id.'-'.$broadsheet->meta->term_id).'.pdf';
     }
 }

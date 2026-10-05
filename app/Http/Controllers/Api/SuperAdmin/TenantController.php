@@ -32,12 +32,18 @@ class TenantController extends Controller
     {
         $tenants = Tenant::query()
             ->with('plan') // 1. Eager load the plan to prevent N+1 queries
-            ->when($request->search, fn ($query) => $query->where('name', 'ilike', "%{$request->search}%")
+            ->when(
+                $request->search,
+                fn ($query) => $query->where('name', 'ilike', "%{$request->search}%")
                 ->orWhere('slug', 'ilike', "%{$request->search}%")
             )
-            ->when($request->status, fn ($query) => $query->where('subscription_status', $request->status)
+            ->when(
+                $request->status,
+                fn ($query) => $query->where('subscription_status', $request->status)
             )
-            ->when($request->is_active !== null, fn ($query) => $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN))
+            ->when(
+                $request->is_active !== null,
+                fn ($query) => $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN))
             )
             ->orderByDesc('created_at')
             ->paginate(20);

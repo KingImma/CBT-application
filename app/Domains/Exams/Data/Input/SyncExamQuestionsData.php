@@ -13,5 +13,6 @@ class SyncExamQuestionsData extends Data
     public function __construct(
         #[DataCollectionOf(SyncExamQuestionItemData::class)]
         public readonly DataCollection $questions,
-    ) {}
+    ) {
+    }
 }

@@ -43,7 +43,8 @@ class AssessmentScheduleController extends Controller
         private ActivateAssessment $activateAssessment,
         private CompleteAssessment $completeAssessment,
         private PublishScheduleResults $publishResults
-    ) {}
+    ) {
+    }
 
     /** List every occurrence of an assessment (the reuse view). */
     public function index(Assessment $assessment, Request $request): JsonResponse

@@ -15,7 +15,9 @@ use Spatie\LaravelData\Optional;
 
 final class UpdateAssessmentSchedule
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Adjust the windows (and, while still draft, the class binding) of a

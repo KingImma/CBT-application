@@ -29,7 +29,8 @@ class TeacherExamReportController extends Controller
         private GenerateClassCumulativeResultPdfAction $generateClassCumulativePdf,
         private GenerateBulkResultPdfAction $generateBulkPdf,
         private GenerateExamClassReportPdf $generateExamClassReportPdf
-    ) {}
+    ) {
+    }
 
     public function examSummary(ClassArm $classArm, Exam $exam): JsonResponse
     {

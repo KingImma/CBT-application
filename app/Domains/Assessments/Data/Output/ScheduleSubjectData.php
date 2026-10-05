@@ -16,8 +16,8 @@ class ScheduleSubjectData extends Resource
         public readonly string $starts_at,
         public readonly string $ends_at,
         public readonly ?int $duration_minutes,
-
         #[WhenLoaded('subject')]
         public readonly mixed $subject,
-    ) {}
+    ) {
+    }
 }

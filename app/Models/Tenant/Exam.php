@@ -18,17 +18,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Tenant\ExamComment;
 
 class Exam extends Model
 {
-    use HasAttempts,
-        HasBroadcasting,
-        HasFactory,
-        HasLifecycle,
-        HasUuids,
-        HasValidation,
-        SoftDeletes;
+    use HasAttempts;
+    use HasBroadcasting;
+    use HasFactory;
+    use HasLifecycle;
+    use HasUuids;
+    use HasValidation;
+    use SoftDeletes;
 
     protected $fillable = [
         'title',

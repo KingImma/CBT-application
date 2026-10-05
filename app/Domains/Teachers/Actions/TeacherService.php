@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Teachers\Actions;
 
-use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Domains\Teachers\Support\TeacherRules;
+use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Enums\RoleType;
 use App\Models\Tenant\TeacherProfile;
 use App\Models\Tenant\User;
@@ -16,13 +16,14 @@ class TeacherService
 {
     public function __construct(
         private SyncTenantUser $syncTenantUser,
-    ) {}
+    ) {
+    }
 
     public function create(array $data): array
     {
         $password = $data['password']
             ?? config('app.teacher_default_password', 'teach12345');
-    
+
         $prepared = [
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
@@ -32,23 +33,23 @@ class TeacherService
             'role' => RoleType::Teacher->value,
             'is_active' => true,
         ];
-    
+
         $user = User::create($prepared);
-    
+
         $user->assignRole(RoleType::Teacher->value);
-    
+
         $this->syncTenantUser->execute(
             $user->email,
             RoleType::Teacher->value
         );
-    
+
         $user->teacherProfile()->create([
             'gender' => $data['gender'] ?? null,
             'qualification' => $data['qualification'] ?? null,
             'staff_id' => $data['staff_id'] ?? $this->generateStaffId(),
             'class_level_id' => $data['class_level_id'] ?? null,
         ]);
-    
+
         return [
             'user' => $user,
             'password' => $password,

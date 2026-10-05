@@ -20,19 +20,16 @@ class CreateScheduleData extends Data
     public function __construct(
         #[Uuid, Exists('class_levels', 'id')]
         public readonly string $class_level_id,
-
         #[Nullable, Uuid, Exists('class_arms', 'id')]
         public readonly ?string $class_arm_id,
-
         #[Date]
         public readonly string $question_submission_ends,
-
         #[Nullable, Date]
         public readonly ?string $assessment_starts,
-
         #[Nullable, Date]
         public readonly ?string $assessment_ends,
-    ) {}
+    ) {
+    }
 
     public static function withValidator(Validator $validator): void
     {

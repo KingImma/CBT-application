@@ -18,12 +18,14 @@ use Illuminate\Queue\SerializesModels;
 
 class SuperAdminPasswordResetMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $name,
         public readonly string $resetUrl,
-    ) {}
+    ) {
+    }
 
     public function envelope(): Envelope
     {

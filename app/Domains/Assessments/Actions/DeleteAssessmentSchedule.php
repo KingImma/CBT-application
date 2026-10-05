@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 final class DeleteAssessmentSchedule
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /** Only draft occurrences can be deleted; activation locks the schedule. */
     public function execute(AssessmentSchedule $schedule): void

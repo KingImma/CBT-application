@@ -13,8 +13,7 @@ use Illuminate\Database\Migrations\Migration;
  * no-op; 000004 rebuilds the constraints first, then runs the same idempotent
  * backfill.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         //
@@ -23,5 +22,7 @@ return new class extends Migration
     /**
      * Data backfills are not reversible; use migrate:fresh to reset instead.
      */
-    public function down(): void {}
+    public function down(): void
+    {
+    }
 };

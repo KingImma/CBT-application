@@ -31,7 +31,8 @@ class TenantData extends Resource
         public readonly mixed $plan,
         #[WhenLoaded('domains')]
         public readonly mixed $domains,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

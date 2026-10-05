@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Queue;
 
 use App\Domains\Exams\Jobs\GradeExamAttemptJob;
-use App\Jobs\ProvisionTenantDetailsJob;
 use App\Models\SuperAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

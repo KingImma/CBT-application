@@ -14,7 +14,8 @@ class SuspiciousActivityDetected implements ShouldBroadcast
         public ExamAttempt $attempt,
         public string $eventType,
         public array $metadata = [],
-    ) {}
+    ) {
+    }
 
     public function broadcastOn(): array
     {

@@ -13,7 +13,9 @@ use Illuminate\Support\Str;
 
 final class GenerateExamClassReportPdf
 {
-    public function __construct(private BuildExamClassReport $buildReport) {}
+    public function __construct(private BuildExamClassReport $buildReport)
+    {
+    }
 
     public function execute(ClassArm $arm, Exam $exam): DomPdf
     {

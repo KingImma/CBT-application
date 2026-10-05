@@ -19,7 +19,8 @@ final class StartExamAttempt
 {
     public function __construct(
         private ExamSessionStateStore $stateStore,
-    ) {}
+    ) {
+    }
 
     public function execute(Exam $exam, User $student): ExamAttempt
     {

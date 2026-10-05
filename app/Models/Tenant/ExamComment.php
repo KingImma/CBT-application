@@ -25,23 +25,23 @@ class ExamComment extends Model
         'resolved_at' => 'datetime',
     ];
 
-  public function exam(): BelongsTo
-  {
-    return $this->belongsTo(Exam::class);
-  }
+    public function exam(): BelongsTo
+    {
+        return $this->belongsTo(Exam::class);
+    }
 
-  public function author(): BelongsTo
-  {
-    return $this->belongsTo(User::class, 'author_id');
-  }
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
 
-  public function parent(): BelongsTo
-  {
-    return $this->belongsTo(ExamComment::class, 'parent_id');
-  }
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(ExamComment::class, 'parent_id');
+    }
 
-  public function replies(): HasMany
-  {
-    return $this->hasMany(ExamComment::class, 'parent_id');
-  }
+    public function replies(): HasMany
+    {
+        return $this->hasMany(ExamComment::class, 'parent_id');
+    }
 }

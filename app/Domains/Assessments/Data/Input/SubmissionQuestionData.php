@@ -20,16 +20,12 @@ class SubmissionQuestionData extends Data
 {
     public function __construct(
         public readonly SubmissionQuestionType $type,
-
         #[StringType]
         public readonly string $content,
-
         #[Numeric, Min(0)]
         public readonly float $marks,
-
         #[Nullable, StringType]
         public readonly ?string $explanation,
-
         #[Nullable, StringType, Max(500)]
         public readonly ?string $image_url,
 
@@ -37,5 +33,6 @@ class SubmissionQuestionData extends Data
         #[ArrayType]
         #[DataCollectionOf(SubmissionQuestionOptionData::class)]
         public readonly DataCollection|Optional $options,
-    ) {}
+    ) {
+    }
 }

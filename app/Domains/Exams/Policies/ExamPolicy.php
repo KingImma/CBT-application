@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Policies;
 
+use App\Domains\Teachers\Support\TeacherClassAccess;
 use App\Enums\ExamStatus;
 use App\Enums\RoleType;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\User;
-use App\Domains\Teachers\Support\TeacherClassAccess;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ExamPolicy

@@ -18,14 +18,14 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens,
-        HasBroadcasting,
-        HasFactory,
-        HasLifecycle,
-        HasRoles,
-        HasUuids,
-        Notifiable,
-        SoftDeletes;
+    use HasApiTokens;
+    use HasBroadcasting;
+    use HasFactory;
+    use HasLifecycle;
+    use HasRoles;
+    use HasUuids;
+    use Notifiable;
+    use SoftDeletes;
 
     protected $fillable = [
         'first_name',

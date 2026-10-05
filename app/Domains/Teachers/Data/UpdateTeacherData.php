@@ -24,7 +24,7 @@ class UpdateTeacherData extends Data
         public Optional|string $email,
         #[Nullable, StringType, Max(20)]
         public Optional|string|null $phone,
-        #[Nullable, In(['male','female','other'])]
+        #[Nullable, In(['male', 'female', 'other'])]
         public Optional|string|null $gender,
         #[Nullable, StringType, Max(255)]
         public Optional|string|null $qualification,
@@ -32,5 +32,6 @@ class UpdateTeacherData extends Data
         public Optional|string|null $staff_id,
         #[Nullable, Uuid, Exists('class_levels', 'id')]
         public Optional|string|null $class_level_id,
-    ) {}
+    ) {
+    }
 }

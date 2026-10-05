@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Options for a submission question. Mirrors question_options: normalised
      * rows with is_correct, rather than a JSON blob — keeps grading reuse.

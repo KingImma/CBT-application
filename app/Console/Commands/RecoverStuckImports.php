@@ -35,6 +35,7 @@ class RecoverStuckImports extends Command
         foreach ($stuck as $row) {
             if (! in_array($row->type, ['teacher', 'student'], true)) {
                 $this->warn("  Unknown import type '{$row->type}' for {$row->id}, skipped.");
+
                 continue;
             }
 

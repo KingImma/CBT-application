@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Mail;
 
 class SendSchoolWelcomeEmail implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public int $tries = 3;
 
@@ -26,7 +29,8 @@ class SendSchoolWelcomeEmail implements ShouldQueue
         public readonly string $schoolName,
         public readonly string $handle,
         public readonly string $loginUrl,
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {

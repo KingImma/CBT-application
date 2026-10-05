@@ -190,7 +190,7 @@ it('rejects double submission with 409', function () {
 it('rejects submit for non-in-progress attempt', function () {
     Sanctum::actingAs($this->student, ['*'], 'tenant');
 
-    $attempt = new ExamAttempt;
+    $attempt = new ExamAttempt();
     $attempt->exam_id = $this->exam->id;
     $attempt->student_id = $this->student->id;
     $attempt->attempt_number = 1;

@@ -16,7 +16,8 @@ class TeacherExamReviewController extends Controller
 {
     public function __construct(
         private ReplyToComment $replyToComment,
-    ) {}
+    ) {
+    }
 
     // Teacher sees every admin comment on their exam, with replies.
     public function show(Exam $exam): JsonResponse

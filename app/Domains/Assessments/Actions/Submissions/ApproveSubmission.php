@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 final class ApproveSubmission
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(Submission $submission, User $admin): Submission
     {

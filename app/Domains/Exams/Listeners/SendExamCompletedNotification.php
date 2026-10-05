@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domains\Exams\Listeners;
 
 use App\Domains\Exams\Events\ExamCompleted;
+use App\Enums\NotificationLabel;
 use App\Models\Tenant\User;
 use App\Notifications\InAppNotification;
-use App\Enums\NotificationLabel;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 

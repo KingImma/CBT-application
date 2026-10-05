@@ -13,12 +13,14 @@ use Illuminate\Queue\SerializesModels;
 
 class PasswordChangedMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $firstName,
         public readonly string $schoolName,
-    ) {}
+    ) {
+    }
 
     public function envelope(): Envelope
     {

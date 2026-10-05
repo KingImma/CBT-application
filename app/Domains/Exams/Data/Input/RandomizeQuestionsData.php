@@ -13,5 +13,6 @@ class RandomizeQuestionsData extends Data
     public function __construct(
         #[IntegerType, Min(1)]
         public readonly int $count
-    ) {}
+    ) {
+    }
 }

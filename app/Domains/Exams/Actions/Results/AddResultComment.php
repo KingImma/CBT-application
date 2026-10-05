@@ -16,13 +16,13 @@ final class AddResultComment
     {
         throw _unless(
             $exam->isCompleted(),
-            new ExamStateTransitionException("Result comments can only be added on completed exams.")
+            new ExamStateTransitionException('Result comments can only be added on completed exams.')
         );
 
         return DB::transaction(fn () => ExamComment::create([
-            "exam_id" => $exam->id,
-            "author_id" => $admin->id,
-            "comment" => $comment,
+            'exam_id' => $exam->id,
+            'author_id' => $admin->id,
+            'comment' => $comment,
         ]));
     }
 }

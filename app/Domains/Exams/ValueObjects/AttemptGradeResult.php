@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\ValueObjects;
 
-use App\Domains\Exams\ValueObjects\Marks;
 use App\Enums\ExamAttemptStatus;
 use App\Enums\PassOutcome;
 use InvalidArgumentException;
@@ -17,7 +16,8 @@ final class AttemptGradeResult
         public readonly string $letterGrade,
         public readonly PassOutcome $passOutcome,
         public readonly int $timeSpentSeconds,
-    ) {}
+    ) {
+    }
 
     public static function compute(
         Marks $totalScore,

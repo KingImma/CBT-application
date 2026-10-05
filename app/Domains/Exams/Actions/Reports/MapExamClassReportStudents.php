@@ -78,6 +78,7 @@ final class MapExamClassReportStudents
         }
 
         $passMark = $this->resolvePassMark->execute($exam);
+
         return (float) $attempt->percentage_score >= $passMark ? 'passed' : 'failed';
     }
 }

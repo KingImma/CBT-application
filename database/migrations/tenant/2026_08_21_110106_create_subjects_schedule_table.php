@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * ScheduleSubject — one subject's exam slot inside an AssessmentSchedule.
      * Slots are bounded by the schedule's master student window

@@ -45,5 +45,6 @@ class CreateStudentData extends Data
         public ?string $guardian_email,
         #[Nullable, BooleanType]
         public ?bool $is_active,
-    ) {}
+    ) {
+    }
 }

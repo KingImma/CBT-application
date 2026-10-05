@@ -16,9 +16,11 @@ class ExamReviewController extends Controller
 {
     public function __construct(
         private AddComment $addComment,
-    ) {}
+    ) {
+    }
 
-    public function show(Exam $exam): JsonResponse{
+    public function show(Exam $exam): JsonResponse
+    {
         Gate::authorize('review', $exam);
 
         $exam->load(['subject', 'classLevel', 'creator:id,first_name,last_name', 'comments.author:id,first_name,last_name']);

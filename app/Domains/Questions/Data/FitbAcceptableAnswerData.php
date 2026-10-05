@@ -11,5 +11,6 @@ class FitbAcceptableAnswerData extends Resource
     public function __construct(
         public readonly string $content,
         public readonly bool $case_sensitive,
-    ) {}
+    ) {
+    }
 }

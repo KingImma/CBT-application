@@ -21,14 +21,12 @@ class CreateAssessmentData extends Data
     public function __construct(
         #[StringType, Max(255)]
         public readonly string $title,
-
         #[Numeric, Min(0)]
         public readonly float $total_marks,
-
         #[Nullable, IntegerType, Min(1)]
         public readonly ?int $duration_minutes,
-
         #[Nullable, StringType]
         public readonly ?string $description,
-    ) {}
+    ) {
+    }
 }

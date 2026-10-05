@@ -13,7 +13,8 @@ final class ExamSessionState
         public readonly ?string $lastAnswerId = null,
         public readonly ?string $lastActivityAt = null,
         public readonly bool $connectionAlive = false,
-    ) {}
+    ) {
+    }
 
     public static function fromRedis(string $attemptId, string $tenantId, array $data): self
     {

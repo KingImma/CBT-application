@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domains\Tenancy\Actions;
 
-use App\Enums\StatusType;
 use App\Domains\Tenancy\Exceptions\TenantProvisioningException;
 use App\Domains\Tenancy\Exceptions\TenantSlugAlreadyTakenException;
+use App\Enums\StatusType;
 use App\Jobs\ProvisionTenantDetailsJob;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;

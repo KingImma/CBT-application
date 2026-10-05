@@ -24,7 +24,8 @@ class ExamResultData extends Resource
 
         /** @var array<ResultQuestionData> */
         public readonly array $questions,
-    ) {}
+    ) {
+    }
 
     public static function fromAttempt(ExamAttempt $attempt): self
     {

@@ -59,7 +59,7 @@ class TermController extends Controller
 
         $validated['tenant_id'] = $session->tenant_id;
 
-        $term = (new CreateTerm)->execute(array_merge($validated, ['academic_session_id' => $sessionId]));
+        $term = (new CreateTerm())->execute(array_merge($validated, ['academic_session_id' => $sessionId]));
 
         return ApiResponse::created(TermData::from($term), 'Term created.');
     }
@@ -83,7 +83,7 @@ class TermController extends Controller
 
         $validated = $request->validated();
 
-        $term = (new UpdateTerm)->execute($term, $validated);
+        $term = (new UpdateTerm())->execute($term, $validated);
 
         return ApiResponse::success(TermData::from($term->fresh()), 'Term updated.');
     }

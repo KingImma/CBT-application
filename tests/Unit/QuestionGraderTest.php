@@ -10,7 +10,7 @@ it('grades mcq and true false by exact selected option ids', function (string $q
         (object) ['id' => 'option-c', 'is_correct' => true],
     ]);
 
-    $grader = new QuestionGrader;
+    $grader = new QuestionGrader();
 
     expect($grader->isCorrect($questionType, $options, ['option-c', 'option-a']))->toBeTrue()
         ->and($grader->isCorrect($questionType, $options, ['option-a']))->toBeFalse()
@@ -27,12 +27,12 @@ it('grades fill in the blank answers against accepted options with case sensitiv
         (object) ['content' => 'Kano', 'is_correct' => false, 'case_sensitive' => false],
     ]);
 
-    $grader = new QuestionGrader;
+    $grader = new QuestionGrader();
 
     expect($grader->isCorrect('fill_in_blank', $options, [], ' lagos '))->toBeTrue()
         ->and($grader->isCorrect('fill_in_blank', $options, [], 'Abuja'))->toBeTrue()
         ->and($grader->isCorrect('fill_in_blank', $options, [], 'abuja'))->toBeFalse()
         ->and($grader->isCorrect('fill_in_blank', $options, [], 'Kano'))->toBeFalse()
-        ->and($grader->isCorrect('fill_in_blank', new Collection, [], 'Lagos'))->toBeFalse()
+        ->and($grader->isCorrect('fill_in_blank', new Collection(), [], 'Lagos'))->toBeFalse()
         ->and($grader->isCorrect('fill_in_blank', $options, [], null))->toBeFalse();
 });

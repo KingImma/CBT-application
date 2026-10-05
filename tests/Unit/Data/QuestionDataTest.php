@@ -26,7 +26,7 @@ beforeEach(function () {
 function makeQuestion(array $attributes = []): Question
 {
     // Using new + force-fill to avoid UUID generation / DB writes
-    $q = new Question;
+    $q = new Question();
     $q->id = $attributes['id'] ?? 'q-uuid-1';
     $q->type = $attributes['type'] ?? 'mcq';
     $q->content = $attributes['content'] ?? 'Test question';
@@ -59,7 +59,7 @@ function makeQuestion(array $attributes = []): Question
 
 function makeOption(array $attrs = []): QuestionOption
 {
-    $o = new QuestionOption;
+    $o = new QuestionOption();
     $o->id = $attrs['id'] ?? 'opt-'.fake()->uuid();
     $o->label = $attrs['label'] ?? null;
     $o->content = $attrs['content'] ?? 'Option';

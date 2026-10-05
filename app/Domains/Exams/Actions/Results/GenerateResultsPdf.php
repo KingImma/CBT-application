@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Actions\Results;
 
-use App\Domains\Exams\Actions\Results\BuildStudentCumulativeResult;
-use App\Domains\Exams\Support\ResolveSchoolPdfHeader;
 use App\Domains\Exams\Data\Output\ExamResultData;
+use App\Domains\Exams\Support\ResolveSchoolPdfHeader;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\Term;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -38,7 +37,7 @@ final class GenerateResultsPdf
         $student = $attempt->student;
         $exam = $attempt->exam;
 
-        return Str::slug("{$exam->title} for {$student->first_name}-{$student->last_name}") . '.pdf';
+        return Str::slug("{$exam->title} for {$student->first_name}-{$student->last_name}").'.pdf';
     }
 
     private function perSubject(ExamAttempt $attempt): DomPdf

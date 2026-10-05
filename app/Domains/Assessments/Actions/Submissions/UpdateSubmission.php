@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdateSubmission
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(Submission $submission, UpdateSubmissionData $dto): Submission
     {

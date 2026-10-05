@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Domains\Tenancy\Support\HasSchemaValidation;
 use App\Domains\Exams\Data\Input\CreateExamData;
 use App\Domains\Exams\Data\Input\ExamSettingsData;
+use App\Domains\Tenancy\Support\HasSchemaValidation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -61,8 +61,7 @@ class DeclarativeSchemaTest extends TestCase
     #[Test]
     public function has_schema_validation_trait_integrates_with_form_request(): void
     {
-        $request = new class extends FormRequest
-        {
+        $request = new class () extends FormRequest {
             use HasSchemaValidation;
 
             protected function schemaClass(): string

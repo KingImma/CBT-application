@@ -16,7 +16,8 @@ class ExamAttemptsUpdated implements ShouldBroadcast
         public readonly int $expectedAttempts,
         public readonly ExamStatus $status,
         public readonly string $tenantId,
-    ) {}
+    ) {
+    }
 
     public function broadcastOn(): array
     {

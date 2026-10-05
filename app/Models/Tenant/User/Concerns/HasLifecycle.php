@@ -68,9 +68,9 @@ trait HasLifecycle
     public static function bootHasLifecycle(): void
     {
         static::updated(function ($user) {
-            if ($user->wasChanged('is_active') && !$user->is_active) {
+            if ($user->wasChanged('is_active') && ! $user->is_active) {
                 // Keep automatic token revocation
-                $user->tokens()->delete(); 
+                $user->tokens()->delete();
             }
         });
     }

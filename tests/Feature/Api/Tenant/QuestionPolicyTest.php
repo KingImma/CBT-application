@@ -37,7 +37,7 @@ class QuestionPolicyTest extends TestCase
             'assigned_teacher_id' => $teacher->id,
         ]);
 
-        $policy = new QuestionPolicy;
+        $policy = new QuestionPolicy();
 
         $this->assertTrue($policy->createForClass($teacher, $classLevel->id));
     }
@@ -72,7 +72,7 @@ class QuestionPolicyTest extends TestCase
             'assigned_teacher_id' => $assignedTeacher->id,
         ]);
 
-        $policy = new QuestionPolicy;
+        $policy = new QuestionPolicy();
 
         $this->assertFalse($policy->createForClass($otherTeacher, $classLevel->id));
     }

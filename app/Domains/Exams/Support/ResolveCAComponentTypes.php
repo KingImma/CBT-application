@@ -9,15 +9,15 @@ use Illuminate\Support\Facades\Cache;
 
 final class ResolveCAComponentTypes
 {
-    private const SETTING_KEY = "ca_component_exam_types";
+    private const SETTING_KEY = 'ca_component_exam_types';
 
-    private const DEFAULT_TYPES = ["ca", "quiz", "test"];
+    private const DEFAULT_TYPES = ['ca', 'quiz', 'test'];
 
     /* @@return string[] */
     public function execute(): array
     {
         return Cache::remember(
-            "school_settings:" . self::SETTING_KEY . ":" . (tenant("id") ?? "central"),
+            'school_settings:'.self::SETTING_KEY.':'.(tenant('id') ?? 'central'),
             now()->addHour(),
             function (): array {
                 $raw = SchoolSetting::where('key', self::SETTING_KEY)->value('value');

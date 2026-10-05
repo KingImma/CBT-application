@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Actions;
 
+use App\Domains\Exams\Support\ExamLifecycleRules;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use Illuminate\Support\Facades\DB;
-use App\Domains\Exams\Support\ExamLifecycleRules;
 
 final class UnpublishExamResults
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(Exam $exam): Exam
     {

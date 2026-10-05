@@ -7,9 +7,12 @@ namespace App\Domains\Exams\ValueObjects;
 final class Percentage
 {
     private const float MIN_PERCENTAGE = 0.0;
+
     private const float MAX_PERCENTAGE = 100.0;
 
-    private function __construct(public readonly float $value) {}
+    private function __construct(public readonly float $value)
+    {
+    }
 
     public static function fromRatio(float $earned, float $possible): self
     {
@@ -19,7 +22,7 @@ final class Percentage
 
         $percentage = (max(self::MIN_PERCENTAGE, $earned) / $possible) * self::MAX_PERCENTAGE;
 
-        return new self (self::clamp($percentage));
+        return new self(self::clamp($percentage));
     }
 
     private static function clamp(float $percentage): float
@@ -27,4 +30,3 @@ final class Percentage
         return max(self::MIN_PERCENTAGE, min(self::MAX_PERCENTAGE, $percentage));
     }
 }
-

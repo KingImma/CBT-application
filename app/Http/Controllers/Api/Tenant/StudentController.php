@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Domains\Tenancy\Actions\RemoveTenantUserIndex;
-use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Domains\Auth\Actions\ResetUserPassword;
 use App\Domains\Import\Actions\ImportStudents;
 use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Data\Schemas\StudentImportSchema;
 use App\Domains\Import\Jobs\ImportStudentsJob;
-use App\Domains\Students\Data\StudentData;
 use App\Domains\Students\Actions\StudentService;
+use App\Domains\Students\Data\StudentData;
 use App\Domains\Students\Queries\StudentQuery;
+use App\Domains\Tenancy\Actions\RemoveTenantUserIndex;
+use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
@@ -271,7 +271,7 @@ class StudentController extends Controller
 
         $newPassword = config('app.student_default_password');
 
-        $query->chunkById(200, function ($students) use ($resetUserPassword, &$reset, $newPassword) {
+        $query->chunkById(200, function ($students) use (&$reset, $newPassword) {
             foreach ($students as $student) {
                 $studentService->resetPassword($student, $newPassword);
                 $reset++;

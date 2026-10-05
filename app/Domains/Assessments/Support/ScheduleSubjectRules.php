@@ -27,7 +27,7 @@ final class ScheduleSubjectRules
         ) use ($excludeScheduleSubjectId): void {
             throw_unless(
                 $schedule->masterWindowIsSet(),
-                new ScheduleWindowNotSetException
+                new ScheduleWindowNotSetException()
             );
 
             throw_unless(

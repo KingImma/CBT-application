@@ -5,8 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * TeacherSubmission — one teacher's paper inside one AssessmentSchedule.
      * Papers are occurrence-scoped (Option A): every term gets a fresh

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 class CompleteExpiredExams extends Command
 {
     protected $signature = 'exams:complete-expired';
+
     protected $description = 'Force-completes standalone exams that have passed their deadline across all tenants';
 
     public function __construct(
@@ -31,7 +32,7 @@ class CompleteExpiredExams extends Command
                 } catch (\Throwable $e) {
                     Log::error('Expired exam completion failed for tenant', [
                         'tenant_id' => (string) $tenant->id,
-                        'reason'    => $e->getMessage(),
+                        'reason' => $e->getMessage(),
                     ]);
                 }
             }
@@ -54,13 +55,13 @@ class CompleteExpiredExams extends Command
 
                 Log::info('Standalone exam auto-completed', [
                     'tenant_id' => $tenantId,
-                    'exam_id'   => $exam->id,
+                    'exam_id' => $exam->id,
                 ]);
             } catch (\Throwable $e) {
                 Log::warning('Standalone exam auto-completion skipped', [
                     'tenant_id' => $tenantId,
-                    'exam_id'   => $exam->id,
-                    'reason'    => $e->getMessage(),
+                    'exam_id' => $exam->id,
+                    'reason' => $e->getMessage(),
                 ]);
             }
         }

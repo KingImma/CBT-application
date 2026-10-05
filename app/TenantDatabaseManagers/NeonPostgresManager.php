@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\TenantDatabaseManagers;
 
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
-use RuntimeException;
 
 class NeonPostgresManager extends PostgreSQLDatabaseManager
 {
@@ -28,7 +28,7 @@ class NeonPostgresManager extends PostgreSQLDatabaseManager
     public function databaseExists(string $name): bool
     {
         return (bool) DB::connection('pgsql_direct')
-            ->select("SELECT datname FROM pg_database WHERE datname = ?", [$name]);
+            ->select('SELECT datname FROM pg_database WHERE datname = ?', [$name]);
     }
 
     /**
@@ -38,17 +38,29 @@ class NeonPostgresManager extends PostgreSQLDatabaseManager
     public function makeConnectionConfig(array $baseConfig, string $databaseName): array
     {
         unset($baseConfig['url']);
-    
-        $parsed = parse_url(
-            (string) config('database.connections.pgsql_direct.url')
-        );
-    
+
+        $url = (string) (config('database.connections.pgsql_direct.url')
+            ?: config('database.connections.pgsql.url'));
+
+        $parsed = $url !== '' ? parse_url($url) : [];
+
+        if (! isset($parsed['host'], $parsed['user'], $parsed['pass'])) {
+            $pgsql = config('database.connections.pgsql', []);
+
+            $parsed = [
+                'host' => $parsed['host'] ?? $pgsql['host'] ?? env('DB_HOST', '127.0.0.1'),
+                'port' => $parsed['port'] ?? $pgsql['port'] ?? env('DB_PORT', 5432),
+                'user' => $parsed['user'] ?? $pgsql['username'] ?? env('DB_USERNAME'),
+                'pass' => $parsed['pass'] ?? $pgsql['password'] ?? env('DB_PASSWORD'),
+            ];
+        }
+
         if (! isset($parsed['host'], $parsed['user'], $parsed['pass'])) {
             throw new RuntimeException(
                 'Invalid DATABASE_URL_DIRECT configuration.'
             );
         }
-    
+
         $baseConfig['driver'] = 'pgsql';
         $baseConfig['host'] = $parsed['host'];
         $baseConfig['port'] = $parsed['port'] ?? 5432;
@@ -56,7 +68,7 @@ class NeonPostgresManager extends PostgreSQLDatabaseManager
         $baseConfig['password'] = $parsed['pass'];
         $baseConfig['database'] = $databaseName;
         $baseConfig['sslmode'] = 'require';
-    
+
         return $baseConfig;
     }
 }

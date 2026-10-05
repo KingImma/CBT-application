@@ -8,7 +8,6 @@ use App\Domains\Exams\Events\ExamAttemptsUpdated;
 use App\Domains\Exams\Events\ExamSessionStateUpdated;
 use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Domains\Exams\Support\ExamSessionStateStore;
-use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;

@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudentProfile extends Model
 {
-    use HasFactory, HasUuids, RecalculatesExamAttendance;
+    use HasFactory;
+    use HasUuids;
+    use RecalculatesExamAttendance;
 
     protected $fillable = [
         'user_id',

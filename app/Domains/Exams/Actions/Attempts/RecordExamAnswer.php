@@ -17,7 +17,8 @@ final class RecordExamAnswer
     public function __construct(
         private ExamSessionStateStore $stateStore,
         private ExamAttemptStateMachine $stateMachine,
-    ) {}
+    ) {
+    }
 
     public function save(ExamAttempt $attempt, string $questionId, array $payload): ExamAnswer
     {

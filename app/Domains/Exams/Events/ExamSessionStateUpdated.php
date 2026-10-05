@@ -16,7 +16,8 @@ class ExamSessionStateUpdated implements ShouldBroadcast
         public readonly ?string $lastAnswerId = null,
         public readonly ?string $lastActivityAt = null,
         public readonly bool $connectionAlive = false,
-    ) {}
+    ) {
+    }
 
     public function broadcastOn(): array
     {

@@ -11,7 +11,8 @@ class BulkOperationResult
         private readonly int $failed,
         private readonly array $failures = [],
         private readonly ?string $message = null,
-    ) {}
+    ) {
+    }
 
     public static function fromLoop(int $succeeded, int $failed, array $failures = []): self
     {

@@ -11,9 +11,12 @@ use Illuminate\Queue\SerializesModels;
 
 class AssessmentOpened
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public AssessmentSchedule $schedule,
-    ) {}
+    ) {
+    }
 }

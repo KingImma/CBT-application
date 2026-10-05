@@ -35,6 +35,8 @@
         <env name="DB_PORT" value="5432"/>
         <env name="DB_USERNAME" value="educbt_user"/>
         <env name="DB_PASSWORD" value="kingmanny_17"/>
+        <env name="DATABASE_URL" value="postgresql://educbt_user:kingmanny_17@127.0.0.1:5432/educbt_testing?schema=public" force="true"/>
+        <env name="DATABASE_URL_DIRECT" value="postgresql://educbt_user:kingmanny_17@127.0.0.1:5432/educbt_testing?schema=public" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

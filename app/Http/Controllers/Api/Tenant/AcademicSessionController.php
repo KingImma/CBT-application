@@ -56,7 +56,7 @@ class AcademicSessionController extends Controller
             'is_current' => ['sometimes', 'boolean'],
         ]);
 
-        $session = (new CreateSession)->execute($validated);
+        $session = (new CreateSession())->execute($validated);
 
         return ApiResponse::created(
             AcademicSessionData::from($session),
@@ -104,7 +104,7 @@ class AcademicSessionController extends Controller
             'is_current' => ['sometimes', 'boolean'],
         ]);
 
-        $session = (new UpdateSession)->execute($session, $validated);
+        $session = (new UpdateSession())->execute($session, $validated);
 
         return ApiResponse::success(
             AcademicSessionData::from($session->load('terms')),

@@ -13,7 +13,8 @@ final class RemoveSubmissionQuestion
 {
     public function __construct(
         private RecomputeSubmissionMarks $recompute,
-    ) {}
+    ) {
+    }
 
     public function execute(Submission $submission, SubmissionQuestion $question): void
     {

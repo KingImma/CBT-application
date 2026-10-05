@@ -19,7 +19,8 @@ class ExamQuestionController extends Controller
     public function __construct(
         private SyncExamQuestions $syncQuestions,
         private SuggestExamQuestions $suggestQuestions,
-    ) {}
+    ) {
+    }
 
     public function index(Exam $exam): JsonResponse
     {
@@ -33,12 +34,15 @@ class ExamQuestionController extends Controller
         );
     }
 
-     public function store(SyncExamQuestionsData $data, Exam $exam, Request $request): JsonResponse
+    public function store(SyncExamQuestionsData $data, Exam $exam, Request $request): JsonResponse
     {
         $this->authorize('manageQuestions', $exam);
 
         $synced = $this->syncQuestions->execute(
-            $exam, $data, $request->user('tenant')->id, SyncExamQuestions::MODE_CREATE
+            $exam,
+            $data,
+            $request->user('tenant')->id,
+            SyncExamQuestions::MODE_CREATE
         );
 
         return ApiResponse::created(ExamQuestionData::collect($synced), 'Exam questions created.');
@@ -49,7 +53,10 @@ class ExamQuestionController extends Controller
         $this->authorize('manageQuestions', $exam);
 
         $synced = $this->syncQuestions->execute(
-            $exam, $data, $request->user('tenant')->id, SyncExamQuestions::MODE_UPDATE
+            $exam,
+            $data,
+            $request->user('tenant')->id,
+            SyncExamQuestions::MODE_UPDATE
         );
 
         return ApiResponse::success(ExamQuestionData::collect($synced), 'Exam questions updated.');

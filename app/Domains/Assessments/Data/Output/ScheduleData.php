@@ -25,23 +25,18 @@ class ScheduleData extends Resource
         public readonly AssessmentStatus $assessment_status,
         public readonly ?string $activated_at,
         public readonly ?string $published_at,
-
         #[WhenLoaded('classLevel')]
         public readonly mixed $classLevel,
-
         #[WhenLoaded('classArm')]
         public readonly mixed $classArm,
-
         #[WhenLoaded('term')]
         public readonly mixed $term,
-
         #[WhenLoaded('academicSession')]
         public readonly mixed $academicSession,
-
         #[WhenLoaded('scheduleSubjects')]
         public readonly mixed $scheduleSubjects,
-
         #[WhenLoaded('submissions')]
         public readonly mixed $submissions,
-    ) {}
+    ) {
+    }
 }

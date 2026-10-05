@@ -33,7 +33,8 @@ class PasswordController extends Controller
         private readonly VerifyOtp $verifyOtp,
         private readonly ResetPassword $resetPassword,
         private readonly ChangePassword $changePassword,
-    ) {}
+    ) {
+    }
 
     // ────────────────────────────
     // POST /api/password/forgot

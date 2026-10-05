@@ -18,7 +18,8 @@ use Illuminate\Queue\SerializesModels;
 
 class SchoolWelcomeMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $schoolName,
@@ -26,7 +27,8 @@ class SchoolWelcomeMail extends Mailable
         public readonly string $adminEmail,
         public readonly string $handle,
         public readonly string $loginUrl,
-    ) {}
+    ) {
+    }
 
     public function envelope(): Envelope
     {

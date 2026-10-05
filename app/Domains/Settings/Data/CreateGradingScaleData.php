@@ -21,7 +21,8 @@ class CreateGradingScaleData extends Data
         public array $grades,
         #[BooleanType]
         public bool $is_default = false,
-    ) {}
+    ) {
+    }
 
     public function getName(): string
     {

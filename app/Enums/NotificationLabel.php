@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 declare(strict_types=1);
 
@@ -8,12 +8,11 @@ enum NotificationLabel: string
 {
     case Assessment = 'assessment';
 
-    case Submission = "submission";
+    case Submission = 'submission';
 
-    case Exam = "exam";
+    case Exam = 'exam';
 
-    case Result = "result";
+    case Result = 'result';
 
-    case Account = "account";
+    case Account = 'account';
 }
-

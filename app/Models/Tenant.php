@@ -18,7 +18,14 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
-    use HasBroadcasting, HasCacheInvalidation, HasDatabase, HasDomains, HasFactory, HasLifecycle, HasValidation, SoftDeletes;
+    use HasBroadcasting;
+    use HasCacheInvalidation;
+    use HasDatabase;
+    use HasDomains;
+    use HasFactory;
+    use HasLifecycle;
+    use HasValidation;
+    use SoftDeletes;
 
     protected $table = 'tenants';
 

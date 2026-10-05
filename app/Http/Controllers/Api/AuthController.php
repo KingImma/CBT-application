@@ -21,7 +21,8 @@ class AuthController extends Controller
     public function __construct(
         private readonly AuthenticateSuperAdmin $superAdminAuth,
         private readonly AuthenticateTenantUser $tenantAuth
-    ) {}
+    ) {
+    }
 
     /**
      * Authenticate a user and return a token.

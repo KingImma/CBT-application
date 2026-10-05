@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\DB;
 
 final class ActivateExam
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(Exam $exam, string $userId): Exam
     {

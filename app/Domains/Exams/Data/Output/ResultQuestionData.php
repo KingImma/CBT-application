@@ -21,7 +21,8 @@ abstract class ResultQuestionData extends Data
         public readonly float $marks_available = 0,
         public readonly float $marks_awarded = 0,
         public readonly bool $is_correct = false,
-    ) {}
+    ) {
+    }
 
     public static function fromAnswer(
         ExamAnswer $answer,

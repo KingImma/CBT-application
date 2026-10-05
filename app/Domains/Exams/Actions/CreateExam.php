@@ -14,7 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 final class CreateExam
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(CreateExamData $dto, string $createdBy): Exam
     {

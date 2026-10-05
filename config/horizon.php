@@ -267,7 +267,7 @@ return [
                 'timeout' => 120,
                 'nice' => 0,
             ],
-            
+
             'supervisor-imports' => [
                 'connection' => 'horizon-redis',
                 'queue' => ['imports'],

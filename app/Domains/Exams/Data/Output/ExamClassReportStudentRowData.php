@@ -17,5 +17,6 @@ class ExamClassReportStudentRowData extends Resource
         public readonly ?string $result_status,
         public readonly ?string $submitted_at,
         public readonly ?string $completed_at,
-    ) {}
+    ) {
+    }
 }

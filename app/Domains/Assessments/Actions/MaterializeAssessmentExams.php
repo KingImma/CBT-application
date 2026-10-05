@@ -18,7 +18,8 @@ final class MaterializeAssessmentExams
 {
     public function __construct(
         private MaterializesExamFromExternalSource $materializer,
-    ) {}
+    ) {
+    }
 
     /** @return array<int,Exam> */
     public function execute(AssessmentSchedule $schedule): array

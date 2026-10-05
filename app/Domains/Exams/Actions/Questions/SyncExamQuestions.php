@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domains\Exams\Actions\Questions;
 
-use App\Domains\Exams\Data\Input\SyncExamQuestionsData;
-use App\Domains\Exams\Support\MarksDistributor;
-use App\Domains\Exams\Exceptions\ExamStateTransitionException;
 use App\Domains\Exams\Data\Input\SyncExamQuestionItemData;
+use App\Domains\Exams\Data\Input\SyncExamQuestionsData;
+use App\Domains\Exams\Exceptions\ExamStateTransitionException;
+use App\Domains\Exams\Support\MarksDistributor;
+use App\Enums\ExamType;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamQuestion;
 use App\Models\Tenant\Question;
 use App\Models\Tenant\SchoolSetting;
-use App\Enums\ExamType;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,11 +20,13 @@ use Illuminate\Support\Str;
 class SyncExamQuestions
 {
     public const MODE_CREATE = 'create';
+
     public const MODE_UPDATE = 'update';
 
     public function __construct(
         protected readonly MarksDistributor $marksDistributor
-    ) {}
+    ) {
+    }
 
     /**
      * @throws DomainException
@@ -101,7 +103,7 @@ class SyncExamQuestions
             throw new DomainException('Cannot create questions for an exam that already has questions.');
         }
 
-        if ($mode === self::MODE_UPDATE && !$hasExisting) {
+        if ($mode === self::MODE_UPDATE && ! $hasExisting) {
             throw new DomainException('Cannot update questions for an exam that has no questions.');
         }
     }
@@ -114,29 +116,29 @@ class SyncExamQuestions
         );
     }
 
-    private function assertNotDuplicateQuestionIds($items) :void
+    private function assertNotDuplicateQuestionIds($items): void
     {
-      $ids = $items->pluck('question_id');
-      throw_if(
-        $ids->count() !== $ids->unique()->count(),
-        new DomainException('Duplicate question IDs found in the payload. Each question ID must be unique within the exam.')
-      );
+        $ids = $items->pluck('question_id');
+        throw_if(
+            $ids->count() !== $ids->unique()->count(),
+            new DomainException('Duplicate question IDs found in the payload. Each question ID must be unique within the exam.')
+        );
     }
 
-    private function assertQuestionsOwnedByTeacher($items, string $userId) :void
+    private function assertQuestionsOwnedByTeacher($items, string $userId): void
     {
         $questionIds = $items->pluck('question_id')->all();
 
         $owned = Question::whereIn('id', $questionIds)
-              ->where('created_by', $userId)
-              ->pluck('id')
-              ->all();
+            ->where('created_by', $userId)
+            ->pluck('id')
+            ->all();
 
         $missing = array_diff($questionIds, $owned);
 
         throw_if(
-          $missing !== [],
-          new DomainException('One or more questions do not belong to your question bank.: ' . implode(', ', $missing))
+            $missing !== [],
+            new DomainException('One or more questions do not belong to your question bank.: '.implode(', ', $missing))
         );
     }
 

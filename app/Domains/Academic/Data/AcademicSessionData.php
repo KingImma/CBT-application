@@ -17,7 +17,8 @@ class AcademicSessionData extends Resource
         public readonly ?string $end_date,
         #[WhenLoaded('terms')]
         public readonly mixed $terms,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

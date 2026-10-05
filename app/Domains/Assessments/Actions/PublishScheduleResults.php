@@ -14,7 +14,8 @@ final class PublishScheduleResults
 {
     public function __construct(
         private PublishExamResults $publishExam,
-    ) {}
+    ) {
+    }
 
     /**
      * Publish results for every materialised exam under this schedule and

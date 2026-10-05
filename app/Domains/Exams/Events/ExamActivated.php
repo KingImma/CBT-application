@@ -11,9 +11,12 @@ use Illuminate\Queue\SerializesModels;
 
 class ExamActivated
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public readonly Exam $exam,
-    ) {}
+    ) {
+    }
 }

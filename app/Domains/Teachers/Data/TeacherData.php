@@ -22,5 +22,6 @@ class TeacherData extends Resource
         public readonly mixed $assignedClasses,
         #[WhenLoaded('teacherAssignments')]
         public readonly mixed $teacherAssignments,
-    ) {}
+    ) {
+    }
 }

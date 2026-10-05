@@ -8,7 +8,9 @@ use App\Models\Tenant\Submission;
 
 final class RecomputeSubmissionMarks
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Keep the submission's total_marks in step with the sum of its question

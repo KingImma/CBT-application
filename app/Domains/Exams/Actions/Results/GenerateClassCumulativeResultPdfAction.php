@@ -18,7 +18,8 @@ final class GenerateClassCumulativeResultPdfAction
     public function __construct(
         private BuildStudentCumulativeResult $build,
         private ResolveSchoolPdfHeader $schoolHeader,
-    ) {}
+    ) {
+    }
 
     /**
      * Generate a cumulative result PDF containing one result sheet
@@ -32,7 +33,9 @@ final class GenerateClassCumulativeResultPdfAction
 
         $students = User::query()
             ->where('role', 'student')
-            ->whereHas('studentProfile', fn ($query) => $query
+            ->whereHas(
+                'studentProfile',
+                fn ($query) => $query
                 ->where('class_level_id', $arm->class_level_id)
                 ->where('class_arm_id', $arm->id)
             )

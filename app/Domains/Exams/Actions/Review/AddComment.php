@@ -14,8 +14,7 @@ final class AddComment
 {
     public function execute(Exam $exam, User $admin, string $comment): ExamComment
     {
-        return DB::transaction(function () use ($exam, $admin, $comment): ExamComment
-        {
+        return DB::transaction(function () use ($exam, $admin, $comment): ExamComment {
             $examComment = ExamComment::create([
                 'exam_id' => $exam->id,
                 'author_id' => $admin->id,

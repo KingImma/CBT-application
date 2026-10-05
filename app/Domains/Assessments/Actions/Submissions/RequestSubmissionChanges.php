@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\DB;
 
 final class RequestSubmissionChanges
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Return a submission to its teacher. The review comment, the status flip,

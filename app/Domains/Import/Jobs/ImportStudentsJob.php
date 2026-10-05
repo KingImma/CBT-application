@@ -20,12 +20,15 @@ use Throwable;
 
 class ImportStudentsJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public int $tries = 1;
-    
+
     public int $backoff = 30;
-    
+
     public int $timeout = 300;
 
     public function middleware(): array
@@ -43,7 +46,7 @@ class ImportStudentsJob implements ShouldQueue
         $central = 'pgsql_imports';
 
         DB::purge($central);
-        
+
         $connection = DB::connection($central);
 
         $claimed = $connection->transaction(function () use ($connection) {
@@ -52,11 +55,11 @@ class ImportStudentsJob implements ShouldQueue
                 ->where('id', $this->importJobId)
                 ->lockForUpdate()
                 ->first();
-    
+
             if ($row === null || $row->status === 'completed') {
                 return null;
             }
-    
+
             $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
@@ -64,7 +67,7 @@ class ImportStudentsJob implements ShouldQueue
                     'status' => 'processing',
                     'updated_at' => now(),
                 ]);
-    
+
             return $row;
         }, 3);
 
@@ -175,11 +178,11 @@ class ImportStudentsJob implements ShouldQueue
     public function failed(Throwable $e): void
     {
         $central = 'pgsql_imports';
-    
+
         DB::purge($central);
-    
+
         $connection = DB::connection($central);
-    
+
         try {
             $connection
                 ->table('import_jobs')
@@ -196,7 +199,7 @@ class ImportStudentsJob implements ShouldQueue
                 'status_error' => $statusError->getMessage(),
             ]);
         }
-    
+
         Log::error('Students import failed permanently', [
             'import_job_id' => $this->importJobId,
             'error' => $e->getMessage(),

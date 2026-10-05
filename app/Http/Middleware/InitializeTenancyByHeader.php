@@ -14,7 +14,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class InitializeTenancyByHeader
 {
-    public function __construct(private readonly Tenancy $tenancy) {}
+    public function __construct(private readonly Tenancy $tenancy)
+    {
+    }
 
     public function handle(Request $request, Closure $next): Response
     {

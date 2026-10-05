@@ -25,7 +25,8 @@ class ClassArmData extends Resource
         public readonly mixed $assignedTeacher,
         #[WhenLoaded('subjects')]
         public readonly mixed $subjects,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

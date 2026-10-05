@@ -10,11 +10,11 @@ use App\Domains\Exams\Data\Output\Results\BroadsheetStudentData;
 use App\Domains\Exams\Data\Output\Results\BroadsheetSubjectData;
 use App\Domains\Exams\Data\Output\Results\StudentSubjectScoreData;
 use App\Domains\Exams\Queries\BroadsheetQuery;
+use App\Domains\Exams\Support\ResolveCAComponentTypes;
 use App\Models\Tenant\AcademicSession;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
 use App\Models\Tenant\Term;
-use App\Domains\Exams\Support\ResolveCAComponentTypes;
 use Spatie\LaravelData\DataCollection;
 
 final class BuildBroadsheet

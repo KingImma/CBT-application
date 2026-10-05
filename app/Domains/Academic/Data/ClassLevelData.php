@@ -24,7 +24,8 @@ class ClassLevelData extends Resource
         public readonly Optional|DataCollection $classArms,
         #[WhenLoaded('subjects')]
         public readonly Optional|DataCollection $subjects,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

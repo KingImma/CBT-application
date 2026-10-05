@@ -14,7 +14,9 @@ use Stancl\Tenancy\Tenancy;
 
 class InitializeTenancyByToken
 {
-    public function __construct(private readonly Tenancy $tenancy) {}
+    public function __construct(private readonly Tenancy $tenancy)
+    {
+    }
 
     public function handle(Request $request, Closure $next): mixed
     {

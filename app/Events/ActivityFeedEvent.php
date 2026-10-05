@@ -20,7 +20,8 @@ class ActivityFeedEvent implements ShouldBroadcast
         public readonly string $action,
         public readonly string $description,
         public readonly array $meta = [],
-    ) {}
+    ) {
+    }
 
     public function broadcastOn()
     {

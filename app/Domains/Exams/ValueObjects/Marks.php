@@ -10,7 +10,9 @@ final class Marks
 {
     private const float MIN_MARKS = 0.0;
 
-    private function __construct(public readonly float $value) {}
+    private function __construct(public readonly float $value)
+    {
+    }
 
     public static function of(float $value): self
     {

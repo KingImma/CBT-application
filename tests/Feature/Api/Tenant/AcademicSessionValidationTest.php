@@ -57,7 +57,7 @@ class AcademicSessionValidationTest extends TestCase
         $this->expectException(DuplicateSessionNameException::class);
         $this->expectExceptionMessage("An academic session with the name '2025/2026' already exists.");
 
-        (new CreateSession)->execute([
+        (new CreateSession())->execute([
             'name' => '2025/2026',
             'start_date' => '2025-09-01',
             'end_date' => '2026-06-30',
@@ -77,7 +77,7 @@ class AcademicSessionValidationTest extends TestCase
         $this->expectException(SessionDateRangeOverlapException::class);
         $this->expectExceptionMessage("The date range overlaps with an existing session ('2025/2026' — 2025-09-01 to 2026-06-30).");
 
-        (new CreateSession)->execute([
+        (new CreateSession())->execute([
             'name' => '2025/2026 Second',
             'start_date' => '2026-01-01',
             'end_date' => '2026-12-31',
@@ -94,7 +94,7 @@ class AcademicSessionValidationTest extends TestCase
             'is_current' => false,
         ]);
 
-        $session = (new CreateSession)->execute([
+        $session = (new CreateSession())->execute([
             'name' => '2026/2027',
             'start_date' => '2026-07-01',
             'end_date' => '2027-06-30',
@@ -125,7 +125,7 @@ class AcademicSessionValidationTest extends TestCase
 
         $this->expectException(DuplicateSessionNameException::class);
 
-        (new UpdateSession)->execute($session2, ['name' => '2025/2026']);
+        (new UpdateSession())->execute($session2, ['name' => '2025/2026']);
     }
 
     public function test_update_session_throws_date_overlap_exception(): void
@@ -146,7 +146,7 @@ class AcademicSessionValidationTest extends TestCase
 
         $this->expectException(SessionDateRangeOverlapException::class);
 
-        (new UpdateSession)->execute($session2, [
+        (new UpdateSession())->execute($session2, [
             'start_date' => '2026-01-01',
             'end_date' => '2026-12-31',
         ]);
@@ -161,7 +161,7 @@ class AcademicSessionValidationTest extends TestCase
             'is_current' => false,
         ]);
 
-        $updated = (new UpdateSession)->execute($session, ['name' => '2025/2026 Updated']);
+        $updated = (new UpdateSession())->execute($session, ['name' => '2025/2026 Updated']);
 
         $this->assertDatabaseHas('academic_sessions', [
             'id' => $updated->id,

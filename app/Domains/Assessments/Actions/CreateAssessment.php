@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 final class CreateAssessment
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Create the stable, school-wide assessment definition. No class binding,

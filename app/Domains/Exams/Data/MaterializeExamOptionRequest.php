@@ -14,5 +14,6 @@ class MaterializeExamOptionRequest extends Data
         public readonly ?string $imageUrl,
         public readonly bool $isCorrect,
         public readonly int $order,
-    ) {}
+    ) {
+    }
 }

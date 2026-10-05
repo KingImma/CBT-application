@@ -24,7 +24,8 @@ class SubjectData extends Resource
         public readonly mixed $classLevels,
         #[WhenLoaded('teacherAssignments')]
         public readonly mixed $teacherAssignments,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

@@ -19,7 +19,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Question extends Model
 {
-    use BelongsToSessionTerm, HasLifecycle, HasUuids, SoftDeletes;
+    use BelongsToSessionTerm;
+    use HasLifecycle;
+    use HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'subject_id',

@@ -30,7 +30,8 @@ class AssessmentController extends Controller
         private CreateAssessment $createAssessment,
         private UpdateAssessment $updateAssessment,
         private DeleteAssessment $deleteAssessment,
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {

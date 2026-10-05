@@ -24,7 +24,7 @@ Route::controller(TeacherExamReportController::class)->group(function () {
     Route::get('class-arms/{classArm}/exams/{exam}/report/pdf', 'classCumulativePdf')
         ->name('exams.report.cumulative-pdf');
 
-     // Class-wide exam summary report (summary grid + roster)
+    // Class-wide exam summary report (summary grid + roster)
     Route::get('class-arms/{classArm}/exams/{exam}/report/summary/pdf', 'examSummaryPdf')
         ->name('exams.report.summary-pdf');
 

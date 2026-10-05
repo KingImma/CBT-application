@@ -17,10 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssessmentSchedule extends Model
 {
-    use HasFactory,
-        HasLifecycle,
-        HasUuids,
-        HasValidation;
+    use HasFactory;
+    use HasLifecycle;
+    use HasUuids;
+    use HasValidation;
 
     protected $fillable = [
         'assessment_id',

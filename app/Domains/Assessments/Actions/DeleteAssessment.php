@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 final class DeleteAssessment
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Delete the definition (cascades its schedules). Blocked while any

@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdateAssessment
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Edit the stable definition. Blocked while any occurrence is active or

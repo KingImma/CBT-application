@@ -21,9 +21,9 @@ use App\Notifications\InAppNotification;
 use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Spatie\QueryBuilder\QueryBuilder;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * @group Exam Administration
@@ -40,7 +40,8 @@ class ExamController extends Controller
         private ForceCompleteExam $forceComplete,
         private PublishExamResults $publishResults,
         private UnpublishExamResults $unpublishResults,
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {

@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class GradingScale extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = ['name', 'grades', 'is_default'];
 

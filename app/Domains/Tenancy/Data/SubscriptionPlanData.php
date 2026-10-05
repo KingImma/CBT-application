@@ -19,7 +19,8 @@ class SubscriptionPlanData extends Resource
         public readonly ?int $price_yearly,
         public readonly ?array $features,
         public readonly bool $is_active,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

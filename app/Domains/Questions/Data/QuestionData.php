@@ -21,7 +21,8 @@ abstract class QuestionData extends Resource
         public readonly ?string $class_level_id = null,
         public readonly ?string $class_level_name = null,
         public readonly ?string $subject_name = null,
-    ) {}
+    ) {
+    }
 
     public static function fromQuestion(Question $question): static
     {

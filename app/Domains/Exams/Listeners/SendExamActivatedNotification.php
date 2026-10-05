@@ -6,12 +6,12 @@ namespace App\Domains\Exams\Listeners;
 
 use App\Domains\Exams\Events\ExamActivated;
 use App\Domains\Exams\Mail\ExamActivatedMail;
+use App\Enums\NotificationLabel;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
+use App\Notifications\InAppNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
-use App\Notifications\InAppNotification;
-use App\Enums\NotificationLabel;
 
 class SendExamActivatedNotification
 {

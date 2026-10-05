@@ -18,5 +18,6 @@ class StudentData extends Resource
         public readonly bool $is_active,
         #[WhenLoaded('studentProfile')]
         public readonly mixed $studentProfile,
-    ) {}
+    ) {
+    }
 }

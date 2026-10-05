@@ -17,7 +17,9 @@ use Illuminate\Validation\ValidationException;
 
 final class CreateAssessmentSchedule
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Schedule a new occurrence of the assessment for a class level (and

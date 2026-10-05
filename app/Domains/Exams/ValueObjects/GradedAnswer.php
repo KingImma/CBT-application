@@ -10,7 +10,8 @@ final class GradedAnswer
         public readonly string $answerId,
         public readonly bool $isCorrect,
         public readonly Marks $marksAwarded,
-    ) {}
+    ) {
+    }
 
     /** Only way to build a correct answer — marks always > 0 by construction. */
     public static function correct(string $answerId, Marks $marksAwarded): self

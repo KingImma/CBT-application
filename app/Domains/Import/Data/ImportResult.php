@@ -17,7 +17,8 @@ class ImportResult
         private readonly array $duplicates = [],
         private readonly array $missingHeaders = [],
         private readonly bool $canProceed = true,
-    ) {}
+    ) {
+    }
 
     public function isSuccess(): bool
     {

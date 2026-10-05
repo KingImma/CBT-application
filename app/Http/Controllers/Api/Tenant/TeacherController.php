@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Tenant;
 
-use App\Domains\Tenancy\Actions\RemoveTenantUserIndex;
-use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Domains\Auth\Actions\ResetUserPassword;
 use App\Domains\Import\Actions\ImportTeachers;
 use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Data\Schemas\TeacherImportSchema;
 use App\Domains\Import\Jobs\ImportTeachersJob;
-use App\Domains\Teachers\Data\TeacherData;
 use App\Domains\Teachers\Actions\TeacherService;
+use App\Domains\Teachers\Data\TeacherData;
+use App\Domains\Tenancy\Actions\RemoveTenantUserIndex;
+use App\Domains\Tenancy\Actions\SyncTenantUser;
 use App\Enums\RoleType;
 use App\Events\ActivityFeedEvent;
 use App\Http\Controllers\Controller;
@@ -25,10 +25,10 @@ use App\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Illuminate\Support\Facades\Log;
 
 /**
  * @group Staff Directory
@@ -174,7 +174,8 @@ class TeacherController extends Controller
             ->with('classLevel', 'subjects')
             ->get();
 
-        $classTeacherSubjects = $classArms->flatMap(fn ($arm) => $arm->subjects
+        $classTeacherSubjects = $classArms->flatMap(
+            fn ($arm) => $arm->subjects
             ->map(fn ($subject) => [
                 'subject' => $subject,
                 'class_level' => $arm->classLevel,
@@ -184,10 +185,11 @@ class TeacherController extends Controller
         );
 
         $combinedSubjectAssignments = $subjectTeacherSubjects->concat(
-            $classTeacherSubjects->reject(fn ($classTeacherSubject) => $subjectTeacherSubjects->contains(
-                fn ($subjectTeacherSubject) => $subjectTeacherSubject['subject']->id === $classTeacherSubject['subject']->id
+            $classTeacherSubjects->reject(
+                fn ($classTeacherSubject) => $subjectTeacherSubjects->contains(
+                    fn ($subjectTeacherSubject) => $subjectTeacherSubject['subject']->id === $classTeacherSubject['subject']->id
                     && $subjectTeacherSubject['class_level']->id === $classTeacherSubject['class_level']->id
-            )
+                )
             )
         )->values();
 
@@ -282,7 +284,7 @@ class TeacherController extends Controller
         DB::transaction(function () use ($teacher, $syncTenantUser) {
             $teacher->restore();
             $teacher->activate()->save();
-            
+
             $syncTenantUser->execute($teacher->email, RoleType::Teacher->value);
         });
 

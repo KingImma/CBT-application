@@ -16,5 +16,6 @@ class MaterializeExamQuestionRequest extends Data
         public readonly float $marks,
         /** @var MaterializeExamOptionRequest[] */
         public readonly array $options,
-    ) {}
+    ) {
+    }
 }

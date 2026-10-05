@@ -19,7 +19,9 @@ use Throwable;
 
 class ImportStudents extends CsvImport
 {
-    public function __construct(private StudentService $student) {}
+    public function __construct(private StudentService $student)
+    {
+    }
 
     protected function schemaClass(): string
     {
@@ -132,36 +134,36 @@ class ImportStudents extends CsvImport
         $imported = 0;
         $skipped = 0;
         $updated = 0;
-    
+
         $duplicateRows = collect($duplicateByRow)
             ->pluck('row')
             ->map(static fn (mixed $row): int => (int) $row)
             ->unique()
             ->all();
-    
+
         foreach ($rows as $index => $row) {
             $data = $row['data'];
-    
+
             $rowNumber = (int) ($row['row'] ?? $index);
-    
+
             $admissionNumber = strtoupper(
                 (string) (
                     $data['admission_number']
                     ?? $this->student->generateAdmissionNumber()
                 )
             );
-    
+
             $email = $data['email']
                 ?? $admissionNumber.'@student.edu';
-    
+
             try {
                 if (in_array($rowNumber, $duplicateRows, true)) {
                     if (! $this->overwriteExisting) {
                         $skipped++;
-    
+
                         continue;
                     }
-    
+
                     DB::connection('tenant')->transaction(
                         function () use (
                             $data,
@@ -191,28 +193,28 @@ class ImportStudents extends CsvImport
                                         );
                                 })
                                 ->first();
-    
+
                             if ($existingUser === null) {
                                 throw new RuntimeException(
                                     "Existing student could not be found for row {$row['row']}."
                                 );
                             }
-    
+
                             $existingUser->update([
                                 'first_name' => $data['first_name'],
                                 'last_name' => $data['last_name'],
                                 'phone' => $data['phone']
                                     ?? $existingUser->phone,
                             ]);
-    
+
                             $profile = $existingUser->studentProfile;
-    
+
                             if ($profile === null) {
                                 throw new RuntimeException(
                                     "Student profile is missing for user {$existingUser->id}."
                                 );
                             }
-    
+
                             $profile->update([
                                 'class_level_id' => $row['_classLevelId'],
                                 'class_arm_id' => $row['_classArmId'],
@@ -226,12 +228,12 @@ class ImportStudents extends CsvImport
                         },
                         3
                     );
-    
+
                     $updated++;
-    
+
                     continue;
                 }
-    
+
                 $payload = $this->buildPayload(
                     $data,
                     $row['_classLevelId'],
@@ -239,18 +241,18 @@ class ImportStudents extends CsvImport
                     $admissionNumber,
                     $email,
                 );
-    
+
                 DB::connection('tenant')->transaction(
                     function () use ($payload): void {
                         $this->student->create($payload);
                     },
                     3
                 );
-    
+
                 $imported++;
             } catch (Throwable $e) {
                 $skipped++;
-    
+
                 Log::warning('Student import row failed', [
                     'row' => $rowNumber,
                     'email' => $email,
@@ -258,7 +260,7 @@ class ImportStudents extends CsvImport
                 ]);
             }
         }
-    
+
         return $this->buildPartsSummary(
             $imported,
             $skipped,

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Tenant\BroadsheetController;
 use App\Http\Controllers\Api\Tenant\ExamReviewController;
 use App\Http\Controllers\Api\Tenant\NotificationController;
-use App\Http\Controllers\Api\Tenant\BroadsheetController;
 use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\TeacherExamReviewController;
 use Illuminate\Support\Facades\Route;

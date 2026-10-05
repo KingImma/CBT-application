@@ -49,6 +49,7 @@ class BackfillDefaultGradingScale extends Command
 
                 if ($hasDefault) {
                     $this->line('  → Already has a default scale, skipping.');
+
                     continue;
                 }
 

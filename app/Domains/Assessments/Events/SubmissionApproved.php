@@ -12,10 +12,13 @@ use Illuminate\Queue\SerializesModels;
 
 class SubmissionApproved
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public Submission $submission,
         public User $admin,
-    ) {}
+    ) {
+    }
 }

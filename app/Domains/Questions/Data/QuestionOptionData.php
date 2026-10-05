@@ -18,5 +18,6 @@ class QuestionOptionData extends Resource
         public readonly ?int $order = null,
         public readonly ?string $match_pair = null,
         public readonly ?bool $case_sensitive = null,
-    ) {}
+    ) {
+    }
 }

@@ -48,8 +48,8 @@ final class StudentCumulativeResultQuery
             ORDER BY sub.name
         SQL, [
             'class_level_id' => $classLevelId,
-            'term_ids' => '{'.implode(',', $termIds) . '}',
-            'ca_types' => '{'.implode(',', $caTypes) . '}',
+            'term_ids' => '{'.implode(',', $termIds).'}',
+            'ca_types' => '{'.implode(',', $caTypes).'}',
             'student_id' => $studentId,
         ]);
     }
@@ -104,8 +104,8 @@ final class StudentCumulativeResultQuery
                 (SELECT COUNT(*) FROM cohort) AS number_in_class,
                 (SELECT position FROM ranked WHERE student_id = :student_id) AS position
         SQL, [
-            'term_ids' => '{'.implode(',', $termIds) . '}',
-            'ca_types' => '{'.implode(',', $caTypes) . '}',
+            'term_ids' => '{'.implode(',', $termIds).'}',
+            'ca_types' => '{'.implode(',', $caTypes).'}',
             'class_level_id' => $classLevelId,
             'class_arm_id' => $classArmId,
             'student_id' => $studentId,

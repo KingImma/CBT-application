@@ -20,7 +20,8 @@ abstract class StudentQuestionData extends Data
         public readonly ?string $image_url = null,
         public readonly int $order = 0,
         public readonly ?float $marks = null,
-    ) {}
+    ) {
+    }
 
     public static function fromExamQuestion(ExamQuestion $examQuestion): static
     {

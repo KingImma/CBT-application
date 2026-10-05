@@ -12,7 +12,8 @@ final class ActivateAssessment
 {
     public function __construct(
         private MaterializeAssessmentExams $materialize,
-    ) {}
+    ) {
+    }
 
     /**
      * Flip the schedule to active and materialise the student-facing paper(s)

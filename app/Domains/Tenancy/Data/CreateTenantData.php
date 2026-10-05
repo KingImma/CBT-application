@@ -40,7 +40,8 @@ class CreateTenantData extends Data
         #[Nullable, Exists('subscription_plans', 'id')]
         public ?string $plan_id,
         public array $curriculum = [],
-    ) {}
+    ) {
+    }
 
     public function getName(): string
     {

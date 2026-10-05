@@ -36,7 +36,8 @@
         "pestphp/pest": "^3.8",
         "pestphp/pest-plugin-laravel": "^3.2",
         "pestphp/pest-plugin-stressless": "^3.1",
-        "phpunit/phpunit": "^11.5.50"
+        "phpunit/phpunit": "^11.5.50",
+        "squizlabs/php_codesniffer": "*"
     },
     "autoload": {
         "psr-4": {

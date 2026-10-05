@@ -24,7 +24,7 @@ class CreateTeacherData extends Data
         public string $email,
         #[Nullable, StringType, Max(20)]
         public ?string $phone,
-        #[Nullable, In(['male','female','other'])]
+        #[Nullable, In(['male', 'female', 'other'])]
         public ?string $gender,
         #[Nullable, StringType, Max(255)]
         public ?string $qualification,
@@ -32,5 +32,6 @@ class CreateTeacherData extends Data
         public ?string $staff_id,
         #[Nullable, Uuid, Exists('class_levels', 'id')]
         public ?string $class_level_id,
-    ) {}
+    ) {
+    }
 }

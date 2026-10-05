@@ -16,7 +16,8 @@ final class GenerateCumulativeResultPdfAction
     public function __construct(
         private BuildStudentCumulativeResult $build,
         private ResolveSchoolPdfHeader $schoolHeader,
-    ) {}
+    ) {
+    }
 
     public function execute(User $student, AcademicSession $session): DomPdf
     {

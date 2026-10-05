@@ -13,7 +13,8 @@ class GradingScaleData extends Resource
         public readonly string $name,
         public readonly array $grades,
         public readonly bool $is_default,
-    ) {}
+    ) {
+    }
 
     public function getId(): string
     {

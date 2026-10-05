@@ -24,7 +24,8 @@ class UpdateTenantData extends Data
         public Optional|string|null $city,
         #[Nullable, StringType, Max(255)]
         public Optional|string|null $state,
-    ) {}
+    ) {
+    }
 
     public function getName(): Optional|string
     {

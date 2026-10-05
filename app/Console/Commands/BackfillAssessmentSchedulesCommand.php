@@ -42,7 +42,7 @@ class BackfillAssessmentSchedulesCommand extends Command
             try {
                 tenancy()->initialize($tenant);
 
-                $backfill = new BackfillAssessmentSchedules;
+                $backfill = new BackfillAssessmentSchedules();
 
                 if (! $backfill->isLegacyFormat()) {
                     $this->line('  ✓ Already on the global-assessment format.');

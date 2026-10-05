@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\DB;
 
 final class CompleteAssessment
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function execute(AssessmentSchedule $schedule): AssessmentSchedule
     {

@@ -111,6 +111,13 @@ class Exam extends Model
         return $query->where('status', ExamStatus::Active);
     }
 
+    public function scopeWindowOpen(Builder $query): Builder
+    {
+        return $query->where(
+            fn (Builder $q) => $q->whereNull('window_end')->orWhere('window_end', '>', now())
+        );
+    }
+
     public function scopeActiveAndStarted(Builder $query): Builder
     {
         return $query

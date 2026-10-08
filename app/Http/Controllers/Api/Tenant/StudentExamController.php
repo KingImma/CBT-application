@@ -45,6 +45,7 @@ class StudentExamController extends Controller
         $profile = $student->studentProfile;
 
         $exams = Exam::where('status', ExamStatus::Active->value)
+            ->windowOpen()
             ->where('class_level_id', $profile?->class_level_id)
             ->where(
                 fn ($q) => $q
@@ -126,10 +127,11 @@ class StudentExamController extends Controller
 
     public function activeAttempt(Request $request, string $id): JsonResponse
     {
-        $attempt = ExamAttempt::where('exam_id', $id)
-            ->forStudent($request->user('tenant')->id)
-            ->inProgress()
-            ->firstOrFail();
+        $attempt = $this->resolveLiveAttempt($id, $request->user('tenant')->id);
+        
+        if ($attempt === null) {
+            return $this->noLiveAttempt();
+        }
 
         $questionsData = $this->getQuestions->execute($attempt);
 
@@ -151,10 +153,11 @@ class StudentExamController extends Controller
 
     public function getQuestions(Request $request, string $id): JsonResponse
     {
-        $attempt = ExamAttempt::where('exam_id', $id)
-            ->forStudent($request->user('tenant')->id)
-            ->inProgress()
-            ->firstOrFail();
+        $attempt = $this->resolveLiveAttempt($id, $request->user('tenant')->id);
+        
+        if ($attempt === null) {
+            return $this->noLiveAttempt();
+        }
 
         $questionsData = $this->getQuestions->execute($attempt);
 
@@ -582,5 +585,34 @@ class StudentExamController extends Controller
             'selected_option_ids.*' => ['uuid'],
             'text_answer' => ['prohibited'],
         ];
+    }
+
+    private function resolveLiveAttempt(string $examId, string $studentId): ?ExamAttempt
+    {
+        $attempt = ExamAttempt::with('exam')
+            ->forExam($examId)
+            ->forStudent($studentId)
+            ->inProgress()
+            ->first();
+    
+        if ($attempt === null) {
+            return null;
+        }
+    
+        if ($attempt->isExpired()) {
+            $this->finalizeAttempt->execute($attempt, reason: 'stale_heartbeat');
+    
+            return null;
+        }
+    
+        return $attempt;
+    }
+    
+    private function noLiveAttempt(): JsonResponse
+    {
+        return ApiResponse::error(
+            'No active attempt for this exam. It may have ended or expired.',
+            410,
+        );
     }
 }

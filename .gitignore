@@ -60,3 +60,4 @@ broad.md
 # Git worktrees (local isolation)
 .worktrees/
 assessment-lifecycle-status-sync.md
+.editorconfig

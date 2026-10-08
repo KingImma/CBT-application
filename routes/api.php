@@ -7,8 +7,6 @@ use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Middleware\InitializeTenancyByHeader;
 use Illuminate\Support\Facades\Broadcast;
-use App\Http\Controllers\Api\CronController;
-use App\Http\Middleware\EnsureValidCronToken;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -60,13 +58,4 @@ Route::controller(PasswordController::class)
             '/change',
             'change',
         );
-    });
-
-
-Route::prefix('cron')
-    ->middleware(EnsureValidCronToken::class)
-    ->group(function () {
-        Route::match(['get', 'post'], 'heartbeat', [CronController::class, 'heartbeat']);
-        Route::match(['get', 'post'], 'schedule', [CronController::class, 'schedule']);
-        Route::match(['get', 'post'], 'drain', [CronController::class, 'drain']);
     });

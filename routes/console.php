@@ -20,11 +20,11 @@ Schedule::command('tenants:prune-expired-tokens --hours=24')
     });
 
 // // Tick active exam sessions to detect stale heartbeats
-// Schedule::command('exams:tick-active-sessions')
-//     ->everyFifteenSeconds()
-//     ->onFailure(function () {
-//         Log::channel('slack')->error('Heartbeat tick failed');
-//     });
+Schedule::command('exams:tick-active-sessions')
+    ->everyFifteenSeconds()
+    ->onFailure(function () {
+        Log::channel('slack')->error('Heartbeat tick failed');
+    });
 
 // Auto-submit exam attempts whose individual timer has expired
 Schedule::command('exams:auto-submit-expired')

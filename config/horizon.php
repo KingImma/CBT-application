@@ -97,8 +97,7 @@ return [
     */
 
     'waits' => [
-        'horizon-redis:default' => 60,
-        'horizon-redis:exams' => 30,
+        'redis:default' => 60,
     ],
 
     /*

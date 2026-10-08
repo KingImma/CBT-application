@@ -97,7 +97,8 @@ return [
     */
 
     'waits' => [
-        'redis:default' => 60,
+        'horizon-redis:default' => 60,
+        'horizon-redis:exams' => 30,
     ],
 
     /*
@@ -229,7 +230,7 @@ return [
 
             'supervisor-default' => [
                 'connection' => 'horizon-redis',
-                'queue' => ['default', 'notifications', 'emails', 'exams', 'imports'],
+                'queue' => ['exams', 'default', 'notifications', 'emails'],
                 'balance' => 'auto',
                 'autoScalingStrategy' => 'time',
                 'minProcesses' => 1,
@@ -238,8 +239,19 @@ return [
                 'balanceCooldown' => 3,
                 'memory' => 128,
                 'tries' => 3,
+                'backoff' => [10, 30, 60],
+                'timeout' => 120,
+            ],
+            
+            'supervisor-imports' => [
+                'connection' => 'horizon-redis',
+                'queue' => ['imports'],
+                'balance' => 'simple',
+                'processes' => 1,
+                'memory' => 256,
+                'tries' => 1,
                 'timeout' => 300,
-                'nice' => 0,
+                'nice' => 10,
             ],
         ],
 

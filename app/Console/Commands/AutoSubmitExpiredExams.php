@@ -49,7 +49,7 @@ class AutoSubmitExpiredExams extends Command
                             }
 
                             try {
-                                $this->finalizeAction->execute($attempt);
+                                $this->finalizeAction->execute($attempt, reason: 'stale_heartbeat');
                                 $this->info("  Auto-submitted attempt {$attempt->id} for student {$attempt->student_id}");
                             } catch (\Exception $e) {
                                 $this->error("  Failed to submit attempt {$attempt->id}: {$e->getMessage()}");

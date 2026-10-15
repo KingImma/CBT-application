@@ -97,7 +97,7 @@ return [
     */
 
     'waits' => [
-        'redis:default' => 60,
+        'horizon-redis:default' => 60,
     ],
 
     /*
@@ -220,9 +220,10 @@ return [
                 'balance' => 'auto',
                 'autoScalingStrategy' => 'time',
                 'minProcesses' => 1,
-                'maxProcesses' => 5,
+                'maxProcesses' => 2,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
+                'memory' => 256,
                 'tries' => 3,
                 'timeout' => 300,
             ],
@@ -241,7 +242,7 @@ return [
                 'backoff' => [10, 30, 60],
                 'timeout' => 120,
             ],
-            
+
             'supervisor-imports' => [
                 'connection' => 'horizon-redis',
                 'queue' => ['imports'],

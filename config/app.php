@@ -125,5 +125,7 @@ return [
 
     'central_domain' => env('CENTRAL_DOMAIN', 'localhost'),
 
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL')),
+
     'student_default_password' => env('STUDENT_DEFAULT_PASSWORD', 'Cbt@2026'),
 ];

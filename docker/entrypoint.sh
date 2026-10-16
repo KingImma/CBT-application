@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eux
 
-echo "===== ENTRYPOINT STARTED ====="
+echo "===== WEB ENTRYPOINT STARTED ====="
 
 php -v
 php artisan --version
@@ -11,7 +11,6 @@ php artisan --version
 # starts and the whole app answers 502. Each step is therefore fail-safe.
 echo "Clearing application caches (config, events, views, cache)..."
 php artisan optimize:clear || echo "WARN: optimize:clear failed (continuing)"
-php artisan horizon:terminate || echo "WARN: horizon:terminate failed (continuing)"
 php artisan event:clear || echo "WARN: event:clear failed (continuing)"
 php artisan permission:cache-reset || echo "WARN: permission:cache-reset failed (continuing)"
 
@@ -42,26 +41,22 @@ php artisan db:seed --class=SubscriptionPlanSeeder --force || echo "WARN: Subscr
 echo "Clearing stale queue worker memory..."
 php artisan queue:restart || echo "WARN: queue:restart failed (continuing)"
 
-echo "Starting Horizon..."
-php artisan horizon > /proc/1/fd/1 2>&1 &
+# ---------------------------------------------------------------------------
+# Horizon now runs on the VPS worker (systemd cbt-horizon.service).
+# Do NOT start it here — it competes with php-fpm for the free instance's
+# single 0.1 CPU, which is what caused the 502s.
+# ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Scheduler stays on the web service (variant B2). Render sleeps after ~15 min
+# idle, which lets Neon compute scale to zero; during an exam the student's own
+# traffic keeps the service awake, so the auto-submit ticks still fire.
+#
+# If you switch to variant B1 (scheduler on the VPS), delete the two lines
+# below and enable cbt-scheduler.service on the VPS instead.
+# ---------------------------------------------------------------------------
 echo "Starting scheduler..."
 php artisan schedule:work > /proc/1/fd/1 2>&1 &
-
-echo "Verify Horizon Running..."
-horizon_ok=0
-for i in 1 2 3 4 5 6 7 8 9 10; do
-  if php artisan horizon:status 2>/dev/null | grep -qi "running"; then
-    echo "Horizon confirmed running."
-    horizon_ok=1
-    break
-  fi
-  sleep 1
-done
-
-if [ "$horizon_ok" -eq 0 ]; then
-  echo "WARNING: Horizon did not report running in time. Continuing anyway (non-fatal)."
-fi
 
 echo "Starting php-fpm..."
 php-fpm -D

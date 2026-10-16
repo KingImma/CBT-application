@@ -38,7 +38,8 @@ class ImportStudentsJob implements ShouldQueue
 
     public function __construct(private readonly string $importJobId)
     {
-        $this->queue = 'imports';
+        $this->onConnection('horizon-redis');
+        $this->OnQueue = 'imports';
     }
 
     public function handle(): void
@@ -80,6 +81,9 @@ class ImportStudentsJob implements ShouldQueue
         }
 
         tenancy()->initialize($claimed->tenant_id);
+
+        DB::purge('tenant');
+        DB::reconnect('tenant');
 
         $tempPath = null;
 

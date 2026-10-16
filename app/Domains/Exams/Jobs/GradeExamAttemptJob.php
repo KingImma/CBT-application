@@ -46,6 +46,7 @@ class GradeExamAttemptJob implements ShouldQueue
         public readonly string $attemptId,
         public readonly string $tenantId,
     ) {
+        $this->onConnection('horizon-redis');
         $this->onQueue('exams');
     }
 

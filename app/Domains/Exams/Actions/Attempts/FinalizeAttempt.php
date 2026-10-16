@@ -6,6 +6,7 @@ namespace App\Domains\Exams\Actions\Attempts;
 
 use App\Domains\Exams\Events\ExamAttemptsUpdated;
 use App\Domains\Exams\Events\ExamSessionStateUpdated;
+use App\Domains\Exams\Jobs\GradeExamAttemptJob;
 use App\Domains\Exams\State\ExamAttemptStateMachine;
 use App\Domains\Exams\Support\ExamSessionStateStore;
 use App\Enums\ExamStatus;
@@ -13,13 +14,11 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamAttempt;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 final class FinalizeAttempt
 {
     public function __construct(
         private ExamSessionStateStore $stateStore,
-        private GradeExamAttempt $gradeAttempt,
         private ExamAttemptStateMachine $stateMachine,
     ) {
     }
@@ -33,31 +32,13 @@ final class FinalizeAttempt
 
     private function submit(ExamAttempt $attempt, ?User $actor): ExamAttempt
     {
-        $attempt->update([
-            'status' => $this->stateMachine->submit($attempt, $actor)->value,
-            'submitted_at' => now(),
-        ]);
+        $this->destroySessionState($attempt);
 
-        $attempt->update([
-            'status' => $this->stateMachine->claimForGrading($attempt->fresh())->value,
-        ]);
-
-        try {
-            $this->gradeAttempt->execute($attempt->fresh());
-        } catch (\Throwable $e) {
-            $attempt->fresh()->update([
-                'status' => $this->stateMachine->fail($attempt->fresh())->value,
-            ]);
-
-            Log::error('Exam grading failed', [
-                'attempt_id' => $attempt->id,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-        } finally {
-            $this->destroySessionState($attempt);
-        }
-
+        GradeExamAttemptJob::dispatch(
+            (string) $attempt->id,
+            (string) tenant('id')
+        );
+        
         return $attempt->fresh();
     }
 

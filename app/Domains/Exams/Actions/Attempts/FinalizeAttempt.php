@@ -32,6 +32,11 @@ final class FinalizeAttempt
 
     private function submit(ExamAttempt $attempt, ?User $actor): ExamAttempt
     {
+        $attempt->update([
+            'status' => $this->stateMachine->submit($attempt, $actor)->value,
+            'submitted_at' => now(),
+        ]);
+            
         $this->destroySessionState($attempt);
 
         GradeExamAttemptJob::dispatch(

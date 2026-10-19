@@ -94,6 +94,10 @@ final class UpdateAssessmentSchedule
                 );
 
                 $schedule->question_submission_ends = $newEnds;
+
+                if ($schedule->isQuestionSubmissionClosed()) {
+                    $schedule->reopenSubmissions();
+                }
             }
 
             $schedule->assessment_starts = $starts;

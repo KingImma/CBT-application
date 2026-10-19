@@ -48,10 +48,10 @@ final class AttemptGradeResult
         ];
     }
 
-    public function toAttemptAttributes(): array
+    public function toAttemptAttributes(?ExamAttemptStatus $status = null): array
     {
         return [
-            'status' => ExamAttemptStatus::Graded->value,
+            'status' => ($status ?? ExamAttemptStatus::Graded)->value,
             ...$this->baseAttributes(),
             'time_spent_seconds' => $this->timeSpentSeconds,
         ];

@@ -25,11 +25,15 @@ final class ExamAttemptStateMachine
     {
         $status = $this->statusOf($attempt);
 
-        if ($status === ExamAttemptStatus::Submitted || $status === ExamAttemptStatus::Grading) {
+        if (in_array($status, [
+            ExamAttemptStatus::Submitted,
+            ExamAttemptStatus::Grading,
+            ExamAttemptStatus::Timed_out,
+        ], true)) {
             return ExamAttemptStatus::Grading;
         }
 
-        throw new RuntimeException('Only submitted or grading attempts can be claimed for grading.');
+        throw new RuntimeException('Only submitted, grading or timed-out attempts can be claimed for grading.');
     }
 
     /** Grading -> Graded (strict). */

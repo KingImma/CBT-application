@@ -13,6 +13,7 @@ use Illuminate\Console\Command;
 class RecoverStuckGrading extends Command
 {
     protected $signature = 'exams:recover-stuck-grading
+        {--include-timed-out : Also (re)dispatch grading for timed-out attempts (score backfill)}
         {--dry-run : List stuck attempts without dispatching jobs}';
 
     protected $description = 'Re-dispatches grading jobs for attempts stuck in Grading or Submitted status';
@@ -31,6 +32,10 @@ class RecoverStuckGrading extends Command
             ExamAttemptStatus::Submitted->value,
             ExamAttemptStatus::Grading->value,
         ];
+
+        if ($this->option('include-timed-out')) {
+            $stuckStatuses[] = ExamAttemptStatus::Timed_out->value;
+        }
 
         $totalDispatched = 0;
 

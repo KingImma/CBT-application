@@ -44,11 +44,11 @@ final class FinalizeAttempt
 
     private function timeout(ExamAttempt $attempt): ExamAttempt
     {
-        return DB::transaction(function () use ($attempt) {
+        $timedOut =  DB::transaction(function () use ($attempt) {
             $attempt->update([
                 'status' => $this->stateMachine->timeout($attempt)->value,
                 'submitted_at' => now(),
-                'time_spent_seconds' => (int) now()->diffInSeconds($attempt->started_at),
+                'time_spent_seconds' => (int) now()->diffInSeconds($attempt->started_at, true),
             ]);
 
             $fresh = $attempt->fresh();
@@ -82,6 +82,10 @@ final class FinalizeAttempt
 
             return $fresh;
         });
+
+        GradeExamAttemptJob::dispatch((string) $timedOut->id, (string) tenant('id'));
+
+        return $timedOut;
     }
 
     private function destroySessionState(ExamAttempt $attempt): void

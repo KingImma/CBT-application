@@ -73,7 +73,9 @@ class GradeExamAttemptJob implements ShouldQueue
                 'attempt_id' => $this->attemptId,
             ]);
 
-            $claimed = DB::transaction(function () use ($stateMachine) {
+            $wasTimedOut = false; 
+
+            $claimed = DB::transaction(function () use ($stateMachine, &$wasTimedOut) {
                 Log::debug('GradeExamAttemptJob: claim phase started', [
                     'attempt_id' => $this->attemptId,
                 ]);
@@ -89,6 +91,11 @@ class GradeExamAttemptJob implements ShouldQueue
 
                     return null;
                 }
+
+                $currentStatus = $attempt->status instanceof ExamAttemptStatus
+                    ? $attempt->status
+                    : ExamAttemptStatus::tryFrom((string) $attempt->status);
+                $wasTimedOut = $currentStatus === ExamAttemptStatus::Timed_out;
 
                 try {
                     $nextStatus = $stateMachine->claimForGrading($attempt);
@@ -121,7 +128,7 @@ class GradeExamAttemptJob implements ShouldQueue
                 'attempt_id' => $this->attemptId,
             ]);
 
-            $gradeAttempt->execute($claimed->fresh());
+            $gradeAttempt->execute($claimed->fresh(), $wasTimedOut);
 
             Log::debug('GradeExamAttemptJob: grading phase completed', [
                 'attempt_id' => $this->attemptId,

@@ -31,19 +31,21 @@ final class GradeExamAttempt
     ) {
     }
 
-    public function execute(ExamAttempt $attempt): ExamAttempt
+    public function execute(ExamAttempt $attempt, bool $timedOut = false): ExamAttempt
     {
         $this->stateMachine->grade($attempt);
 
-        return DB::transaction(function () use ($attempt) {
+        return DB::transaction(function () use ($attempt, $timedOut) {
             $exam = $attempt->exam;
 
             $gradeResult = $this->scoreAndPersistAnswers($attempt, $exam);
 
-            $attempt->update($gradeResult->toAttemptAttributes());
+            $attempt->update($gradeResult->toAttemptAttributes(
+                $timedOut ? ExamAttemptStatus::Timed_out : null,
+            ));
             $gradedAttempt = $attempt->fresh();
 
-            $this->persistResultAndCascade($gradedAttempt, $exam, $gradeResult);
+            $this->persistResultAndCascade($gradedAttempt, $exam, $gradeResult, $timedOut);
 
             return $gradedAttempt;
         });
@@ -102,7 +104,8 @@ final class GradeExamAttempt
     private function persistResultAndCascade(
         ExamAttempt $gradedAttempt,
         Exam $exam,
-        AttemptGradeResult $gradeResult
+        AttemptGradeResult $gradeResult,
+        bool $skipCompletion =false
     ): void {
         $examResult = ExamResult::updateOrCreate(
             ['exam_attempt_id' => $gradedAttempt->id],
@@ -117,7 +120,7 @@ final class GradeExamAttempt
 
         // Guards against double-incrementing completed_attempts if this
         // action re-runs against an already-graded attempt (manual recompute).
-        if ($examResult->wasRecentlyCreated) {
+        if (! $skipCompletion && $examResult->wasRecentlyCreated) {
             $this->advanceExamCompletionState($exam);
         }
     }

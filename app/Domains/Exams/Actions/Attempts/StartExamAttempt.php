@@ -35,6 +35,7 @@ final class StartExamAttempt
                 'attempt_number' => $lastAttemptNumber + 1,
                 'status' => ExamAttemptStatus::InProgress->value,
                 'started_at' => now(),
+                'last_heartbeat_at' => now(),
             ]);
 
             $this->seedSessionState($attempt);

@@ -380,6 +380,7 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
+        $this->touchHeartbeat($attempt);
         $remaining = $attempt->getTimeRemainingSeconds();
 
         return ApiResponse::success(
@@ -398,6 +399,7 @@ class StudentExamController extends Controller
             return ApiResponse::error('Unauthorized.', 403);
         }
 
+        $this->touchHeartbeat($attempt);
         $cached = $this->stateStore->read((string) tenant('id'), $attemptId);
 
         if ($cached !== null) {
@@ -614,5 +616,20 @@ class StudentExamController extends Controller
             'No active attempt for this exam. It may have ended or expired.',
             410,
         );
+    }
+
+    private function touchHeartbeat(ExamAttempt $attempt): void
+    {
+        if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
+            return;
+        }
+        
+        $last = $attempt->last_heartbeat_at;
+
+        if ($last !== null && $last->gt(now()->subSeconds(30))) {
+            return;
+        }
+
+        $attempt->updateQuietly(['last_heartbeat_at' => now()]);
     }
 }

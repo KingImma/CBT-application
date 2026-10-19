@@ -45,7 +45,10 @@ class TickActiveExamSessions extends Command
                     ->where('status', ExamAttemptStatus::InProgress->value)
                     ->where(function ($q) use ($cutoff) {
                         $q->where('last_heartbeat_at', '<', $cutoff)
-                            ->orWhereNull('last_heartbeat_at');
+                            ->orWhere(function ($q) use ($cutoff) {
+                                $q->whereNull('last_heartbeat_at')
+                                    ->where('started_at', '<', $cutoff);
+                            });
                     })
                     ->chunk(100, function ($attempts) use ($tenantId) {
                         foreach ($attempts as $attempt) {

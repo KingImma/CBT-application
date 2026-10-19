@@ -35,6 +35,7 @@ class ExamAttempt extends Model
         'started_at',
         'status',
         'submitted_at',
+        'last_heartbeat_at',
         'total_score',
         'percentage_score',
         'grade',
@@ -46,6 +47,7 @@ class ExamAttempt extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'last_heartbeat_at' => 'datetime',
         'time_spent_seconds' => 'integer',
         'total_score' => 'decimal:2',
         'percentage_score' => 'decimal:2',

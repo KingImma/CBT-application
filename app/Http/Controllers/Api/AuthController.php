@@ -159,18 +159,28 @@ class AuthController extends Controller
             ] : null,
         ];
 
-        if ($user->assignedLevels->isNotEmpty()) {
-            $data['assigned_levels'] = $user->assignedLevels->map(fn ($l) => [
-                'class_level' => $l->classLevel ? [
-                    'id' => $l->classLevel->id,
-                    'name' => $l->classLevel->name,
-                    'slug' => $l->classLevel->slug,
-                ] : null,
+        // Canonical assignment lists, unioned across every source:
+        // level overseer (teacher_profiles.class_level_id), level assignments,
+        // subject assignments and class-teacher arms. Shaped exactly like the
+        // previous payload so the dashboard keeps working.
+        $scope = new TeacherAssignmentScope($user);
+
+        $levels = $scope->classLevels();
+
+        if ($levels->isNotEmpty()) {
+            $data['assigned_levels'] = $levels->map(fn ($level) => [
+                'class_level' => [
+                    'id' => $level->id,
+                    'name' => $level->name,
+                    'slug' => $level->slug,
+                ],
             ])->toArray();
         }
 
-        if ($user->assignedClasses->isNotEmpty()) {
-            $data['assigned_classes'] = $user->assignedClasses->map(fn ($arm) => [
+        $arms = $scope->classArms();
+
+        if ($arms->isNotEmpty()) {
+            $data['assigned_classes'] = $arms->map(fn ($arm) => [
                 'id' => $arm->id,
                 'name' => $arm->name,
                 'class_level' => $arm->classLevel ? [

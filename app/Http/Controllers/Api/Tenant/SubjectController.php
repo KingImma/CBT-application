@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Domains\Academic\Data\SubjectData;
+use App\Domains\Teachers\Support\TeacherAssignmentScope;
 use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Subject;
@@ -27,21 +28,34 @@ class SubjectController extends Controller
      * @subgroup Subject Management
      *
      * @queryParam class_level_id string Filter by class level UUID. No-example
+     * @queryParam class_arm_id string Filter by class arm UUID (teachers only). No-example
      * @queryParam academic_session_id string Filter by academic session UUID. No-example
      */
     public function index(Request $request): JsonResponse
     {
-        $subjects = Subject::with([
+        $query = Subject::with([
             'classLevels',
-            'teacherAssignments.user:id,first_name,last_name',
+            'teacherAssignments.user:id,first_name,name',
             'teacherAssignments.academicSession:id,name',
         ])
             ->where('is_active', true)
             ->when($request->class_level_id, fn ($q, $id) => $q->whereHas('classLevels', fn ($q2) => $q2->where('class_level_id', $id)))
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
 
-        return ApiResponse::success(SubjectData::collect($subjects), 'Subjects retrieved successfully.');
+        $user = $request->user('tenant');
+
+        if ($user->hasRole(RoleType::Teacher->value) && ! $user->hasRole(RoleType::SchoolAdmin->value)) {
+            (new TeacherAssignmentScope($user))->scopeSubjects(
+                $query,
+                $request->class_level_id,
+                $request->class_arm_id,
+            );
+        }
+
+        return ApiResponse::success(
+            SubjectData::collect($query->get()),
+            'Subjects retrieved successfully.'
+        );
     }
 
     /**

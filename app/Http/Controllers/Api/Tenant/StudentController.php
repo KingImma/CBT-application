@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\Tenant;
 use App\Domains\Auth\Actions\ResetUserPassword;
 use App\Domains\Import\Actions\ImportStudents;
 use App\Domains\Import\Data\ImportResult;
+use App\Domains\Teachers\Support\TeacherAssignmentScope;
 use App\Domains\Import\Data\Schemas\StudentImportSchema;
 use App\Domains\Import\Jobs\ImportStudentsJob;
 use App\Domains\Students\Actions\StudentService;
@@ -34,33 +35,42 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class StudentController extends Controller
 {
-    /**
-     * List students with optional filters.
-     *
-     * @subgroup Student Management
-     *
-     * @queryParam status string Filter by status: active, inactive, all (default: active). No-example
-     * @queryParam search string Search by name, email, or admission number. No-example
-     * @queryParam class_level_id string Filter by class level UUID. No-example
-     * @queryParam class_arm_id string Filter by class arm UUID. No-example
-     */
-    public function index(Request $request, StudentQuery $queries): JsonResponse
-    {
-        $status = $request->query('status', 'active');
+/**
+ * List students with optional filters.
+ *
+ * @subgroup Student Management
+ *
+ * @queryParam status string Filter by status: active, inactive, all (default: active). No-example
+ * @queryParam search string Search by name, email, or admission number. No-example
+ * @queryParam class_level_id string Filter by class level UUID. No-example
+ * @queryParam class_arm_id string Filter by class arm UUID. No-example
+ */
+public function index(Request $request, StudentQuery $queries): JsonResponse
+{
+    $status = $request->query('status', 'active');
 
-        $students = $queries->forList()
-            ->tap(fn ($q) => $queries->search($q, is_string($request->query('search')) ? $request->query('search') : null))
-            ->tap(fn ($q) => $queries->filterByClass($q, $request->class_level_id, $request->class_arm_id))
-            ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
-            ->orderBy('last_name')
-            ->paginate(50);
+    $students = $queries->forList()
+        ->tap(fn ($q) => $queries->search($q, is_string($request->query('search')) ? $request->query('search') : null))
+        ->tap(fn ($q) => $queries->filterByClass($q, $request->class_level_id, $request->class_arm_id));
 
-        return ApiResponse::paginated(
-            $students,
-            'Students retrieved successfully.',
-            StudentData::collect($students->getCollection())
-        );
+    // A teacher only sees students in the classes they hold; admins see all.
+    $user = $request->user('tenant');
+
+    if ($user->hasRole(RoleType::Teacher->value) && ! $user->hasRole(RoleType::SchoolAdmin->value)) {
+        $students = (new TeacherAssignmentScope($user))->scopeStudents($students);
     }
+
+    $students = $students
+        ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+        ->orderBy('last_name')
+        ->paginate(50);
+
+    return ApiResponse::paginated(
+        $students,
+        'Students retrieved successfully.',
+        StudentData::collect($students->getCollection())
+    );
+}
 
     /**
      * Get a single student with their profile.

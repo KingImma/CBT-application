@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Domains\Auth\Actions\AuthenticateSuperAdmin;
 use App\Domains\Auth\Actions\AuthenticateTenantUser;
+use App\Domains\Teachers\Support\TeacherAssignmentScope;
 use App\Enums\RoleType;
 use App\Http\Controllers\Controller;
 use App\Models\SuperAdmin;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Assessments\Support;
 
+use App\Domains\Assessments\Exceptions\ScheduleSubjectDailyCapException;
 use App\Domains\Assessments\Exceptions\ScheduleSubjectOutOfRangeException;
 use App\Domains\Assessments\Exceptions\ScheduleSubjectOverlapException;
 use App\Domains\Assessments\Exceptions\ScheduleWindowNotSetException;

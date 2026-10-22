@@ -89,6 +89,9 @@ class User extends Authenticatable
 
     public function receivesBroadcastNotificationsOn(): string
     {
-        return "tenant.{$this->tenant_id}.users.{$this->id}";
+        $tenant = tenant();
+        $identifier = $tenant?->slug ?? $tenant?->id;
+    
+        return "tenant.{$identifier}.users.{$this->id}";
     }
 }

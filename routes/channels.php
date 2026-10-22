@@ -43,10 +43,28 @@ Broadcast::channel('exam-session.{attemptId}', function ($user, string $attemptI
         && (string) $user->id === (string) $attempt->student_id;
 });
 
+$tenantIdentifiers = static function (): array {
+    $tenant = tenant();
+
+    if ($tenant === null) {
+        return [];
+    }
+
+    return array_values(array_filter([
+        (string) $tenant->id,
+        (string) $tenant->slug,
+        (string) $tenant->handle,
+    ]));
+};
+
+$tenantGuards = ['guards' => ['tenant']];
+$superAdminGuards = ['guards' => ['super_admin']];
+
 // Tenant Users (Admin, Teacher, Student)
-Broadcast::channel('tenant.{tenantId}.users.{userId}', function (User $user, string $tenantId, string $userId) {
-    return (string) tenant('id') === $tenantId && (string) $user->id === $userId;
-});
+Broadcast::channel('tenant.{tenantId}.users.{userId}', function (User $user, string $tenantId, string $userId) use ($tenantIdentifiers) {
+    return in_array($tenantId, $tenantIdentifiers(), true)
+        && (string) $user->id === (string) $userId;
+}, $tenantGuards);
 
 // Super Admins
 Broadcast::channel('superadmin.{adminId}', function (SuperAdmin $admin, string $adminId) {

@@ -86,7 +86,14 @@ final class ScheduleSubjectRules
             $date = $startsAt->toDateString();
 
             $count = ScheduleSubject::query()
-                ->whereHas('schedule', fn ($q) => $q->where('class_level_id', $schedule->class_level_id))
+                ->whereHas('schedule', function ($q) use ($schedule) {
+                    if ($schedule->class_arm_id !== null) {
+                        $q->where('class_arm_id', $schedule->class_arm_id);
+                    } else {
+                        // Level-wide schedule: no arm to tie the cap to.
+                        $q->where('class_level_id', $schedule->class_level_id);
+                    }
+                })
                 ->when($excludeScheduleSubjectId, fn ($q) => $q->where('id', '!=', $excludeScheduleSubjectId))
                 ->whereDate('starts_at', $date)
                 ->count();
@@ -94,7 +101,9 @@ final class ScheduleSubjectRules
             throw_if(
                 $count >= $limit,
                 new ScheduleSubjectDailyCapException(
-                    $schedule->classLevel?->name ?? 'This class',
+                    $schedule->classArm?->name
+                        ?? $schedule->classLevel?->name
+                        ?? 'This class',
                     $limit,
                     $date,
                 ),

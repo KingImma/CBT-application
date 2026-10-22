@@ -35,7 +35,7 @@ class SubjectController extends Controller
     {
         $query = Subject::with([
             'classLevels',
-            'teacherAssignments.user:id,first_name,name',
+            'teacherAssignments.user:id,first_name,last_name',
             'teacherAssignments.academicSession:id,name',
         ])
             ->where('is_active', true)

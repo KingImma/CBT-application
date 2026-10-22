@@ -70,17 +70,47 @@ final class UpdateAssessmentSchedule
                 ])
             );
 
-            if ($starts !== null && $ends !== null) {
-                $outside = $schedule->scheduleSubjects()
-                    ->where(fn ($q) => $q->where('starts_at', '<', $starts)->orWhere('ends_at', '>', $ends))
-                    ->count();
+            // When the master start moves, every subject slot moves with it so
+            // the exams materialised at activation inherit the new time. A pure
+            // resize (start unchanged) leaves the slots where they are.
+            $shiftSeconds = 0;
 
-                throw_if(
-                    $outside > 0,
-                    ValidationException::withMessages([
-                        'assessment_starts' => ["{$outside} subject slot(s) would fall outside the new exam window."],
-                    ])
-                );
+            if (
+                $starts !== null
+                && $schedule->assessment_starts !== null
+                && ! $starts->equalTo($schedule->assessment_starts)
+            ) {
+                $shiftSeconds = $starts->getTimestamp() - $schedule->assessment_starts->getTimestamp();
+            }
+
+            if ($starts !== null && $ends !== null) {
+                $slots = $schedule->scheduleSubjects()->get();
+
+                // Validate the *shifted* positions, not the current ones, so a
+                // moved window that would push a slot outside is rejected up
+                // front instead of silently orphaning it.
+                foreach ($slots as $slot) {
+                    $slotStarts = $slot->starts_at->copy()->addSeconds($shiftSeconds);
+                    $slotEnds = $slot->ends_at->copy()->addSeconds($shiftSeconds);
+
+                    throw_if(
+                        $slotStarts->lt($starts) || $slotEnds->gt($ends),
+                        ValidationException::withMessages([
+                            'assessment_starts' => [
+                                'The new exam window would push at least one subject slot outside it. Update the subject slots first, or extend the window.',
+                            ],
+                        ])
+                    );
+                }
+
+                if ($shiftSeconds !== 0) {
+                    foreach ($slots as $slot) {
+                        $slot->update([
+                            'starts_at' => $slot->starts_at->copy()->addSeconds($shiftSeconds),
+                            'ends_at' => $slot->ends_at->copy()->addSeconds($shiftSeconds),
+                        ]);
+                    }
+                }
             }
 
             if (! $dto->question_submission_ends instanceof Optional && $dto->question_submission_ends !== null) {

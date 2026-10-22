@@ -73,4 +73,18 @@ class SubmissionPolicy
 
         return now()->isBefore($deadline);
     }
+
+    /**
+     * The teacher who owns an approved paper places its subject's exam slot,
+     * and only while the schedule is still a draft. Admins have no override:
+     * scheduling is teacher-owned by design.
+     */
+    public function manageScheduleSlot(User $user, Submission $submission): bool
+    {
+        return $user->hasRole(RoleType::Teacher->value)
+            && $submission->isOwnedBy($user)
+            && $submission->isApproved()
+            && $submission->schedule !== null
+            && $submission->schedule->isDraft();
+    }
 }

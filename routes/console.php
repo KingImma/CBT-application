@@ -53,6 +53,12 @@ Schedule::command('assessments:tick')
         Log::channel('slack')->error('Assessment tick failed');
     });
 
+Schedule::command('assessments:remind-missing-slots')
+    ->dailyAt('08:00')
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::warning('Missing-slot reminder failed');
+    });
+
 // Recover stuck jobs
 Schedule::command('imports:recover-stuck --minutes=15')
     ->everyFiveMinutes()

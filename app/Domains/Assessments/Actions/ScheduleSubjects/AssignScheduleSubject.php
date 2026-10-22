@@ -6,6 +6,7 @@ namespace App\Domains\Assessments\Actions\ScheduleSubjects;
 
 use App\Domains\Assessments\Data\Input\ScheduleSubjectData;
 use App\Domains\Assessments\Support\ScheduleSubjectRules;
+use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\ScheduleSubject;
 use Illuminate\Support\Carbon;
@@ -19,7 +20,15 @@ final class AssignScheduleSubject
             $startsAt = Carbon::parse($dto->starts_at);
             $endsAt = Carbon::parse($dto->ends_at);
 
+            throw_unless(
+                $schedule->isDraft(),
+                new AssessmentStateTransitionException(
+                    'Subject slots can only be set while the schedule is still a draft.'
+                )
+            );
+
             ScheduleSubjectRules::canAssignWindow()($schedule, $startsAt, $endsAt);
+            ScheduleSubjectRules::canAssignWithinDailyCap()($schedule, $startsAt);
 
             return $schedule->scheduleSubjects()->create([
                 'subject_id' => $dto->subject_id,

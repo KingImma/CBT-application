@@ -29,6 +29,7 @@ class SchoolSettingController extends Controller
         'default_max_attempts',
         'default_show_result_immediately',
         'default_pass_mark',
+        'max_subjects_per_day',
     ];
 
     /**

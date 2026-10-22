@@ -65,4 +65,39 @@ final class ScheduleSubjectRules
             }
         };
     }
+
+    /**
+     * A class level may sit at most DailySubjectCap::limit() subjects on one
+     * calendar day, counted across every schedule for that class level.
+     */
+    public static function canAssignWithinDailyCap(?string $excludeScheduleSubjectId = null): Closure
+    {
+        return function (
+            AssessmentSchedule $schedule,
+            Carbon $startsAt,
+        ) use ($excludeScheduleSubjectId): void {
+            $limit = DailySubjectCap::limit();
+
+            if ($limit === null) {
+                return;
+            }
+
+            $date = $startsAt->toDateString();
+
+            $count = ScheduleSubject::query()
+                ->whereHas('schedule', fn ($q) => $q->where('class_level_id', $schedule->class_level_id))
+                ->when($excludeScheduleSubjectId, fn ($q) => $q->where('id', '!=', $excludeScheduleSubjectId))
+                ->whereDate('starts_at', $date)
+                ->count();
+
+            throw_if(
+                $count >= $limit,
+                new ScheduleSubjectDailyCapException(
+                    $schedule->classLevel?->name ?? 'This class',
+                    $limit,
+                    $date,
+                ),
+            );
+        };
+    }
 }

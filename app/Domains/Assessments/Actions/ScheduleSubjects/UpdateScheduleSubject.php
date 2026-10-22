@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assessments\Actions\ScheduleSubjects;
 
 use App\Domains\Assessments\Data\Input\ScheduleSubjectData;
+use App\Domains\Assessments\Exceptions\AssessmentStateTransitionException;
 use App\Domains\Assessments\Support\ScheduleSubjectRules;
 use App\Models\Tenant\ScheduleSubject;
 use Illuminate\Support\Carbon;
@@ -18,12 +19,18 @@ final class UpdateScheduleSubject
             $startsAt = Carbon::parse($dto->starts_at);
             $endsAt = Carbon::parse($dto->ends_at);
 
-            // self-excluded from its own overlap check
-            ScheduleSubjectRules::canAssignWindow($scheduleSubject->id)(
-                $scheduleSubject->schedule,
-                $startsAt,
-                $endsAt,
+            $schedule = $scheduleSubject->schedule;
+            
+            throw_unless(
+                $schedule->isDraft(),
+                new AssessmentStateTransitionException(
+                    'Subject slots can only be changed while the schedule is still a draft.'
+                )
             );
+
+            // self-excluded from its own overlap + cap checks
+            ScheduleSubjectRules::canAssignWindow($scheduleSubject->id)($schedule, $startsAt, $endsAt);
+            ScheduleSubjectRules::canAssignWithinDailyCap($scheduleSubject->id)($schedule, $startsAt);
 
             $scheduleSubject->update([
                 'starts_at' => $startsAt,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\Tenant\AssessmentController;
 use App\Http\Controllers\Api\Tenant\AssessmentScheduleController;
 use App\Http\Controllers\Api\Tenant\ScheduleSubjectController;
+use App\Http\Controllers\Api\Tenant\SubmissionScheduleSlotController;
 use App\Http\Controllers\Api\Tenant\SubmissionController;
 use Illuminate\Support\Facades\Route;
 
@@ -69,21 +70,25 @@ Route::middleware('role:teacher|school_admin,tenant')->group(function () {
     Route::get('assessment-schedules/{schedule}/schedule-subjects', [ScheduleSubjectController::class, 'index']);
 });
 
-Route::middleware('role:school_admin,tenant')
+Route::middleware('role:teacher|school_admin,tenant')
     ->controller(ScheduleSubjectController::class)
     ->prefix('assessment-schedules/{schedule}/schedule-subjects')
     ->group(function () {
-        Route::post('/', 'store');
-        Route::patch('/{scheduleSubject}', 'update');
-        Route::delete('/{scheduleSubject}', 'destroy');
+        Route::get('/', 'index');
+    });
+
+Route::middleware('role:teacher,tenant')
+    ->controller(SubmissionScheduleSlotController::class)
+    ->group(function () {
+        Route::put('submissions/{submission}/schedule-slot', 'update');
+        Route::patch('submissions/{submission}/schedule-slot', 'update');
+        Route::delete('submissions/{submission}/schedule-slot', 'destroy');
     });
 
 /*
 |--------------------------------------------------------------------------
 | Teacher submissions (a teacher's paper inside a schedule occurrence)
 |--------------------------------------------------------------------------
-| Authoring is teacher|school_admin (policies enforce ownership + status);
-| the review loop (request-changes / approve) is admin-only.
 */
 Route::middleware('role:teacher|school_admin,tenant')->group(function () {
     Route::get('assessment-schedules/{schedule}/submissions', [SubmissionController::class, 'index']);

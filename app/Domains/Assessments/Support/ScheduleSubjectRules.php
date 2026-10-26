@@ -83,7 +83,9 @@ final class ScheduleSubjectRules
                 return;
             }
 
-            $date = $startsAt->toDateString();
+            $dayStart = SchoolDay::of($startsAt);
+            $date = $dayStart->toDateString();
+            [$dayStartUtc, $dayEndUtc] = SchoolDay::bounds($dayStart);
 
             $count = ScheduleSubject::query()
                 ->whereHas('schedule', function ($q) use ($schedule) {
@@ -95,7 +97,8 @@ final class ScheduleSubjectRules
                     }
                 })
                 ->when($excludeScheduleSubjectId, fn ($q) => $q->where('id', '!=', $excludeScheduleSubjectId))
-                ->whereDate('starts_at', $date)
+                ->where('starts_at', '>=', $dayStartUtc)
+                ->where('starts_at', '<', $dayEndUtc)
                 ->count();
 
             throw_if(

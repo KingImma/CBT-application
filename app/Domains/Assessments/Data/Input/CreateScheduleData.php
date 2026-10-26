@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domains\Assessments\Data\Input;
 
+use App\Shared\Casts\ToUtc;
 use Illuminate\Validation\Validator;
 use Spatie\LaravelData\Attributes\Validation\Date;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
+use Spatie\LaravelData\Attributes\WithCast;
 use Spatie\LaravelData\Data;
 
 /**
@@ -22,11 +24,11 @@ class CreateScheduleData extends Data
         public readonly string $class_level_id,
         #[Nullable, Uuid, Exists('class_arms', 'id')]
         public readonly ?string $class_arm_id,
-        #[Date]
+        #[Date, WithCast(ToUtc::class)]
         public readonly string $question_submission_ends,
-        #[Nullable, Date]
+        #[Nullable, Date, WithCast(ToUtc::class)]
         public readonly ?string $assessment_starts,
-        #[Nullable, Date]
+        #[Nullable, Date, WithCast(ToUtc::class)]
         public readonly ?string $assessment_ends,
     ) {
     }
@@ -36,10 +38,13 @@ class CreateScheduleData extends Data
         $validator->after(function ($validator): void {
             $data = $validator->getData();
 
-            if (isset($data['assessment_starts'], $data['assessment_ends'])
-                && $data['assessment_starts'] >= $data['assessment_ends']) {
-                $validator->errors()->add('assessment_ends', 'The student end time must be after the student start time.');
-            }
+            $starts = ToUtc::normalize($data['assessment_starts'] ?? null);
+            $ends = ToUtc::normalize($data['assessment_ends'] ?? null);
+
+            if ($starts !== null && $ends !== null && $starts->greaterThanOrEqualTo($ends)) {
+                    $validator->errors()->add('assessment_ends', 'The student end time must be after the student start time.');
+                }
+            });
         });
     }
 }

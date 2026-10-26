@@ -8,6 +8,7 @@ use App\Domains\Assessments\Actions\ActivateAssessment;
 use App\Domains\Assessments\Actions\CloseSubmissions;
 use App\Domains\Assessments\Actions\CompleteAssessment;
 use App\Domains\Assessments\Actions\CreateAssessmentSchedule;
+use App\Domains\Assessments\Data\Input\ReopenSubmissionsData;
 use App\Domains\Assessments\Actions\DeleteAssessmentSchedule;
 use App\Domains\Assessments\Actions\PublishScheduleResults;
 use App\Domains\Assessments\Actions\ReopenSubmissions;
@@ -134,20 +135,15 @@ class AssessmentScheduleController extends Controller
         );
     }
 
-    public function reopen(Request $request, AssessmentSchedule $schedule): JsonResponse
+    public function reopen(ReopenSubmissionsData $data, AssessmentSchedule $schedule): JsonResponse
     {
         Gate::authorize('manage', $schedule);
-
-        $validated = $request->validate([
-            'question_submission_ends' => ['required', 'date'],
-        ]);
-
-        return ApiResponse::success(
-            ScheduleData::from($this->reopenSubmissions->execute($schedule, $validated['question_submission_ends'])),
+        
+        ScheduleData::from($this->reopenSubmissions->execute($schedule, $data->question_submission_ends)),
             'Question submission window reopened.'
         );
     }
-
+    
     public function activate(AssessmentSchedule $schedule): JsonResponse
     {
         Gate::authorize('manage', $schedule);

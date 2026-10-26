@@ -10,13 +10,6 @@ use App\Http\Controllers\Api\Tenant\TeacherController;
 use App\Http\Controllers\Api\Tenant\TeacherExamReviewController;
 use Illuminate\Support\Facades\Route;
 
-Route::controller(AuthController::class)
-    ->prefix('auth')
-    ->group(function () {
-        Route::post('/logout', 'logout');
-        Route::get('/me', 'me');
-    });
-
 Route::controller(NotificationController::class)
     ->prefix('notifications')
     ->middleware('auth:tenant')->group(function () {

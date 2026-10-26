@@ -138,8 +138,9 @@ class AssessmentScheduleController extends Controller
     public function reopen(ReopenSubmissionsData $data, AssessmentSchedule $schedule): JsonResponse
     {
         Gate::authorize('manage', $schedule);
-        
-        ScheduleData::from($this->reopenSubmissions->execute($schedule, $data->question_submission_ends)),
+    
+        return ApiResponse::success(
+            ScheduleData::from($this->reopenSubmissions->execute($schedule, $data->question_submission_ends)),
             'Question submission window reopened.'
         );
     }

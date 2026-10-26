@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Domains\Assessments\Data\Output\ScheduleSubjectData as ScheduleSubjectOutput;
 use App\Domains\Assessments\Support\DailySubjectCap;
-use App\Http\Controllers\Controller;
 use App\Domains\Assessments\Support\SchoolDay;
+use App\Http\Controllers\Controller;
 use App\Models\Tenant\AssessmentSchedule;
 use App\Models\Tenant\ScheduleSubject;
 use App\Shared\Support\ApiResponse;
@@ -31,7 +31,7 @@ class ScheduleSubjectController extends Controller
             ->orderBy('starts_at')
             ->get();
 
-        dailyUsage = $slots
+        $dailyUsage = $slots
             ->map(fn (ScheduleSubject $slot) => SchoolDay::of($slot->starts_at))
             ->unique(fn ($day) => $day->toDateString())
             ->mapWithKeys(function ($day) use ($schedule): array {
@@ -39,7 +39,13 @@ class ScheduleSubjectController extends Controller
 
                 return [
                     $day->toDateString() => ScheduleSubject::query()
-                        ->whereHas('schedule', fn ($q) => $q->where('class_level_id', $schedule->class_level_id))
+                        ->whereHas('schedule', function ($q) use ($schedule) {
+                            if ($schedule->class_arm_id !== null) {
+                                $q->where('class_arm_id', $schedule->class_arm_id);
+                            } else {
+                                $q->where('class_level_id', $schedule->class_level_id);
+                            }
+                        })
                         ->where('starts_at', '>=', $dayStartUtc)
                         ->where('starts_at', '<', $dayEndUtc)
                         ->count(),

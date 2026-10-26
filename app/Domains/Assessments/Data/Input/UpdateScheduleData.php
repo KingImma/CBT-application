@@ -39,9 +39,8 @@ class UpdateScheduleData extends Data
             $ends = ToUtc::normalize($data['assessment_ends'] ?? null);
 
             if ($starts !== null && $ends !== null && $starts->greaterThanOrEqualTo($ends)) {
-                    $validator->errors()->add('assessment_ends', 'The student end time must be after the student start time.');
-                }
-            });
+                $validator->errors()->add('assessment_ends', 'The student end time must be after the student start time.');
+            }
         });
     }
 }

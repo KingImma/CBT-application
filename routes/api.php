@@ -29,6 +29,18 @@ Route::middleware([InitializeTenancyByHeader::class])->group(function () {
         });
 });
 
+Route::middleware([
+    InitializeTenancyByHeader::class,   // still initialises the tenant DB when X-Tenant is sent
+    'auth.any:super_admin,tenant',
+    'ensure.active',
+])
+    ->controller(AuthController::class)
+    ->prefix('auth')
+    ->group(function () {
+        Route::post('/logout', 'logout');
+        Route::get('/me', 'me');
+    });
+
 Route::middleware([InitializeTenancyByHeader::class, 'auth:tenant'])->post(
     '/broadcasting/auth',
     function () {

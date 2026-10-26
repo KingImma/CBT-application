@@ -10,12 +10,14 @@ class EnsureUserIsActive
 {
     public function handle(Request $request, Closure $next)
     {
-        // Sanctum already guaranteed $request->user() exists by this point.
-        // We just need to check if they have been banned/deactivated.
-        if (! $request->user()->is_active) {
-            // Optional: Auto-revoke the token so they have to log in again if reactivated
-            $request->user()->currentAccessToken()->delete();
-
+        $user = $request->user();
+        
+        if (! $user) {
+            return ApiResponse::error('You must be logged in to access this resource', 401);
+        }
+        
+        if (! $user->is_active) {
+            $user->currentAccessToken()?->delete();
             return ApiResponse::error('Account deactivated. Contact administration.', 403);
         }
 

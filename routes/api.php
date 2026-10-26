@@ -31,7 +31,7 @@ Route::middleware([InitializeTenancyByHeader::class])->group(function () {
 
 Route::middleware([
     InitializeTenancyByHeader::class,   // still initialises the tenant DB when X-Tenant is sent
-    'auth.any:super_admin,tenant',
+    'auth:super_admin,tenant',
     'ensure.active',
 ])
     ->controller(AuthController::class)

@@ -78,6 +78,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             InitializeTenancyByHeader::class,
             Authenticate::class,
+            AuthenticateAnyGuard::class,
             EnsureUserIsActive::class,
             SubstituteBindings::class,
             Authorize::class,

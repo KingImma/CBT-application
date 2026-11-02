@@ -12,7 +12,7 @@ trait HasCacheInvalidation
     public static function bootHasCacheInvalidation(): void
     {
         static::saved(function (Model $tenant) {
-            if ($tenant->wasChanged(['handle', 'is_active', 'subscription_status'])) {
+            if ($tenant->wasChanged(['handle', 'is_active', 'subscription_status', 'name'])) {
                 Cache::forget("tenant:handle:{$tenant->getOriginal('handle')}");
 
                 if ($tenant->wasChanged('handle')) {

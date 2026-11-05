@@ -11,6 +11,7 @@ use App\Domains\Import\Data\ImportResult;
 use App\Domains\Teachers\Support\TeacherAssignmentScope;
 use App\Domains\Import\Data\Schemas\StudentImportSchema;
 use App\Domains\Import\Jobs\ImportStudentsJob;
+use App\Domains\Students\Actions\DeleteStudent;
 use App\Domains\Students\Actions\StudentService;
 use App\Domains\Students\Data\StudentData;
 use App\Domains\Students\Queries\StudentQuery;
@@ -23,6 +24,7 @@ use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Models\Tenant\User;
 use App\Shared\Support\ApiResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -335,16 +337,24 @@ class StudentController extends Controller
      *
      * @urlParam id string required The student UUID.
      */
-    public function destroy(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
-    {
+    public function destroy(
+        RemoveTenantUserIndex $removeTenantUserIndex,
+        DeleteStudent $deleteStudent,
+        string $id,
+    ): JsonResponse {
         $student = User::withTrashed()->role(RoleType::Student->value)->findOrFail($id);
         $this->authorize('deleteStudent', $student);
 
-        DB::transaction(function () use ($student) {
-            $student->studentProfile()->delete();
-            $student->syncRoles([]);
-            $student->forceDelete();
-        });
+        try {
+            $deleteStudent->execute($student);
+        } catch (QueryException $e) {
+            Log::warning('Student delete blocked by a database constraint', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ApiResponse::error('This student still has linked records and could not be deleted.', 409);
+        }
 
         $this->forgetLoginIndex($removeTenantUserIndex, $student->email);
 

@@ -5,14 +5,32 @@ declare(strict_types=1);
 namespace App\Domains\Import\Actions;
 
 use App\Domains\Import\Data\ImportResult;
+use App\Domains\Import\Support\ImportProgress;
 use App\Shared\Support\CsvHeaderNormalizer;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
 
 abstract class CsvImport
 {
+    private ?ImportProgress $progress = null;
+    
+    private string $progressType = 'import';
+    
     public function __construct()
     {
+    }
+
+    public function forJob(?string $importJobId, string $type = 'import'): static
+    {
+        $this->progress = ImportProgress::make($importJobId);
+        $this->progressType = $type;
+
+        return $this;
+    }
+
+    protected function progress(): ?ImportProgress
+    {
+        return $this->progress;
     }
 
     public function execute(array $validated, string $filePath, bool $dryRun): ImportResult
@@ -72,6 +90,7 @@ abstract class CsvImport
             }
 
             try {
+                $this->progress?->phase('writing');
                 return $this->processRows($rows, $duplicateByRow);
             } catch (Throwable $e) {
                 return new ImportResult(
@@ -92,6 +111,10 @@ abstract class CsvImport
         $rows = [];
         $errors = [];
 
+        $rules = $this->schemaClass()::validatorRules();
+        $keyMap = $this->buildKeyMap($headers);
+        $columnCount = count($headers);
+
         while (($raw = fgetcsv($handle)) !== false) {
             if ($this->isRowEmpty($raw)) {
                 continue;
@@ -99,18 +122,18 @@ abstract class CsvImport
 
             $rowNumber = count($rows) + count($errors) + 1;
 
-            if (count($headers) !== count($raw)) {
+            if ($columnCount !== count($raw)) {
                 $errors[] = [
                     'row' => $rowNumber,
-                    'errors' => ['_columns' => ['Column count mismatch: expected '.count($headers).', got '.count($raw).'.']],
+                    'errors' => ['_columns' => ['Column count mismatch: expected '. $columnCount .', got '.count($raw).'.']],
                 ];
 
                 continue;
             }
 
-            $data = $this->normalizeRow(array_combine($headers, $raw));
+            $data = $this->applyKeyMap(array_combine($headers, $raw), $keyMap)
 
-            $validator = Validator::make($data, $this->schemaClass()::validatorRules());
+            $validator = Validator::make($data, $rules);
             if ($validator->fails()) {
                 $errors[] = [
                     'row' => $rowNumber,
@@ -131,6 +154,39 @@ abstract class CsvImport
             'errors' => $errors,
             'totalRows' => count($rows) + count($errors),
         ];
+    }
+
+    /**
+     * Precompute the canonical key for every CSV header once per file.
+     *
+     * @return array<string, string>
+     */
+    protected function buildKeyMap(array $headers): array
+    {
+        $map = [];
+
+        foreach ($headers as $header) {
+            $header = (string) $header;
+            $map[$header] = CsvHeaderNormalizer::normalize($header) ?? strtolower(trim($header));
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $keyMap
+     * @return array<string, mixed>
+     */
+    protected function applyKeyMap(array $data, array $keyMap): array
+    {
+        $normalized = [];
+
+        foreach ($data as $key => $value) {
+            $normalized[$keyMap[$key] ?? $key] = $value;
+        }
+
+        return $normalized;
     }
 
     protected function buildDuplicateIndex(array $rows): array
@@ -155,7 +211,13 @@ abstract class CsvImport
 
     protected function isRowEmpty(array $row): bool
     {
-        return collect($row)->reject(fn ($v) => blank($v))->isEmpty();
+        foreach ($row as $value) {
+            if (! blank($value)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     abstract protected function schemaClass(): string;
@@ -279,6 +341,8 @@ abstract class CsvImport
         }
 
         $duplicateByRow = $this->buildDuplicateIndex($rows);
+
+        $this->progress?->start($this->progressType, $parsed['totalRows']);
 
         $this->overwriteExisting = ($validated['overwrite_existing'] ?? null) === 'update';
 

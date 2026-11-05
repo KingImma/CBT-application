@@ -19,10 +19,14 @@ class TeacherService
     ) {
     }
 
+    public function defaultPassword(): string
+    {
+        return (string) config('app.teacher_default_password', 'teach12345');
+    }
+
     public function create(array $data): array
     {
-        $password = $data['password']
-            ?? config('app.teacher_default_password', 'teach12345');
+        $password = $data['password'] ?? $this->defaultPassword();
 
         $prepared = [
             'first_name' => $data['first_name'],
@@ -92,7 +96,8 @@ class TeacherService
 
         $last = TeacherProfile::lockForUpdate()
             ->where('staff_id', 'like', "TCH/{$year}/%")
-            ->orderBy('id', 'desc')
+            ->select('staff_id')
+            ->orderByRaw("CAST(SUBSTRING(staff_id FROM '[0-9]+$') AS INTEGER) DESC")
             ->first();
 
         $next = 1;

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Domains\Import\Jobs;
 
 use App\Domains\Import\Actions\ImportTeachers;
+use App\Domains\Import\Data\ImportResult;
+use App\Domains\Import\Support\ImportProgress;
+use App\Events\ActivityFeedEvent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -122,6 +125,28 @@ class ImportTeachersJob implements ShouldQueue
 
             DB::purge($central);
 
+            if (! $result->isSuccess()) {
+                $connection
+                    ->table('import_jobs')
+                    ->where('id', $this->importJobId)
+                    ->update([
+                        'status' => 'failed',
+                        'retain_until' => now()->addDays(3),
+                        'updated_at' => now(),
+                    ]);
+
+                try {
+                    $this->notifyFailure($result, $claimed->tenant_id);
+                } catch (Throwable $e) {
+                    Log::error('Failed to send teacher import failure notification', [
+                        'import_job_id' => $this->importJobId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                return;
+            }
+
             $connection
                 ->table('import_jobs')
                 ->where('id', $this->importJobId)
@@ -152,6 +177,37 @@ class ImportTeachersJob implements ShouldQueue
 
             DB::purge($central);
         }
+    }
+
+    public function notifyComplete(ImportResult $result, string $tenantId): void
+    {
+        event(new ActivityFeedEvent(
+            channelType: 'school_admin',
+            channelId: $tenantId,
+            action: 'teacher_import_completed',
+            description: 'Teacher import completed.',
+            meta: [
+                'imported' => $result->getImported(),
+                'skipped' => $result->getSkipped(),
+                'updated' => $result->getUpdated(),
+                'total_rows' => $result->getTotalRows(),
+            ],
+        ));
+    }
+
+    public function notifyFailure(ImportResult $result, string $tenantId): void
+    {
+        event(new ActivityFeedEvent(
+            channelType: 'school_admin',
+            channelId: $tenantId,
+            action: 'teacher_import_failed',
+            description: $result->getMessage() ?? 'Teacher import failed.',
+            meta: [
+                'errors' => $result->getErrors(),
+                'total_rows' => $result->getTotalRows(),
+                'retained' => true,
+            ],
+        ));
     }
 
     public function failed(Throwable $e): void

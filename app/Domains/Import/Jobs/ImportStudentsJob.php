@@ -6,6 +6,7 @@ namespace App\Domains\Import\Jobs;
 
 use App\Domains\Import\Actions\ImportStudents;
 use App\Domains\Import\Data\ImportResult;
+use App\Domains\Import\Support\ImportProgress;
 use App\Events\ActivityFeedEvent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -97,28 +98,16 @@ class ImportStudentsJob implements ShouldQueue
             $validated = json_decode($claimed->meta, true);
             $validated['dry_run'] = 'false';
 
-            $result = app(ImportStudents::class)->execute($validated, $tempPath, false);
+            $result = app(ImportStudents::class)
+                ->forJob($this->importJobId, 'student')
+                ->execute($validated, $tempPath, false);
 
             if (! $result->isSuccess()) {
-                $connection
-                    ->table('import_jobs')
-                    ->where('id', $this->importJobId)
-                    ->update([
-                        'status' => 'failed',
-                        'retain_until' => now()->addDays(3),
-                        'updated_at' => now(),
-                    ]);
-
-                try {
-                    $this->notifyFailure($result, $claimed->tenant_id);
-                } catch (Throwable $e) {
-                    Log::error('Failed to send student import failure notification', [
-                        'import_job_id' => $this->importJobId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
-                return;
+                ImportProgress::make($this->importJobId)?->failed(
+                    $result->getMessage() ?? 'Student import failed.',
+                    $result->getErrors(),
+                    $result->getTotalRows(),
+                );
             }
 
             $connection
@@ -126,14 +115,12 @@ class ImportStudentsJob implements ShouldQueue
                 ->where('id', $this->importJobId)
                 ->update(['status' => 'completed', 'updated_at' => now()]);
 
-            try {
-                $this->notifyComplete($result, $claimed->tenant_id);
-            } catch (Throwable $e) {
-                Log::error('Failed to send student import completion notification', [
-                    'import_job_id' => $this->importJobId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            ImportProgress::make($this->importJobId)?->completed(
+                (int) $result->getImported(),
+                (int) $result->getSkipped(),
+                (int) $result->getUpdated(),
+                (int) $result->getTotalRows(),
+            );
 
             $connection
                 ->table('import_jobs')
@@ -183,30 +170,8 @@ class ImportStudentsJob implements ShouldQueue
     {
         $central = 'pgsql_imports';
 
+        ImportProgress::make($this->importJobId)?->failed('Import failed: '.$e->getMessage());
+
         DB::purge($central);
-
-        $connection = DB::connection($central);
-
-        try {
-            $connection
-                ->table('import_jobs')
-                ->where('id', $this->importJobId)
-                ->update([
-                    'status' => 'failed',
-                    'retain_until' => now()->addDays(3),
-                    'updated_at' => now(),
-                ]);
-        } catch (Throwable $statusError) {
-            Log::critical('Could not mark student import as failed', [
-                'import_job_id' => $this->importJobId,
-                'original_error' => $e->getMessage(),
-                'status_error' => $statusError->getMessage(),
-            ]);
-        }
-
-        Log::error('Students import failed permanently', [
-            'import_job_id' => $this->importJobId,
-            'error' => $e->getMessage(),
-        ]);
     }
 }

@@ -19,9 +19,14 @@ class StudentService
     ) {
     }
 
+    public function defaultPassword(): string
+    {
+        return (string) config('app.student_default_password');
+    }
+
     public function create(array $data): array
     {
-        $password = config('app.student_default_password');
+        $password = $this->defaultPassword();
 
         $prepared = [
             'first_name' => $data['first_name'],
@@ -101,18 +106,20 @@ class StudentService
     public function generateAdmissionNumber(): string
     {
         $year = date('Y');
+        $prefix = "STU/{$year}/";
 
         $lastProfile = StudentProfile::lockForUpdate()
-            ->where('admission_number', 'like', "STU/{$year}/%")
-            ->orderBy('id', 'desc')
+            ->where('admission_number', 'like', $prefix.'%')
+            ->select('admission_number')
+            ->orderByRaw("CAST(SUBSTRING(admission_number FROM '[0-9]+$') AS INTEGER) DESC")
             ->first();
 
         $nextCount = 1;
 
-        if ($lastProfile && preg_match('/(\d+)$/', $lastProfile->admission_number, $matches)) {
+        if ($lastProfile && preg_match('/(\d+)$/', (string) $lastProfile->admission_number, $matches)) {
             $nextCount = (int) $matches[1] + 1;
         }
 
-        return "STU/{$year}/".str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $nextCount, 4, '0', STR_PAD_LEFT);
     }
 }

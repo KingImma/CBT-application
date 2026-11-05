@@ -12,14 +12,20 @@ use Throwable;
 
 abstract class CsvImport
 {
+    /**
+     * Set by the queue job so progress can be reported to the client.
+     */
     private ?ImportProgress $progress = null;
-    
+
     private string $progressType = 'import';
-    
+
     public function __construct()
     {
     }
 
+    /**
+     * Report progress for a specific import job (used by the queue jobs).
+     */
     public function forJob(?string $importJobId, string $type = 'import'): static
     {
         $this->progress = ImportProgress::make($importJobId);
@@ -58,6 +64,18 @@ abstract class CsvImport
 
             $rows = $parsed['rows'];
 
+            $limit = (int) config('imports.max_rows', 1000);
+
+            if ($limit > 0 && $parsed['totalRows'] > $limit) {
+                return new ImportResult(
+                    success: false,
+                    message: "This file has {$parsed['totalRows']} rows. The maximum for a single import is {$limit} rows.",
+                    errors: [],
+                    totalRows: $parsed['totalRows'],
+                    canProceed: false,
+                );
+            }
+
             $referenceErrors = [];
             $rows = $this->resolveReferences($rows, $referenceErrors);
             if ($referenceErrors !== []) {
@@ -71,14 +89,14 @@ abstract class CsvImport
             }
 
             $parsed['totalRows'] = count($rows) + count($parsed['errors']);
-            $duplicateResult = $this->checkDuplicates($rows, $parsed['totalRows'], $validated);
+            $duplicateResult = $this->checkDuplicates($rows, $parsed['totalRows'], $validated, $dryRun);
             if ($duplicateResult !== null) {
                 return $duplicateResult;
             }
 
-            $duplicateByRow = $this->overwriteExisting
-                ? $this->buildDuplicateIndex($rows)
-                : [];
+            $duplicateByRow = $this->buildDuplicateIndex($rows);
+
+            $this->progress?->start($this->progressType, $parsed['totalRows']);
 
             if ($dryRun) {
                 return new ImportResult(
@@ -91,6 +109,7 @@ abstract class CsvImport
 
             try {
                 $this->progress?->phase('writing');
+
                 return $this->processRows($rows, $duplicateByRow);
             } catch (Throwable $e) {
                 return new ImportResult(
@@ -125,13 +144,13 @@ abstract class CsvImport
             if ($columnCount !== count($raw)) {
                 $errors[] = [
                     'row' => $rowNumber,
-                    'errors' => ['_columns' => ['Column count mismatch: expected '. $columnCount .', got '.count($raw).'.']],
+                    'errors' => ['_columns' => ['Column count mismatch: expected '.$columnCount.', got '.count($raw).'.']],
                 ];
 
                 continue;
             }
 
-            $data = $this->applyKeyMap(array_combine($headers, $raw), $keyMap)
+            $data = $this->applyKeyMap(array_combine($headers, $raw), $keyMap);
 
             $validator = Validator::make($data, $rules);
             if ($validator->fails()) {
@@ -194,16 +213,28 @@ abstract class CsvImport
         $duplicateByRow = [];
 
         foreach ($rows as $row) {
-            foreach ($row['_duplicates'] ?? [] as $duplicate) {
-                $duplicateByRow[] = [
-                    'row' => $row['row'],
-                    'message' => sprintf(
-                        "Existing record found for %s: '%s'.",
-                        $duplicate['key'],
-                        $duplicate['value'],
-                    ),
-                ];
+            $duplicates = $row['_duplicates'] ?? [];
+
+            if ($duplicates === []) {
+                continue;
             }
+
+            $identifiers = [];
+            $messages = [];
+
+            foreach ($duplicates as $duplicate) {
+                $identifiers[$duplicate['key']] = $duplicate['value'];
+                $messages[] = sprintf(
+                    "Existing record found for %s: '%s'.",
+                    $duplicate['key'],
+                    $duplicate['value'],
+                );
+            }
+
+            $duplicateByRow[] = array_merge([
+                'row' => $row['row'],
+                'message' => implode(' ', $messages),
+            ], $identifiers);
         }
 
         return $duplicateByRow;
@@ -324,7 +355,7 @@ abstract class CsvImport
         );
     }
 
-    private function checkDuplicates(array &$rows, int $totalRows, array $validated): ?ImportResult
+    private function checkDuplicates(array &$rows, int $totalRows, array $validated, bool $dryRun = false): ?ImportResult
     {
         $errors = [];
         $rows = $this->findDuplicates($rows, $errors);
@@ -342,9 +373,11 @@ abstract class CsvImport
 
         $duplicateByRow = $this->buildDuplicateIndex($rows);
 
-        $this->progress?->start($this->progressType, $parsed['totalRows']);
+        $this->overwriteExisting = $this->wantsOverwrite($validated);
 
-        $this->overwriteExisting = ($validated['overwrite_existing'] ?? null) === 'update';
+        if ($dryRun) {
+            return null;
+        }
 
         $hasDuplicatesWithoutOverwrite = $duplicateByRow !== [] && ! $this->overwriteExisting;
 
@@ -359,5 +392,19 @@ abstract class CsvImport
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    protected function wantsOverwrite(array $validated): bool
+    {
+        $value = $validated['overwrite_existing'] ?? null;
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['update', 'true', '1', 'yes'], true);
     }
 }

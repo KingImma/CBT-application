@@ -35,42 +35,42 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class StudentController extends Controller
 {
-/**
- * List students with optional filters.
- *
- * @subgroup Student Management
- *
- * @queryParam status string Filter by status: active, inactive, all (default: active). No-example
- * @queryParam search string Search by name, email, or admission number. No-example
- * @queryParam class_level_id string Filter by class level UUID. No-example
- * @queryParam class_arm_id string Filter by class arm UUID. No-example
- */
-public function index(Request $request, StudentQuery $queries): JsonResponse
-{
-    $status = $request->query('status', 'active');
+    /**
+     * List students with optional filters.
+     *
+     * @subgroup Student Management
+     *
+     * @queryParam status string Filter by status: active, inactive, all (default: active). No-example
+     * @queryParam search string Search by name, email, or admission number. No-example
+     * @queryParam class_level_id string Filter by class level UUID. No-example
+     * @queryParam class_arm_id string Filter by class arm UUID. No-example
+     */
+    public function index(Request $request, StudentQuery $queries): JsonResponse
+    {
+        $status = $request->query('status', 'active');
 
-    $students = $queries->forList()
-        ->tap(fn ($q) => $queries->search($q, is_string($request->query('search')) ? $request->query('search') : null))
-        ->tap(fn ($q) => $queries->filterByClass($q, $request->class_level_id, $request->class_arm_id));
+        $students = $queries->forList()
+            ->tap(fn ($q) => $queries->search($q, is_string($request->query('search')) ? $request->query('search') : null))
+            ->tap(fn ($q) => $queries->filterByClass($q, $request->class_level_id, $request->class_arm_id));
 
-    // A teacher only sees students in the classes they hold; admins see all.
-    $user = $request->user('tenant');
+        // A teacher only sees students in the classes they hold; admins see all.
+        $user = $request->user('tenant');
 
-    if ($user->hasRole(RoleType::Teacher->value) && ! $user->hasRole(RoleType::SchoolAdmin->value)) {
-        $students = (new TeacherAssignmentScope($user))->scopeStudents($students);
+        if ($user->hasRole(RoleType::Teacher->value) && ! $user->hasRole(RoleType::SchoolAdmin->value)) {
+            $students = (new TeacherAssignmentScope($user))->scopeStudents($students);
+        }
+
+        $students = $students
+            ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+            ->orderBy('last_name')
+            ->paginate(50);
+
+        return ApiResponse::paginated(
+            $students,
+            'Students retrieved successfully.',
+            StudentData::collect($students->getCollection())
+        );
     }
-
-    $students = $students
-        ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
-        ->orderBy('last_name')
-        ->paginate(50);
-
-    return ApiResponse::paginated(
-        $students,
-        'Students retrieved successfully.',
-        StudentData::collect($students->getCollection())
-    );
-}
 
     /**
      * Get a single student with their profile.
@@ -369,7 +369,7 @@ public function index(Request $request, StudentQuery $queries): JsonResponse
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
             'dry_run' => ['required', 'in:true,false,1,0'],
-            'overwrite_existing' => ['nullable', 'in:skip,update'],
+            'overwrite_existing' => ['nullable', 'in:skip,update,true,false,1,0'],
             'class_level_id' => ['nullable', 'uuid', 'exists:class_levels,id'],
         ]);
 
@@ -410,7 +410,14 @@ public function index(Request $request, StudentQuery $queries): JsonResponse
             ]);
         }
 
-        return ApiResponse::message('Student import queued. You will be notified when it finishes.', 202);
+        return ApiResponse::success(
+            [
+                'import_job_id' => $importJobId,
+                'status' => 'pending',
+            ],
+            'Student import queued. You will be notified when it finishes.',
+            202,
+        );
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse
@@ -428,6 +435,13 @@ public function index(Request $request, StudentQuery $queries): JsonResponse
                 $result->getMessage() ?? 'Row validation failed.',
                 422,
                 $result->getErrors(),
+            );
+        }
+
+        if (! $result->isSuccess()) {
+            return ApiResponse::error(
+                $result->getMessage() ?? 'Import failed.',
+                422,
             );
         }
 

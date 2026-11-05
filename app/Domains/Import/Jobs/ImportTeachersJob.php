@@ -121,11 +121,18 @@ class ImportTeachersJob implements ShouldQueue
             $validated['dry_run'] = false;
 
             $result = app(ImportTeachers::class)
+                ->forJob($this->importJobId, 'teacher')
                 ->execute($validated, $tempPath, false);
 
             DB::purge($central);
 
             if (! $result->isSuccess()) {
+                ImportProgress::make($this->importJobId)?->failed(
+                    $result->getMessage() ?? 'Teacher import failed.',
+                    $result->getErrors(),
+                    $result->getTotalRows(),
+                );
+
                 $connection
                     ->table('import_jobs')
                     ->where('id', $this->importJobId)
@@ -154,6 +161,13 @@ class ImportTeachersJob implements ShouldQueue
                     'status' => 'completed',
                     'updated_at' => now(),
                 ]);
+
+            ImportProgress::make($this->importJobId)?->completed(
+                (int) $result->getImported(),
+                (int) $result->getSkipped(),
+                (int) $result->getUpdated(),
+                (int) $result->getTotalRows(),
+            );
 
             try {
                 $this->notifyComplete($result, $claimed->tenant_id);
@@ -213,6 +227,8 @@ class ImportTeachersJob implements ShouldQueue
     public function failed(Throwable $e): void
     {
         $connectionName = 'pgsql_imports';
+
+        ImportProgress::make($this->importJobId)?->failed('Import failed: '.$e->getMessage());
 
         DB::purge($connectionName);
 

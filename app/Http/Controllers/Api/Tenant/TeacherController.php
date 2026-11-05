@@ -344,7 +344,7 @@ class TeacherController extends Controller
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
             'dry_run' => ['required', 'in:true,false,1,0'],
-            'overwrite_existing' => ['nullable', 'in:skip,update'],
+            'overwrite_existing' => ['nullable', 'in:skip,update,true,false,1,0'],
         ]);
 
         $dryRun = filter_var($validated['dry_run'], FILTER_VALIDATE_BOOLEAN);
@@ -386,7 +386,14 @@ class TeacherController extends Controller
             ]);
         }
 
-        return ApiResponse::message('Teacher import queued. You will be notified when it finishes.', 202);
+        return ApiResponse::success(
+            [
+                'import_job_id' => $importJobId,
+                'status' => 'pending',
+            ],
+            'Teacher import queued. You will be notified when it finishes.',
+            202,
+        );
     }
 
     private function buildImportResponse(ImportResult $result, bool $dryRun): JsonResponse
@@ -404,6 +411,13 @@ class TeacherController extends Controller
                 $result->getMessage() ?? 'Row validation failed.',
                 422,
                 $result->getErrors(),
+            );
+        }
+
+        if (! $result->isSuccess()) {
+            return ApiResponse::error(
+                $result->getMessage() ?? 'Import failed.',
+                422,
             );
         }
 

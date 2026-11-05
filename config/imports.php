@@ -19,6 +19,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Maximum rows accepted in one file
+    |--------------------------------------------------------------------------
+    |
+    | A file is written inside a single transaction, so an unbounded file could
+    | outlive the 300 s queue job and be rolled back entirely. Set to 0 to
+    | disable the check only together with chunked transactions.
+    |
+    */
+
+    'max_rows' => (int) env('IMPORT_MAX_ROWS', 1000),
+
+    /*
+    |--------------------------------------------------------------------------
     | Recalculate exam attendance after a bulk student import
     |--------------------------------------------------------------------------
     |

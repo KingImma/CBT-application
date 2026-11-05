@@ -108,6 +108,26 @@ class ImportStudentsJob implements ShouldQueue
                     $result->getErrors(),
                     $result->getTotalRows(),
                 );
+
+                $connection
+                    ->table('import_jobs')
+                    ->where('id', $this->importJobId)
+                    ->update([
+                        'status' => 'failed',
+                        'retain_until' => now()->addDays(3),
+                        'updated_at' => now(),
+                    ]);
+
+                try {
+                    $this->notifyFailure($result, $claimed->tenant_id);
+                } catch (Throwable $e) {
+                    Log::error('Failed to send student import failure notification', [
+                        'import_job_id' => $this->importJobId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                return;
             }
 
             $connection
@@ -121,6 +141,15 @@ class ImportStudentsJob implements ShouldQueue
                 (int) $result->getUpdated(),
                 (int) $result->getTotalRows(),
             );
+
+            try {
+                $this->notifyComplete($result, $claimed->tenant_id);
+            } catch (Throwable $e) {
+                Log::error('Failed to send student import completion notification', [
+                    'import_job_id' => $this->importJobId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             $connection
                 ->table('import_jobs')
@@ -173,5 +202,29 @@ class ImportStudentsJob implements ShouldQueue
         ImportProgress::make($this->importJobId)?->failed('Import failed: '.$e->getMessage());
 
         DB::purge($central);
+
+        $connection = DB::connection($central);
+
+        try {
+            $connection
+                ->table('import_jobs')
+                ->where('id', $this->importJobId)
+                ->update([
+                    'status' => 'failed',
+                    'retain_until' => now()->addDays(3),
+                    'updated_at' => now(),
+                ]);
+        } catch (Throwable $statusError) {
+            Log::critical('Could not mark student import as failed', [
+                'import_job_id' => $this->importJobId,
+                'original_error' => $e->getMessage(),
+                'status_error' => $statusError->getMessage(),
+            ]);
+        }
+
+        Log::error('Students import failed permanently', [
+            'import_job_id' => $this->importJobId,
+            'error' => $e->getMessage(),
+        ]);
     }
 }

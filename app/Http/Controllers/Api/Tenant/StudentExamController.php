@@ -128,7 +128,7 @@ class StudentExamController extends Controller
     public function activeAttempt(Request $request, string $id): JsonResponse
     {
         $attempt = $this->resolveLiveAttempt($id, $request->user('tenant')->id);
-        
+
         if ($attempt === null) {
             return $this->noLiveAttempt();
         }
@@ -154,7 +154,7 @@ class StudentExamController extends Controller
     public function getQuestions(Request $request, string $id): JsonResponse
     {
         $attempt = $this->resolveLiveAttempt($id, $request->user('tenant')->id);
-        
+
         if ($attempt === null) {
             return $this->noLiveAttempt();
         }
@@ -596,20 +596,20 @@ class StudentExamController extends Controller
             ->forStudent($studentId)
             ->inProgress()
             ->first();
-    
+
         if ($attempt === null) {
             return null;
         }
-    
+
         if ($attempt->isExpired()) {
             $this->finalizeAttempt->execute($attempt, reason: 'stale_heartbeat');
-    
+
             return null;
         }
-    
+
         return $attempt;
     }
-    
+
     private function noLiveAttempt(): JsonResponse
     {
         return ApiResponse::error(
@@ -623,7 +623,7 @@ class StudentExamController extends Controller
         if ($attempt->status !== ExamAttemptStatus::InProgress->value) {
             return;
         }
-        
+
         $last = $attempt->last_heartbeat_at;
 
         if ($last !== null && $last->gt(now()->subSeconds(30))) {

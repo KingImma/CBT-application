@@ -7,6 +7,7 @@ namespace App\Domains\Import\Actions;
 use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Support\ImportProgress;
 use App\Shared\Support\CsvHeaderNormalizer;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
 
@@ -57,7 +58,10 @@ abstract class CsvImport
             }
             $headers = $headerResult;
 
+            $parseStartedAt = microtime(true);
             $parsed = $this->parseAndValidateRows($handle, $headers);
+            $parseMs = (int) round((microtime(true) - $parseStartedAt) * 1000);
+
             if ($parsed['errors'] !== []) {
                 return $this->validationFailedResult($parsed);
             }
@@ -110,7 +114,17 @@ abstract class CsvImport
             try {
                 $this->progress?->phase('writing');
 
-                return $this->processRows($rows, $duplicateByRow);
+                $writeStartedAt = microtime(true);
+                $result = $this->processRows($rows, $duplicateByRow);
+
+                Log::info('Import timed', [
+                    'type' => $this->progressType,
+                    'rows' => $parsed['totalRows'],
+                    'parse_ms' => $parseMs,
+                    'write_ms' => (int) round((microtime(true) - $writeStartedAt) * 1000),
+                ]);
+
+                return $result;
             } catch (Throwable $e) {
                 return new ImportResult(
                     success: false,
@@ -125,6 +139,9 @@ abstract class CsvImport
         }
     }
 
+    /** Rows validated per Validator instance (one validator for the chunk). */
+    private const VALIDATION_CHUNK_SIZE = 500;
+
     protected function parseAndValidateRows($handle, array $headers): array
     {
         $rows = [];
@@ -134,38 +151,36 @@ abstract class CsvImport
         $keyMap = $this->buildKeyMap($headers);
         $columnCount = count($headers);
 
+        // `$chunk` keeps the parse outcome in encounter order so rows and row
+        // errors are reported exactly as they appear in the file.
+        $chunk = [];
+        $rowNumber = 0;
+
         while (($raw = fgetcsv($handle)) !== false) {
             if ($this->isRowEmpty($raw)) {
                 continue;
             }
 
-            $rowNumber = count($rows) + count($errors) + 1;
+            $rowNumber++;
 
             if ($columnCount !== count($raw)) {
-                $errors[] = [
-                    'row' => $rowNumber,
+                $chunk[$rowNumber] = [
                     'errors' => ['_columns' => ['Column count mismatch: expected '.$columnCount.', got '.count($raw).'.']],
                 ];
-
-                continue;
-            }
-
-            $data = $this->applyKeyMap(array_combine($headers, $raw), $keyMap);
-
-            $validator = Validator::make($data, $rules);
-            if ($validator->fails()) {
-                $errors[] = [
-                    'row' => $rowNumber,
-                    'errors' => $validator->errors()->toArray(),
+            } else {
+                $chunk[$rowNumber] = [
+                    'data' => $this->applyKeyMap(array_combine($headers, $raw), $keyMap),
                 ];
-
-                continue;
             }
 
-            $rows[] = [
-                'row' => $rowNumber,
-                'data' => $data,
-            ];
+            if (count($chunk) >= self::VALIDATION_CHUNK_SIZE) {
+                $this->validateChunk($chunk, $rules, $rows, $errors);
+                $chunk = [];
+            }
+        }
+
+        if ($chunk !== []) {
+            $this->validateChunk($chunk, $rules, $rows, $errors);
         }
 
         return [
@@ -173,6 +188,109 @@ abstract class CsvImport
             'errors' => $errors,
             'totalRows' => count($rows) + count($errors),
         ];
+    }
+
+    /**
+     * Validate many rows with a single Validator instance.
+     *
+     * Building one `Validator::make()` per CSV row is the most expensive part of
+     * parsing a large file (container resolution, translator bootstrapping and
+     * rule parsing per row). Wildcard rules validate a whole chunk at once and
+     * the per-row messages are re-keyed to the original row numbers, keeping the
+     * same response shape as before.
+     *
+     * Entries are in encounter order and may hold either parsed `data` or a
+     * structural `errors` payload (for example a column-count mismatch).
+     *
+     * @param  array<int, array{data?: array<string, mixed>, errors?: array<string, list<string>>}>  $chunk
+     * @param  array<string, mixed>  $rules
+     * @param  list<array<string, mixed>>  $rows
+     * @param  list<array<string, mixed>>  $errors
+     */
+    private function validateChunk(array $chunk, array $rules, array &$rows, array &$errors): void
+    {
+        $positions = [];
+        $payload = ['rows' => []];
+
+        foreach ($chunk as $rowNumber => $entry) {
+            if (! isset($entry['data'])) {
+                continue;
+            }
+
+            $position = count($positions);
+            $positions[$position] = $rowNumber;
+            $payload['rows'][$position] = $entry['data'];
+        }
+
+        try {
+            $wildcardRules = [];
+            foreach ($rules as $field => $fieldRules) {
+                $wildcardRules['rows.*.'.$field] = $fieldRules;
+            }
+
+            $validator = Validator::make($payload, $wildcardRules);
+        } catch (Throwable) {
+            // Fall back to the per-row validator if wildcard rules are not
+            // supported by a custom rule in a schema.
+            foreach ($chunk as $rowNumber => $entry) {
+                if (! isset($entry['data'])) {
+                    $errors[] = ['row' => $rowNumber, 'errors' => $entry['errors']];
+
+                    continue;
+                }
+
+                $validator = Validator::make($entry['data'], $rules);
+
+                if ($validator->fails()) {
+                    $errors[] = [
+                        'row' => $rowNumber,
+                        'errors' => $validator->errors()->toArray(),
+                    ];
+
+                    continue;
+                }
+
+                $rows[] = ['row' => $rowNumber, 'data' => $entry['data']];
+            }
+
+            return;
+        }
+
+        $byPosition = [];
+
+        if ($validator->fails()) {
+            foreach ($validator->errors()->messages() as $key => $fieldMessages) {
+                if (! preg_match('/^rows\.(\d+)\.([^.]+)$/', (string) $key, $matches)) {
+                    continue;
+                }
+
+                $byPosition[(int) $matches[1]][$matches[2]] = $fieldMessages;
+            }
+        }
+
+        $position = -1;
+
+        foreach ($chunk as $rowNumber => $entry) {
+            if (! isset($entry['data'])) {
+                $errors[] = ['row' => $rowNumber, 'errors' => $entry['errors']];
+
+                continue;
+            }
+
+            $position++;
+            $rowErrors = $byPosition[$position] ?? [];
+
+            if ($rowErrors !== []) {
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'errors' => $rowErrors,
+                ];
+
+                continue;
+            }
+
+            $rows[] = ['row' => $rowNumber, 'data' => $payload['rows'][$position]];
+        }
     }
 
     /**

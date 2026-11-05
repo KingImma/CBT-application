@@ -43,9 +43,15 @@ class UserPolicy
 
     public function revokeTeacher(User $user, User $teacher): bool
     {
+        // Revoking an already deactivated (but not deleted) teacher is allowed so
+        // the operation is idempotent and cannot silently no-op with a 403.
         return $user->hasRole(RoleType::SchoolAdmin->value)
-            && $teacher->is_active
             && ! $teacher->trashed();
+    }
+
+    public function toggleTeacherActive(User $user, User $teacher): bool
+    {
+        return $user->hasRole(RoleType::SchoolAdmin->value) && ! $teacher->trashed();
     }
 
     public function restoreTeacher(User $user, User $teacher): bool
@@ -82,9 +88,15 @@ class UserPolicy
 
     public function revokeStudent(User $user, User $student): bool
     {
+        // Revoking an already deactivated (but not deleted) student is allowed so
+        // the operation is idempotent and cannot silently no-op with a 403.
         return $user->hasRole(RoleType::SchoolAdmin->value)
-            && $student->is_active
             && ! $student->trashed();
+    }
+
+    public function toggleStudentActive(User $user, User $student): bool
+    {
+        return $user->hasRole(RoleType::SchoolAdmin->value) && ! $student->trashed();
     }
 
     public function restoreStudent(User $user, User $student): bool

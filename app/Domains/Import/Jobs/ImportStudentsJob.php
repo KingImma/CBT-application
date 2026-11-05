@@ -81,6 +81,15 @@ class ImportStudentsJob implements ShouldQueue
             return;
         }
 
+        $startedAt = microtime(true);
+
+        Log::info('Student import job started', [
+            'import_job_id' => $this->importJobId,
+            'queue_wait_ms' => $claimed->created_at !== null
+                ? (int) round(now()->diffInMilliseconds($claimed->created_at))
+                : null,
+        ]);
+
         tenancy()->initialize($claimed->tenant_id);
 
         DB::purge('tenant');
@@ -101,6 +110,12 @@ class ImportStudentsJob implements ShouldQueue
             $result = app(ImportStudents::class)
                 ->forJob($this->importJobId, 'student')
                 ->execute($validated, $tempPath, false);
+
+            Log::info('Student import job finished', [
+                'import_job_id' => $this->importJobId,
+                'rows' => $result->getTotalRows(),
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            ]);
 
             if (! $result->isSuccess()) {
                 ImportProgress::make($this->importJobId)?->failed(

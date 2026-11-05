@@ -26,7 +26,9 @@ class AuthenticateTenantUser
     private function findUser(string $identifier): ?User
     {
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-            return User::where('email', $identifier)->first();
+            // Emails are stored lower-cased; compare case-insensitively so users
+            // can sign in regardless of how they type their address.
+            return User::whereRaw('lower(email) = ?', [strtolower($identifier)])->first();
         }
 
         return User::whereHas(

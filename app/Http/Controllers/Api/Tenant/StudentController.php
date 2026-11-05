@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Domains\Auth\Actions\ResetUserPassword;
+use App\Domains\Exams\Actions\RecalculateExpectedAttempts;
 use App\Domains\Import\Actions\ImportStudents;
 use App\Domains\Import\Data\ImportResult;
 use App\Domains\Teachers\Support\TeacherAssignmentScope;
@@ -28,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 /**
  * @group Student Roster
@@ -61,6 +63,7 @@ class StudentController extends Controller
         }
 
         $students = $students
+            ->when($status === 'active', fn ($q) => $q->whereNull('users.deleted_at'))
             ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
             ->orderBy('last_name')
             ->paginate(50);
@@ -190,24 +193,107 @@ class StudentController extends Controller
      */
     public function revoke(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
-        $student = User::role(RoleType::Student->value)->findOrFail($id);
+        $student = User::withTrashed()->role(RoleType::Student->value)->findOrFail($id);
+
+        if ($student->trashed()) {
+            return ApiResponse::message('Student is already revoked.');
+        }
+
         $this->authorize('revokeStudent', $student);
 
-        DB::transaction(function () use ($student, $removeTenantUserIndex) {
+        // Only tenant-DB work runs inside this transaction. The central login
+        // index lives on another database: if it were part of the transaction a
+        // slow or unreachable central connection would roll the revocation back
+        // and the student would silently stay active.
+        DB::transaction(function () use ($student) {
             $student->deactivate()->save();
             $student->tokens()->delete();
 
             $student->studentProfile()->update([
                 'class_arm_id' => null,
             ]);
-            $removeTenantUserIndex->execute($student->email);
+
             $student->delete();
         });
+
+        $this->forgetLoginIndex($removeTenantUserIndex, $student->email);
 
         return ApiResponse::message('Student revoked.');
     }
 
     /**
+     * Enable or disable a student without revoking (deleting) the account.
+     *
+     * @subgroup Student Status
+     *
+     * @urlParam id string required The student UUID.
+     */
+    public function toggleActive(
+        RemoveTenantUserIndex $removeTenantUserIndex,
+        SyncTenantUser $syncTenantUser,
+        RecalculateExpectedAttempts $recalculateExpectedAttempts,
+        string $id,
+    ): JsonResponse {
+        $student = User::role(RoleType::Student->value)->findOrFail($id);
+        $this->authorize('toggleStudentActive', $student);
+
+        $activating = ! (bool) $student->is_active;
+
+        DB::transaction(function () use ($student, $activating) {
+            $student->is_active = $activating;
+            $student->save();
+
+            if (! $activating) {
+                $student->tokens()->delete();
+            }
+        });
+
+        $profile = $student->studentProfile;
+
+        $recalculateExpectedAttempts->forClassArms([[
+            $profile?->class_level_id !== null ? (string) $profile->class_level_id : null,
+            $profile?->class_arm_id !== null ? (string) $profile->class_arm_id : null,
+        ]]);
+
+        try {
+            $activating
+                ? $syncTenantUser->execute($student->email, RoleType::Student->value)
+                : $removeTenantUserIndex->execute($student->email);
+        } catch (Throwable $e) {
+            Log::warning('Student status changed but the central login index could not be updated', [
+                'student_id' => $student->id,
+                'is_active' => $activating,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return ApiResponse::success([
+            'student' => StudentData::from($student->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
+            'is_active' => $activating,
+        ], $activating ? 'Student activated.' : 'Student deactivated.');
+    }
+
+    /**
+     * Remove the student from the central login index without letting a central
+     * database failure undo the tenant-side change.
+     */
+    private function forgetLoginIndex(RemoveTenantUserIndex $removeTenantUserIndex, ?string $email): void
+    {
+        if ($email === null || trim($email) === '') {
+            return;
+        }
+
+        try {
+            $removeTenantUserIndex->execute($email);
+        } catch (Throwable $e) {
+            Log::warning('Student revoked but the central login index entry could not be removed', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /*
      * Restore a previously revoked student.
      *
      * @subgroup Student Status
@@ -223,9 +309,19 @@ class StudentController extends Controller
             return ApiResponse::error('This student is already active and has not been deleted.', 422);
         }
 
-        $student->restore();
-        $student->activate()->save();
-        $syncTenantUser->execute($student->email, RoleType::Student->value);
+        DB::transaction(function () use ($student) {
+            $student->restore();
+            $student->activate()->save();
+        });
+
+        try {
+            $syncTenantUser->execute($student->email, RoleType::Student->value);
+        } catch (Throwable $e) {
+            Log::warning('Student restored but the central login index could not be updated', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return ApiResponse::success([
             'student' => StudentData::from($student->load(['studentProfile.classLevel', 'studentProfile.classArm'])),
@@ -244,12 +340,13 @@ class StudentController extends Controller
         $student = User::withTrashed()->role(RoleType::Student->value)->findOrFail($id);
         $this->authorize('deleteStudent', $student);
 
-        DB::transaction(function () use ($student, $removeTenantUserIndex) {
+        DB::transaction(function () use ($student) {
             $student->studentProfile()->delete();
-            $removeTenantUserIndex->execute($student->email);
             $student->syncRoles([]);
             $student->forceDelete();
         });
+
+        $this->forgetLoginIndex($removeTenantUserIndex, $student->email);
 
         return ApiResponse::message('Student permanently deleted.');
     }
@@ -300,9 +397,10 @@ class StudentController extends Controller
      *
      * @queryParam class_level_id string Filter by class level UUID. No-example
      */
-    public function exportCsv(Request $request, StudentService $studentService): StreamedResponse
+    public function exportCsv(Request $request): StreamedResponse
     {
-        $query = $studentService->query()
+        $query = User::role(RoleType::Student->value)
+            ->with('studentProfile')
             ->when($request->class_level_id, fn ($q) => $q->whereHas('studentProfile', fn ($p) => $p->where('class_level_id', $request->class_level_id)));
 
         $headers = [
@@ -321,7 +419,7 @@ class StudentController extends Controller
 
             $query->chunk(200, function ($students) use ($handle) {
                 foreach ($students as $student) {
-                    $profile = $student->profile;
+                    $profile = $student->studentProfile;
                     fputcsv($handle, [
                         $profile?->admission_number,
                         $student->first_name,

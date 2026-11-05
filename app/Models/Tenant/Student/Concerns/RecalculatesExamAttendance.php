@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\Student\Concerns;
 
-use App\Enums\ExamStatus;
-use App\Models\Tenant\Exam;
+use App\Domains\Exams\Actions\RecalculateExpectedAttempts;
 use App\Models\Tenant\StudentProfile;
 
 trait RecalculatesExamAttendance
@@ -25,9 +24,11 @@ trait RecalculatesExamAttendance
 
     private static function recalculateAffectedExams(StudentProfile $profile): void
     {
-        Exam::where('status', ExamStatus::Active->value)
-            ->where('class_level_id', $profile->class_level_id)
-            ->where(fn ($q) => $q->whereNull('class_arm_id')->orWhere('class_arm_id', $profile->class_arm_id))
-            ->each(fn (Exam $exam) => $exam->update(['expected_attempts' => $exam->expectedAttempts()]));
+        app(RecalculateExpectedAttempts::class)->forClassArms([
+            [
+                $profile->class_level_id !== null ? (string) $profile->class_level_id : null,
+                $profile->class_arm_id !== null ? (string) $profile->class_arm_id : null,
+            ],
+        ]);
     }
 }

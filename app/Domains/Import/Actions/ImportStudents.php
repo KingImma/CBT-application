@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domains\Import\Actions;
 
+use App\Domains\Exams\Actions\RecalculateExpectedAttempts;
 use App\Domains\Import\Data\ImportResult;
 use App\Domains\Import\Data\Schemas\StudentImportSchema;
 use App\Domains\Import\Support\BulkImportWriter;
 use App\Domains\Students\Actions\StudentService;
-use App\Enums\ExamStatus;
 use App\Enums\RoleType;
 use App\Models\Tenant\ClassArm;
 use App\Models\Tenant\ClassLevel;
-use App\Models\Tenant\Exam;
 use App\Models\Tenant\StudentProfile;
 use App\Models\Tenant\User;
 use App\Shared\Support\NormalizeName;
@@ -139,7 +138,9 @@ class ImportStudents extends CsvImport
                 ->with(['studentProfile' => fn ($query) => $query->select(['id', 'user_id', 'admission_number'])])
                 ->where(function ($query) use ($emails, $admissionNumbers): void {
                     if ($emails !== []) {
-                        $query->whereIn('users.email', array_keys($emails));
+                        // Emails are compared case-insensitively so an existing
+                        // "John@School.com" is not duplicated by "john@school.com".
+                        $query->whereIn(DB::raw('lower(users.email)'), array_keys($emails));
                     }
 
                     if ($admissionNumbers !== []) {
@@ -153,7 +154,7 @@ class ImportStudents extends CsvImport
 
             foreach ($existing as $user) {
                 if ($user->email !== null) {
-                    $existingByEmail[$user->email] = (string) $user->id;
+                    $existingByEmail[strtolower(trim((string) $user->email))] = (string) $user->id;
                 }
 
                 $admissionNumber = $user->studentProfile?->getAttribute('admission_number');
@@ -486,21 +487,15 @@ class ImportStudents extends CsvImport
     }
 
     /**
-     * Recompute expected_attempts once per affected class arm instead of once
-     * per imported student.
+     * Recompute expected_attempts once per affected class level/arm instead of
+     * once per imported student - and with a single aggregated query for the
+     * whole import rather than one count per active exam.
      *
      * @param  list<array{0: string, 1: ?string}>  $pairs
      */
     private function recalculateExamAttendance(array $pairs): void
     {
-        foreach ($pairs as [$classLevelId, $classArmId]) {
-            Exam::query()
-                ->where('status', ExamStatus::Active->value)
-                ->where('class_level_id', $classLevelId)
-                ->where(fn ($query) => $query->whereNull('class_arm_id')->orWhere('class_arm_id', $classArmId))
-                ->get()
-                ->each(fn (Exam $exam) => $exam->update(['expected_attempts' => $exam->expectedAttempts()]));
-        }
+        app(RecalculateExpectedAttempts::class)->forClassArms($pairs);
     }
 
     /**
@@ -525,9 +520,9 @@ class ImportStudents extends CsvImport
         }
 
         $taken = User::query()
-            ->whereIn('email', array_values(array_unique($emails)))
+            ->whereIn(DB::raw('lower(users.email)'), array_values(array_unique($emails)))
             ->pluck('email')
-            ->flip();
+            ->mapWithKeys(fn ($email): array => [strtolower((string) $email) => true]);
 
         if ($taken->isEmpty()) {
             return $toCreate;
@@ -631,7 +626,9 @@ class ImportStudents extends CsvImport
 
     private function normalizeEmail(mixed $value): ?string
     {
-        $email = trim((string) ($value ?? ''));
+        // Lower-cased so the same address cannot be imported twice with
+        // different casing (PostgreSQL unique indexes are case-sensitive).
+        $email = strtolower(trim((string) ($value ?? '')));
 
         return $email === '' ? null : $email;
     }

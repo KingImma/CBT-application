@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 /**
  * @group Staff Directory
@@ -68,6 +69,7 @@ class TeacherController extends Controller
                         ->orWhere('email', 'ilike', "%{$search}%");
                 });
             })
+            ->when($status === 'active', fn ($q) => $q->whereNull('users.deleted_at'))
             ->when($status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
             ->orderBy('last_name')
             ->paginate(20);
@@ -227,19 +229,92 @@ class TeacherController extends Controller
      */
     public function revoke(RemoveTenantUserIndex $removeTenantUserIndex, string $id): JsonResponse
     {
-        $teacher = User::role(RoleType::Teacher->value)->findOrFail($id);
+        $teacher = User::withTrashed()->role(RoleType::Teacher->value)->findOrFail($id);
+
+        if ($teacher->trashed()) {
+            return ApiResponse::message('Teacher is already revoked.');
+        }
+
         $this->authorize('revokeTeacher', $teacher);
 
-        DB::transaction(function () use ($teacher, $removeTenantUserIndex) {
+        // Only tenant-DB work runs inside this transaction: the central login
+        // index lives on another database, so a failure there must not roll the
+        // revocation back and leave the teacher apparently active.
+        DB::transaction(function () use ($teacher) {
             $teacher->deactivate()->save();
             $teacher->tokens()->delete();
 
             TeacherSubjectAssignment::where('user_id', $teacher->id)->delete();
-            $removeTenantUserIndex->execute($teacher->email);
             $teacher->delete();
         });
 
+        $this->forgetLoginIndex($removeTenantUserIndex, $teacher->email);
+
         return ApiResponse::message('Teacher revoked.');
+    }
+
+    /**
+     * Enable or disable a teacher without revoking (deleting) the account.
+     *
+     * @subgroup Teacher Status
+     *
+     * @urlParam id string required The teacher UUID.
+     */
+    public function toggleActive(
+        RemoveTenantUserIndex $removeTenantUserIndex,
+        SyncTenantUser $syncTenantUser,
+        string $id,
+    ): JsonResponse {
+        $teacher = User::role(RoleType::Teacher->value)->findOrFail($id);
+        $this->authorize('toggleTeacherActive', $teacher);
+
+        $activating = ! (bool) $teacher->is_active;
+
+        DB::transaction(function () use ($teacher, $activating) {
+            $teacher->is_active = $activating;
+            $teacher->save();
+
+            if (! $activating) {
+                $teacher->tokens()->delete();
+            }
+        });
+
+        try {
+            $activating
+                ? $syncTenantUser->execute($teacher->email, RoleType::Teacher->value)
+                : $removeTenantUserIndex->execute($teacher->email);
+        } catch (Throwable $e) {
+            Log::warning('Teacher status changed but the central login index could not be updated', [
+                'teacher_id' => $teacher->id,
+                'is_active' => $activating,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return ApiResponse::success([
+            'teacher' => TeacherData::from($teacher->load('teacherProfile')),
+            'is_active' => $activating,
+        ], $activating ? 'Teacher activated.' : 'Teacher deactivated.');
+    }
+
+    /**
+     * Remove the teacher from the central login index without letting a central
+     * database failure undo the tenant-side change.
+     */
+    private function forgetLoginIndex(RemoveTenantUserIndex $removeTenantUserIndex, ?string $email): void
+    {
+        if ($email === null || trim($email) === '') {
+            return;
+        }
+
+        try {
+            $removeTenantUserIndex->execute($email);
+        } catch (Throwable $e) {
+            Log::warning('Teacher revoked but the central login index entry could not be removed', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -254,13 +329,14 @@ class TeacherController extends Controller
         $teacher = User::withTrashed()->role(RoleType::Teacher->value)->findOrFail($id);
         $this->authorize('deleteTeacher', $teacher);
 
-        DB::transaction(function () use ($teacher, $removeTenantUserIndex) {
+        DB::transaction(function () use ($teacher) {
             $teacher->teacherProfile()->delete();
             TeacherSubjectAssignment::where('user_id', $teacher->id)->delete();
-            $removeTenantUserIndex->execute($teacher->email);
             $teacher->syncRoles([]);
             $teacher->forceDelete();
         });
+
+        $this->forgetLoginIndex($removeTenantUserIndex, $teacher->email);
 
         return ApiResponse::message('Teacher permanently deleted.');
     }
@@ -281,12 +357,19 @@ class TeacherController extends Controller
             return ApiResponse::error('This teacher is already active and has not been deleted.', 422);
         }
 
-        DB::transaction(function () use ($teacher, $syncTenantUser) {
+        DB::transaction(function () use ($teacher) {
             $teacher->restore();
             $teacher->activate()->save();
-
-            $syncTenantUser->execute($teacher->email, RoleType::Teacher->value);
         });
+
+        try {
+            $syncTenantUser->execute($teacher->email, RoleType::Teacher->value);
+        } catch (Throwable $e) {
+            Log::warning('Teacher restored but the central login index could not be updated', [
+                'teacher_id' => $teacher->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return ApiResponse::success([
             'teacher' => TeacherData::from($teacher->fresh('teacherProfile')),
